@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import { config } from './config';
 import { healthRouter } from './routes/health.routes';
+import { authRouter } from './routes/auth.routes';
 import { errorHandler } from './middlewares/error.middleware';
 import { notFound } from './middlewares/notFound.middleware';
 
@@ -40,9 +41,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Routes
 // ===========================
 app.use('/api/health', healthRouter);
-
-// TODO: Register additional route modules in subsequent phases
-// app.use('/api/auth', authRouter);
+app.use('/api/auth', authRouter);
 // app.use('/api/users', usersRouter);
 // app.use('/api/students', studentsRouter);
 // ... etc.

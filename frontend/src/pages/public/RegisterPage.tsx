@@ -27,19 +27,19 @@ const RegisterPage: React.FC = () => {
 
     // Client-side validation
     if (!formData.fullName.trim()) {
-      setError('Full name is required.');
+      setError('Vui lòng nhập họ và tên.');
       return;
     }
     if (!formData.email) {
-      setError('Email is required.');
+      setError('Vui lòng nhập địa chỉ email.');
       return;
     }
-    if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters long.');
+    if (formData.password.length < 6) {
+      setError('Mật khẩu phải có ít nhất 6 ký tự.');
       return;
     }
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match.');
+      setError('Mật khẩu xác nhận không khớp.');
       return;
     }
 
@@ -52,12 +52,12 @@ const RegisterPage: React.FC = () => {
         password: formData.password,
       });
       navigate('/login', {
-        state: { message: 'Account created successfully! Please log in.' },
+        state: { message: 'Đăng ký tài khoản học viên thành công! Vui lòng đăng nhập.' },
       });
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        'Registration failed. Please try again.';
+        'Đăng ký không thành công. Vui lòng kiểm tra lại thông tin.';
       setError(msg);
     } finally {
       setIsSubmitting(false);
@@ -66,11 +66,11 @@ const RegisterPage: React.FC = () => {
 
   return (
     <div className="auth-page">
-      <div className="auth-card auth-card-wide">
+      <div className="auth-card auth-card-wide" style={{ maxWidth: '520px' }}>
         <div className="auth-header">
           <div className="auth-logo">🎓</div>
-          <h1 className="auth-title">Create your account</h1>
-          <p className="auth-subtitle">Join EduCenter to get started</p>
+          <h1 className="auth-title">Đăng ký tài khoản</h1>
+          <p className="auth-subtitle">Trở thành học viên tại EduCenter</p>
         </div>
 
         <form
@@ -88,7 +88,9 @@ const RegisterPage: React.FC = () => {
 
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="register-fullname" className="form-label">Full Name <span className="required">*</span></label>
+              <label htmlFor="register-fullname" className="form-label">
+                Họ và tên <span className="required">*</span>
+              </label>
               <input
                 id="register-fullname"
                 type="text"
@@ -96,7 +98,7 @@ const RegisterPage: React.FC = () => {
                 value={formData.fullName}
                 onChange={handleChange}
                 className="form-input"
-                placeholder="Jane Doe"
+                placeholder="Nguyễn Văn A"
                 autoComplete="name"
                 required
                 disabled={isSubmitting}
@@ -104,7 +106,7 @@ const RegisterPage: React.FC = () => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="register-phone" className="form-label">Phone Number</label>
+              <label htmlFor="register-phone" className="form-label">Số điện thoại</label>
               <input
                 id="register-phone"
                 type="tel"
@@ -112,7 +114,7 @@ const RegisterPage: React.FC = () => {
                 value={formData.phone}
                 onChange={handleChange}
                 className="form-input"
-                placeholder="+84 123 456 789"
+                placeholder="0988 123 456"
                 autoComplete="tel"
                 disabled={isSubmitting}
               />
@@ -120,7 +122,9 @@ const RegisterPage: React.FC = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="register-email" className="form-label">Email address <span className="required">*</span></label>
+            <label htmlFor="register-email" className="form-label">
+              Địa chỉ Email <span className="required">*</span>
+            </label>
             <input
               id="register-email"
               type="email"
@@ -128,7 +132,7 @@ const RegisterPage: React.FC = () => {
               value={formData.email}
               onChange={handleChange}
               className="form-input"
-              placeholder="you@example.com"
+              placeholder="hocvien@gmail.com"
               autoComplete="email"
               required
               disabled={isSubmitting}
@@ -137,7 +141,9 @@ const RegisterPage: React.FC = () => {
 
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="register-password" className="form-label">Password <span className="required">*</span></label>
+              <label htmlFor="register-password" className="form-label">
+                Mật khẩu <span className="required">*</span>
+              </label>
               <input
                 id="register-password"
                 type="password"
@@ -145,16 +151,18 @@ const RegisterPage: React.FC = () => {
                 value={formData.password}
                 onChange={handleChange}
                 className="form-input"
-                placeholder="Min. 8 characters"
+                placeholder="Tối thiểu 6 ký tự"
                 autoComplete="new-password"
                 required
-                minLength={8}
+                minLength={6}
                 disabled={isSubmitting}
               />
             </div>
 
             <div className="form-group">
-              <label htmlFor="register-confirm-password" className="form-label">Confirm Password <span className="required">*</span></label>
+              <label htmlFor="register-confirm-password" className="form-label">
+                Xác nhận mật khẩu <span className="required">*</span>
+              </label>
               <input
                 id="register-confirm-password"
                 type="password"
@@ -162,7 +170,7 @@ const RegisterPage: React.FC = () => {
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 className="form-input"
-                placeholder="Repeat password"
+                placeholder="Nhập lại mật khẩu"
                 autoComplete="new-password"
                 required
                 disabled={isSubmitting}
@@ -175,20 +183,21 @@ const RegisterPage: React.FC = () => {
             type="submit"
             className="btn btn-primary btn-full"
             disabled={isSubmitting}
+            style={{ marginTop: '0.75rem' }}
           >
             {isSubmitting ? (
               <span className="btn-loading">
                 <span className="spinner-sm" aria-hidden="true" />
-                Creating account...
+                Đang tạo tài khoản...
               </span>
-            ) : 'Create Account'}
+            ) : 'Tạo tài khoản học viên'}
           </button>
         </form>
 
-        <div className="auth-footer">
+        <div className="auth-footer" style={{ marginTop: '1.25rem' }}>
           <p>
-            Already have an account?{' '}
-            <Link to="/login" className="auth-link">Sign in</Link>
+            Đã có tài khoản?{' '}
+            <Link to="/login" className="auth-link">Đăng nhập</Link>
           </p>
         </div>
       </div>

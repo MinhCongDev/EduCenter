@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import GuestLayout from './layouts/GuestLayout';
+import DashboardLayout from './layouts/DashboardLayout';
 import ProtectedRoute from './routes/ProtectedRoute';
 
 // ===========================
@@ -108,7 +109,9 @@ const AppRouter: React.FC = () => {
           path="/student/dashboard"
           element={
             <ProtectedRoute allowedRoles={['STUDENT']}>
-              <StudentDashboard />
+              <DashboardLayout>
+                <StudentDashboard />
+              </DashboardLayout>
             </ProtectedRoute>
           }
         />
@@ -119,7 +122,9 @@ const AppRouter: React.FC = () => {
           path="/teacher/dashboard"
           element={
             <ProtectedRoute allowedRoles={['TEACHER']}>
-              <TeacherDashboard />
+              <DashboardLayout>
+                <TeacherDashboard />
+              </DashboardLayout>
             </ProtectedRoute>
           }
         />
@@ -129,7 +134,9 @@ const AppRouter: React.FC = () => {
           path="/staff/dashboard"
           element={
             <ProtectedRoute allowedRoles={['TRAINING_STAFF']}>
-              <StaffDashboard />
+              <DashboardLayout>
+                <StaffDashboard />
+              </DashboardLayout>
             </ProtectedRoute>
           }
         />
@@ -139,7 +146,9 @@ const AppRouter: React.FC = () => {
           path="/director/dashboard"
           element={
             <ProtectedRoute allowedRoles={['DIRECTOR']}>
-              <DirectorDashboard />
+              <DashboardLayout>
+                <DirectorDashboard />
+              </DashboardLayout>
             </ProtectedRoute>
           }
         />
