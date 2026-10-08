@@ -1,0 +1,5 @@
+// Services contain all business logic.
+// Services are called by Controllers.
+// Services interact with Models (Mongoose).
+//
+// This directory will contain service files in subsequent phases.

@@ -1,0 +1,2 @@
+// Zod validators for request body / params / query validation.
+// Validators will be added alongside their controllers in subsequent phases.

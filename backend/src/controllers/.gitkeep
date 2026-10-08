@@ -1,0 +1,31 @@
+/**
+ * Controllers handle HTTP request/response cycle.
+ * Controllers call Service methods for business logic.
+ * 
+ * Convention:
+ *   - One controller file per resource (e.g., auth.controller.ts)
+ *   - Controllers do NOT contain business logic
+ *   - Controllers validate input using Zod validators
+ *   - Controllers return standardized JSON responses
+ */
+
+// Controllers will be added in subsequent phases:
+// - auth.controller.ts       (Phase 3)
+// - users.controller.ts      (Phase 3)
+// - students.controller.ts   (Phase 4)
+// - teachers.controller.ts   (Phase 4)
+// - staff.controller.ts      (Phase 4)
+// - courses.controller.ts    (Phase 4)
+// - classes.controller.ts    (Phase 4)
+// - enrollments.controller.ts (Phase 4)
+// - schedules.controller.ts  (Phase 4)
+// - attendance.controller.ts (Phase 5)
+// - assignments.controller.ts (Phase 5)
+// - submissions.controller.ts (Phase 5)
+// - payments.controller.ts   (Phase 6)
+// - feedback.controller.ts   (Phase 7)
+// - announcements.controller.ts (Phase 7)
+// - notifications.controller.ts (Phase 7)
+// - reports.controller.ts    (Phase 8)
+
+export {};
