@@ -9,82 +9,79 @@ const Footer: React.FC = () => {
       <div className="dmr-footer-container">
         {/* Top 4 Columns */}
         <div className="dmr-footer-top">
-          {/* Column 1: Về EduCenter */}
+          {/* Column 1: Về EduCenter IELTS */}
           <div>
-            <div className="dmr-footer-heading">Về EduCenter</div>
+            <div className="dmr-footer-heading">Học Viện IELTS</div>
             <ul className="dmr-footer-links">
-              <li><Link to="/#about">Về chúng tôi</Link></li>
-              <li><Link to="/#teachers">Đội ngũ giảng viên</Link></li>
-              <li><Link to="/#reviews">Review học viên</Link></li>
-              <li><Link to="/courses">Chính sách gia hạn khóa học</Link></li>
-              <li><Link to="/courses">Chính sách đổi trả & hoàn học phí</Link></li>
-              <li><Link to="/announcements">Tin tức & Tuyển dụng</Link></li>
+              <li><Link to="/#about">Về EduCenter IELTS</Link></li>
+              <li><Link to="/#teachers">Đội ngũ giảng viên 8.5+ - 9.0</Link></li>
+              <li><Link to="/#reviews">Bảng vàng học viên đạt 7.5+ - 8.5</Link></li>
+              <li><Link to="/courses">Cam kết đầu ra bằng hợp đồng</Link></li>
+              <li><Link to="/courses">Chính sách học lại miễn phí 100%</Link></li>
+              <li><Link to="/announcements">Tuyển dụng Giảng viên IELTS</Link></li>
             </ul>
           </div>
 
-          {/* Column 2: Fanpage & Cộng đồng */}
+          {/* Column 2: Cộng đồng luyện thi */}
           <div>
-            <div className="dmr-footer-heading">Cộng đồng</div>
+            <div className="dmr-footer-heading">Cộng đồng IELTS</div>
             <ul className="dmr-footer-links">
-              <li><a href="https://www.facebook.com/dungmori" target="_blank" rel="noreferrer">EduCenter Official</a></li>
-              <li><a href="https://www.facebook.com/dungmori" target="_blank" rel="noreferrer">Cộng đồng Luyện thi JLPT N5 - N1</a></li>
-              <li><a href="https://www.facebook.com/dungmori" target="_blank" rel="noreferrer">CLB Kaiwa Tiếng Nhật Giao Tiếp</a></li>
-              <li><a href="https://www.youtube.com/user/moridung" target="_blank" rel="noreferrer">Học tiếng Nhật cùng Thầy Dũng</a></li>
-              <li><a href="https://www.facebook.com/dungmori" target="_blank" rel="noreferrer">Góc học tập Cô Thanh</a></li>
+              <li><a href="https://www.facebook.com" target="_blank" rel="noreferrer">Cộng đồng Tự học IELTS 8.0+</a></li>
+              <li><a href="https://www.facebook.com" target="_blank" rel="noreferrer">CLB Luyện Speaking Cùng Cựu Giám Khảo</a></li>
+              <li><a href="https://www.facebook.com" target="_blank" rel="noreferrer">Góc Chữa Writing Task 1 &amp; 2 Miễn Phí</a></li>
+              <li><a href="https://www.youtube.com" target="_blank" rel="noreferrer">Kênh Bài Giảng IELTS Chuyên Sâu</a></li>
+              <li><a href="https://www.facebook.com" target="_blank" rel="noreferrer">Săn Học Bổng Du Học UK, US, Australia</a></li>
             </ul>
           </div>
 
-          {/* Column 3: JFT & Tokutei */}
+          {/* Column 3: Thi thử & Tài liệu */}
           <div>
-            <div className="dmr-footer-heading">JFT &amp; TOKUTEI</div>
+            <div className="dmr-footer-heading">Thi thử &amp; Tài liệu</div>
             <ul className="dmr-footer-links">
-              <li><Link to="/courses">Thi thử JFT-Basic A2 Miễn phí</Link></li>
-              <li><Link to="/courses">Đề thi Tokutei Ginou có lời giải</Link></li>
-              <li><Link to="/courses">Từ vựng chuyên ngành Kaigo</Link></li>
-              <li><Link to="/courses">Tiếng Nhật ngành Nhà hàng & Khách sạn</Link></li>
-              <li><Link to="/courses">Luyện phỏng vấn Tokutei</Link></li>
+              <li><Link to="/courses">Thi thử IELTS on Computer Chuẩn IDP</Link></li>
+              <li><Link to="/courses">Bộ đề Cambridge IELTS 10 - 19 Có Lời Giải</Link></li>
+              <li><Link to="/courses">Forecast Đề Thi Speaking Quý Mới Nhất</Link></li>
+              <li><Link to="/courses">100 Bài Mẫu Writing Task 2 Band 8.0+</Link></li>
+              <li><Link to="/courses">Tổng hợp 1.200 Từ Vựng Academic Cốt Lõi</Link></li>
             </ul>
           </div>
 
-          {/* Column 4: Social & App di động */}
+          {/* Column 4: Đối tác & Kết nối */}
           <div>
-            <div className="dmr-footer-heading">Kết nối &amp; Ứng dụng</div>
+            <div className="dmr-footer-heading">Đối tác &amp; Ứng dụng</div>
             <p style={{ fontSize: '0.88rem', color: '#CBD5E0', lineHeight: 1.5, marginBottom: '12px' }}>
-              Theo dõi EduCenter trên các nền tảng xã hội và tải app học tiếng Nhật ngay hôm nay!
+              Đối tác đăng ký thi chính thức của <b>IDP Education</b> &amp; <b>British Council</b> tại Việt Nam.
             </p>
             <div className="dmr-social-icons">
-              <a href="https://www.facebook.com/dungmori" target="_blank" rel="noreferrer" className="dmr-social-btn" title="Facebook">
+              <a href="https://www.facebook.com" target="_blank" rel="noreferrer" className="dmr-social-btn" title="Facebook">
                 f
               </a>
-              <a href="https://www.youtube.com/user/moridung" target="_blank" rel="noreferrer" className="dmr-social-btn" title="YouTube">
+              <a href="https://www.youtube.com" target="_blank" rel="noreferrer" className="dmr-social-btn" title="YouTube">
                 ▶
               </a>
-              <a href="https://www.tiktok.com/@dungmoriofficial" target="_blank" rel="noreferrer" className="dmr-social-btn" title="TikTok">
+              <a href="https://www.tiktok.com" target="_blank" rel="noreferrer" className="dmr-social-btn" title="TikTok">
                 ♪
               </a>
-              <a href="https://zalo.me/3424692655094534236" target="_blank" rel="noreferrer" className="dmr-social-btn" title="Zalo">
+              <a href="https://zalo.me" target="_blank" rel="noreferrer" className="dmr-social-btn" title="Zalo">
                 Z
-              </a>
-              <a href="https://lin.ee/iNTtlvH" target="_blank" rel="noreferrer" className="dmr-social-btn" title="LINE">
-                L
               </a>
             </div>
 
             <div className="dmr-app-btns">
-              <a href="https://apps.apple.com/us/app/id1486123836" target="_blank" rel="noreferrer" className="dmr-app-badge">
+              <a href="https://apps.apple.com" target="_blank" rel="noreferrer" className="dmr-app-badge">
                 <span>🍎</span> App Store
               </a>
-              <a href="https://play.google.com/store/apps/details?id=com.dungmori.dungmoriapp" target="_blank" rel="noreferrer" className="dmr-app-badge">
+              <a href="https://play.google.com" target="_blank" rel="noreferrer" className="dmr-app-badge">
                 <span>🤖</span> Google Play
               </a>
             </div>
           </div>
         </div>
 
-        {/* Middle: 4 Cơ sở chi nhánh */}
+        {/* Middle: 4 Cơ sở IELTS Campus */}
         <div className="dmr-footer-locations">
           <div className="dmr-location-item">
-            <div className="dmr-location-name">🏢 Trụ sở chính:</div>
+            <div className="dmr-location-name">🏢 Campus 1 (Hà Đông):</div>
             <div>Số 49 Galaxy 3, Vạn Phúc, Hà Đông, Hà Nội.</div>
             <a href="tel:+84336283595" className="dmr-location-phone">
               📞 (+84) 336 283 595
@@ -92,15 +89,15 @@ const Footer: React.FC = () => {
           </div>
 
           <div className="dmr-location-item">
-            <div className="dmr-location-name">🏫 Cơ sở 2 (Thanh Xuân):</div>
-            <div>Nhà liền kề 03 VNT TOWER, Số 19 Nguyễn Trãi, Thanh Xuân, Hà Nội.</div>
+            <div className="dmr-location-name">🏫 Campus 2 (Thanh Xuân):</div>
+            <div>Tòa nhà VNT TOWER, Số 19 Nguyễn Trãi, Thanh Xuân, Hà Nội.</div>
             <a href="tel:+84969856116" className="dmr-location-phone">
               📞 (+84) 969 856 116
             </a>
           </div>
 
           <div className="dmr-location-item">
-            <div className="dmr-location-name">🏫 Cơ sở 3 (Cầu Giấy):</div>
+            <div className="dmr-location-name">🏫 Campus 3 (Cầu Giấy):</div>
             <div>Số 457 Hoàng Quốc Việt, Cổ Nhuế, Bắc Từ Liêm, Hà Nội.</div>
             <a href="tel:+84833532039" className="dmr-location-phone">
               📞 (+84) 833 532 039
@@ -108,7 +105,7 @@ const Footer: React.FC = () => {
           </div>
 
           <div className="dmr-location-item">
-            <div className="dmr-location-name">🏫 Cơ sở 4 (TP. HCM):</div>
+            <div className="dmr-location-name">🏫 Campus 4 (TP. HCM):</div>
             <div>Số 32 Đường số 2, P10, Q. Gò Vấp, TP. Hồ Chí Minh.</div>
             <a href="tel:+84988938364" className="dmr-location-phone">
               📞 (+84) 988 938 364
@@ -130,17 +127,17 @@ const Footer: React.FC = () => {
             gap: '12px',
           }}
         >
-          <div>⏰ <b>Giờ làm việc:</b> Thứ 2 - Thứ 6: 7h00 - 21h00 | Thứ 7: 8h00 - 15h00</div>
-          <div>✉️ <b>Email CSKH:</b> cskh@educenter.edu.vn</div>
-          <div>🔥 <b>Hotline tư vấn Online 24/7:</b> <span style={{ color: '#A0EC1D', fontWeight: 800 }}>+84.981.060.702</span></div>
+          <div>⏰ <b>Giờ học &amp; Thi thử:</b> Thứ 2 - Thứ 6: 7h30 - 21h30 | Thứ 7 &amp; CN: 8h00 - 18h00</div>
+          <div>✉️ <b>Email Học thuật:</b> academic@educenter.edu.vn</div>
+          <div>🔥 <b>Hotline Test trình độ &amp; Tư vấn Lộ trình:</b> <span style={{ color: '#FCD34D', fontWeight: 800 }}>+84.981.060.702</span></div>
         </div>
 
         {/* Bottom Legal / Copyright */}
         <div className="dmr-footer-bottom">
           <div style={{ maxWidth: '820px', lineHeight: 1.6 }}>
-            <div><b>Copyright © {currentYear} EduCenter – Hệ sinh thái học tiếng Nhật & Quản lý đào tạo</b></div>
+            <div><b>Copyright © {currentYear} EduCenter IELTS Academy – Học viện Luyện thi IELTS Chuẩn Khảo thí Quốc tế</b></div>
             <div style={{ fontSize: '0.78rem', marginTop: '4px' }}>
-              Mã số thuế: 0106799375 | Quyết định thành lập Trung tâm đào tạo tiếng Nhật số 3920 do Sở Giáo dục &amp; Đào tạo Hà Nội cấp ngày 09/09/2019.
+              Quyết định thành lập và cấp phép hoạt động đào tạo khảo thí số 3920 do Sở Giáo dục &amp; Đào tạo cấp. Trung tâm khảo thí liên kết trực tiếp đối tác khảo thí quốc tế.
             </div>
           </div>
           <div
@@ -154,10 +151,10 @@ const Footer: React.FC = () => {
               border: '1px solid rgba(255,255,255,0.2)',
             }}
           >
-            <span style={{ fontSize: '20px' }}>🛡️</span>
+            <span style={{ fontSize: '20px' }}>🎖️</span>
             <div>
-              <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>ĐÃ ĐĂNG KÝ</div>
-              <div style={{ fontWeight: 800, fontSize: '12px', color: '#A0EC1D' }}>BỘ CÔNG THƯƠNG</div>
+              <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>ĐỐI TÁC CHÍNH THỨC</div>
+              <div style={{ fontWeight: 800, fontSize: '12px', color: '#FCD34D' }}>IDP &amp; BRITISH COUNCIL</div>
             </div>
           </div>
         </div>

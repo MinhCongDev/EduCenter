@@ -13,6 +13,8 @@
   --dmr-orange: #EC6E23;
   --dmr-orange-light: #FF6531;
   --dmr-orange-dark: #D85611;
+  --dmr-gold: #F59E0B;
+  --dmr-gold-light: #FEF3C7;
   --dmr-cyan: #1E9AA5;
   --dmr-purple: #4A47A3;
   --dmr-bg: #F0F0F0;
@@ -22,6 +24,16 @@
   --dmr-border: #E5E7EB;
   --font-beanbag: 'Montserrat', sans-serif;
   --font-averta: 'Quicksand', 'Inter', sans-serif;
+}
+
+.dmr-badge-gold {
+  font-size: 11px;
+  background-color: var(--dmr-gold);
+  color: #FFFFFF;
+  padding: 2px 7px;
+  border-radius: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
 }
 
 /* --------------------------------------------------------------------------
