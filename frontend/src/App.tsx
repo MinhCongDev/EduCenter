@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import GuestLayout from './layouts/GuestLayout';
 import DashboardLayout from './layouts/DashboardLayout';
@@ -37,22 +37,12 @@ const PageFallback: React.FC = () => (
 
 // ===========================
 // Auth-aware redirect for "/"
-// When logged in, redirect to the appropriate dashboard.
+// Auth-aware render for "/"
 // ===========================
 const HomeRedirect: React.FC = () => {
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const { isLoading } = useAuth();
 
   if (isLoading) return <PageFallback />;
-
-  if (isAuthenticated && user) {
-    const dashboardMap: Record<string, string> = {
-      STUDENT: '/student/dashboard',
-      TEACHER: '/teacher/dashboard',
-      TRAINING_STAFF: '/staff/dashboard',
-      DIRECTOR: '/director/dashboard',
-    };
-    return <Navigate to={dashboardMap[user.role] || '/student/dashboard'} replace />;
-  }
 
   return (
     <GuestLayout>
