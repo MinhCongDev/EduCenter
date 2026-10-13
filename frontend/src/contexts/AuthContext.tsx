@@ -51,6 +51,7 @@ interface AuthContextValue extends AuthState {
   login: (credentials: LoginCredentials) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => void;
+  updateUser: (user: User) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -114,7 +115,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = useCallback(async (data: RegisterData): Promise<void> => {
     dispatch({ type: 'SET_LOADING', payload: true });
     try {
-      await authService.register(data);
+      const response = await authService.register(data);
+      dispatch({
+        type: 'LOGIN_SUCCESS',
+        payload: {
+          user: response.data.user,
+          token: response.data.token,
+        },
+      });
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }
@@ -125,11 +133,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     dispatch({ type: 'LOGOUT' });
   }, []);
 
+  const updateUser = useCallback((updatedUser: User): void => {
+    dispatch({ type: 'UPDATE_USER', payload: updatedUser });
+  }, []);
+
   const value: AuthContextValue = {
     ...state,
     login,
     register,
     logout,
+    updateUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

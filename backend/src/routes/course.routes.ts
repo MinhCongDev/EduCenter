@@ -1,6 +1,5 @@
 import { Router } from 'express';
-import { authenticate } from '../middlewares/auth.middleware';
-import { authorize } from '../middlewares/authorize.middleware';
+import { authenticate, authorize } from '../middlewares/auth.middleware';
 import {
   getCourses,
   getCourseById,
@@ -9,13 +8,17 @@ import {
   deleteCourse,
 } from '../controllers/course.controller';
 
-export const courseRouter = Router();
+const router = Router();
 
-// Public: list & detail
-courseRouter.get('/', getCourses);
-courseRouter.get('/:id', getCourseById);
+// UC02: View Courses List, UC04: Search Courses, UC05: Filter Courses
+router.get('/', getCourses);
 
-// Staff + Director: create / update / delete
-courseRouter.post('/', authenticate, authorize('TRAINING_STAFF', 'DIRECTOR'), createCourse);
-courseRouter.put('/:id', authenticate, authorize('TRAINING_STAFF', 'DIRECTOR'), updateCourse);
-courseRouter.delete('/:id', authenticate, authorize('TRAINING_STAFF', 'DIRECTOR'), deleteCourse);
+// UC03: View Courses Detail
+router.get('/:id', getCourseById);
+
+// Staff / Director management routes
+router.post('/', authenticate, authorize('DIRECTOR', 'TRAINING_STAFF'), createCourse);
+router.put('/:id', authenticate, authorize('DIRECTOR', 'TRAINING_STAFF'), updateCourse);
+router.delete('/:id', authenticate, authorize('DIRECTOR'), deleteCourse);
+
+export { router as courseRouter };

@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { authService } from '../../services/auth.service';
 import type { UserRole } from '../../types';
+import { ForgotPasswordModal } from '../../components/ForgotPasswordModal';
 
 const DEMO_ACCOUNTS = [
   { role: 'DIRECTOR' as UserRole, label: 'Giám đốc', email: 'director@educenter.edu.vn', icon: '👔' },
@@ -23,6 +24,8 @@ const LoginPage: React.FC = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
+  const [resetSuccessNotice, setResetSuccessNotice] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -185,7 +188,27 @@ const LoginPage: React.FC = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="login-password" className="form-label">Mật khẩu</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <label htmlFor="login-password" className="form-label" style={{ marginBottom: 0 }}>
+                Mật khẩu
+              </label>
+              <button
+                type="button"
+                onClick={() => setIsForgotPasswordOpen(true)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#EC6E23',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  padding: 0,
+                  textDecoration: 'underline',
+                }}
+              >
+                Quên mật khẩu? (UC11)
+              </button>
+            </div>
             <input
               id="login-password"
               type="password"
@@ -197,8 +220,25 @@ const LoginPage: React.FC = () => {
               autoComplete="current-password"
               required
               disabled={isSubmitting}
+              style={{ marginTop: '0.35rem' }}
             />
           </div>
+
+          {resetSuccessNotice && (
+            <div
+              style={{
+                padding: '0.65rem 0.85rem',
+                borderRadius: '8px',
+                backgroundColor: '#ecfdf5',
+                color: '#065f46',
+                fontSize: '0.825rem',
+                marginBottom: '0.75rem',
+                border: '1px solid #10b981',
+              }}
+            >
+              ✅ {resetSuccessNotice}
+            </div>
+          )}
 
           <button
             id="login-submit-btn"
@@ -223,6 +263,16 @@ const LoginPage: React.FC = () => {
           </p>
         </div>
       </div>
+
+      {/* UC11: Forgot Password Modal */}
+      <ForgotPasswordModal
+        isOpen={isForgotPasswordOpen}
+        onClose={() => setIsForgotPasswordOpen(false)}
+        onSuccess={(resetEmail) => {
+          setFormData((prev) => ({ ...prev, email: resetEmail, password: '' }));
+          setResetSuccessNotice('Mật khẩu đã được thay đổi! Vui lòng nhập mật khẩu mới để đăng nhập.');
+        }}
+      />
     </div>
   );
 };

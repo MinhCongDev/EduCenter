@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { centerService } from '../../services/center.service';
+import { announcementService } from '../../services/announcement.service';
+import type { CenterInfo, Announcement } from '../../types';
 
 interface CarouselSlide {
   id: number;
@@ -163,6 +166,9 @@ const HomePage: React.FC = () => {
   const [couponCode, setCouponCode] = useState('');
   const [couponMessage, setCouponMessage] = useState<string | null>(null);
   const [activeTeacher, setActiveTeacher] = useState<number>(1);
+  const [centerInfo, setCenterInfo] = useState<CenterInfo | null>(null);
+  const [dynamicAnnouncements, setDynamicAnnouncements] = useState<Announcement[]>([]);
+  const [centerTab, setCenterTab] = useState<'branches' | 'facilities' | 'mission'>('branches');
 
   // Auto slide interval
   useEffect(() => {
@@ -170,6 +176,27 @@ const HomePage: React.FC = () => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
     }, 5500);
     return () => clearInterval(timer);
+  }, []);
+
+  // UC01 & UC06: Fetch Center Info & Announcements
+  useEffect(() => {
+    const loadCenterAndNews = async () => {
+      try {
+        const [centerRes, newsRes] = await Promise.all([
+          centerService.getCenterInfo(),
+          announcementService.getAnnouncements({ limit: 4 }),
+        ]);
+        if (centerRes.success && centerRes.data) {
+          setCenterInfo(centerRes.data);
+        }
+        if (newsRes.success && newsRes.data) {
+          setDynamicAnnouncements(newsRes.data);
+        }
+      } catch (e) {
+        console.error('Error fetching center info / announcements:', e);
+      }
+    };
+    loadCenterAndNews();
   }, []);
 
   const handleApplyCoupon = (e: React.FormEvent) => {
@@ -723,7 +750,7 @@ const HomePage: React.FC = () => {
             </div>
             <div style={{ textAlign: 'center' }}>
               <img
-                src="https://cdn.dungmori.com/assets/img/new_home/06-2024/newbookbanner.png"
+                src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSUL0LDWoPjyq2tFR61JGFWr-WmaF10GR4oj7KTckPDfMpLWlWSIUwvAdw&s=10"
                 alt="Bộ sách IELTS Breakthrough"
                 style={{ maxHeight: '250px', margin: '0 auto', objectFit: 'contain' }}
               />
@@ -885,44 +912,288 @@ const HomePage: React.FC = () => {
           </div>
         </section>
 
-        {/* SECTION: TIN TỨC & BÍ QUYẾT TỰ HỌC IELTS */}
+        {/* SECTION: THÔNG BÁO TỪ TRUNG TÂM (UC06) */}
         <section className="dmr-section" id="news">
-          <div className="dmr-section-header">
-            <h2 className="dmr-main-title">Tin tức &amp; Chiến thuật luyện thi IELTS</h2>
+          <div className="dmr-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+            <div>
+              <div style={{ color: '#EC6E23', fontWeight: 800, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                BẢN TIN KHẢO THÍ &amp; SỰ KIỆN MỚI NHẤT
+              </div>
+              <h2 className="dmr-main-title" style={{ margin: 0 }}>
+                Thông Báo &amp; Sự Kiện Từ EduCenter (UC06)
+              </h2>
+            </div>
+            <Link
+              to="/announcements"
+              style={{
+                backgroundColor: '#07403F',
+                color: '#FFFFFF',
+                padding: '8px 20px',
+                borderRadius: '50px',
+                fontWeight: 700,
+                textDecoration: 'none',
+                fontSize: '0.875rem',
+              }}
+            >
+              Xem tất cả thông báo →
+            </Link>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-            <div style={{ background: '#FFFFFF', padding: '24px', borderRadius: '20px', boxShadow: '0 4px 16px rgba(0,0,0,0.05)' }}>
-              <div style={{ fontWeight: 800, fontSize: '1.2rem', color: '#07403F', borderBottom: '2px solid #07403F', paddingBottom: '10px', marginBottom: '14px' }}>
-                Chiến thuật 4 Kỹ năng
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
+            {dynamicAnnouncements.length > 0 ? (
+              dynamicAnnouncements.map((item) => (
+                <div
+                  key={item._id}
+                  style={{
+                    background: '#FFFFFF',
+                    padding: '20px',
+                    borderRadius: '16px',
+                    boxShadow: '0 4px 16px rgba(0,0,0,0.05)',
+                    border: item.isPinned ? '2px solid #57D061' : '1px solid #E2E8F0',
+                    display: 'flex',
+                    flexDirection: 'column',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0369A1', backgroundColor: '#E0F2FE', padding: '2px 8px', borderRadius: '4px' }}>
+                      {item.category}
+                    </span>
+                    {item.isPinned && (
+                      <span style={{ fontSize: '0.75rem', color: '#B45309', fontWeight: 700 }}>
+                        📌 Nổi bật
+                      </span>
+                    )}
+                  </div>
+
+                  <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#07403F', margin: '0 0 8px', lineHeight: 1.4 }}>
+                    {item.title}
+                  </h3>
+
+                  <p style={{ fontSize: '0.85rem', color: '#64748B', margin: '0 0 14px', lineHeight: 1.5, flex: 1 }}>
+                    {item.summary || item.content.slice(0, 110) + '...'}
+                  </p>
+
+                  <Link
+                    to="/announcements"
+                    style={{
+                      fontSize: '0.85rem',
+                      fontWeight: 700,
+                      color: '#EC6E23',
+                      textDecoration: 'none',
+                      marginTop: 'auto',
+                    }}
+                  >
+                    Xem chi tiết thông báo →
+                  </Link>
+                </div>
+              ))
+            ) : (
+              <div style={{ background: '#FFFFFF', padding: '24px', borderRadius: '16px', gridColumn: '1 / -1', textAlign: 'center', color: '#64748B' }}>
+                Đang cập nhật thông báo mới...
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <Link to="/announcements" style={{ color: '#1A202C', textDecoration: 'none', display: 'flex', gap: '12px', alignItems: 'baseline' }}>
-                  <span style={{ color: '#57D061', fontWeight: 800, fontSize: '0.85rem' }}>[MỚI]</span>
-                  <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Trọn bộ Forecast đề thi IELTS Speaking Quý mới kèm câu trả lời mẫu Band 8.0</span>
-                </Link>
-                <Link to="/announcements" style={{ color: '#1A202C', textDecoration: 'none', display: 'flex', gap: '12px', alignItems: 'baseline' }}>
-                  <span style={{ color: '#57D061', fontWeight: 800, fontSize: '0.85rem' }}>[HOT]</span>
-                  <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Cấu trúc dàn ý chuẩn cho 5 dạng bài Writing Task 2 giúp nâng band điểm tức thì</span>
-                </Link>
+            )}
+          </div>
+        </section>
+
+        {/* SECTION: THÔNG TIN TRUNG TÂM EDUCENTER (UC01) */}
+        <section className="dmr-section" id="about">
+          <div className="dmr-section-header" style={{ textAlign: 'center' }}>
+            <div style={{ color: '#07403F', fontWeight: 800, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px' }}>
+              GIỚI THIỆU TỔ CHỨC ĐÀO TẠO
+            </div>
+            <h2 className="dmr-main-title" style={{ justifyContent: 'center' }}>
+              Thông Tin Trung Tâm EduCenter (UC01)
+            </h2>
+            <p style={{ color: '#64748B', fontSize: '1.05rem', maxWidth: '750px', margin: '8px auto 0' }}>
+              {centerInfo?.slogan || 'Học viện Luyện thi IELTS 8.0+ Chuẩn Khảo thí Quốc tế'}
+            </p>
+          </div>
+
+          <div
+            style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '24px',
+              padding: '32px',
+              boxShadow: '0 12px 36px rgba(0,0,0,0.06)',
+              marginBottom: '24px',
+            }}
+          >
+            {/* Intro paragraph */}
+            <p style={{ fontSize: '1rem', color: '#334155', lineHeight: 1.8, marginBottom: '24px' }}>
+              {centerInfo?.introduction}
+            </p>
+
+            {/* Quick Contact & Working Hours Bar */}
+            <div
+              style={{
+                backgroundColor: '#F8FAFC',
+                borderRadius: '16px',
+                padding: '18px 24px',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                gap: '16px',
+                marginBottom: '28px',
+                border: '1px solid #E2E8F0',
+              }}
+            >
+              <div>
+                <span style={{ display: 'block', fontSize: '0.8rem', color: '#64748B', fontWeight: 600 }}>Hotline Tư vấn:</span>
+                <strong style={{ fontSize: '1.1rem', color: '#EC6E23' }}>{centerInfo?.hotline || '1900 6868'}</strong>
+              </div>
+              <div>
+                <span style={{ display: 'block', fontSize: '0.8rem', color: '#64748B', fontWeight: 600 }}>Email Liên hệ:</span>
+                <strong style={{ fontSize: '0.95rem', color: '#07403F' }}>{centerInfo?.email || 'contact@educenter.edu.vn'}</strong>
+              </div>
+              <div>
+                <span style={{ display: 'block', fontSize: '0.8rem', color: '#64748B', fontWeight: 600 }}>Giờ mở cửa tự học &amp; tư vấn:</span>
+                <strong style={{ fontSize: '0.95rem', color: '#334155' }}>{centerInfo?.workingHours || '08:00 - 21:30'}</strong>
+              </div>
+              <div>
+                <span style={{ display: 'block', fontSize: '0.8rem', color: '#64748B', fontWeight: 600 }}>Trụ sở chính:</span>
+                <strong style={{ fontSize: '0.9rem', color: '#334155' }}>{centerInfo?.address || '128 Cầu Giấy, Hà Nội'}</strong>
               </div>
             </div>
 
-            <div style={{ background: '#FFFFFF', padding: '24px', borderRadius: '20px', boxShadow: '0 4px 16px rgba(0,0,0,0.05)' }}>
-              <div style={{ fontWeight: 800, fontSize: '1.2rem', color: '#07403F', borderBottom: '2px solid #07403F', paddingBottom: '10px', marginBottom: '14px' }}>
-                Thông tin Khảo thí Quốc tế
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <Link to="/announcements" style={{ color: '#1A202C', textDecoration: 'none', display: 'flex', gap: '12px', alignItems: 'baseline' }}>
-                  <span style={{ color: '#EC6E23', fontWeight: 800, fontSize: '0.85rem' }}>[IDP/BC]</span>
-                  <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Cập nhật lệ phí thi IELTS và hướng dẫn thủ tục đăng ký thi giấy &amp; thi máy tính</span>
-                </Link>
-                <Link to="/announcements" style={{ color: '#1A202C', textDecoration: 'none', display: 'flex', gap: '12px', alignItems: 'baseline' }}>
-                  <span style={{ color: '#EC6E23', fontWeight: 800, fontSize: '0.85rem' }}>[ONE SKILL]</span>
-                  <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Quy chế thi lại một kỹ năng IELTS One Skill Retake (OSR) chính thức tại Việt Nam</span>
-                </Link>
-              </div>
+            {/* Sub-tabs: Chi nhánh, Cơ sở vật chất, Sứ mệnh */}
+            <div style={{ display: 'flex', gap: '8px', borderBottom: '2px solid #E2E8F0', paddingBottom: '12px', marginBottom: '24px' }}>
+              <button
+                type="button"
+                onClick={() => setCenterTab('branches')}
+                style={{
+                  padding: '8px 18px',
+                  borderRadius: '10px',
+                  border: 'none',
+                  backgroundColor: centerTab === 'branches' ? '#07403F' : '#F1F5F9',
+                  color: centerTab === 'branches' ? '#FFFFFF' : '#475569',
+                  fontWeight: 700,
+                  fontSize: '0.9rem',
+                  cursor: 'pointer',
+                }}
+              >
+                🏢 Hệ thống {centerInfo?.branches?.length || 5} Cơ sở đào tạo
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setCenterTab('facilities')}
+                style={{
+                  padding: '8px 18px',
+                  borderRadius: '10px',
+                  border: 'none',
+                  backgroundColor: centerTab === 'facilities' ? '#07403F' : '#F1F5F9',
+                  color: centerTab === 'facilities' ? '#FFFFFF' : '#475569',
+                  fontWeight: 700,
+                  fontSize: '0.9rem',
+                  cursor: 'pointer',
+                }}
+              >
+                🏫 Cơ sở vật chất phòng thi chuẩn quốc tế
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setCenterTab('mission')}
+                style={{
+                  padding: '8px 18px',
+                  borderRadius: '10px',
+                  border: 'none',
+                  backgroundColor: centerTab === 'mission' ? '#07403F' : '#F1F5F9',
+                  color: centerTab === 'mission' ? '#FFFFFF' : '#475569',
+                  fontWeight: 700,
+                  fontSize: '0.9rem',
+                  cursor: 'pointer',
+                }}
+              >
+                🎯 Tầm nhìn &amp; Cam kết đầu ra
+              </button>
             </div>
+
+            {/* Tab 1: Branches */}
+            {centerTab === 'branches' && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+                {centerInfo?.branches?.map((b, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      padding: '16px',
+                      backgroundColor: b.isHeadquarters ? '#F0FDF4' : '#F8FAFC',
+                      border: b.isHeadquarters ? '2px solid #57D061' : '1px solid #E2E8F0',
+                      borderRadius: '14px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                      <strong style={{ color: '#07403F', fontSize: '0.95rem' }}>{b.branchName}</strong>
+                      {b.isHeadquarters && (
+                        <span style={{ fontSize: '0.7rem', backgroundColor: '#57D061', color: '#07403F', fontWeight: 800, padding: '2px 6px', borderRadius: '4px' }}>
+                          TRỤ SỞ CHÍNH
+                        </span>
+                      )}
+                    </div>
+                    <p style={{ margin: '0 0 6px', fontSize: '0.85rem', color: '#475569' }}>
+                      📍 {b.address}
+                    </p>
+                    <span style={{ fontSize: '0.85rem', color: '#EC6E23', fontWeight: 700 }}>
+                      📞 {b.phone}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Tab 2: Facilities */}
+            {centerTab === 'facilities' && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
+                {centerInfo?.facilities?.map((f, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      backgroundColor: '#F8FAFC',
+                      borderRadius: '16px',
+                      overflow: 'hidden',
+                      border: '1px solid #E2E8F0',
+                    }}
+                  >
+                    {f.imageUrl && (
+                      <img
+                        src={f.imageUrl}
+                        alt={f.name}
+                        style={{ width: '100%', height: '160px', objectFit: 'cover' }}
+                      />
+                    )}
+                    <div style={{ padding: '16px' }}>
+                      <h4 style={{ margin: '0 0 6px', color: '#07403F', fontSize: '1rem', fontWeight: 700 }}>
+                        {f.name}
+                      </h4>
+                      <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748B', lineHeight: 1.5 }}>
+                        {f.description}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Tab 3: Mission & Vision */}
+            {centerTab === 'mission' && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                <div style={{ backgroundColor: '#F0FDF4', padding: '24px', borderRadius: '16px', border: '1px solid #BBF7D0' }}>
+                  <h4 style={{ color: '#166534', fontSize: '1.1rem', margin: '0 0 8px', fontWeight: 800 }}>
+                    🌟 Tầm nhìn chiến lược
+                  </h4>
+                  <p style={{ color: '#374151', fontSize: '0.95rem', lineHeight: 1.6, margin: 0 }}>
+                    {centerInfo?.vision}
+                  </p>
+                </div>
+                <div style={{ backgroundColor: '#FFF7ED', padding: '24px', borderRadius: '16px', border: '1px solid #FED7AA' }}>
+                  <h4 style={{ color: '#9A3412', fontSize: '1.1rem', margin: '0 0 8px', fontWeight: 800 }}>
+                    🎯 Sứ mệnh giáo dục
+                  </h4>
+                  <p style={{ color: '#374151', fontSize: '0.95rem', lineHeight: 1.6, margin: 0 }}>
+                    {centerInfo?.mission}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </section>
 

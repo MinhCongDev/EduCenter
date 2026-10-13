@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import type { UserRole } from '../types';
+import { ProfileModal } from './ProfileModal';
+import { ChangePasswordModal } from './ChangePasswordModal';
 
 // Role-based dashboard path mapping
 const getDashboardPath = (role: UserRole): string => {
@@ -19,6 +21,8 @@ const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [targetScore, setTargetScore] = useState(7.5);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -222,15 +226,24 @@ const Navbar: React.FC = () => {
           {/* Auth Section */}
           {isAuthenticated && user ? (
             <div className="dmr-user-pill">
-              <div className="dmr-user-avatar">
+              <div
+                className="dmr-user-avatar"
+                onClick={() => setIsProfileOpen(true)}
+                title="Nhấp để xem và cập nhật hồ sơ cá nhân"
+                style={{ cursor: 'pointer' }}
+              >
                 {user.fullName.charAt(0).toUpperCase()}
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <div
+                style={{ display: 'flex', flexDirection: 'column', cursor: 'pointer' }}
+                onClick={() => setIsProfileOpen(true)}
+                title="Nhấp để xem và cập nhật hồ sơ cá nhân"
+              >
                 <span style={{ fontSize: '0.85rem', fontWeight: 700, lineHeight: 1.1 }}>
                   {user.fullName}
                 </span>
                 <span style={{ fontSize: '0.7rem', color: '#A0EC1D' }}>
-                  {user.role}
+                  {user.role} • Hồ sơ
                 </span>
               </div>
               <Link
@@ -381,6 +394,19 @@ const Navbar: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* UC07: Update Personal Information Modal */}
+      <ProfileModal
+        isOpen={isProfileOpen}
+        onClose={() => setIsProfileOpen(false)}
+        onOpenChangePassword={() => setIsChangePasswordOpen(true)}
+      />
+
+      {/* UC10: Change Password Modal */}
+      <ChangePasswordModal
+        isOpen={isChangePasswordOpen}
+        onClose={() => setIsChangePasswordOpen(false)}
+      />
     </nav>
   );
 };

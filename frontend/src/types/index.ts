@@ -14,8 +14,11 @@ export interface User {
   email: string;
   fullName: string;
   phone?: string;
+  address?: string;
+  dob?: string;
   role: UserRole;
   status: UserStatus;
+  avatarUrl?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -38,6 +41,32 @@ export interface RegisterData {
   password: string;
   fullName: string;
   phone?: string;
+  address?: string;
+  dob?: string;
+}
+
+export interface UpdateProfileData {
+  fullName?: string;
+  phone?: string;
+  address?: string;
+  dob?: string;
+  avatarUrl?: string;
+}
+
+export interface ChangePasswordData {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword?: string;
+}
+
+export interface ForgotPasswordData {
+  email: string;
+}
+
+export interface ResetPasswordData {
+  email: string;
+  resetCode: string;
+  newPassword: string;
 }
 
 export interface AuthResponse {
@@ -49,7 +78,145 @@ export interface AuthResponse {
   };
 }
 
-// API response wrapper
+// Center Information types (UC01)
+export interface Branch {
+  _id?: string;
+  branchName: string;
+  address: string;
+  phone: string;
+  isHeadquarters: boolean;
+}
+
+export interface Facility {
+  _id?: string;
+  name: string;
+  description: string;
+  imageUrl?: string;
+}
+
+export interface CenterInfo {
+  _id: string;
+  name: string;
+  slogan: string;
+  introduction: string;
+  vision?: string;
+  mission?: string;
+  hotline: string;
+  email: string;
+  workingHours: string;
+  address: string;
+  branches: Branch[];
+  facilities: Facility[];
+  achievements: { label: string; value: string; icon?: string }[];
+  socialLinks: {
+    facebook?: string;
+    youtube?: string;
+    tiktok?: string;
+    website?: string;
+  };
+}
+
+// Course types (UC02, UC03, UC04, UC05)
+export type CourseFormat = 'ONLINE' | 'OFFLINE' | 'BLENDED';
+
+export interface ClassScheduleItem {
+  _id?: string;
+  dayOfWeek: string;
+  startTime: string;
+  endTime: string;
+  classroom: string;
+  topic?: string;
+}
+
+export interface ClassItem {
+  _id: string;
+  classCode: string;
+  name?: string;
+  room: string;
+  scheduleDays: string[];
+  timeSlot: string;
+  startDate: string;
+  endDate: string;
+  capacity: number;
+  currentEnrollment: number;
+  status: 'OPEN' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  teacher?: {
+    _id: string;
+    fullName: string;
+    email: string;
+    avatarUrl?: string;
+  };
+}
+
+export interface Course {
+  _id: string;
+  code: string;
+  title: string;
+  name?: string;
+  description: string;
+  category: string;
+  entryLevel: string;
+  targetLevel?: string;
+  durationWeeks: number;
+  sessions: number;
+  tuitionFee: number;
+  price?: number;
+  format: CourseFormat;
+  status: 'ACTIVE' | 'INACTIVE' | 'DRAFT';
+  learningObjectives: string[];
+  syllabus: string[];
+  bannerUrl?: string;
+  featured?: boolean;
+  classes?: ClassItem[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CourseQueryParams {
+  search?: string;
+  level?: string;
+  category?: string;
+  format?: string;
+  status?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  sortBy?: 'newest' | 'price_asc' | 'price_desc' | 'duration' | 'title';
+  page?: number;
+  limit?: number;
+}
+
+// Announcement types (UC06)
+export interface Announcement {
+  _id: string;
+  title: string;
+  content: string;
+  summary?: string;
+  author: {
+    _id: string;
+    fullName: string;
+    role: UserRole;
+    avatarUrl?: string;
+  };
+  category: string;
+  targetAudience: 'ALL' | 'STUDENTS' | 'TEACHERS' | 'STAFF';
+  isPinned: boolean;
+  status: 'PUBLISHED' | 'DRAFT' | 'ARCHIVED';
+  publicationDate: string;
+  imageUrl?: string;
+  views: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AnnouncementQueryParams {
+  search?: string;
+  category?: string;
+  audience?: string;
+  page?: number;
+  limit?: number;
+}
+
+// API response wrappers
 export interface ApiResponse<T = unknown> {
   success: boolean;
   message: string;
@@ -57,7 +224,6 @@ export interface ApiResponse<T = unknown> {
   errors?: unknown;
 }
 
-// Pagination
 export interface PaginatedResponse<T> {
   success: boolean;
   message: string;
@@ -79,21 +245,7 @@ export interface NavItem {
 }
 
 // ── Course Types ─────────────────────────────
-export type CourseStatus = 'ACTIVE' | 'INACTIVE';
-
-export interface Course {
-  _id: string;
-  code: string;
-  title: string;
-  description: string;
-  category: string;
-  durationWeeks: number;
-  tuitionFee: number;
-  status: CourseStatus;
-  syllabus: string[];
-  createdAt: string;
-  updatedAt: string;
-}
+export type CourseStatus = 'ACTIVE' | 'INACTIVE' | 'DRAFT';
 
 export interface CourseFormData {
   code: string;

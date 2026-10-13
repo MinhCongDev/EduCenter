@@ -191,7 +191,7 @@ const StaffDashboard: React.FC = () => {
           <div className="dash-banner-badge">
             📋 Phòng Giáo Vụ • Quản Lý Đào Tạo
           </div>
-          <h1>Xin chào cán bộ, {user?.fullName || 'Giáo vụ'}!</h1>
+          <h1>{greeting}, {user?.fullName || 'Cán bộ Giáo vụ'}!</h1>
           <p>Quản lý tuyển sinh, phân bổ lớp học, giảng viên và tiếp nhận học viên trung tâm.</p>
         </div>
         <div className="dash-banner-right">

@@ -6,12 +6,16 @@ export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
 
 export interface IUser extends Document {
   email: string;
-  password: string;
+  password?: string;
   fullName: string;
   phone?: string;
   role: UserRole;
   status: UserStatus;
   avatarUrl?: string;
+  address?: string;
+  dob?: Date;
+  resetPasswordToken?: string;
+  resetPasswordExpires?: Date;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -56,6 +60,21 @@ const userSchema = new Schema<IUser>(
       type: String,
       default: '',
     },
+    address: {
+      type: String,
+      default: '',
+    },
+    dob: {
+      type: Date,
+    },
+    resetPasswordToken: {
+      type: String,
+      select: false,
+    },
+    resetPasswordExpires: {
+      type: Date,
+      select: false,
+    },
   },
   {
     timestamps: true,
@@ -64,7 +83,7 @@ const userSchema = new Schema<IUser>(
 
 // Hash password before saving
 userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
+  if (!this.isModified('password') || !this.password) return next();
   try {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
@@ -76,6 +95,7 @@ userSchema.pre('save', async function (next) {
 
 // Method to verify password
 userSchema.methods.comparePassword = async function (candidatePassword: string): Promise<boolean> {
+  if (!this.password) return false;
   return bcrypt.compare(candidatePassword, this.password);
 };
 
