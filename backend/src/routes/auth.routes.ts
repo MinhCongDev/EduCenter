@@ -1,11 +1,34 @@
 import { Router } from 'express';
-import { login, register, getMe } from '../controllers/auth.controller';
+import {
+  login,
+  register,
+  getMe,
+  updateProfile,
+  changePassword,
+  forgotPassword,
+  resetPassword,
+} from '../controllers/auth.controller';
 import { authenticate } from '../middlewares/auth.middleware';
 
 const router = Router();
 
+// UC08: Register Account
 router.post('/register', register);
+
+// UC09: Log In
 router.post('/login', login);
+
+// Get authenticated user
 router.get('/me', authenticate, getMe);
+
+// UC07: Update Personal Information
+router.put('/profile', authenticate, updateProfile);
+
+// UC10: Change Password
+router.post('/change-password', authenticate, changePassword);
+
+// UC11: Forgot Password
+router.post('/forgot-password', forgotPassword);
+router.post('/reset-password', resetPassword);
 
 export { router as authRouter };
