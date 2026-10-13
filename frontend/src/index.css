@@ -2,6 +2,8 @@
    EduCenter – Global Design System
    ============================================= */
 
+@import './styles/dashboard.css';
+
 /* ── Google Fonts are loaded via index.html ── */
 
 /* ── CSS Custom Properties (Design Tokens) ── */

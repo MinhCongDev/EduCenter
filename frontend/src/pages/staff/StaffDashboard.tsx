@@ -1,5 +1,8 @@
+
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+
+
 import { useAuth } from '../../contexts/AuthContext';
 import { courseService } from '../../services/course.service';
 
@@ -130,31 +133,348 @@ const StaffDashboard: React.FC = () => {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Chào buổi sáng' : hour < 18 ? 'Chào buổi chiều' : 'Chào buổi tối';
 
+  const [enrollments, setEnrollments] = useState([
+    {
+      id: 'ENR-2041',
+      studentName: 'Phạm Hải Đăng',
+      email: 'student.dang@gmail.com',
+      phone: '0933555666',
+      courseCode: 'WEB-FULLSTACK',
+      classCode: 'WEB-K24-A',
+      tuition: 'PAID',
+      status: 'PENDING',
+      appliedAt: '10 phút trước',
+    },
+    {
+      id: 'ENR-2042',
+      studentName: 'Vũ Ngọc Mai',
+      email: 'student.mai@gmail.com',
+      phone: '0934666777',
+      courseCode: 'WEB-FULLSTACK',
+      classCode: 'WEB-K24-A',
+      tuition: 'PAID',
+      status: 'PENDING',
+      appliedAt: '35 phút trước',
+    },
+    {
+      id: 'ENR-2043',
+      studentName: 'Đỗ Tuấn Kiệt',
+      email: 'student.kiet@gmail.com',
+      phone: '0935777888',
+      courseCode: 'PYTHON-AI',
+      classCode: 'AI-K12-B',
+      tuition: 'UNPAID',
+      status: 'PENDING',
+      appliedAt: 'Hôm qua, 18:20',
+    },
+  ]);
+
+  const handleApproveEnrollment = (id: string) => {
+    setEnrollments((prev) =>
+      prev.map((e) => (e.id === id ? { ...e, status: 'APPROVED' } : e))
+    );
+  };
+
+  const handleRejectEnrollment = (id: string) => {
+    setEnrollments((prev) =>
+      prev.map((e) => (e.id === id ? { ...e, status: 'REJECTED' } : e))
+    );
+  };
+
   return (
-    <div className="staff-dashboard">
+
+    <div className="dash-container">
       {/* ── Welcome Banner ── */}
-      <div className="staff-welcome-banner">
-        <div className="staff-welcome-content">
-          <div className="staff-welcome-text">
-            <span className="staff-greeting">{greeting},</span>
-            <h1 className="staff-name">{user?.fullName ?? 'Staff'} 👋</h1>
-            <p className="staff-role-badge">
-              <span className="role-dot" />
-              Training Staff
-            </p>
+      <div className="dash-banner" style={{ background: 'linear-gradient(135deg, #064e3b 0%, #065f46 50%, #047857 100%)' }}>
+        <div className="dash-banner-content">
+          <div className="dash-banner-badge">
+            📋 Phòng Giáo Vụ • Quản Lý Đào Tạo
           </div>
-          <div className="staff-welcome-art" aria-hidden="true">
-            <span className="welcome-emoji">🎓</span>
+          <h1>Xin chào cán bộ, {user?.fullName || 'Giáo vụ'}!</h1>
+          <p>Quản lý tuyển sinh, phân bổ lớp học, giảng viên và tiếp nhận học viên trung tâm.</p>
+        </div>
+        <div className="dash-banner-right">
+          <div className="dash-date-pill">
+            <div>⚡ Trạng thái: Sẵn sàng</div>
+            <div className="sub">Kỳ tuyển sinh Đợt 4 • Năm 2026</div>
           </div>
         </div>
-        <p className="staff-date">
-          {new Date().toLocaleDateString('vi-VN', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          })}
-        </p>
+      </div>
+
+      {/* ── Quick Action Bar ── */}
+      <div className="dash-actions-row">
+        <button
+          type="button"
+          className="dash-quick-btn primary"
+          onClick={() => alert('Mở form tạo lớp học mới')}
+        >
+          <span>➕</span>
+          <span>Mở Lớp Học Mới</span>
+        </button>
+        <button
+          type="button"
+          className="dash-quick-btn"
+          onClick={() => alert('Mở form ghi danh học viên thủ công')}
+        >
+          <span>👤</span>
+          <span>Thêm Học Viên Thủ Công</span>
+        </button>
+        <button
+          type="button"
+          className="dash-quick-btn"
+          onClick={() => alert('Mở form tạo chương trình khóa học')}
+        >
+          <span>📚</span>
+          <span>Thêm Khóa Học Mới</span>
+        </button>
+        <button
+          type="button"
+          className="dash-quick-btn"
+          onClick={() => alert('Đang xuất danh sách tổng hợp điểm danh & sĩ số')}
+        >
+          <span>📑</span>
+          <span>Xuất Báo Cáo Sĩ Số</span>
+        </button>
+      </div>
+
+      {/* ── Key Metrics ── */}
+      <div className="dash-metrics-grid">
+        <div className="dash-metric-card">
+          <div className="dash-metric-info">
+            <span className="dash-metric-label">Hồ sơ chờ duyệt</span>
+            <span className="dash-metric-val">{enrollments.filter((e) => e.status === 'PENDING').length}</span>
+            <span className="dash-metric-trend up">Cần kiểm tra học phí</span>
+          </div>
+          <div className="dash-metric-icon icon-amber">📋</div>
+        </div>
+
+        <div className="dash-metric-card">
+          <div className="dash-metric-info">
+            <span className="dash-metric-label">Lớp đang mở tuyển</span>
+            <span className="dash-metric-val">4 lớp</span>
+            <span className="dash-metric-trend up">Sắp đủ sĩ số</span>
+          </div>
+          <div className="dash-metric-icon icon-blue">🏫</div>
+        </div>
+
+        <div className="dash-metric-card">
+          <div className="dash-metric-info">
+            <span className="dash-metric-label">Tổng học viên quản lý</span>
+            <span className="dash-metric-val">186</span>
+            <span className="dash-metric-trend up">14 học viên chờ xếp lớp</span>
+          </div>
+          <div className="dash-metric-icon icon-emerald">👩‍🎓</div>
+        </div>
+
+        <div className="dash-metric-card">
+          <div className="dash-metric-info">
+            <span className="dash-metric-label">Học phí cần đối soát</span>
+            <span className="dash-metric-val">24.500.000 đ</span>
+            <span className="dash-metric-trend neutral">3 giao dịch chờ xác nhận</span>
+          </div>
+          <div className="dash-metric-icon icon-purple">💳</div>
+        </div>
+      </div>
+
+      {/* ── Main Two Column Grid ── */}
+      <div className="dash-two-col">
+        {/* Left Column */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          {/* Enrollments Approval Table */}
+          <div className="dash-card">
+            <div className="dash-card-header">
+              <h2 className="dash-card-title">
+                <span>📝</span> Đơn Ghi Danh Học Viên Chờ Duyệt
+              </h2>
+              <span className="badge-pill badge-blue">
+                {enrollments.filter((e) => e.status === 'PENDING').length} hồ sơ mới
+              </span>
+            </div>
+
+            <div className="dash-table-wrapper">
+              <table className="dash-table">
+                <thead>
+                  <tr>
+                    <th>Học viên</th>
+                    <th>Lớp đăng ký</th>
+                    <th>Học phí</th>
+                    <th>Trạng thái</th>
+                    <th style={{ textAlign: 'right' }}>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {enrollments.map((enr) => (
+                    <tr key={enr.id}>
+                      <td>
+                        <strong>{enr.studentName}</strong>
+                        <div className="dash-subcard-meta">
+                          {enr.email} • {enr.phone}
+                        </div>
+                      </td>
+                      <td>
+                        <strong style={{ color: '#6366f1' }}>{enr.classCode}</strong>
+                        <div className="dash-subcard-meta">{enr.courseCode}</div>
+                      </td>
+                      <td>
+                        {enr.tuition === 'PAID' ? (
+                          <span className="badge-pill badge-green">Đã nộp học phí</span>
+                        ) : (
+                          <span className="badge-pill badge-red">Chưa nộp tiền</span>
+                        )}
+                      </td>
+                      <td>
+                        {enr.status === 'PENDING' && <span className="badge-pill badge-amber">Chờ duyệt</span>}
+                        {enr.status === 'APPROVED' && <span className="badge-pill badge-green">Đã vào lớp</span>}
+                        {enr.status === 'REJECTED' && <span className="badge-pill badge-red">Từ chối</span>}
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        {enr.status === 'PENDING' ? (
+                          <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end' }}>
+                            <button
+                              type="button"
+                              onClick={() => handleApproveEnrollment(enr.id)}
+                              className="dash-quick-btn primary"
+                              style={{ padding: '0.3rem 0.7rem', fontSize: '0.75rem' }}
+                            >
+                              Xếp lớp
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleRejectEnrollment(enr.id)}
+                              className="dash-quick-btn"
+                              style={{ padding: '0.3rem 0.7rem', fontSize: '0.75rem', color: '#ef4444' }}
+                            >
+                              Hủy
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="dash-subcard-meta">Xong</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Active Classes Management */}
+          <div className="dash-card">
+            <div className="dash-card-header">
+              <h2 className="dash-card-title">
+                <span>🏫</span> Tình Trạng Tuyển Sinh Các Lớp Sắp Mở
+              </h2>
+              <span className="dash-subcard-meta">Hạn chót: 28/10/2026</span>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div className="dash-subcard">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <h3 className="dash-subcard-title">Lớp WEB-K24-A (MERN Full-Stack)</h3>
+                    <div className="dash-subcard-meta">GV: ThS. Nguyễn Văn An • Lab 302 • Thứ 2-4-6 (18:30)</div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <span style={{ fontWeight: 800, color: '#10b981' }}>22 / 25 Học viên</span>
+                    <div className="dash-subcard-meta">Đủ điều kiện mở lớp</div>
+                  </div>
+                </div>
+                <div className="dash-progress">
+                  <div className="dash-progress-fill" style={{ width: '88%', background: '#10b981' }} />
+                </div>
+              </div>
+
+              <div className="dash-subcard">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <h3 className="dash-subcard-title">Lớp AI-K12-B (Python & AI)</h3>
+                    <div className="dash-subcard-meta">GV: TS. Lê Hoàng Bách • Lab 405 • Thứ 3-5-7 (19:00)</div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <span style={{ fontWeight: 800, color: '#3b82f6' }}>16 / 20 Học viên</span>
+                    <div className="dash-subcard-meta">Còn 4 chỗ trống</div>
+                  </div>
+                </div>
+                <div className="dash-progress">
+                  <div className="dash-progress-fill" style={{ width: '80%', background: '#3b82f6' }} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          {/* Room Allocation Status */}
+          <div className="dash-card">
+            <div className="dash-card-header">
+              <h2 className="dash-card-title">
+                <span>🏢</span> Lịch Phòng Máy Hôm Nay
+              </h2>
+            </div>
+            <div className="dash-item-list">
+              <div className="dash-item">
+                <div className="dash-item-main">
+                  <div className="dash-item-icon">🖥️</div>
+                  <div>
+                    <div className="dash-item-title">Phòng Lab 302</div>
+                    <div className="dash-item-sub">18:30 - 21:00 • Lớp WEB-K24-A</div>
+                  </div>
+                </div>
+                <span className="badge-pill badge-green">Đang dùng</span>
+              </div>
+
+              <div className="dash-item">
+                <div className="dash-item-main">
+                  <div className="dash-item-icon">🖥️</div>
+                  <div>
+                    <div className="dash-item-title">Phòng Lab 405</div>
+                    <div className="dash-item-sub">19:00 - 21:30 • Lớp AI-K12-B</div>
+                  </div>
+                </div>
+                <span className="badge-pill badge-blue">Sắp bắt đầu</span>
+              </div>
+
+              <div className="dash-item">
+                <div className="dash-item-main">
+                  <div className="dash-item-icon">🏫</div>
+                  <div>
+                    <div className="dash-item-title">Phòng Lý Thuyết 201</div>
+                    <div className="dash-item-sub">Trống cả ngày</div>
+                  </div>
+                </div>
+                <span className="badge-pill badge-amber">Phòng trống</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Academic Reminders */}
+          <div className="dash-card">
+            <div className="dash-card-header">
+              <h2 className="dash-card-title">
+                <span>📌</span> Việc Giáo Vụ Cần Lưu Ý
+              </h2>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <div className="dash-subcard" style={{ borderLeft: '4px solid #10b981' }}>
+                <p className="dash-subcard-body" style={{ margin: 0 }}>
+                  ✉️ Gửi email nhắc lịch khai giảng cho học viên lớp Web Fullstack trước ngày 29/10.
+                </p>
+              </div>
+              <div className="dash-subcard" style={{ borderLeft: '4px solid #3b82f6' }}>
+                <p className="dash-subcard-body" style={{ margin: 0 }}>
+                  🛠️ Kiểm tra hệ thống mạng và cài đặt IDE Node.js tại phòng Lab 302.
+                </p>
+              </div>
+              <div className="dash-subcard" style={{ borderLeft: '4px solid #f59e0b' }}>
+                <p className="dash-subcard-body" style={{ margin: 0 }}>
+                  💰 Chốt danh sách thu học phí đợt đầu để chuyển sang phòng Kế toán.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
 
       {/* ── Stats Grid ── */}
