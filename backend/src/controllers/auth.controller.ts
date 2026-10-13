@@ -126,7 +126,8 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
+    const cleanEmail = email ? email.toString().trim().toLowerCase() : '';
+    const user = await User.findOne({ email: cleanEmail }).select('+password');
     if (!user) {
       res.status(401).json({
         success: false,
@@ -368,7 +369,8 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const cleanEmail = email ? email.toString().trim().toLowerCase() : '';
+    const user = await User.findOne({ email: cleanEmail });
     if (!user) {
       // Don't disclose if user doesn't exist for security, but return generic success or standard notice
       res.status(404).json({
@@ -429,10 +431,11 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
+    const cleanEmail = email.toString().trim().toLowerCase();
     const hashedCode = crypto.createHash('sha256').update(resetCode.trim()).digest('hex');
 
     const user = await User.findOne({
-      email: email.toLowerCase(),
+      email: cleanEmail,
       resetPasswordToken: hashedCode,
       resetPasswordExpires: { $gt: new Date() },
     }).select('+resetPasswordToken +resetPasswordExpires');
