@@ -93,10 +93,13 @@ const LoginPage: React.FC = () => {
       } else {
         navigate('/', { replace: true });
       }
-    } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        'Đăng nhập không thành công. Vui lòng kiểm tra lại email và mật khẩu.';
+    } catch (err: any) {
+      let msg = 'Đăng nhập không thành công. Vui lòng kiểm tra lại email và mật khẩu.';
+      if (err.response?.data?.message) {
+        msg = err.response.data.message;
+      } else if (err.code === 'ERR_NETWORK' || !err.response) {
+        msg = '⚠️ Không thể kết nối tới máy chủ Backend (Port 5000)! Vui lòng kiểm tra Backend.';
+      }
       setError(msg);
     } finally {
       setIsSubmitting(false);
