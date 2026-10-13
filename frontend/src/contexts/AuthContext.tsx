@@ -97,20 +97,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = useCallback(async (credentials: LoginCredentials): Promise<void> => {
     dispatch({ type: 'SET_LOADING', payload: true });
-    const response = await authService.login(credentials);
-    dispatch({
-      type: 'LOGIN_SUCCESS',
-      payload: {
-        user: response.data.user,
-        token: response.data.token,
-      },
-    });
+    try {
+      const response = await authService.login(credentials);
+      dispatch({
+        type: 'LOGIN_SUCCESS',
+        payload: {
+          user: response.data.user,
+          token: response.data.token,
+        },
+      });
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }
   }, []);
 
   const register = useCallback(async (data: RegisterData): Promise<void> => {
     dispatch({ type: 'SET_LOADING', payload: true });
-    await authService.register(data);
-    dispatch({ type: 'SET_LOADING', payload: false });
+    try {
+      await authService.register(data);
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }
   }, []);
 
   const logout = useCallback((): void => {

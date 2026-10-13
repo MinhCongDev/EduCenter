@@ -20,6 +20,7 @@ const RegisterPage = lazy(() => import('./pages/public/RegisterPage'));
 const StudentDashboard = lazy(() => import('./pages/student/StudentDashboard'));
 const TeacherDashboard = lazy(() => import('./pages/teacher/TeacherDashboard'));
 const StaffDashboard = lazy(() => import('./pages/staff/StaffDashboard'));
+const CoursesManagementPage = lazy(() => import('./pages/staff/CoursesManagementPage'));
 const DirectorDashboard = lazy(() => import('./pages/director/DirectorDashboard'));
 
 // Error pages
@@ -136,6 +137,16 @@ const AppRouter: React.FC = () => {
             <ProtectedRoute allowedRoles={['TRAINING_STAFF']}>
               <DashboardLayout>
                 <StaffDashboard />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/staff/courses"
+          element={
+            <ProtectedRoute allowedRoles={['TRAINING_STAFF']}>
+              <DashboardLayout>
+                <CoursesManagementPage />
               </DashboardLayout>
             </ProtectedRoute>
           }

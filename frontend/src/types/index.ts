@@ -77,3 +77,31 @@ export interface NavItem {
   icon?: string;
   children?: NavItem[];
 }
+
+// ── Course Types ─────────────────────────────
+export type CourseStatus = 'ACTIVE' | 'INACTIVE';
+
+export interface Course {
+  _id: string;
+  code: string;
+  title: string;
+  description: string;
+  category: string;
+  durationWeeks: number;
+  tuitionFee: number;
+  status: CourseStatus;
+  syllabus: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CourseFormData {
+  code: string;
+  title: string;
+  description: string;
+  category: string;
+  durationWeeks: number;
+  tuitionFee: number;
+  status: CourseStatus;
+  syllabus: string[];
+}
