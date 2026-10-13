@@ -47,12 +47,13 @@ const RegisterPage: React.FC = () => {
     try {
       await register({
         fullName: formData.fullName.trim(),
-        email: formData.email,
-        phone: formData.phone || undefined,
+        email: formData.email.trim().toLowerCase(),
+        phone: formData.phone?.trim() || undefined,
         password: formData.password,
       });
-      navigate('/login', {
-        state: { message: 'Đăng ký tài khoản học viên thành công! Vui lòng đăng nhập.' },
+      navigate('/student/dashboard', {
+        replace: true,
+        state: { message: 'Đăng ký tài khoản thành công! Chào mừng bạn đến với EduCenter.' },
       });
     } catch (err: unknown) {
       const msg =

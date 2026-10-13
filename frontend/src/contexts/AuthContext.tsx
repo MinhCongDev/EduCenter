@@ -97,7 +97,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = useCallback(async (credentials: LoginCredentials): Promise<void> => {
-    dispatch({ type: 'SET_LOADING', payload: true });
     const response = await authService.login(credentials);
     dispatch({
       type: 'LOGIN_SUCCESS',
@@ -109,7 +108,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const register = useCallback(async (data: RegisterData): Promise<void> => {
-    dispatch({ type: 'SET_LOADING', payload: true });
     const response = await authService.register(data);
     dispatch({
       type: 'LOGIN_SUCCESS',
