@@ -23,10 +23,12 @@ const Navbar: React.FC = () => {
   const [targetScore, setTargetScore] = useState(7.5);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   const handleLogout = () => {
+    setIsUserMenuOpen(false);
     logout();
-    navigate('/');
+    navigate('/login', { replace: true });
   };
 
   const handleCycleTarget = () => {
@@ -203,79 +205,246 @@ const Navbar: React.FC = () => {
         </ul>
 
         {/* Right Action Widgets */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          {/* Target Score Widget */}
-          <div
-            className="dmr-leaf-points"
-            onClick={handleCycleTarget}
-            title="Nhấp để thay đổi Target Band điểm mục tiêu của bạn!"
-          >
-            <span style={{ fontSize: '15px' }}>🎯</span>
-            <span>Target {targetScore}+</span>
-          </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+          {/* Target Score Widget: Only display for guest or students to avoid header crowding */}
+          {(!isAuthenticated || user?.role === 'STUDENT') && (
+            <div
+              className="dmr-leaf-points"
+              onClick={handleCycleTarget}
+              title="Nhấp để thay đổi Target Band điểm mục tiêu của bạn!"
+            >
+              <span style={{ fontSize: '15px' }}>🎯</span>
+              <span>Target {targetScore}+</span>
+            </div>
+          )}
 
-          {/* Cart Icon */}
-          <Link to="/courses" className="dmr-store-btn" title="Cửa hàng khóa học IELTS">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-              <circle cx="10" cy="21" r="1.5" />
-              <circle cx="19" cy="21" r="1.5" />
-            </svg>
-          </Link>
+          {/* Cart Icon: Only display for guest or students */}
+          {(!isAuthenticated || user?.role === 'STUDENT') && (
+            <Link to="/courses" className="dmr-store-btn" title="Cửa hàng khóa học IELTS">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+                <circle cx="10" cy="21" r="1.5" />
+                <circle cx="19" cy="21" r="1.5" />
+              </svg>
+            </Link>
+          )}
 
           {/* Auth Section */}
           {isAuthenticated && user ? (
-            <div className="dmr-user-pill">
+            <div style={{ position: 'relative' }}>
               <div
-                className="dmr-user-avatar"
-                onClick={() => setIsProfileOpen(true)}
-                title="Nhấp để xem và cập nhật hồ sơ cá nhân"
-                style={{ cursor: 'pointer' }}
-              >
-                {user.fullName.charAt(0).toUpperCase()}
-              </div>
-              <div
-                style={{ display: 'flex', flexDirection: 'column', cursor: 'pointer' }}
-                onClick={() => setIsProfileOpen(true)}
-                title="Nhấp để xem và cập nhật hồ sơ cá nhân"
-              >
-                <span style={{ fontSize: '0.85rem', fontWeight: 700, lineHeight: 1.1 }}>
-                  {user.fullName}
-                </span>
-                <span style={{ fontSize: '0.7rem', color: '#A0EC1D' }}>
-                  {user.role} • Hồ sơ
-                </span>
-              </div>
-              <Link
-                to={getDashboardPath(user.role)}
+                className="dmr-user-pill"
                 style={{
-                  color: '#FFFFFF',
-                  background: 'rgba(255,255,255,0.18)',
-                  padding: '4px 10px',
-                  borderRadius: '20px',
-                  fontSize: '0.78rem',
-                  fontWeight: 600,
-                  textDecoration: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '4px 10px 4px 6px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.14)',
+                  borderRadius: '30px',
+                  border: '1px solid rgba(255, 255, 255, 0.22)',
                 }}
               >
-                Dashboard
-              </Link>
-              <button
-                type="button"
-                onClick={handleLogout}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#FFB4A2',
-                  fontSize: '0.8rem',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  padding: '0 4px',
-                }}
-                title="Đăng xuất"
-              >
-                Thoát
-              </button>
+                {/* Clickable user profile trigger */}
+                <div
+                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+                  title="Nhấp để mở menu tài khoản"
+                >
+                  <div className="dmr-user-avatar">
+                    {user.fullName.charAt(0).toUpperCase()}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span
+                      style={{
+                        fontSize: '0.85rem',
+                        fontWeight: 700,
+                        lineHeight: 1.1,
+                        maxWidth: '120px',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                      title={user.fullName}
+                    >
+                      {user.fullName}
+                    </span>
+                    <span style={{ fontSize: '0.68rem', color: '#A0EC1D' }}>
+                      {user.role} ▾
+                    </span>
+                  </div>
+                </div>
+
+                {/* Prominent, guaranteed-visible Logout button */}
+                <button
+                  id="navbar-logout-btn"
+                  type="button"
+                  onClick={handleLogout}
+                  style={{
+                    backgroundColor: 'rgba(239, 68, 68, 0.25)',
+                    border: '1px solid rgba(239, 68, 68, 0.45)',
+                    color: '#FFB4A2',
+                    fontSize: '0.78rem',
+                    cursor: 'pointer',
+                    fontWeight: 700,
+                    padding: '4px 10px',
+                    borderRadius: '16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    marginLeft: '4px',
+                    transition: 'all 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#ef4444';
+                    e.currentTarget.style.color = '#ffffff';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.25)';
+                    e.currentTarget.style.color = '#FFB4A2';
+                  }}
+                  title="Đăng xuất khỏi hệ thống"
+                >
+                  <span>🚪</span>
+                  <span>Đăng xuất</span>
+                </button>
+              </div>
+
+              {/* User Dropdown Menu */}
+              {isUserMenuOpen && (
+                <>
+                  <div
+                    style={{ position: 'fixed', inset: 0, zIndex: 1050 }}
+                    onClick={() => setIsUserMenuOpen(false)}
+                  />
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 'calc(100% + 8px)',
+                      right: 0,
+                      width: '230px',
+                      backgroundColor: '#052F2E',
+                      border: '1px solid rgba(87, 208, 97, 0.35)',
+                      borderRadius: '14px',
+                      boxShadow: '0 12px 36px rgba(0, 0, 0, 0.5)',
+                      padding: '8px',
+                      zIndex: 1100,
+                      color: '#ffffff',
+                    }}
+                  >
+                    <div style={{ padding: '8px 10px', borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#ffffff' }}>
+                        {user.fullName}
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: '#9AE6B4' }}>
+                        {user.email}
+                      </div>
+                      <div style={{ marginTop: '4px' }}>
+                        <span className="dmr-badge-gold" style={{ fontSize: '0.7rem' }}>
+                          {user.role}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div style={{ padding: '6px 0', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <Link
+                        to={getDashboardPath(user.role)}
+                        onClick={() => setIsUserMenuOpen(false)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '8px 10px',
+                          borderRadius: '8px',
+                          color: '#ffffff',
+                          fontSize: '0.82rem',
+                          fontWeight: 600,
+                          textDecoration: 'none',
+                        }}
+                      >
+                        <span>📊</span>
+                        <span>Dashboard của tôi</span>
+                      </Link>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsUserMenuOpen(false);
+                          setIsProfileOpen(true);
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '8px 10px',
+                          borderRadius: '8px',
+                          color: '#ffffff',
+                          fontSize: '0.82rem',
+                          fontWeight: 600,
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          width: '100%',
+                          textAlign: 'left',
+                        }}
+                      >
+                        <span>👤</span>
+                        <span>Hồ sơ cá nhân</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsUserMenuOpen(false);
+                          setIsChangePasswordOpen(true);
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '8px 10px',
+                          borderRadius: '8px',
+                          color: '#ffffff',
+                          fontSize: '0.82rem',
+                          fontWeight: 600,
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          width: '100%',
+                          textAlign: 'left',
+                        }}
+                      >
+                        <span>🔐</span>
+                        <span>Đổi mật khẩu</span>
+                      </button>
+                    </div>
+
+                    <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.1)', paddingTop: '6px' }}>
+                      <button
+                        type="button"
+                        onClick={handleLogout}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '8px 10px',
+                          borderRadius: '8px',
+                          color: '#ff8585',
+                          fontSize: '0.82rem',
+                          fontWeight: 700,
+                          background: 'rgba(239, 68, 68, 0.15)',
+                          border: 'none',
+                          cursor: 'pointer',
+                          width: '100%',
+                          textAlign: 'left',
+                        }}
+                      >
+                        <span>🚪</span>
+                        <span>Đăng xuất (Thoát)</span>
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           ) : (
             <div className="dmr-auth-pill">
@@ -360,38 +529,92 @@ const Navbar: React.FC = () => {
           >
             👨‍🏫 Đội ngũ Giảng viên 8.5+ - 9.0 IELTS
           </Link>
-          <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-            <Link
-              to="/login"
-              onClick={() => setMobileMenuOpen(false)}
-              style={{
-                flex: 1,
-                textAlign: 'center',
-                backgroundColor: '#EC6E23',
-                color: '#FFF',
-                padding: '10px',
-                borderRadius: '25px',
-                fontWeight: 700,
-              }}
-            >
-              Đăng nhập
-            </Link>
-            <Link
-              to="/register"
-              onClick={() => setMobileMenuOpen(false)}
-              style={{
-                flex: 1,
-                textAlign: 'center',
-                backgroundColor: '#57D061',
-                color: '#07403F',
-                padding: '10px',
-                borderRadius: '25px',
-                fontWeight: 800,
-              }}
-            >
-              Đăng ký
-            </Link>
-          </div>
+          {isAuthenticated && user ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                <div className="dmr-user-avatar">
+                  {user.fullName.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <div style={{ color: '#FFFFFF', fontWeight: 700, fontSize: '0.9rem' }}>{user.fullName}</div>
+                  <div style={{ color: '#A0EC1D', fontSize: '0.75rem' }}>{user.role}</div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <Link
+                  to={getDashboardPath(user.role)}
+                  onClick={() => setMobileMenuOpen(false)}
+                  style={{
+                    flex: 1,
+                    textAlign: 'center',
+                    backgroundColor: 'rgba(255,255,255,0.15)',
+                    color: '#FFF',
+                    padding: '9px',
+                    borderRadius: '20px',
+                    fontWeight: 700,
+                    fontSize: '0.85rem',
+                    textDecoration: 'none',
+                  }}
+                >
+                  📊 Dashboard
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    handleLogout();
+                  }}
+                  style={{
+                    flex: 1,
+                    textAlign: 'center',
+                    backgroundColor: '#ef4444',
+                    color: '#FFF',
+                    padding: '9px',
+                    borderRadius: '20px',
+                    fontWeight: 700,
+                    fontSize: '0.85rem',
+                    border: 'none',
+                    cursor: 'pointer',
+                  }}
+                >
+                  🚪 Đăng xuất
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+              <Link
+                to="/login"
+                onClick={() => setMobileMenuOpen(false)}
+                style={{
+                  flex: 1,
+                  textAlign: 'center',
+                  backgroundColor: '#EC6E23',
+                  color: '#FFF',
+                  padding: '10px',
+                  borderRadius: '25px',
+                  fontWeight: 700,
+                }}
+              >
+                Đăng nhập
+              </Link>
+              <Link
+                to="/register"
+                onClick={() => setMobileMenuOpen(false)}
+                style={{
+                  flex: 1,
+                  textAlign: 'center',
+                  backgroundColor: '#57D061',
+                  color: '#07403F',
+                  padding: '10px',
+                  borderRadius: '25px',
+                  fontWeight: 800,
+                }}
+              >
+                Đăng ký
+              </Link>
+            </div>
+          )}
         </div>
       )}
 

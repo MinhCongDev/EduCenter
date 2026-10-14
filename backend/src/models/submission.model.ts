@@ -10,6 +10,12 @@ export interface ISubmission extends Document {
   submissionTime: Date;
   grade?: number;
   feedback?: string;
+  criteria?: {
+    taskAchievement?: number;
+    coherenceCohesion?: number;
+    lexicalResource?: number;
+    grammaticalAccuracy?: number;
+  };
   gradedBy?: Types.ObjectId;
   status: SubmissionStatus;
   createdAt: Date;
@@ -47,6 +53,12 @@ const submissionSchema = new Schema<ISubmission>(
     feedback: {
       type: String,
       default: '',
+    },
+    criteria: {
+      taskAchievement: { type: Number, min: 0, max: 9.0 },
+      coherenceCohesion: { type: Number, min: 0, max: 9.0 },
+      lexicalResource: { type: Number, min: 0, max: 9.0 },
+      grammaticalAccuracy: { type: Number, min: 0, max: 9.0 },
     },
     gradedBy: {
       type: Schema.Types.ObjectId,

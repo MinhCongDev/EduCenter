@@ -7,6 +7,7 @@ export interface IAssignment extends Document {
   teacher: Types.ObjectId;
   title: string;
   description: string;
+  skill?: string;
   dueDate: Date;
   maxScore: number;
   attachments: string[];
@@ -35,6 +36,10 @@ const assignmentSchema = new Schema<IAssignment>(
     description: {
       type: String,
       default: '',
+    },
+    skill: {
+      type: String,
+      default: 'IELTS Writing',
     },
     dueDate: {
       type: Date,
