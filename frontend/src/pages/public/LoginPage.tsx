@@ -12,7 +12,7 @@ const DEMO_ACCOUNTS = [
 ];
 
 const LoginPage: React.FC = () => {
-  const { login, isLoading } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -75,8 +75,6 @@ const LoginPage: React.FC = () => {
       setIsSubmitting(false);
     }
   };
-
-  if (isLoading) return null;
 
   return (
     <div className="auth-page">

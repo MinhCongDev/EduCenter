@@ -77,3 +77,74 @@ export interface NavItem {
   icon?: string;
   children?: NavItem[];
 }
+
+// ── Course Types ─────────────────────────────
+export type CourseStatus = 'ACTIVE' | 'INACTIVE';
+
+export interface Course {
+  _id: string;
+  code: string;
+  title: string;
+  description: string;
+  category: string;
+  durationWeeks: number;
+  tuitionFee: number;
+  status: CourseStatus;
+  syllabus: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CourseFormData {
+  code: string;
+  title: string;
+  description: string;
+  category: string;
+  durationWeeks: number;
+  tuitionFee: number;
+  status: CourseStatus;
+  syllabus: string[];
+}
+
+export type ClassStatus = 'OPEN' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+
+export interface ClassCourseOption {
+  _id: string;
+  code: string;
+  title: string;
+}
+
+export interface ClassTeacherOption {
+  _id: string;
+  fullName: string;
+  email: string;
+}
+
+export interface TrainingClass {
+  _id: string;
+  classCode: string;
+  course: ClassCourseOption;
+  teacher: ClassTeacherOption;
+  room: string;
+  scheduleDays: string[];
+  timeSlot: string;
+  startDate: string;
+  endDate: string;
+  capacity: number;
+  status: ClassStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ClassFormData {
+  classCode: string;
+  course: string;
+  teacher: string;
+  room: string;
+  scheduleDays: string[];
+  timeSlot: string;
+  startDate: string;
+  endDate: string;
+  capacity: number;
+  status: ClassStatus;
+}
