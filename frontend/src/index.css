@@ -1278,6 +1278,50 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--warning);
   border: 1px solid rgba(245,158,11,0.25);
 }
+.class-status-open {
+  background: rgba(59,130,246,0.1);
+  color: #2563eb;
+  border: 1px solid rgba(59,130,246,0.25);
+}
+.class-status-in_progress {
+  background: rgba(16,185,129,0.1);
+  color: var(--success);
+  border: 1px solid rgba(16,185,129,0.25);
+}
+.class-status-completed {
+  background: rgba(100,116,139,0.1);
+  color: var(--text-secondary);
+  border: 1px solid rgba(100,116,139,0.25);
+}
+.class-status-cancelled {
+  background: rgba(239,68,68,0.1);
+  color: var(--danger);
+  border: 1px solid rgba(239,68,68,0.25);
+}
+.class-days-field {
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.class-days-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+.class-day-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+.class-table-wrap {
+  overflow-x: auto;
+}
+.class-table {
+  min-width: 1050px;
+}
 
 /* Action buttons in table */
 .courses-actions {
@@ -1490,4 +1534,3 @@ h1, h2, h3, h4, h5, h6 {
   background: var(--danger);
   color: white;
 }
-

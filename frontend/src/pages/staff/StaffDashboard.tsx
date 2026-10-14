@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 
 import { useAuth } from '../../contexts/AuthContext';
@@ -14,6 +14,7 @@ interface DashboardStats {
 
 const StaffDashboard: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats>({
     totalCourses: 0,
     activeCourses: 0,
@@ -222,10 +223,10 @@ const StaffDashboard: React.FC = () => {
         <button
           type="button"
           className="dash-quick-btn"
-          onClick={() => alert('Mở form tạo chương trình khóa học')}
+          onClick={() => navigate('/staff/courses')}
         >
           <span>📚</span>
-          <span>Thêm Khóa Học Mới</span>
+          <span>Quản lý Khóa học</span>
         </button>
         <button
           type="button"
