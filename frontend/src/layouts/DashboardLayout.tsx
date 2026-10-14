@@ -13,8 +13,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   return (
     <div className="dashboard-layout" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Navbar />
-      <main className="dashboard-main-content" style={{ flex: 1, padding: '2rem 1rem' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+      <main className="dashboard-main-content" style={{ flex: 1, paddingTop: '96px', paddingBottom: '3rem', paddingLeft: '1.25rem', paddingRight: '1.25rem' }}>
+        <div style={{ maxWidth: '1240px', margin: '0 auto' }}>
           {children}
         </div>
       </main>

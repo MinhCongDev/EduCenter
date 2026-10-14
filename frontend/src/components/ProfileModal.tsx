@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { authService } from '../services/auth.service';
 
@@ -13,7 +14,14 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   onClose,
   onOpenChangePassword,
 }) => {
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    onClose();
+    logout();
+    navigate('/login', { replace: true });
+  };
 
   const [formData, setFormData] = useState({
     fullName: user?.fullName || '',
@@ -273,28 +281,50 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
           </div>
 
           {/* Action buttons */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '0.5rem', borderTop: '1px solid #e2e8f0' }}>
-            {onOpenChangePassword && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '0.75rem', borderTop: '1px solid #e2e8f0', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              {onOpenChangePassword && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onOpenChangePassword();
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#2563eb',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    padding: 0,
+                    textDecoration: 'underline',
+                  }}
+                >
+                  🔐 Đổi mật khẩu
+                </button>
+              )}
               <button
                 type="button"
-                onClick={() => {
-                  onClose();
-                  onOpenChangePassword();
-                }}
+                onClick={handleLogout}
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: '#2563eb',
+                  color: '#dc2626',
                   fontSize: '0.85rem',
                   fontWeight: 600,
                   cursor: 'pointer',
                   padding: 0,
-                  textDecoration: 'underline',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
                 }}
+                title="Đăng xuất khỏi hệ thống"
               >
-                🔐 Đổi mật khẩu
+                <span>🚪</span>
+                <span>Đăng xuất</span>
               </button>
-            )}
+            </div>
 
             <div style={{ display: 'flex', gap: '0.75rem', marginLeft: 'auto' }}>
               <button
