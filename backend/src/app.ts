@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import { config } from './config';
 import { healthRouter } from './routes/health.routes';
 import { authRouter } from './routes/auth.routes';
+import { studentRouter } from './routes/student.routes';
 import { errorHandler } from './middlewares/error.middleware';
 import { notFound } from './middlewares/notFound.middleware';
 
@@ -42,9 +43,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // ===========================
 app.use('/api/health', healthRouter);
 app.use('/api/auth', authRouter);
-// app.use('/api/users', usersRouter);
-// app.use('/api/students', studentsRouter);
-// ... etc.
+app.use('/api/student', studentRouter);
 
 // ===========================
 // 404 Handler

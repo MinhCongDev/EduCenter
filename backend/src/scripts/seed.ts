@@ -10,7 +10,7 @@ import { Class } from '../models/class.model';
 import { Enrollment } from '../models/enrollment.model';
 import { Announcement } from '../models/announcement.model';
 
-const MONGODB_URI = process.env.MONGODB_URI;
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/educenter';
 
 if (!MONGODB_URI) {
   console.error('❌ MONGODB_URI không tồn tại trong .env');
@@ -19,9 +19,10 @@ if (!MONGODB_URI) {
 
 const seedDatabase = async () => {
   try {
-    console.log('⏳ Đang kết nối tới MongoDB Atlas...');
+    console.log('⏳ Đang kết nối tới MongoDB...');
+    console.log('   URI:', MONGODB_URI.replace(/\/\/[^:]+:[^@]+@/, '//***:***@'));
     await mongoose.connect(MONGODB_URI);
-    console.log('✅ Đã kết nối thành công tới Atlas!');
+    console.log('✅ Đã kết nối thành công!');
 
     // 1. Xóa dữ liệu cũ để tránh trùng lặp
     console.log('🧹 Đang làm sạch dữ liệu cũ...');

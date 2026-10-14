@@ -18,6 +18,14 @@ const RegisterPage = lazy(() => import('./pages/public/RegisterPage'));
 
 // Dashboard pages
 const StudentDashboard = lazy(() => import('./pages/student/StudentDashboard'));
+const MyClassesPage = lazy(() => import('./pages/student/MyClassesPage'));
+const ClassDetailsPage = lazy(() => import('./pages/student/ClassDetailsPage'));
+const SchedulePage = lazy(() => import('./pages/student/SchedulePage'));
+const AssignmentsPage = lazy(() => import('./pages/student/AssignmentsPage'));
+const GradesPage = lazy(() => import('./pages/student/GradesPage'));
+const AttendancePage = lazy(() => import('./pages/student/AttendancePage'));
+const PaymentsPage = lazy(() => import('./pages/student/PaymentsPage'));
+const RequestsPage = lazy(() => import('./pages/student/RequestsPage'));
 const TeacherDashboard = lazy(() => import('./pages/teacher/TeacherDashboard'));
 const StaffDashboard = lazy(() => import('./pages/staff/StaffDashboard'));
 const DirectorDashboard = lazy(() => import('./pages/director/DirectorDashboard'));
@@ -106,6 +114,14 @@ const AppRouter: React.FC = () => {
 
         {/* ── Student Routes ───────────────────────── */}
         <Route
+          path="/student"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <Navigate to="/student/dashboard" replace />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/student/dashboard"
           element={
             <ProtectedRoute allowedRoles={['STUDENT']}>
@@ -115,7 +131,86 @@ const AppRouter: React.FC = () => {
             </ProtectedRoute>
           }
         />
-        {/* Additional student routes will be added in Phase 9 */}
+        <Route
+          path="/student/classes"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <DashboardLayout>
+                <MyClassesPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/classes/:classId"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <DashboardLayout>
+                <ClassDetailsPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/classes/:classId/schedule"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <DashboardLayout>
+                <SchedulePage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/classes/:classId/assignments"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <DashboardLayout>
+                <AssignmentsPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/classes/:classId/grades"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <DashboardLayout>
+                <GradesPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/classes/:classId/attendance"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <DashboardLayout>
+                <AttendancePage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/payments"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <DashboardLayout>
+                <PaymentsPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/requests"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <DashboardLayout>
+                <RequestsPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
 
         {/* ── Teacher Routes ───────────────────────── */}
         <Route
