@@ -5,6 +5,11 @@ export interface IBranch {
   address: string;
   phone: string;
   isHeadquarters: boolean;
+  studentCount?: number;
+  classCount?: number;
+  revenue?: string;
+  fillRate?: number;
+  status?: string;
 }
 
 export interface IFacility {
@@ -81,6 +86,11 @@ const centerSchema = new Schema<ICenter>(
         address: { type: String, required: true },
         phone: { type: String, required: true },
         isHeadquarters: { type: Boolean, default: false },
+        studentCount: { type: Number, default: 100 },
+        classCount: { type: Number, default: 5 },
+        revenue: { type: String, default: '500.000.000 ₫' },
+        fillRate: { type: Number, default: 85 },
+        status: { type: String, default: 'Hoạt động tốt' },
       },
     ],
     facilities: [
