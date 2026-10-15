@@ -498,17 +498,17 @@
 
 /* ── Dungmori Deep Green Hero Banner ── */
 .dmr-teacher-hero {
-  background: linear-gradient(135deg, #052F2E 0%, #07403F 45%, #195240 100%) !important;
+  background: linear-gradient(135deg, #064e3b 0%, #065f46 50%, #047857 100%) !important;
   border-radius: 18px;
   padding: 1.85rem 2.2rem;
   color: #ffffff;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 12px 32px rgba(7, 64, 63, 0.35);
+  box-shadow: 0 12px 32px rgba(6, 78, 59, 0.25);
   position: relative;
   overflow: hidden;
-  border: 1px solid rgba(87, 208, 97, 0.25);
+  border: 1px solid rgba(52, 211, 153, 0.25);
   gap: 1.5rem;
   flex-wrap: wrap;
 }
@@ -520,7 +520,7 @@
   right: -60px;
   width: 280px;
   height: 280px;
-  background: radial-gradient(circle, rgba(160, 236, 29, 0.2) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(52, 211, 153, 0.15) 0%, transparent 70%);
   border-radius: 50%;
   pointer-events: none;
 }
@@ -535,25 +535,26 @@
   width: 68px;
   height: 68px;
   border-radius: 16px;
-  background: linear-gradient(135deg, #A0EC1D, #57D061);
-  color: #052F2E;
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.8rem;
   font-weight: 800;
-  box-shadow: 0 6px 16px rgba(87, 208, 97, 0.4);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
   flex-shrink: 0;
-  border: 3px solid rgba(255, 255, 255, 0.25);
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(8px);
 }
 
 .dmr-hero-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(160, 236, 29, 0.18);
-  border: 1px solid rgba(160, 236, 29, 0.4);
-  color: #A0EC1D;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ffffff;
   font-size: 0.78rem;
   font-weight: 700;
   padding: 4px 12px;
@@ -567,13 +568,13 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  background: #F59E0B;
-  color: #052F2E;
+  background: #fef3c7;
+  color: #92400e;
   font-size: 0.75rem;
   font-weight: 800;
   padding: 3px 10px;
   border-radius: 12px;
-  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.4);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 /* ── Teacher Tabs Bar ── */
@@ -611,10 +612,10 @@
 }
 
 .teacher-tab-btn.active {
-  background: linear-gradient(135deg, #07403F, #195240);
-  color: #A0EC1D;
-  border-color: rgba(160, 236, 29, 0.4);
-  box-shadow: 0 4px 12px rgba(7, 64, 63, 0.25);
+  background: #064e3b;
+  color: #ffffff;
+  border-color: #064e3b;
+  box-shadow: 0 4px 12px rgba(6, 78, 59, 0.2);
 }
 
 .teacher-tab-badge {
@@ -660,7 +661,7 @@
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(90deg, #308560, #A0EC1D);
+  background: linear-gradient(90deg, #059669, #10b981);
 }
 
 /* ── Attendance Toggle Group ── */
@@ -745,7 +746,7 @@
 .dmr-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(5, 47, 46, 0.7);
+  background: rgba(15, 23, 42, 0.65);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
@@ -775,7 +776,7 @@
 
 .dmr-modal-header {
   padding: 1.25rem 1.5rem;
-  background: linear-gradient(135deg, #07403F, #195240);
+  background: linear-gradient(135deg, #064e3b, #047857);
   color: #ffffff;
   display: flex;
   justify-content: space-between;
@@ -807,10 +808,10 @@
   position: fixed;
   bottom: 2rem;
   right: 2rem;
-  background: #052F2E;
-  color: #A0EC1D;
-  border: 1px solid #57D061;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  background: #064e3b;
+  color: #ffffff;
+  border: 1px solid #10b981;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
   padding: 0.85rem 1.4rem;
   border-radius: 12px;
   font-size: 0.88rem;
