@@ -1246,7 +1246,22 @@ export const TeacherDashboard: React.FC = () => {
                             borderRadius: '8px',
                             fontSize: '0.75rem',
                             fontWeight: 700,
-                            cursor: 'poin      {/* TAB 4: BẢNG ĐIỂM & KẾT QUẢ HỌC TẬP */}
+                            cursor: 'pointer',
+                          }}
+                        >
+                          👁️ Chi tiết
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 4: BẢNG ĐIỂM & KẾT QUẢ HỌC TẬP */}
       {activeTab === 'academic_grades' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
@@ -1354,37 +1369,6 @@ export const TeacherDashboard: React.FC = () => {
                             border: '1px solid #EF4444',
                             color: '#FCA5A5',
                             padding: '4px 8px',
-                            borderRadius: '6px',
-                            fontSize: '0.75rem',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                          }}
-                          title="Xóa điểm"
-                        >
-                          🗑️
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}rsor: 'pointer',
-                          }}
-                          title="Chỉnh sửa điểm"
-                        >
-                          ✏️ Sửa
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteGrade(g._id)}
-                          style={{
-                            background: 'none',
-                            border: '1px solid #FCA5A5',
-                            color: '#DC2626',
-                            padding: '3px 8px',
                             borderRadius: '6px',
                             fontSize: '0.75rem',
                             fontWeight: 700,
