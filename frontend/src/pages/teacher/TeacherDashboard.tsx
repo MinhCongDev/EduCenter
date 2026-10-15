@@ -394,7 +394,7 @@ export const TeacherDashboard: React.FC = () => {
 
       {/* Syncing Badge */}
       {loading && (
-        <div style={{ backgroundColor: 'rgba(160, 236, 29, 0.15)', border: '1px solid #A0EC1D', color: '#A0EC1D', padding: '6px 12px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 700, textAlign: 'center' }}>
+        <div style={{ backgroundColor: '#ecfdf5', border: '1px solid #a7f3d0', color: '#047857', padding: '8px 16px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 700, textAlign: 'center' }}>
           ⏳ Đang đồng bộ dữ liệu thời gian thực từ máy chủ EduCenter...
         </div>
       )}
@@ -402,15 +402,15 @@ export const TeacherDashboard: React.FC = () => {
       {/* ── 1. Header Banner Giảng Viên ── */}
       <div
         style={{
-          background: 'linear-gradient(135deg, #07403F 0%, #0d5654 60%, #166557 100%)',
+          background: 'linear-gradient(135deg, #064e3b 0%, #065f46 50%, #047857 100%)',
           borderRadius: '16px',
-          padding: '1.25rem 1.75rem',
+          padding: '1.4rem 1.85rem',
           color: '#ffffff',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          boxShadow: '0 8px 24px rgba(7, 64, 63, 0.2)',
-          border: '1px solid rgba(160, 236, 29, 0.25)',
+          boxShadow: '0 8px 24px rgba(6, 78, 59, 0.18)',
+          border: '1px solid rgba(255, 255, 255, 0.15)',
           flexWrap: 'wrap',
           gap: '1rem',
         }}
@@ -421,23 +421,24 @@ export const TeacherDashboard: React.FC = () => {
               width: '52px',
               height: '52px',
               borderRadius: '14px',
-              background: 'linear-gradient(135deg, #A0EC1D, #57D061)',
-              color: '#052F2E',
+              background: 'rgba(255, 255, 255, 0.2)',
+              border: '1px solid rgba(255, 255, 255, 0.35)',
+              color: '#ffffff',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               fontSize: '1.4rem',
               fontWeight: 800,
-              boxShadow: '0 4px 12px rgba(87, 208, 97, 0.3)',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
             }}
           >
             {user?.fullName ? user.fullName.charAt(0).toUpperCase() : 'T'}
           </div>
           <div>
-            <h1 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, lineHeight: 1.2 }}>
+            <h1 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, lineHeight: 1.2, color: '#ffffff' }}>
               Chào {user?.fullName || 'Thầy Alex Nguyễn'} 👋
             </h1>
-            <p style={{ margin: '0.2rem 0 0', fontSize: '0.82rem', color: '#CEFFD8' }}>
+            <p style={{ margin: '0.25rem 0 0', fontSize: '0.84rem', color: '#a7f3d0' }}>
               Giảng viên IELTS Academic • Quản trị đào tạo &amp; Chấm thi học thuật
             </p>
           </div>
@@ -452,12 +453,12 @@ export const TeacherDashboard: React.FC = () => {
               setRequestTab('submit');
             }}
             style={{
-              background: 'rgba(255, 255, 255, 0.12)',
-              border: '1px solid rgba(255, 255, 255, 0.25)',
-              color: '#FCD34D',
+              background: 'rgba(255, 255, 255, 0.18)',
+              border: '1px solid rgba(255, 255, 255, 0.35)',
+              color: '#ffffff',
               borderRadius: '10px',
-              padding: '0.5rem 0.85rem',
-              fontSize: '0.8rem',
+              padding: '0.55rem 0.95rem',
+              fontSize: '0.82rem',
               fontWeight: 700,
               cursor: 'pointer',
               display: 'flex',
@@ -480,11 +481,11 @@ export const TeacherDashboard: React.FC = () => {
             }}
             style={{
               backgroundColor: 'rgba(239, 68, 68, 0.25)',
-              color: '#FFB4A2',
+              color: '#fee2e2',
               border: '1px solid rgba(239, 68, 68, 0.5)',
-              padding: '0.5rem 0.85rem',
+              padding: '0.55rem 0.95rem',
               borderRadius: '10px',
-              fontSize: '0.8rem',
+              fontSize: '0.82rem',
               fontWeight: 700,
               cursor: 'pointer',
               display: 'flex',
@@ -498,7 +499,7 @@ export const TeacherDashboard: React.FC = () => {
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.25)';
-              e.currentTarget.style.color = '#FFB4A2';
+              e.currentTarget.style.color = '#fee2e2';
             }}
             title="Đăng xuất khỏi tài khoản Giảng viên"
           >
@@ -513,18 +514,23 @@ export const TeacherDashboard: React.FC = () => {
         <div
           className="dash-card"
           style={{
-            padding: '1rem 1.25rem',
+            padding: '1.15rem 1.35rem',
             borderRadius: '14px',
-            borderLeft: '4px solid #57D061',
+            backgroundColor: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderLeft: '4px solid #059669',
+            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.04)',
             cursor: 'pointer',
           }}
           onClick={() => setActiveTab('classes_students')}
         >
-          <div style={{ fontSize: '0.8rem', color: '#94A3B8', fontWeight: 600 }}>Lớp Đang Phụ Trách</div>
-          <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#A0EC1D', marginTop: '0.2rem' }}>
+          <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            Lớp Đang Phụ Trách
+          </div>
+          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a', marginTop: '0.2rem', lineHeight: 1.2 }}>
             {totalClassesCount} Lớp
           </div>
-          <div style={{ fontSize: '0.75rem', color: '#57D061', marginTop: '0.2rem' }}>
+          <div style={{ fontSize: '0.78rem', color: '#059669', fontWeight: 600, marginTop: '0.35rem' }}>
             🏫 Xem danh sách lớp học
           </div>
         </div>
@@ -532,18 +538,23 @@ export const TeacherDashboard: React.FC = () => {
         <div
           className="dash-card"
           style={{
-            padding: '1rem 1.25rem',
+            padding: '1.15rem 1.35rem',
             borderRadius: '14px',
-            borderLeft: '4px solid #3B82F6',
+            backgroundColor: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderLeft: '4px solid #2563eb',
+            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.04)',
             cursor: 'pointer',
           }}
           onClick={() => setActiveTab('classes_students')}
         >
-          <div style={{ fontSize: '0.8rem', color: '#94A3B8', fontWeight: 600 }}>Tổng Số Học Viên</div>
-          <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#FFFFFF', marginTop: '0.2rem' }}>
+          <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            Tổng Số Học Viên
+          </div>
+          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a', marginTop: '0.2rem', lineHeight: 1.2 }}>
             {totalStudentsCount} Học viên
           </div>
-          <div style={{ fontSize: '0.75rem', color: '#60A5FA', marginTop: '0.2rem' }}>
+          <div style={{ fontSize: '0.78rem', color: '#2563eb', fontWeight: 600, marginTop: '0.35rem' }}>
             👥 Theo dõi hồ sơ &amp; chuyên cần
           </div>
         </div>
@@ -551,18 +562,23 @@ export const TeacherDashboard: React.FC = () => {
         <div
           className="dash-card"
           style={{
-            padding: '1rem 1.25rem',
+            padding: '1.15rem 1.35rem',
             borderRadius: '14px',
-            borderLeft: '4px solid #EC6E23',
+            backgroundColor: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderLeft: '4px solid #ea580c',
+            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.04)',
             cursor: 'pointer',
           }}
           onClick={() => setActiveTab('assignments_grading')}
         >
-          <div style={{ fontSize: '0.8rem', color: '#94A3B8', fontWeight: 600 }}>Bài Nộp Chờ Chấm</div>
-          <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#FB923C', marginTop: '0.2rem' }}>
+          <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            Bài Nộp Chờ Chấm
+          </div>
+          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#ea580c', marginTop: '0.2rem', lineHeight: 1.2 }}>
             {pendingAssignmentsCount} Bài
           </div>
-          <div style={{ fontSize: '0.75rem', color: '#FB923C', marginTop: '0.2rem' }}>
+          <div style={{ fontSize: '0.78rem', color: '#ea580c', fontWeight: 600, marginTop: '0.35rem' }}>
             ✍️ Writing &amp; Speaking Mock
           </div>
         </div>
@@ -570,18 +586,23 @@ export const TeacherDashboard: React.FC = () => {
         <div
           className="dash-card"
           style={{
-            padding: '1rem 1.25rem',
+            padding: '1.15rem 1.35rem',
             borderRadius: '14px',
-            borderLeft: '4px solid #A855F7',
+            backgroundColor: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderLeft: '4px solid #7c3aed',
+            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.04)',
             cursor: 'pointer',
           }}
           onClick={() => setActiveTab('academic_grades')}
         >
-          <div style={{ fontSize: '0.8rem', color: '#94A3B8', fontWeight: 600 }}>Kết Quả Học Tập</div>
-          <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#C084FC', marginTop: '0.2rem' }}>
+          <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            Kết Quả Học Tập
+          </div>
+          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#7c3aed', marginTop: '0.2rem', lineHeight: 1.2 }}>
             {grades.length} Bài thi
           </div>
-          <div style={{ fontSize: '0.75rem', color: '#C084FC', marginTop: '0.2rem' }}>
+          <div style={{ fontSize: '0.78rem', color: '#7c3aed', fontWeight: 600, marginTop: '0.35rem' }}>
             📊 Quản lý điểm &amp; Nhập điểm
           </div>
         </div>
@@ -591,11 +612,11 @@ export const TeacherDashboard: React.FC = () => {
       <div
         style={{
           display: 'flex',
-          gap: '0.5rem',
-          backgroundColor: '#052F2E',
-          padding: '0.4rem',
+          gap: '0.4rem',
+          backgroundColor: '#f1f5f9',
+          padding: '0.35rem',
           borderRadius: '12px',
-          border: '1px solid rgba(87, 208, 97, 0.3)',
+          border: '1px solid #e2e8f0',
           overflowX: 'auto',
         }}
       >
@@ -606,14 +627,15 @@ export const TeacherDashboard: React.FC = () => {
             flex: 1,
             padding: '0.65rem 1rem',
             borderRadius: '8px',
-            border: 'none',
+            border: activeTab === 'schedule_attendance' ? '1px solid #cbd5e1' : '1px solid transparent',
             fontSize: '0.85rem',
-            fontWeight: 700,
+            fontWeight: activeTab === 'schedule_attendance' ? 800 : 600,
             cursor: 'pointer',
             transition: 'all 0.15s ease',
             whiteSpace: 'nowrap',
-            backgroundColor: activeTab === 'schedule_attendance' ? '#A0EC1D' : 'transparent',
-            color: activeTab === 'schedule_attendance' ? '#052F2E' : '#FFFFFF',
+            backgroundColor: activeTab === 'schedule_attendance' ? '#ffffff' : 'transparent',
+            color: activeTab === 'schedule_attendance' ? '#064e3b' : '#475569',
+            boxShadow: activeTab === 'schedule_attendance' ? '0 2px 4px rgba(0, 0, 0, 0.05)' : 'none',
           }}
         >
           📅 Lịch Dạy &amp; Điểm Danh
@@ -626,17 +648,18 @@ export const TeacherDashboard: React.FC = () => {
             flex: 1,
             padding: '0.65rem 1rem',
             borderRadius: '8px',
-            border: 'none',
+            border: activeTab === 'assignments_grading' ? '1px solid #cbd5e1' : '1px solid transparent',
             fontSize: '0.85rem',
-            fontWeight: 700,
+            fontWeight: activeTab === 'assignments_grading' ? 800 : 600,
             cursor: 'pointer',
             transition: 'all 0.15s ease',
             whiteSpace: 'nowrap',
-            backgroundColor: activeTab === 'assignments_grading' ? '#A0EC1D' : 'transparent',
-            color: activeTab === 'assignments_grading' ? '#052F2E' : '#FFFFFF',
+            backgroundColor: activeTab === 'assignments_grading' ? '#ffffff' : 'transparent',
+            color: activeTab === 'assignments_grading' ? '#064e3b' : '#475569',
+            boxShadow: activeTab === 'assignments_grading' ? '0 2px 4px rgba(0, 0, 0, 0.05)' : 'none',
           }}
         >
-          ✍️ Quản Lý Bài Tập &amp; Chấm Bài {pendingAssignmentsCount > 0 && <span style={{ backgroundColor: '#EC6E23', color: '#FFF', padding: '1px 6px', borderRadius: '10px', fontSize: '0.72rem', marginLeft: '4px' }}>{pendingAssignmentsCount}</span>}
+          ✍️ Quản Lý Bài Tập &amp; Chấm Bài {pendingAssignmentsCount > 0 && <span style={{ backgroundColor: '#ea580c', color: '#FFF', padding: '1px 7px', borderRadius: '10px', fontSize: '0.72rem', marginLeft: '6px', fontWeight: 800 }}>{pendingAssignmentsCount}</span>}
         </button>
 
         <button
@@ -646,14 +669,15 @@ export const TeacherDashboard: React.FC = () => {
             flex: 1,
             padding: '0.65rem 1rem',
             borderRadius: '8px',
-            border: 'none',
+            border: activeTab === 'classes_students' ? '1px solid #cbd5e1' : '1px solid transparent',
             fontSize: '0.85rem',
-            fontWeight: 700,
+            fontWeight: activeTab === 'classes_students' ? 800 : 600,
             cursor: 'pointer',
             transition: 'all 0.15s ease',
             whiteSpace: 'nowrap',
-            backgroundColor: activeTab === 'classes_students' ? '#A0EC1D' : 'transparent',
-            color: activeTab === 'classes_students' ? '#052F2E' : '#FFFFFF',
+            backgroundColor: activeTab === 'classes_students' ? '#ffffff' : 'transparent',
+            color: activeTab === 'classes_students' ? '#064e3b' : '#475569',
+            boxShadow: activeTab === 'classes_students' ? '0 2px 4px rgba(0, 0, 0, 0.05)' : 'none',
           }}
         >
           🎓 Lớp Học &amp; Học Viên ({totalClassesCount} Lớp)
@@ -666,14 +690,15 @@ export const TeacherDashboard: React.FC = () => {
             flex: 1,
             padding: '0.65rem 1rem',
             borderRadius: '8px',
-            border: 'none',
+            border: activeTab === 'academic_grades' ? '1px solid #cbd5e1' : '1px solid transparent',
             fontSize: '0.85rem',
-            fontWeight: 700,
+            fontWeight: activeTab === 'academic_grades' ? 800 : 600,
             cursor: 'pointer',
             transition: 'all 0.15s ease',
             whiteSpace: 'nowrap',
-            backgroundColor: activeTab === 'academic_grades' ? '#A0EC1D' : 'transparent',
-            color: activeTab === 'academic_grades' ? '#052F2E' : '#FFFFFF',
+            backgroundColor: activeTab === 'academic_grades' ? '#ffffff' : 'transparent',
+            color: activeTab === 'academic_grades' ? '#064e3b' : '#475569',
+            boxShadow: activeTab === 'academic_grades' ? '0 2px 4px rgba(0, 0, 0, 0.05)' : 'none',
           }}
         >
           📊 Bảng Điểm &amp; Kết Quả Học Tập
@@ -686,9 +711,9 @@ export const TeacherDashboard: React.FC = () => {
       {activeTab === 'schedule_attendance' && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1.25rem' }}>
           {/* Cột trái: Thời khóa biểu tuần */}
-          <div className="dash-card" style={{ padding: '1.25rem', borderRadius: '16px' }}>
+          <div className="dash-card" style={{ padding: '1.25rem', borderRadius: '16px', backgroundColor: '#ffffff', border: '1px solid #e2e8f0', boxShadow: '0 2px 6px rgba(0, 0, 0, 0.04)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#FFFFFF' }}>
+              <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>
                 🗓️ Lịch Dạy Tuần Này
               </h2>
               <button
@@ -698,8 +723,8 @@ export const TeacherDashboard: React.FC = () => {
                   setRequestTab('submit');
                 }}
                 style={{
-                  fontSize: '0.75rem',
-                  color: '#FB923C',
+                  fontSize: '0.78rem',
+                  color: '#059669',
                   background: 'none',
                   border: 'none',
                   fontWeight: 700,
@@ -717,31 +742,31 @@ export const TeacherDashboard: React.FC = () => {
                   <div
                     key={item._id}
                     style={{
-                      padding: '0.75rem 1rem',
+                      padding: '0.85rem 1rem',
                       borderRadius: '10px',
-                      backgroundColor: 'rgba(255, 255, 255, 0.04)',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
-                      borderLeft: '4px solid #57D061',
+                      backgroundColor: '#f8fafc',
+                      border: '1px solid #e2e8f0',
+                      borderLeft: '4px solid #059669',
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontWeight: 800, fontSize: '0.85rem', color: '#A0EC1D' }}>
+                      <span style={{ fontWeight: 800, fontSize: '0.85rem', color: '#047857' }}>
                         {item.dayOfWeek}
                       </span>
-                      <span style={{ fontSize: '0.75rem', color: '#93C5FD', fontWeight: 700, backgroundColor: 'rgba(59, 130, 246, 0.2)', border: '1px solid rgba(59, 130, 246, 0.3)', padding: '2px 8px', borderRadius: '12px' }}>
+                      <span style={{ fontSize: '0.75rem', color: '#1d4ed8', fontWeight: 700, backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', padding: '2px 8px', borderRadius: '8px' }}>
                         {item.startTime} - {item.endTime}
                       </span>
                     </div>
-                    <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#FFFFFF', marginTop: '0.35rem' }}>
+                    <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f172a', marginTop: '0.35rem' }}>
                       {item.class?.classCode} • {item.class?.name}
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: '#94A3B8', marginTop: '0.2rem' }}>
+                    <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '0.2rem' }}>
                       📍 {item.classroom || item.class?.room} {item.topic && `• 📖 ${item.topic}`}
                     </div>
                   </div>
                 ))
               ) : (
-                <div style={{ textAlign: 'center', padding: '2rem 1rem', color: '#94A3B8', fontSize: '0.85rem' }}>
+                <div style={{ textAlign: 'center', padding: '2rem 1rem', color: '#64748b', fontSize: '0.85rem' }}>
                   Chưa có lịch dạy cố định cho tuần này.
                 </div>
               )}
@@ -749,33 +774,33 @@ export const TeacherDashboard: React.FC = () => {
           </div>
 
           {/* Cột phải: Điểm danh ca dạy */}
-          <div className="dash-card" style={{ padding: '1.25rem', borderRadius: '16px' }}>
+          <div className="dash-card" style={{ padding: '1.25rem', borderRadius: '16px', backgroundColor: '#ffffff', border: '1px solid #e2e8f0', boxShadow: '0 2px 6px rgba(0, 0, 0, 0.04)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
               <div>
-                <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#FFFFFF' }}>
+                <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>
                   ✅ Điểm Danh Ca Dạy: {classes.find((c) => c._id === selectedClassId)?.classCode || 'Lớp học'}
                 </h2>
-                <span style={{ fontSize: '0.78rem', color: '#94A3B8' }}>
+                <span style={{ fontSize: '0.78rem', color: '#64748b' }}>
                   Ghi nhận trạng thái tham gia &amp; nhận xét cho từng học viên
                 </span>
               </div>
 
-              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
                 <select
                   value={selectedClassId}
                   onChange={(e) => setSelectedClassId(e.target.value)}
                   style={{
                     padding: '0.45rem 0.75rem',
                     borderRadius: '8px',
-                    border: '1px solid rgba(255, 255, 255, 0.25)',
-                    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                    color: '#FFFFFF',
-                    fontSize: '0.8rem',
+                    border: '1px solid #cbd5e1',
+                    backgroundColor: '#ffffff',
+                    color: '#0f172a',
+                    fontSize: '0.82rem',
                     fontWeight: 600,
                   }}
                 >
                   {classes.map((c) => (
-                    <option key={c._id} value={c._id} style={{ backgroundColor: '#161f30', color: '#FFFFFF' }}>
+                    <option key={c._id} value={c._id}>
                       {c.classCode} ({c.name})
                     </option>
                   ))}
@@ -788,11 +813,11 @@ export const TeacherDashboard: React.FC = () => {
                   style={{
                     padding: '0.45rem 0.6rem',
                     borderRadius: '8px',
-                    border: '1px solid rgba(255, 255, 255, 0.25)',
-                    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                    color: '#FFFFFF',
-                    colorScheme: 'dark',
-                    fontSize: '0.8rem',
+                    border: '1px solid #cbd5e1',
+                    backgroundColor: '#ffffff',
+                    color: '#0f172a',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
                   }}
                 />
 
@@ -806,11 +831,11 @@ export const TeacherDashboard: React.FC = () => {
                   style={{
                     padding: '0.45rem 0.75rem',
                     borderRadius: '8px',
-                    border: '1px solid rgba(255, 255, 255, 0.25)',
-                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                    color: '#FFFFFF',
-                    fontSize: '0.8rem',
-                    fontWeight: 600,
+                    border: '1px solid #cbd5e1',
+                    backgroundColor: '#f8fafc',
+                    color: '#1e293b',
+                    fontSize: '0.82rem',
+                    fontWeight: 700,
                     cursor: 'pointer',
                   }}
                 >
@@ -826,10 +851,10 @@ export const TeacherDashboard: React.FC = () => {
                     type="button"
                     onClick={handleMarkAllPresent}
                     style={{
-                      background: 'rgba(87, 208, 97, 0.15)',
-                      border: '1px solid #57D061',
-                      color: '#A0EC1D',
-                      padding: '0.4rem 0.75rem',
+                      background: '#ecfdf5',
+                      border: '1px solid #a7f3d0',
+                      color: '#047857',
+                      padding: '0.45rem 0.85rem',
                       borderRadius: '8px',
                       fontSize: '0.78rem',
                       fontWeight: 700,
@@ -842,14 +867,15 @@ export const TeacherDashboard: React.FC = () => {
                     type="button"
                     onClick={handleSaveAttendance}
                     style={{
-                      backgroundColor: '#57D061',
-                      color: '#052F2E',
+                      backgroundColor: '#059669',
+                      color: '#ffffff',
                       border: 'none',
-                      padding: '0.4rem 1rem',
+                      padding: '0.45rem 1.15rem',
                       borderRadius: '8px',
                       fontSize: '0.78rem',
                       fontWeight: 800,
                       cursor: 'pointer',
+                      boxShadow: '0 2px 6px rgba(5, 150, 105, 0.25)',
                     }}
                   >
                     💾 Lưu Điểm Danh
@@ -859,24 +885,26 @@ export const TeacherDashboard: React.FC = () => {
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
                     <thead>
-                      <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.15)', textAlign: 'left', color: '#94A3B8' }}>
-                        <th style={{ padding: '8px 12px' }}>Học Viên</th>
-                        <th style={{ padding: '8px 12px' }}>Target</th>
-                        <th style={{ padding: '8px 12px' }}>Trạng Thái Điểm Danh</th>
-                        <th style={{ padding: '8px 12px' }}>Ghi Chú Nhận Xét</th>
+                      <tr style={{ borderBottom: '2px solid #e2e8f0', backgroundColor: '#f8fafc', textAlign: 'left', color: '#475569' }}>
+                        <th style={{ padding: '9px 12px' }}>Học Viên</th>
+                        <th style={{ padding: '9px 12px' }}>Target</th>
+                        <th style={{ padding: '9px 12px' }}>Trạng Thái Điểm Danh</th>
+                        <th style={{ padding: '9px 12px' }}>Ghi Chú Nhận Xét</th>
                       </tr>
                     </thead>
                     <tbody>
                       {classStudents.map((stu) => {
                         const rec = attendanceForm[stu._id] || { status: 'PRESENT', notes: '' };
                         return (
-                          <tr key={stu._id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                          <tr key={stu._id} style={{ borderBottom: '1px solid #e2e8f0' }}>
                             <td style={{ padding: '10px 12px' }}>
-                              <div style={{ fontWeight: 800, color: '#FFFFFF' }}>{stu.fullName}</div>
-                              <div style={{ fontSize: '0.75rem', color: '#A0EC1D', fontWeight: 700 }}>{stu.studentCode}</div>
+                              <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.88rem' }}>{stu.fullName}</div>
+                              <div style={{ fontSize: '0.74rem', color: '#047857', fontWeight: 700, backgroundColor: '#ecfdf5', border: '1px solid #a7f3d0', padding: '1px 6px', borderRadius: '6px', display: 'inline-block', marginTop: '2px' }}>
+                                {stu.studentCode}
+                              </div>
                             </td>
                             <td style={{ padding: '10px 12px' }}>
-                              <span style={{ backgroundColor: 'rgba(251, 191, 36, 0.15)', color: '#FCD34D', border: '1px solid rgba(251, 191, 36, 0.3)', padding: '2px 8px', borderRadius: '10px', fontWeight: 800, fontSize: '0.75rem' }}>
+                              <span style={{ backgroundColor: '#fef3c7', color: '#b45309', border: '1px solid #fde68a', padding: '3px 8px', borderRadius: '8px', fontWeight: 800, fontSize: '0.75rem' }}>
                                 Band {stu.targetBand}
                               </span>
                             </td>
@@ -884,10 +912,10 @@ export const TeacherDashboard: React.FC = () => {
                               <div style={{ display: 'flex', gap: '4px' }}>
                                 {(
                                   [
-                                    { key: 'PRESENT', label: 'Có mặt', color: '#57D061', activeBg: '#57D061', activeColor: '#052F2E' },
-                                    { key: 'LATE', label: 'Muộn', color: '#F59E0B', activeBg: '#F59E0B', activeColor: '#000000' },
-                                    { key: 'ABSENT', label: 'Vắng', color: '#EF4444', activeBg: '#EF4444', activeColor: '#FFFFFF' },
-                                    { key: 'EXCUSED', label: 'Có phép', color: '#3B82F6', activeBg: '#3B82F6', activeColor: '#FFFFFF' },
+                                    { key: 'PRESENT', label: 'Có mặt', activeBg: '#059669', activeColor: '#ffffff' },
+                                    { key: 'LATE', label: 'Muộn', activeBg: '#d97706', activeColor: '#ffffff' },
+                                    { key: 'ABSENT', label: 'Vắng', activeBg: '#dc2626', activeColor: '#ffffff' },
+                                    { key: 'EXCUSED', label: 'Có phép', activeBg: '#2563eb', activeColor: '#ffffff' },
                                   ] as const
                                 ).map((st) => (
                                   <button
@@ -900,14 +928,15 @@ export const TeacherDashboard: React.FC = () => {
                                       }))
                                     }
                                     style={{
-                                      padding: '4px 8px',
+                                      padding: '4px 9px',
                                       borderRadius: '6px',
                                       fontSize: '0.72rem',
                                       fontWeight: 700,
-                                      border: rec.status === st.key ? `2px solid ${st.color}` : '1px solid rgba(255, 255, 255, 0.2)',
-                                      backgroundColor: rec.status === st.key ? st.activeBg : 'rgba(255, 255, 255, 0.05)',
-                                      color: rec.status === st.key ? st.activeColor : '#94A3B8',
+                                      border: rec.status === st.key ? `1px solid ${st.activeBg}` : '1px solid #cbd5e1',
+                                      backgroundColor: rec.status === st.key ? st.activeBg : '#f8fafc',
+                                      color: rec.status === st.key ? st.activeColor : '#64748b',
                                       cursor: 'pointer',
+                                      transition: 'all 0.15s ease',
                                     }}
                                   >
                                     {st.label}
@@ -928,12 +957,12 @@ export const TeacherDashboard: React.FC = () => {
                                 }
                                 style={{
                                   width: '100%',
-                                  padding: '5px 8px',
+                                  padding: '6px 9px',
                                   borderRadius: '6px',
-                                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                                  backgroundColor: 'rgba(255, 255, 255, 0.07)',
-                                  color: '#FFFFFF',
-                                  fontSize: '0.78rem',
+                                  border: '1px solid #cbd5e1',
+                                  backgroundColor: '#ffffff',
+                                  color: '#0f172a',
+                                  fontSize: '0.8rem',
                                 }}
                               />
                             </td>
@@ -948,53 +977,53 @@ export const TeacherDashboard: React.FC = () => {
 
             {attendanceViewMode === 'history' && (
               <div style={{ marginTop: '0.5rem' }}>
-                <div style={{ fontSize: '0.85rem', fontWeight: 800, marginBottom: '0.5rem', color: '#FFFFFF' }}>
+                <div style={{ fontSize: '0.9rem', fontWeight: 800, marginBottom: '0.5rem', color: '#0f172a' }}>
                   Lịch sử các buổi điểm danh gần đây:
                 </div>
                 {attendanceRecords.length > 0 ? (
                   <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
                       <thead>
-                        <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.15)', textAlign: 'left', color: '#94A3B8' }}>
-                          <th style={{ padding: '8px' }}>Ngày học</th>
-                          <th style={{ padding: '8px' }}>Học viên</th>
-                          <th style={{ padding: '8px' }}>Trạng thái</th>
-                          <th style={{ padding: '8px' }}>Ghi chú</th>
+                        <tr style={{ borderBottom: '2px solid #e2e8f0', backgroundColor: '#f8fafc', textAlign: 'left', color: '#475569' }}>
+                          <th style={{ padding: '9px 12px' }}>Ngày học</th>
+                          <th style={{ padding: '9px 12px' }}>Học viên</th>
+                          <th style={{ padding: '9px 12px' }}>Trạng thái</th>
+                          <th style={{ padding: '9px 12px' }}>Ghi chú</th>
                         </tr>
                       </thead>
                       <tbody>
                         {attendanceRecords.map((item) => (
-                          <tr key={item._id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                            <td style={{ padding: '8px', color: '#CBD5E1' }}>
+                          <tr key={item._id} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                            <td style={{ padding: '10px 12px', color: '#475569', fontWeight: 600 }}>
                               {new Date(item.sessionDate).toLocaleDateString('vi-VN')}
                             </td>
-                            <td style={{ padding: '8px', fontWeight: 700, color: '#FFFFFF' }}>{item.student?.fullName}</td>
-                            <td style={{ padding: '8px' }}>
+                            <td style={{ padding: '10px 12px', fontWeight: 700, color: '#0f172a' }}>{item.student?.fullName}</td>
+                            <td style={{ padding: '10px 12px' }}>
                               <span
                                 style={{
-                                  padding: '2px 8px',
-                                  borderRadius: '10px',
+                                  padding: '3px 9px',
+                                  borderRadius: '8px',
                                   fontWeight: 800,
                                   fontSize: '0.72rem',
                                   backgroundColor:
-                                    item.status === 'PRESENT' ? 'rgba(87, 208, 97, 0.2)' : item.status === 'LATE' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                                    item.status === 'PRESENT' ? '#ecfdf5' : item.status === 'LATE' ? '#fef3c7' : '#fee2e2',
                                   color:
-                                    item.status === 'PRESENT' ? '#57D061' : item.status === 'LATE' ? '#FCD34D' : '#FCA5A5',
+                                    item.status === 'PRESENT' ? '#047857' : item.status === 'LATE' ? '#b45309' : '#b91c1c',
                                   border:
-                                    item.status === 'PRESENT' ? '1px solid rgba(87, 208, 97, 0.3)' : item.status === 'LATE' ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)',
+                                    item.status === 'PRESENT' ? '1px solid #a7f3d0' : item.status === 'LATE' ? '1px solid #fde68a' : '1px solid #fca5a5',
                                 }}
                               >
                                 {item.status}
                               </span>
                             </td>
-                            <td style={{ padding: '8px', color: '#94A3B8' }}>{item.notes || '—'}</td>
+                            <td style={{ padding: '10px 12px', color: '#64748b' }}>{item.notes || '—'}</td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
                 ) : (
-                  <div style={{ textAlign: 'center', padding: '2rem', color: '#94A3B8' }}>
+                  <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
                     Chưa có bản ghi điểm danh nào trước đó.
                   </div>
                 )}
@@ -1009,10 +1038,10 @@ export const TeacherDashboard: React.FC = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
             <div>
-              <h2 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#FFFFFF' }}>
+              <h2 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>
                 ✍️ Quản Lý Bài Tập &amp; Chấm Điểm
               </h2>
-              <span style={{ fontSize: '0.8rem', color: '#94A3B8' }}>
+              <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
                 Tạo bài tập theo kỹ năng (Writing / Speaking / Listening / Reading) và chấm bài chi tiết theo tiêu chí IELTS
               </span>
             </div>
@@ -1021,10 +1050,10 @@ export const TeacherDashboard: React.FC = () => {
               type="button"
               onClick={() => setIsCreateAssOpen(true)}
               style={{
-                backgroundColor: '#EC6E23',
+                backgroundColor: '#ea580c',
                 color: '#FFFFFF',
                 border: 'none',
-                padding: '0.6rem 1.2rem',
+                padding: '0.6rem 1.25rem',
                 borderRadius: '10px',
                 fontSize: '0.85rem',
                 fontWeight: 700,
@@ -1032,7 +1061,7 @@ export const TeacherDashboard: React.FC = () => {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
-                boxShadow: '0 4px 12px rgba(236, 110, 35, 0.25)',
+                boxShadow: '0 2px 8px rgba(234, 88, 12, 0.25)',
               }}
             >
               <span>➕</span>
@@ -1048,38 +1077,40 @@ export const TeacherDashboard: React.FC = () => {
                 style={{
                   padding: '1.25rem',
                   borderRadius: '16px',
+                  backgroundColor: '#ffffff',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
                   gap: '0.75rem',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  borderTop: '4px solid #57D061',
+                  border: '1px solid #e2e8f0',
+                  borderTop: '4px solid #059669',
+                  boxShadow: '0 2px 6px rgba(0, 0, 0, 0.04)',
                 }}
               >
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <span style={{ backgroundColor: 'rgba(2, 132, 199, 0.2)', color: '#38BDF8', border: '1px solid rgba(56, 189, 248, 0.3)', padding: '2px 8px', borderRadius: '8px', fontSize: '0.72rem', fontWeight: 700 }}>
+                    <span style={{ backgroundColor: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', padding: '3px 8px', borderRadius: '8px', fontSize: '0.72rem', fontWeight: 700 }}>
                       {ass.skill}
                     </span>
-                    <span style={{ fontSize: '0.75rem', color: '#CBD5E1', fontWeight: 600 }}>
+                    <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>
                       Hạn nộp: {new Date(ass.dueDate).toLocaleDateString('vi-VN')}
                     </span>
                   </div>
 
-                  <h3 style={{ margin: '0.5rem 0 0.35rem', fontSize: '1.05rem', fontWeight: 800, color: '#FFFFFF', lineHeight: 1.3 }}>
+                  <h3 style={{ margin: '0.5rem 0 0.35rem', fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', lineHeight: 1.3 }}>
                     {ass.title}
                   </h3>
 
-                  <div style={{ fontSize: '0.8rem', color: '#94A3B8', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                  <div style={{ fontSize: '0.82rem', color: '#475569', lineHeight: 1.45, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                     {ass.description}
                   </div>
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderTop: '1px solid rgba(255, 255, 255, 0.1)', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', fontSize: '0.8rem' }}>
-                    <span style={{ color: '#CBD5E1' }}>Lớp: <strong style={{ color: '#A0EC1D' }}>{ass.class?.classCode}</strong></span>
-                    <span style={{ color: '#CBD5E1' }}>
-                      Đã nộp: <strong style={{ color: '#57D061' }}>{ass.stats?.submittedCount || 0}</strong> / <span style={{ color: '#94A3B8' }}>{ass.stats?.totalStudents || 16}</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', fontSize: '0.8rem' }}>
+                    <span style={{ color: '#64748b' }}>Lớp: <strong style={{ color: '#0f172a' }}>{ass.class?.classCode}</strong></span>
+                    <span style={{ color: '#64748b' }}>
+                      Đã nộp: <strong style={{ color: '#059669' }}>{ass.stats?.submittedCount || 0}</strong> / <span style={{ color: '#64748b' }}>{ass.stats?.totalStudents || 16}</span>
                     </span>
                   </div>
 
@@ -1089,27 +1120,26 @@ export const TeacherDashboard: React.FC = () => {
                       onClick={() => handleOpenGradingList(ass)}
                       style={{
                         flex: 1,
-                        backgroundColor: 'rgba(87, 208, 97, 0.15)',
-                        color: '#A0EC1D',
-                        border: '1px solid #57D061',
-                        padding: '0.5rem',
+                        backgroundColor: '#059669',
+                        color: '#ffffff',
+                        border: 'none',
+                        padding: '0.55rem',
                         borderRadius: '8px',
-                        fontSize: '0.8rem',
+                        fontSize: '0.82rem',
                         fontWeight: 700,
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        gap: '4px',
+                        gap: '6px',
+                        boxShadow: '0 2px 6px rgba(5, 150, 105, 0.2)',
                         transition: 'all 0.15s ease',
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#57D061';
-                        e.currentTarget.style.color = '#052F2E';
+                        e.currentTarget.style.backgroundColor = '#047857';
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'rgba(87, 208, 97, 0.15)';
-                        e.currentTarget.style.color = '#A0EC1D';
+                        e.currentTarget.style.backgroundColor = '#059669';
                       }}
                     >
                       <span>📝</span>
@@ -1128,7 +1158,7 @@ export const TeacherDashboard: React.FC = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           {/* Section 1: Assigned Classes */}
           <div>
-            <h2 style={{ margin: '0 0 0.75rem', fontSize: '1.15rem', fontWeight: 800, color: '#FFFFFF' }}>
+            <h2 style={{ margin: '0 0 0.75rem', fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>
               🏫 Danh Sách Lớp Học Phụ Trách (Class Management)
             </h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1rem' }}>
@@ -1139,25 +1169,27 @@ export const TeacherDashboard: React.FC = () => {
                   style={{
                     padding: '1.25rem',
                     borderRadius: '16px',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                    borderLeft: '4px solid #A0EC1D',
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #e2e8f0',
+                    borderLeft: '4px solid #059669',
+                    boxShadow: '0 2px 6px rgba(0, 0, 0, 0.04)',
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontWeight: 800, color: '#A0EC1D', fontSize: '1.05rem' }}>
+                    <span style={{ fontWeight: 800, color: '#047857', fontSize: '1.05rem' }}>
                       {cls.classCode}
                     </span>
-                    <span style={{ backgroundColor: 'rgba(87, 208, 97, 0.2)', color: '#57D061', border: '1px solid rgba(87, 208, 97, 0.3)', padding: '2px 8px', borderRadius: '12px', fontSize: '0.72rem', fontWeight: 700 }}>
+                    <span style={{ backgroundColor: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', padding: '3px 8px', borderRadius: '8px', fontSize: '0.72rem', fontWeight: 700 }}>
                       {cls.status}
                     </span>
                   </div>
-                  <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#FFFFFF', marginTop: '0.35rem' }}>
+                  <div style={{ fontSize: '0.92rem', fontWeight: 700, color: '#0f172a', marginTop: '0.35rem' }}>
                     {cls.name}
                   </div>
-                  <div style={{ fontSize: '0.8rem', color: '#94A3B8', marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <div>📍 Phòng: <strong style={{ color: '#CBD5E1' }}>{cls.room}</strong></div>
-                    <div>⏰ Lịch học: <strong style={{ color: '#CBD5E1' }}>{cls.scheduleDays.join(' - ')} ({cls.timeSlot})</strong></div>
-                    <div>👥 Sĩ số: <strong style={{ color: '#CBD5E1' }}>{cls.currentEnrollment} / {cls.capacity} học viên</strong></div>
+                  <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <div>📍 Phòng: <strong style={{ color: '#0f172a' }}>{cls.room}</strong></div>
+                    <div>⏰ Lịch học: <strong style={{ color: '#0f172a' }}>{cls.scheduleDays.join(' - ')} ({cls.timeSlot})</strong></div>
+                    <div>👥 Sĩ số: <strong style={{ color: '#0f172a' }}>{cls.currentEnrollment} / {cls.capacity} học viên</strong></div>
                   </div>
                 </div>
               ))}
@@ -1168,10 +1200,10 @@ export const TeacherDashboard: React.FC = () => {
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.75rem' }}>
               <div>
-                <h2 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#FFFFFF' }}>
+                <h2 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>
                   👥 Danh Sách Học Viên (Student Directory &amp; Detail)
                 </h2>
-                <span style={{ fontSize: '0.8rem', color: '#94A3B8' }}>
+                <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
                   Nhấp vào học viên để xem hồ sơ chi tiết, điểm danh và kết quả học tập
                 </span>
               </div>
@@ -1183,22 +1215,22 @@ export const TeacherDashboard: React.FC = () => {
                   value={studentSearch}
                   onChange={(e) => setStudentSearch(e.target.value)}
                   style={{
-                    padding: '0.5rem 0.85rem',
+                    padding: '0.55rem 0.95rem',
                     borderRadius: '8px',
-                    border: '1px solid rgba(255, 255, 255, 0.25)',
-                    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                    color: '#FFFFFF',
+                    border: '1px solid #cbd5e1',
+                    backgroundColor: '#ffffff',
+                    color: '#0f172a',
                     fontSize: '0.82rem',
-                    width: '260px',
+                    width: '280px',
                   }}
                 />
               </div>
             </div>
 
-            <div className="dash-card" style={{ padding: '0.5rem', borderRadius: '16px', overflowX: 'auto', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+            <div className="dash-card" style={{ padding: '0.5rem', borderRadius: '16px', overflowX: 'auto', backgroundColor: '#ffffff', border: '1px solid #e2e8f0', boxShadow: '0 2px 6px rgba(0, 0, 0, 0.04)' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                 <thead>
-                  <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.15)', textAlign: 'left', color: '#94A3B8' }}>
+                  <tr style={{ borderBottom: '2px solid #e2e8f0', backgroundColor: '#f8fafc', textAlign: 'left', color: '#475569' }}>
                     <th style={{ padding: '10px 14px' }}>Mã &amp; Tên Học Viên</th>
                     <th style={{ padding: '10px 14px' }}>Liên Hệ</th>
                     <th style={{ padding: '10px 14px' }}>Target Band</th>
@@ -1209,25 +1241,27 @@ export const TeacherDashboard: React.FC = () => {
                 </thead>
                 <tbody>
                   {searchedStudents.map((stu) => (
-                    <tr key={stu._id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                    <tr key={stu._id} style={{ borderBottom: '1px solid #e2e8f0' }}>
                       <td style={{ padding: '12px 14px' }}>
-                        <div style={{ fontWeight: 800, color: '#FFFFFF', fontSize: '0.9rem' }}>{stu.fullName}</div>
-                        <div style={{ fontSize: '0.75rem', color: '#A0EC1D', fontWeight: 700, marginTop: '2px' }}>{stu.studentCode}</div>
+                        <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.9rem' }}>{stu.fullName}</div>
+                        <div style={{ fontSize: '0.74rem', color: '#047857', fontWeight: 700, backgroundColor: '#ecfdf5', border: '1px solid #a7f3d0', padding: '1px 6px', borderRadius: '6px', display: 'inline-block', marginTop: '2px' }}>
+                          {stu.studentCode}
+                        </div>
                       </td>
                       <td style={{ padding: '12px 14px', fontSize: '0.82rem' }}>
-                        <div style={{ color: '#E2E8F0' }}>{stu.email}</div>
-                        <div style={{ color: '#94A3B8', fontSize: '0.78rem', marginTop: '2px' }}>{stu.phone}</div>
+                        <div style={{ color: '#1e293b', fontWeight: 600 }}>{stu.email}</div>
+                        <div style={{ color: '#64748b', fontSize: '0.78rem', marginTop: '2px' }}>{stu.phone}</div>
                       </td>
                       <td style={{ padding: '12px 14px' }}>
-                        <span style={{ backgroundColor: 'rgba(251, 191, 36, 0.15)', color: '#FCD34D', border: '1px solid rgba(251, 191, 36, 0.3)', padding: '3px 9px', borderRadius: '12px', fontWeight: 800, fontSize: '0.78rem' }}>
+                        <span style={{ backgroundColor: '#fef3c7', color: '#b45309', border: '1px solid #fde68a', padding: '3px 9px', borderRadius: '8px', fontWeight: 800, fontSize: '0.78rem' }}>
                           Band {stu.targetBand}
                         </span>
                       </td>
-                      <td style={{ padding: '12px 14px', fontSize: '0.82rem', color: '#CBD5E1' }}>
+                      <td style={{ padding: '12px 14px', fontSize: '0.82rem', color: '#334155' }}>
                         {stu.learningGoal}
                       </td>
                       <td style={{ padding: '12px 14px' }}>
-                        <span style={{ color: '#57D061', fontWeight: 800, fontSize: '0.88rem' }}>
+                        <span style={{ color: '#059669', fontWeight: 800, fontSize: '0.88rem' }}>
                           {stu.attendanceStats?.attendanceRate || 92}%
                         </span>
                       </td>
@@ -1239,22 +1273,44 @@ export const TeacherDashboard: React.FC = () => {
                             setIsStudentDetailOpen(true);
                           }}
                           style={{
-                            backgroundColor: 'rgba(87, 208, 97, 0.15)',
-                            color: '#A0EC1D',
-                            border: '1px solid #57D061',
+                            backgroundColor: '#f8fafc',
+                            color: '#0f172a',
+                            border: '1px solid #cbd5e1',
                             padding: '0.45rem 0.9rem',
                             borderRadius: '8px',
-                            fontSize: '0.75rem',
+                            fontSize: '0.78rem',
                             fontWeight: 700,
-                            cursor: 'poin      {/* TAB 4: BẢNG ĐIỂM & KẾT QUẢ HỌC TẬP */}
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#e2e8f0';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = '#f8fafc';
+                          }}
+                        >
+                          👁️ Chi tiết
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 4: BẢNG ĐIỂM & KẾT QUẢ HỌC TẬP */}
       {activeTab === 'academic_grades' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
             <div>
-              <h2 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#FFFFFF' }}>
+              <h2 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>
                 📊 Bảng Điểm &amp; Kết Quả Học Tập (Academic Performance)
               </h2>
-              <span style={{ fontSize: '0.8rem', color: '#94A3B8' }}>
+              <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
                 Theo dõi điểm thi thử Mock Test, kiểm tra định kỳ 4 kỹ năng và cập nhật bảng điểm học viên
               </span>
             </div>
@@ -1268,10 +1324,10 @@ export const TeacherDashboard: React.FC = () => {
                 setIsGradeModalOpen(true);
               }}
               style={{
-                backgroundColor: '#57D061',
-                color: '#052F2E',
+                backgroundColor: '#059669',
+                color: '#ffffff',
                 border: 'none',
-                padding: '0.6rem 1.2rem',
+                padding: '0.6rem 1.25rem',
                 borderRadius: '10px',
                 fontSize: '0.85rem',
                 fontWeight: 800,
@@ -1279,7 +1335,7 @@ export const TeacherDashboard: React.FC = () => {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
-                boxShadow: '0 4px 12px rgba(87, 208, 97, 0.3)',
+                boxShadow: '0 2px 6px rgba(5, 150, 105, 0.25)',
               }}
             >
               <span>➕</span>
@@ -1287,10 +1343,10 @@ export const TeacherDashboard: React.FC = () => {
             </button>
           </div>
 
-          <div className="dash-card" style={{ padding: '0.5rem', borderRadius: '16px', overflowX: 'auto', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+          <div className="dash-card" style={{ padding: '0.5rem', borderRadius: '16px', overflowX: 'auto', backgroundColor: '#ffffff', border: '1px solid #e2e8f0', boxShadow: '0 2px 6px rgba(0, 0, 0, 0.04)' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
               <thead>
-                <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.15)', textAlign: 'left', color: '#94A3B8' }}>
+                <tr style={{ borderBottom: '2px solid #e2e8f0', backgroundColor: '#f8fafc', textAlign: 'left', color: '#475569' }}>
                   <th style={{ padding: '10px 14px' }}>Học Viên</th>
                   <th style={{ padding: '10px 14px' }}>Bài Đánh Giá</th>
                   <th style={{ padding: '10px 14px' }}>Ngày Thi</th>
@@ -1302,29 +1358,31 @@ export const TeacherDashboard: React.FC = () => {
               </thead>
               <tbody>
                 {grades.map((g) => (
-                  <tr key={g._id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                  <tr key={g._id} style={{ borderBottom: '1px solid #e2e8f0' }}>
                     <td style={{ padding: '12px 14px' }}>
-                      <div style={{ fontWeight: 800, color: '#FFFFFF', fontSize: '0.9rem' }}>{g.student?.fullName}</div>
-                      <div style={{ fontSize: '0.75rem', color: '#A0EC1D', fontWeight: 700, marginTop: '2px' }}>{g.class?.classCode}</div>
+                      <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.9rem' }}>{g.student?.fullName}</div>
+                      <div style={{ fontSize: '0.74rem', color: '#047857', fontWeight: 700, backgroundColor: '#ecfdf5', border: '1px solid #a7f3d0', padding: '1px 6px', borderRadius: '6px', display: 'inline-block', marginTop: '2px' }}>
+                        {g.class?.classCode}
+                      </div>
                     </td>
                     <td style={{ padding: '12px 14px' }}>
-                      <div style={{ fontWeight: 700, color: '#FCD34D', fontSize: '0.88rem' }}>{g.title}</div>
-                      <span style={{ fontSize: '0.7rem', color: '#93C5FD', backgroundColor: 'rgba(59, 130, 246, 0.2)', border: '1px solid rgba(59, 130, 246, 0.3)', padding: '1px 6px', borderRadius: '6px', display: 'inline-block', marginTop: '2px' }}>
+                      <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.88rem' }}>{g.title}</div>
+                      <span style={{ fontSize: '0.7rem', color: '#1d4ed8', backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', padding: '2px 7px', borderRadius: '6px', display: 'inline-block', marginTop: '2px', fontWeight: 600 }}>
                         {g.evaluationType}
                       </span>
                     </td>
-                    <td style={{ padding: '12px 14px', fontSize: '0.82rem', color: '#CBD5E1' }}>
+                    <td style={{ padding: '12px 14px', fontSize: '0.82rem', color: '#475569', fontWeight: 600 }}>
                       {new Date(g.testDate).toLocaleDateString('vi-VN')}
                     </td>
                     <td style={{ padding: '12px 14px' }}>
-                      <span style={{ backgroundColor: 'rgba(87, 208, 97, 0.2)', color: '#57D061', border: '1px solid #57D061', padding: '3px 10px', borderRadius: '12px', fontWeight: 900, fontSize: '0.85rem' }}>
+                      <span style={{ backgroundColor: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', padding: '3px 10px', borderRadius: '8px', fontWeight: 900, fontSize: '0.88rem' }}>
                         Band {g.overallBand.toFixed(1)}
                       </span>
                     </td>
-                    <td style={{ padding: '12px 14px', fontSize: '0.82rem', color: '#CBD5E1' }}>
-                      L: <strong style={{ color: '#FFFFFF' }}>{g.listening ?? '—'}</strong> | R: <strong style={{ color: '#FFFFFF' }}>{g.reading ?? '—'}</strong> | W: <strong style={{ color: '#FFFFFF' }}>{g.writing ?? '—'}</strong> | S: <strong style={{ color: '#FFFFFF' }}>{g.speaking ?? '—'}</strong>
+                    <td style={{ padding: '12px 14px', fontSize: '0.82rem', color: '#475569' }}>
+                      L: <strong style={{ color: '#0f172a' }}>{g.listening ?? '—'}</strong> | R: <strong style={{ color: '#0f172a' }}>{g.reading ?? '—'}</strong> | W: <strong style={{ color: '#0f172a' }}>{g.writing ?? '—'}</strong> | S: <strong style={{ color: '#0f172a' }}>{g.speaking ?? '—'}</strong>
                     </td>
-                    <td style={{ padding: '12px 14px', fontSize: '0.8rem', color: '#94A3B8', maxWidth: '200px' }}>
+                    <td style={{ padding: '12px 14px', fontSize: '0.8rem', color: '#475569', maxWidth: '200px' }}>
                       {g.feedback || '—'}
                     </td>
                     <td style={{ padding: '12px 14px' }}>
@@ -1333,9 +1391,9 @@ export const TeacherDashboard: React.FC = () => {
                           type="button"
                           onClick={() => handleEditGrade(g)}
                           style={{
-                            background: 'rgba(160, 236, 29, 0.12)',
-                            border: '1px solid #A0EC1D',
-                            color: '#A0EC1D',
+                            background: '#eff6ff',
+                            border: '1px solid #bfdbfe',
+                            color: '#1d4ed8',
                             padding: '4px 10px',
                             borderRadius: '6px',
                             fontSize: '0.75rem',
@@ -1350,41 +1408,10 @@ export const TeacherDashboard: React.FC = () => {
                           type="button"
                           onClick={() => handleDeleteGrade(g._id)}
                           style={{
-                            background: 'rgba(239, 68, 68, 0.15)',
-                            border: '1px solid #EF4444',
-                            color: '#FCA5A5',
+                            background: '#fef2f2',
+                            border: '1px solid #fecaca',
+                            color: '#dc2626',
                             padding: '4px 8px',
-                            borderRadius: '6px',
-                            fontSize: '0.75rem',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                          }}
-                          title="Xóa điểm"
-                        >
-                          🗑️
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}rsor: 'pointer',
-                          }}
-                          title="Chỉnh sửa điểm"
-                        >
-                          ✏️ Sửa
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteGrade(g._id)}
-                          style={{
-                            background: 'none',
-                            border: '1px solid #FCA5A5',
-                            color: '#DC2626',
-                            padding: '3px 8px',
                             borderRadius: '6px',
                             fontSize: '0.75rem',
                             fontWeight: 700,
@@ -1411,7 +1438,7 @@ export const TeacherDashboard: React.FC = () => {
         <div className="dmr-modal-overlay" onClick={() => setIsScheduleRequestOpen(false)}>
           <div className="dmr-modal-content" style={{ maxWidth: '600px' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid #E2E8F0', paddingBottom: '0.75rem' }}>
-              <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#07403F' }}>
+              <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#0F172A' }}>
                 🔄 Đơn Xin Đổi Lịch Dạy / Ca Dạy
               </h3>
               <button type="button" onClick={() => setIsScheduleRequestOpen(false)} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
@@ -1431,7 +1458,7 @@ export const TeacherDashboard: React.FC = () => {
                   fontSize: '0.8rem',
                   cursor: 'pointer',
                   backgroundColor: requestTab === 'submit' ? '#FFFFFF' : 'transparent',
-                  color: requestTab === 'submit' ? '#07403F' : '#64748B',
+                  color: requestTab === 'submit' ? '#064e3b' : '#64748B',
                 }}
               >
                 📝 Gửi Đơn Yêu Cầu Mới
@@ -1448,7 +1475,7 @@ export const TeacherDashboard: React.FC = () => {
                   fontSize: '0.8rem',
                   cursor: 'pointer',
                   backgroundColor: requestTab === 'history' ? '#FFFFFF' : 'transparent',
-                  color: requestTab === 'history' ? '#07403F' : '#64748B',
+                  color: requestTab === 'history' ? '#064e3b' : '#64748B',
                 }}
               >
                 📋 Lịch Sử &amp; Trạng Thái ({scheduleRequests.length})
@@ -1549,7 +1576,7 @@ export const TeacherDashboard: React.FC = () => {
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontWeight: 800, fontSize: '0.85rem', color: '#07403F' }}>
+                        <span style={{ fontWeight: 800, fontSize: '0.85rem', color: '#0F172A' }}>
                           Lớp: {req.currentClass?.classCode}
                         </span>
                         <span
@@ -1598,7 +1625,7 @@ export const TeacherDashboard: React.FC = () => {
         <div className="dmr-modal-overlay" onClick={() => setIsCreateAssOpen(false)}>
           <div className="dmr-modal-content" style={{ maxWidth: '560px' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid #E2E8F0', paddingBottom: '0.75rem' }}>
-              <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#07403F' }}>
+              <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#0F172A' }}>
                 ➕ Giao Bài Tập Mới Cho Lớp
               </h3>
               <button type="button" onClick={() => setIsCreateAssOpen(false)} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
@@ -1710,7 +1737,7 @@ export const TeacherDashboard: React.FC = () => {
           <div className="dmr-modal-content" style={{ maxWidth: '800px' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid #E2E8F0', paddingBottom: '0.75rem' }}>
               <div>
-                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#07403F' }}>
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#0F172A' }}>
                   📝 Chấm Bài: {selectedAssignmentForGrading.title}
                 </h3>
                 <span style={{ fontSize: '0.75rem', color: '#64748B' }}>
@@ -1782,14 +1809,15 @@ export const TeacherDashboard: React.FC = () => {
                         }
                       }}
                       style={{
-                        backgroundColor: '#07403F',
+                        backgroundColor: '#059669',
                         color: '#FFFFFF',
                         border: 'none',
-                        padding: '0.45rem 0.9rem',
+                        padding: '0.45rem 0.95rem',
                         borderRadius: '6px',
-                        fontSize: '0.75rem',
+                        fontSize: '0.78rem',
                         fontWeight: 700,
                         cursor: 'pointer',
+                        boxShadow: '0 2px 4px rgba(5, 150, 105, 0.2)',
                       }}
                     >
                       {sub.status === 'GRADED' ? '✏️ Chấm Lại' : '✍️ Chấm Điểm & Nhận Xét'}
@@ -1797,7 +1825,7 @@ export const TeacherDashboard: React.FC = () => {
                   </div>
                 ))
               ) : (
-                <div style={{ textAlign: 'center', padding: '2rem', color: '#94A3B8' }}>
+                <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
                   Chưa có học viên nào nộp bài tập này.
                 </div>
               )}
@@ -1813,7 +1841,7 @@ export const TeacherDashboard: React.FC = () => {
         <div className="dmr-modal-overlay" style={{ zIndex: 1100 }} onClick={() => setActiveSubmission(null)}>
           <div className="dmr-modal-content" style={{ maxWidth: '650px' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid #E2E8F0', paddingBottom: '0.75rem' }}>
-              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#07403F' }}>
+              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>
                 🎯 Chấm Barem IELTS: {activeSubmission.student?.fullName}
               </h3>
               <button type="button" onClick={() => setActiveSubmission(null)} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
@@ -1878,7 +1906,7 @@ export const TeacherDashboard: React.FC = () => {
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 800, color: '#07403F', marginBottom: '0.2rem' }}>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.2rem' }}>
                   Overall Band Điểm (0.0 - 9.0):
                 </label>
                 <input
@@ -1888,12 +1916,12 @@ export const TeacherDashboard: React.FC = () => {
                   max="9.0"
                   value={gradeBand}
                   onChange={(e) => setGradeBand(Number(e.target.value))}
-                  style={{ width: '100%', padding: '0.55rem', borderRadius: '8px', border: '2px solid #57D061', fontWeight: 800, fontSize: '1rem', color: '#07403F' }}
+                  style={{ width: '100%', padding: '0.55rem', borderRadius: '8px', border: '2px solid #059669', fontWeight: 800, fontSize: '1rem', color: '#064e3b' }}
                 />
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.2rem' }}>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.2rem', color: '#334155' }}>
                   Nhận xét &amp; Góp ý sửa bài:
                 </label>
                 <textarea
@@ -1901,7 +1929,7 @@ export const TeacherDashboard: React.FC = () => {
                   placeholder="Ghi nhận xét chi tiết, chỉ ra các lỗi ngữ pháp và khen ngợi tiến bộ..."
                   value={gradeFeedback}
                   onChange={(e) => setGradeFeedback(e.target.value)}
-                  style={{ width: '100%', padding: '0.55rem', borderRadius: '8px', border: '1px solid #CBD5E1' }}
+                  style={{ width: '100%', padding: '0.55rem', borderRadius: '8px', border: '1px solid #CBD5E1', color: '#0f172a' }}
                 />
               </div>
 
@@ -1909,7 +1937,7 @@ export const TeacherDashboard: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setActiveSubmission(null)}
-                  style={{ padding: '0.55rem 1rem', borderRadius: '8px', border: '1px solid #CBD5E1', background: '#FFF' }}
+                  style={{ padding: '0.55rem 1rem', borderRadius: '8px', border: '1px solid #CBD5E1', background: '#FFF', color: '#475569', fontWeight: 600, cursor: 'pointer' }}
                 >
                   Đóng
                 </button>
@@ -1917,7 +1945,7 @@ export const TeacherDashboard: React.FC = () => {
                   type="button"
                   disabled={isSavingGrade}
                   onClick={handleSaveSubmissionGrade}
-                  style={{ padding: '0.55rem 1.25rem', borderRadius: '8px', border: 'none', backgroundColor: '#57D061', color: '#052F2E', fontWeight: 800 }}
+                  style={{ padding: '0.55rem 1.25rem', borderRadius: '8px', border: 'none', backgroundColor: '#059669', color: '#ffffff', fontWeight: 800, cursor: 'pointer', boxShadow: '0 2px 6px rgba(5, 150, 105, 0.25)' }}
                 >
                   {isSavingGrade ? 'Đang lưu...' : 'Lưu & Gửi Điểm Cho Học Viên'}
                 </button>
@@ -1952,14 +1980,14 @@ export const TeacherDashboard: React.FC = () => {
                     width: '56px',
                     height: '56px',
                     borderRadius: '16px',
-                    background: 'linear-gradient(135deg, #A0EC1D 0%, #57D061 100%)',
-                    color: '#052F2E',
+                    background: 'linear-gradient(135deg, #064e3b 0%, #059669 100%)',
+                    color: '#FFFFFF',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     fontWeight: 900,
                     fontSize: '1.5rem',
-                    boxShadow: '0 4px 12px rgba(87, 208, 97, 0.35)',
+                    boxShadow: '0 4px 12px rgba(6, 78, 59, 0.25)',
                   }}
                 >
                   {selectedStudentDetail.fullName.charAt(0).toUpperCase()}
@@ -2120,16 +2148,16 @@ export const TeacherDashboard: React.FC = () => {
                     padding: '0.6rem 1.5rem',
                     borderRadius: '10px',
                     border: 'none',
-                    backgroundColor: '#07403F',
+                    backgroundColor: '#059669',
                     color: '#FFFFFF',
                     fontWeight: 700,
                     fontSize: '0.85rem',
                     cursor: 'pointer',
-                    boxShadow: '0 4px 12px rgba(7, 64, 63, 0.25)',
+                    boxShadow: '0 4px 12px rgba(5, 150, 105, 0.25)',
                     transition: 'all 0.15s ease',
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#0d5654'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#07403F'; }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#047857'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#059669'; }}
                 >
                   Đóng
                 </button>
@@ -2146,7 +2174,7 @@ export const TeacherDashboard: React.FC = () => {
         <div className="dmr-modal-overlay" onClick={() => setIsGradeModalOpen(false)}>
           <div className="dmr-modal-content" style={{ maxWidth: '600px' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid #E2E8F0', paddingBottom: '0.75rem' }}>
-              <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#07403F' }}>
+              <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#0F172A' }}>
                 {editingGradeId ? '✏️ Cập Nhật Điểm Bài Thi' : '➕ Nhập Điểm Đánh Giá Học Viên'}
               </h3>
               <button type="button" onClick={() => setIsGradeModalOpen(false)} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
@@ -2215,7 +2243,7 @@ export const TeacherDashboard: React.FC = () => {
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.5rem' }}>
                   <div>
-                    <label style={{ fontSize: '0.75rem', fontWeight: 800, color: '#166534' }}>Overall</label>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 800, color: '#064e3b' }}>Overall</label>
                     <input
                       type="number"
                       step="0.5"
@@ -2223,7 +2251,7 @@ export const TeacherDashboard: React.FC = () => {
                       max="9.0"
                       value={gradeFormOverall}
                       onChange={(e) => setGradeFormOverall(Number(e.target.value))}
-                      style={{ width: '100%', padding: '0.45rem', borderRadius: '6px', border: '2px solid #57D061', fontWeight: 800 }}
+                      style={{ width: '100%', padding: '0.45rem', borderRadius: '6px', border: '2px solid #059669', fontWeight: 800, color: '#064e3b', backgroundColor: '#f0fdf4' }}
                       required
                     />
                   </div>
@@ -2299,7 +2327,16 @@ export const TeacherDashboard: React.FC = () => {
                   <button
                     type="submit"
                     disabled={isSavingAcademicGrade}
-                    style={{ padding: '0.55rem 1.25rem', borderRadius: '8px', border: 'none', backgroundColor: '#57D061', color: '#052F2E', fontWeight: 800 }}
+                    style={{
+                      padding: '0.55rem 1.25rem',
+                      borderRadius: '8px',
+                      border: 'none',
+                      backgroundColor: '#059669',
+                      color: '#ffffff',
+                      fontWeight: 800,
+                      cursor: isSavingAcademicGrade ? 'not-allowed' : 'pointer',
+                      boxShadow: '0 4px 12px rgba(5, 150, 105, 0.25)',
+                    }}
                   >
                     {isSavingAcademicGrade ? 'Đang lưu...' : editingGradeId ? 'Cập Nhật Điểm' : 'Lưu Điểm Học Viên'}
                   </button>
