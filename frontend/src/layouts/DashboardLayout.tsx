@@ -11,12 +11,10 @@ interface DashboardLayoutProps {
  */
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   return (
-    <div className="dashboard-layout" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div className="dashboard-layout" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#052F2E' }}>
       <Navbar />
-      <main className="dashboard-main-content" style={{ flex: 1, padding: '2rem 1rem' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          {children}
-        </div>
+      <main className="dashboard-main-content" style={{ flex: 1 }}>
+        {children}
       </main>
       <Footer />
     </div>

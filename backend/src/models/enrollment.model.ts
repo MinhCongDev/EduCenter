@@ -1,11 +1,19 @@
 import mongoose, { Document, Schema, Model, Types } from 'mongoose';
 
+export type EnrollmentStatus = 'PENDING' | 'ENROLLED' | 'DROPPED' | 'COMPLETED';
+export type TuitionStatus = 'PENDING' | 'PAID' | 'REFUNDED';
+
 export interface IEnrollment extends Document {
   student: Types.ObjectId;
-  class: Types.ObjectId;
+  class?: Types.ObjectId;
+  course?: Types.ObjectId;
+  registrationDate: Date;
   enrollmentDate: Date;
-  status: 'ENROLLED' | 'DROPPED' | 'COMPLETED';
-  tuitionStatus: 'PENDING' | 'PAID';
+  status: EnrollmentStatus;
+  tuitionStatus: TuitionStatus;
+  finalScore?: number;
+  midtermScore?: number;
+  academicResult?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -15,12 +23,19 @@ const enrollmentSchema = new Schema<IEnrollment>(
     student: {
       type: Schema.Types.ObjectId,
       ref: 'User',
-      required: true,
+      required: [true, 'Học viên là bắt buộc'],
     },
     class: {
       type: Schema.Types.ObjectId,
       ref: 'Class',
-      required: true,
+    },
+    course: {
+      type: Schema.Types.ObjectId,
+      ref: 'Course',
+    },
+    registrationDate: {
+      type: Date,
+      default: Date.now,
     },
     enrollmentDate: {
       type: Date,
@@ -28,13 +43,27 @@ const enrollmentSchema = new Schema<IEnrollment>(
     },
     status: {
       type: String,
-      enum: ['ENROLLED', 'DROPPED', 'COMPLETED'],
+      enum: ['PENDING', 'ENROLLED', 'DROPPED', 'COMPLETED'],
       default: 'ENROLLED',
     },
     tuitionStatus: {
       type: String,
-      enum: ['PENDING', 'PAID'],
-      default: 'PAID',
+      enum: ['PENDING', 'PAID', 'REFUNDED'],
+      default: 'PENDING',
+    },
+    finalScore: {
+      type: Number,
+      min: 0,
+      max: 10,
+    },
+    midtermScore: {
+      type: Number,
+      min: 0,
+      max: 10,
+    },
+    academicResult: {
+      type: String,
+      default: '',
     },
   },
   {
@@ -43,3 +72,4 @@ const enrollmentSchema = new Schema<IEnrollment>(
 );
 
 export const Enrollment: Model<IEnrollment> = mongoose.model<IEnrollment>('Enrollment', enrollmentSchema);
+
