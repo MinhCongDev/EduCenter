@@ -347,8 +347,7 @@ export const createChangeRequest = async (req: AuthRequest, res: Response): Prom
 
     const request = await ChangeRequest.create({
       student: req.user._id,
-      requesterRole: 'STUDENT',
-      requestType,
+      type: requestType,
       currentClass,
       targetClass,
       currentSchedule,
