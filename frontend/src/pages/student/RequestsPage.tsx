@@ -1,420 +1,349 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-
-interface ChangeRequest {
-  id: string;
-  type: 'CLASS_CHANGE' | 'SCHEDULE_CHANGE';
-  currentClassCode?: string;
-  targetClassCode?: string;
-  currentScheduleInfo?: string;
-  targetScheduleInfo?: string;
-  reason: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
-  adminNote?: string;
-  processedAt?: string;
-  createdAt: string;
-}
+import { studentService } from '../../services/student.service';
+import type { ChangeRequestItem } from '../../types';
 
 const RequestsPage: React.FC = () => {
-  const [requests, setRequests] = useState<ChangeRequest[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [requests, setRequests] = useState<ChangeRequestItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('ALL');
-  const [showNewRequestModal, setShowNewRequestModal] = useState(false);
-  const [newRequest, setNewRequest] = useState({
-    type: 'CLASS_CHANGE' as 'CLASS_CHANGE' | 'SCHEDULE_CHANGE',
-    currentClass: 'WEB-K24-A',
-    targetClass: 'WEB-K24-B',
+  const [showForm, setShowForm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Form state
+  const [formData, setFormData] = useState({
+    requestType: 'CHANGE_CLASS' as 'CHANGE_CLASS' | 'CHANGE_SCHEDULE' | 'WITHDRAW',
+    currentClass: '',
+    targetClass: '',
     reason: '',
   });
+  const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Mock data - sẽ thay bằng API: GET /api/student/requests
-    setTimeout(() => {
-      const mockRequests: ChangeRequest[] = [
-        {
-          id: 'req1',
-          type: 'CLASS_CHANGE',
-          currentClassCode: 'WEB-K24-A',
-          targetClassCode: 'WEB-K24-B',
-          reason: 'Lịch học lớp A bị trùng với công việc part-time, xin được chuyển sang lớp B (Thứ 3, 5, 7).',
-          status: 'PENDING',
-          createdAt: '14/10/2026 10:30',
-        },
-        {
-          id: 'req2',
-          type: 'SCHEDULE_CHANGE',
-          currentScheduleInfo: 'Thứ 2, 4, 6 - 18:30',
-          targetScheduleInfo: 'Thứ 3, 5, 7 - 19:00',
-          reason: 'Xin chuyển sang ca học tối cuối tuần vì có việc gia đình vào tối thứ 2 và 4.',
-          status: 'APPROVED',
-          adminNote: 'Đã duyệt. Lớp B còn chỗ trống. Áp dụng từ tuần sau.',
-          processedAt: '12/10/2026 14:00',
-          createdAt: '10/10/2026 09:15',
-        },
-        {
-          id: 'req3',
-          type: 'CLASS_CHANGE',
-          currentClassCode: 'REACT-K23-A',
-          targetClassCode: 'REACT-K23-B',
-          reason: 'Muốn học cùng lớp với bạn để dễ thảo luận nhóm.',
-          status: 'REJECTED',
-          adminNote: 'Lớp B đã đầy chỗ. Vui lòng chờ đợt khai giảng tiếp theo.',
-          processedAt: '05/10/2026 16:30',
-          createdAt: '03/10/2026 11:20',
-        },
-      ];
-      setRequests(mockRequests);
-      setLoading(false);
-    }, 500);
+    fetchRequests();
   }, []);
 
-  const handleSubmitRequest = () => {
-    if (!newRequest.reason.trim()) {
-      alert('Vui lòng nhập lý do!');
-      return;
+  const fetchRequests = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const res = await studentService.getChangeRequests();
+      if (res.success && res.data) setRequests(res.data.requests);
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.message || 'Không thể tải yêu cầu');
+    } finally {
+      setIsLoading(false);
     }
-    const newReq: ChangeRequest = {
-      id: `req${Date.now()}`,
-      type: newRequest.type,
-      currentClassCode: newRequest.type === 'CLASS_CHANGE' ? newRequest.currentClass : undefined,
-      targetClassCode: newRequest.type === 'CLASS_CHANGE' ? newRequest.targetClass : undefined,
-      reason: newRequest.reason,
-      status: 'PENDING',
-      createdAt: new Date().toLocaleString('vi-VN'),
-    };
-    setRequests((prev) => [newReq, ...prev]);
-    setShowNewRequestModal(false);
-    setNewRequest({ type: 'CLASS_CHANGE', currentClass: 'WEB-K24-A', targetClass: 'WEB-K24-B', reason: '' });
-    alert('Đã gửi yêu cầu thành công! Vui lòng chờ Training Staff duyệt.');
   };
 
-  if (loading) {
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.reason.trim()) {
+      setFormError('Vui lòng nhập lý do yêu cầu');
+      return;
+    }
+    try {
+      setSubmitting(true);
+      setFormError(null);
+      await studentService.createChangeRequest(formData);
+      await fetchRequests();
+      setShowForm(false);
+      setFormData({ requestType: 'CHANGE_CLASS', currentClass: '', targetClass: '', reason: '' });
+    } catch (err: any) {
+      setFormError(err.response?.data?.message || 'Tạo yêu cầu thất bại');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const statusConfig = (s: string) => {
+    if (s === 'PENDING') return { label: 'Đang chờ', cls: 'badge-amber', icon: '⏳' };
+    if (s === 'APPROVED') return { label: 'Đã duyệt', cls: 'badge-green', icon: '✅' };
+    if (s === 'REJECTED') return { label: 'Từ chối', cls: 'badge-purple', icon: '❌' };
+    return { label: s, cls: 'badge-amber', icon: '❓' };
+  };
+
+  const typeConfig = (t: string) => {
+    if (t === 'CHANGE_CLASS') return { label: 'Đổi lớp', icon: '🔄' };
+    if (t === 'CHANGE_SCHEDULE') return { label: 'Đổi lịch học', icon: '🗓️' };
+    if (t === 'WITHDRAW') return { label: 'Rút khỏi lớp', icon: '🚪' };
+    return { label: t, icon: '📋' };
+  };
+
+  const filtered = requests.filter(r => {
+    if (filter === 'ALL') return true;
+    return r.status === filter;
+  });
+
+  const filterTabs: { key: typeof filter; label: string }[] = [
+    { key: 'ALL', label: `Tất cả (${requests.length})` },
+    { key: 'PENDING', label: `⏳ Chờ duyệt (${requests.filter(r => r.status === 'PENDING').length})` },
+    { key: 'APPROVED', label: `✅ Đã duyệt (${requests.filter(r => r.status === 'APPROVED').length})` },
+    { key: 'REJECTED', label: `❌ Từ chối (${requests.filter(r => r.status === 'REJECTED').length})` },
+  ];
+
+  if (isLoading) {
     return (
-      <div className="dash-container">
-        <div className="dash-card" style={{ textAlign: 'center', padding: '3rem' }}>
-          <p>Đang tải danh sách yêu cầu...</p>
-        </div>
+      <div className="dash-container" style={{ textAlign: 'center', padding: '3rem' }}>
+        <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⏳</div>
+        <p>Đang tải yêu cầu...</p>
       </div>
     );
   }
 
-  const filtered = requests.filter((r) => filter === 'ALL' || r.status === filter);
-
-  const stats = {
-    total: requests.length,
-    pending: requests.filter((r) => r.status === 'PENDING').length,
-    approved: requests.filter((r) => r.status === 'APPROVED').length,
-    rejected: requests.filter((r) => r.status === 'REJECTED').length,
-  };
-
   return (
     <div className="dash-container">
-      {/* ── Banner ── */}
+      {/* ── Page Header ── */}
       <div className="dash-banner">
         <div className="dash-banner-content">
-          <div className="dash-banner-badge">📋 Yêu Cầu Thay Đổi • EduCenter Portal</div>
-          <h1>Yêu cầu của bạn</h1>
-          <p>Gửi yêu cầu đổi lớp, đổi lịch học và theo dõi trạng thái xử lý.</p>
+          <div className="dash-banner-badge">🔄 Yêu Cầu</div>
+          <h1>Yêu Cầu Thay Đổi</h1>
+          <p>
+            {requests.length > 0
+              ? `${requests.filter(r => r.status === 'PENDING').length} yêu cầu đang chờ duyệt`
+              : 'Gửi yêu cầu thay đổi lớp, lịch học hoặc rút khỏi lớp.'}
+          </p>
         </div>
         <div className="dash-banner-right">
-          <button
-            type="button"
-            onClick={() => setShowNewRequestModal(true)}
-            className="dash-quick-btn primary"
-            style={{ padding: '0.6rem 1.2rem' }}
-          >
-            ➕ Tạo yêu cầu mới
-          </button>
+          <div className="dash-date-pill">
+            <div>🔄 {requests.length} yêu cầu</div>
+            <div className="sub">{requests.filter(r => r.status === 'PENDING').length} đang chờ</div>
+          </div>
         </div>
       </div>
 
-      {/* ── Stats Grid ── */}
-      <div className="dash-metrics-grid">
-        <div className="dash-metric-card">
-          <div className="dash-metric-info">
-            <span className="dash-metric-label">Tổng yêu cầu</span>
-            <span className="dash-metric-val">{stats.total} yêu cầu</span>
-            <span className="dash-metric-trend up">Đã gửi</span>
-          </div>
-          <div className="dash-metric-icon icon-blue">📋</div>
-        </div>
-        <div className="dash-metric-card">
-          <div className="dash-metric-info">
-            <span className="dash-metric-label">Đang xử lý</span>
-            <span className="dash-metric-val">{stats.pending} yêu cầu</span>
-            <span className="dash-metric-trend neutral">⏳ Chờ duyệt</span>
-          </div>
-          <div className="dash-metric-icon icon-amber">⏳</div>
-        </div>
-        <div className="dash-metric-card">
-          <div className="dash-metric-info">
-            <span className="dash-metric-label">Đã duyệt</span>
-            <span className="dash-metric-val">{stats.approved} yêu cầu</span>
-            <span className="dash-metric-trend up">✅ Thành công</span>
-          </div>
-          <div className="dash-metric-icon icon-emerald">✅</div>
-        </div>
-        <div className="dash-metric-card">
-          <div className="dash-metric-info">
-            <span className="dash-metric-label">Bị từ chối</span>
-            <span className="dash-metric-val">{stats.rejected} yêu cầu</span>
-            <span className="dash-metric-trend down">❌ Không duyệt</span>
-          </div>
-          <div className="dash-metric-icon icon-purple">❌</div>
-        </div>
+      {/* ── Quick Nav ── */}
+      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+        <Link to="/student/dashboard" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
+          ← Dashboard
+        </Link>
+        <Link to="/student/classes" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
+          📚 Lớp Học
+        </Link>
+        <Link to="/student/payments" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
+          💳 Thanh Toán
+        </Link>
       </div>
 
-      {/* ── Filter + List ── */}
-      <div className="dash-card">
-        <div className="dash-card-header">
-          <h2 className="dash-card-title">
-            <span>📑</span> Danh Sách Yêu Cầu
-          </h2>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            {(['ALL', 'PENDING', 'APPROVED', 'REJECTED'] as const).map((f) => (
-              <button
-                key={f}
-                type="button"
-                onClick={() => setFilter(f)}
-                className={`dash-quick-btn ${filter === f ? 'primary' : ''}`}
-                style={{ padding: '0.35rem 0.85rem', fontSize: '0.8rem' }}
-              >
-                {f === 'ALL' ? 'Tất cả' : f === 'PENDING' ? 'Chờ duyệt' : f === 'APPROVED' ? 'Đã duyệt' : 'Bị từ chối'}
-              </button>
-            ))}
-          </div>
+      {/* ── Error ── */}
+      {error && (
+        <div style={{ textAlign: 'center', padding: '1.5rem', background: 'rgba(239,68,68,0.1)', borderRadius: '12px', marginBottom: '1.5rem' }}>
+          <p style={{ color: '#ef4444', marginBottom: '0.75rem' }}>{error}</p>
+          <button className="dash-quick-btn primary" onClick={fetchRequests}>Thử lại</button>
         </div>
+      )}
 
-        <div className="dash-item-list">
-          {filtered.length === 0 ? (
-            <div className="dash-subcard" style={{ textAlign: 'center', padding: '2rem' }}>
-              <p style={{ opacity: 0.6, margin: 0 }}>Chưa có yêu cầu nào trong mục này.</p>
+      {/* ── Metrics ── */}
+      {requests.length > 0 && (
+        <div className="dash-metrics-grid" style={{ marginBottom: '1.5rem' }}>
+          <div className="dash-metric-card">
+            <div className="dash-metric-info">
+              <span className="dash-metric-label">Tổng yêu cầu</span>
+              <span className="dash-metric-val">{requests.length}</span>
+              <span className="dash-metric-trend">
+                {requests.filter(r => r.status === 'APPROVED').length} đã duyệt
+              </span>
             </div>
-          ) : (
-            filtered.map((r) => (
-              <div key={r.id} className="dash-subcard">
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-start',
-                    flexWrap: 'wrap',
-                    gap: '0.5rem',
-                  }}
-                >
-                  <div style={{ flex: 1, minWidth: '250px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                      <h3 className="dash-subcard-title" style={{ margin: 0 }}>
-                        {r.type === 'CLASS_CHANGE' ? '🔄 Yêu cầu đổi lớp' : '📅 Yêu cầu đổi lịch học'}
-                      </h3>
-                      {r.status === 'PENDING' && (
-                        <span className="badge-pill badge-amber">⏳ Chờ duyệt</span>
-                      )}
-                      {r.status === 'APPROVED' && (
-                        <span className="badge-pill badge-green">✅ Đã duyệt</span>
-                      )}
-                      {r.status === 'REJECTED' && (
-                        <span
-                          className="badge-pill"
-                          style={{ background: '#ef4444', color: 'white' }}
-                        >
-                          ❌ Từ chối
-                        </span>
-                      )}
+            <div className="dash-metric-icon icon-blue">📋</div>
+          </div>
+          <div className="dash-metric-card">
+            <div className="dash-metric-info">
+              <span className="dash-metric-label">Đang chờ duyệt</span>
+              <span className="dash-metric-val" style={{ color: '#f59e0b' }}>
+                {requests.filter(r => r.status === 'PENDING').length}
+              </span>
+              <span className="dash-metric-trend">
+                Đang chờ nhân viên xử lý
+              </span>
+            </div>
+            <div className="dash-metric-icon icon-amber">⏳</div>
+          </div>
+          <div className="dash-metric-card">
+            <div className="dash-metric-info">
+              <span className="dash-metric-label">Đã duyệt</span>
+              <span className="dash-metric-val" style={{ color: '#10b981' }}>
+                {requests.filter(r => r.status === 'APPROVED').length}
+              </span>
+              <span className="dash-metric-trend up">
+                {requests.filter(r => r.status === 'REJECTED').length} bị từ chối
+              </span>
+            </div>
+            <div className="dash-metric-icon icon-emerald">✅</div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Filter + New Request ── */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', gap: '1rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          {filterTabs.map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setFilter(tab.key)}
+              className={`dash-quick-btn ${filter === tab.key ? 'primary' : ''}`}
+              style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        <button
+          className="dash-quick-btn primary"
+          onClick={() => setShowForm(!showForm)}
+        >
+          {showForm ? '✕ Đóng' : '➕ Tạo Yêu Cầu Mới'}
+        </button>
+      </div>
+
+      {/* ── New Request Form ── */}
+      {showForm && (
+        <div className="dash-card" style={{ marginBottom: '1.5rem', border: '2px solid rgba(59,130,246,0.4)' }}>
+          <div className="dash-card-header">
+            <h2 className="dash-card-title"><span>➕</span> Tạo Yêu Cầu Mới</h2>
+          </div>
+          <div className="dash-subcard">
+            <form onSubmit={handleCreate}>
+              {formError && (
+                <div style={{ background: 'rgba(239,68,68,0.1)', borderRadius: '8px', padding: '0.75rem', marginBottom: '1rem', color: '#ef4444', fontSize: '0.9rem' }}>
+                  ⚠️ {formError}
+                </div>
+              )}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+                <div>
+                  <label className="dash-subcard-label">Loại yêu cầu *</label>
+                  <select
+                    value={formData.requestType}
+                    onChange={e => setFormData({ ...formData, requestType: e.target.value as any })}
+                    style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: '8px', border: '1px solid #e5e7eb', fontSize: '0.9rem', marginTop: '0.25rem', fontFamily: 'inherit' }}
+                  >
+                    <option value="CHANGE_CLASS">🔄 Đổi lớp</option>
+                    <option value="CHANGE_SCHEDULE">🗓️ Đổi lịch học</option>
+                    <option value="WITHDRAW">🚪 Rút khỏi lớp</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="dash-subcard-label">Lớp hiện tại (mã lớp)</label>
+                  <input
+                    type="text"
+                    value={formData.currentClass}
+                    onChange={e => setFormData({ ...formData, currentClass: e.target.value })}
+                    placeholder="VD: IELTS-PRE-01"
+                    style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: '8px', border: '1px solid #e5e7eb', fontSize: '0.9rem', marginTop: '0.25rem', fontFamily: 'inherit' }}
+                  />
+                </div>
+                {(formData.requestType === 'CHANGE_CLASS' || formData.requestType === 'CHANGE_SCHEDULE') && (
+                  <div>
+                    <label className="dash-subcard-label">Lớp/Lịch mong muốn</label>
+                    <input
+                      type="text"
+                      value={formData.targetClass}
+                      onChange={e => setFormData({ ...formData, targetClass: e.target.value })}
+                      placeholder="VD: IELTS-FOUND-02"
+                      style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: '8px', border: '1px solid #e5e7eb', fontSize: '0.9rem', marginTop: '0.25rem', fontFamily: 'inherit' }}
+                    />
+                  </div>
+                )}
+              </div>
+              <div style={{ marginBottom: '1rem' }}>
+                <label className="dash-subcard-label">Lý do *</label>
+                <textarea
+                  value={formData.reason}
+                  onChange={e => setFormData({ ...formData, reason: e.target.value })}
+                  placeholder="Mô tả chi tiết lý do bạn muốn thay đổi..."
+                  required
+                  rows={4}
+                  style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e5e7eb', fontSize: '0.9rem', marginTop: '0.25rem', fontFamily: 'inherit', resize: 'vertical' }}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <button type="submit" className="dash-quick-btn primary" disabled={submitting}>
+                  {submitting ? '⏳ Đang gửi...' : '📤 Gửi Yêu Cầu'}
+                </button>
+                <button type="button" className="dash-quick-btn" onClick={() => setShowForm(false)}>
+                  Hủy
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Requests List ── */}
+      {filtered.length === 0 && !isLoading ? (
+        <div style={{ textAlign: 'center', padding: '3rem', background: 'var(--dash-card-subtle)', borderRadius: '16px' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📭</div>
+          <h2>Không có yêu cầu nào</h2>
+          <p style={{ opacity: 0.7, marginBottom: '1.5rem' }}>
+            {filter !== 'ALL' ? 'Không có yêu cầu nào phù hợp với bộ lọc.' : 'Bạn chưa gửi yêu cầu nào.'}
+          </p>
+          {filter === 'ALL' && !showForm && (
+            <button className="dash-quick-btn primary" onClick={() => setShowForm(true)}>
+              ➕ Tạo Yêu Cầu Đầu Tiên
+            </button>
+          )}
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {filtered.map((r) => {
+            const status = statusConfig(r.status);
+            const type = typeConfig(r.type);
+            return (
+              <div key={r._id} className="dash-card">
+                <div className="dash-card-header">
+                  <h2 className="dash-card-title">
+                    <span>{type.icon}</span>
+                    {type.label}
+                  </h2>
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <span className={`badge-pill ${status.cls}`}>
+                      {status.icon} {status.label}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="dash-subcard">
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.75rem 1.5rem', marginBottom: '0.75rem' }}>
+                    <div>
+                      <div className="dash-subcard-label">Loại yêu cầu</div>
+                      <div className="dash-subcard-value">{type.label}</div>
                     </div>
-                    {r.type === 'CLASS_CHANGE' ? (
-                      <div className="dash-subcard-meta" style={{ marginTop: '0.4rem' }}>
-                        Từ lớp: <strong>{r.currentClassCode}</strong> → Sang lớp:{' '}
-                        <strong style={{ color: '#6366f1' }}>{r.targetClassCode}</strong>
-                      </div>
-                    ) : (
-                      <div className="dash-subcard-meta" style={{ marginTop: '0.4rem' }}>
-                        Từ: <strong>{r.currentScheduleInfo}</strong> → Sang:{' '}
-                        <strong style={{ color: '#6366f1' }}>{r.targetScheduleInfo}</strong>
+                    {r.currentClass && (
+                      <div>
+                        <div className="dash-subcard-label">Lớp hiện tại</div>
+                        <div className="dash-subcard-value">{r.currentClass}</div>
                       </div>
                     )}
-                    <div
-                      className="dash-subcard"
-                      style={{
-                        marginTop: '0.5rem',
-                        background: 'rgba(99, 102, 241, 0.05)',
-                        padding: '0.5rem 0.75rem',
-                      }}
-                    >
-                      <strong style={{ fontSize: '0.8rem' }}>📝 Lý do:</strong>
-                      <p style={{ fontSize: '0.85rem', margin: '0.25rem 0 0 0' }}>{r.reason}</p>
-                    </div>
-                    {r.adminNote && (
-                      <div
-                        className="dash-subcard"
-                        style={{
-                          marginTop: '0.5rem',
-                          background:
-                            r.status === 'APPROVED'
-                              ? 'rgba(16, 185, 129, 0.08)'
-                              : 'rgba(239, 68, 68, 0.08)',
-                          borderLeft: `3px solid ${r.status === 'APPROVED' ? '#10b981' : '#ef4444'}`,
-                          padding: '0.5rem 0.75rem',
-                        }}
-                      >
-                        <strong
-                          style={{
-                            fontSize: '0.8rem',
-                            color: r.status === 'APPROVED' ? '#10b981' : '#ef4444',
-                          }}
-                        >
-                          💬 Phản hồi từ Training Staff:
-                        </strong>
-                        <p style={{ fontSize: '0.85rem', margin: '0.25rem 0 0 0' }}>{r.adminNote}</p>
+                    {r.requestedClass && (
+                      <div>
+                        <div className="dash-subcard-label">Lớp mong muốn</div>
+                        <div className="dash-subcard-value">{r.requestedClass}</div>
                       </div>
                     )}
-                    <div className="dash-subcard-meta" style={{ marginTop: '0.5rem' }}>
-                      📅 Gửi: {r.createdAt}
-                      {r.processedAt && ` • ✅ Xử lý: ${r.processedAt}`}
+                    <div>
+                      <div className="dash-subcard-label">Ngày gửi</div>
+                      <div className="dash-subcard-value">
+                        {new Date(r.createdAt).toLocaleDateString('vi-VN')}
+                      </div>
                     </div>
+                    {r.processedAt && (
+                      <div>
+                        <div className="dash-subcard-label">Ngày xử lý</div>
+                        <div className="dash-subcard-value">
+                          {new Date(r.processedAt).toLocaleDateString('vi-VN')}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ background: 'rgba(59,130,246,0.06)', borderRadius: '8px', padding: '0.75rem' }}>
+                    <div className="dash-subcard-label">📝 Lý do</div>
+                    <div style={{ marginTop: '0.25rem', fontSize: '0.9rem', color: '#475569' }}>{r.reason}</div>
                   </div>
                 </div>
               </div>
-            ))
-          )}
-        </div>
-      </div>
-
-      {/* ── New Request Modal ── */}
-      {showNewRequestModal && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-          }}
-          onClick={() => setShowNewRequestModal(false)}
-        >
-          <div
-            className="dash-card"
-            style={{ maxWidth: '500px', width: '90%' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 style={{ margin: '0 0 1rem 0' }}>➕ Tạo yêu cầu mới</h3>
-            <div style={{ marginBottom: '1rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>
-                Loại yêu cầu:
-              </label>
-              <select
-                value={newRequest.type}
-                onChange={(e) =>
-                  setNewRequest({ ...newRequest, type: e.target.value as 'CLASS_CHANGE' | 'SCHEDULE_CHANGE' })
-                }
-                style={{
-                  width: '100%',
-                  padding: '0.5rem',
-                  borderRadius: '6px',
-                  border: '1px solid #d1d5db',
-                }}
-              >
-                <option value="CLASS_CHANGE">🔄 Đổi lớp học</option>
-                <option value="SCHEDULE_CHANGE">📅 Đổi lịch học</option>
-              </select>
-            </div>
-
-            {newRequest.type === 'CLASS_CHANGE' && (
-              <>
-                <div style={{ marginBottom: '1rem' }}>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>
-                    Lớp hiện tại:
-                  </label>
-                  <select
-                    value={newRequest.currentClass}
-                    onChange={(e) => setNewRequest({ ...newRequest, currentClass: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '0.5rem',
-                      borderRadius: '6px',
-                      border: '1px solid #d1d5db',
-                    }}
-                  >
-                    <option value="WEB-K24-A">WEB-K24-A (MERN Full-Stack)</option>
-                    <option value="REACT-K23-B">REACT-K23-B (ReactJS Nâng Cao)</option>
-                  </select>
-                </div>
-                <div style={{ marginBottom: '1rem' }}>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>
-                    Lớp muốn chuyển sang:
-                  </label>
-                  <select
-                    value={newRequest.targetClass}
-                    onChange={(e) => setNewRequest({ ...newRequest, targetClass: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '0.5rem',
-                      borderRadius: '6px',
-                      border: '1px solid #d1d5db',
-                    }}
-                  >
-                    <option value="WEB-K24-B">WEB-K24-B (MERN Full-Stack - T2,4,6)</option>
-                    <option value="WEB-K24-C">WEB-K24-C (MERN Full-Stack - T3,5,7)</option>
-                    <option value="REACT-K23-A">REACT-K23-A (ReactJS Cơ bản)</option>
-                  </select>
-                </div>
-              </>
-            )}
-
-            <div style={{ marginBottom: '1rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>
-                Lý do chi tiết: <span style={{ color: '#ef4444' }}>*</span>
-              </label>
-              <textarea
-                value={newRequest.reason}
-                onChange={(e) => setNewRequest({ ...newRequest, reason: e.target.value })}
-                placeholder="Vui lòng mô tả chi tiết lý do bạn muốn đổi lớp/lịch..."
-                rows={4}
-                style={{
-                  width: '100%',
-                  padding: '0.5rem',
-                  borderRadius: '6px',
-                  border: '1px solid #d1d5db',
-                  resize: 'vertical',
-                }}
-              />
-            </div>
-
-            <div
-              style={{
-                background: 'rgba(245, 158, 11, 0.1)',
-                borderLeft: '3px solid #f59e0b',
-                padding: '0.75rem',
-                borderRadius: '6px',
-                fontSize: '0.85rem',
-                marginBottom: '1rem',
-              }}
-            >
-              ⚠️ <strong>Lưu ý:</strong> Yêu cầu sẽ được Training Staff xem xét trong 24-48h làm việc.
-            </div>
-
-            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-              <button
-                type="button"
-                onClick={() => setShowNewRequestModal(false)}
-                className="dash-quick-btn"
-              >
-                Hủy
-              </button>
-              <button
-                type="button"
-                onClick={handleSubmitRequest}
-                className="dash-quick-btn primary"
-              >
-                📤 Gửi yêu cầu
-              </button>
-            </div>
-          </div>
+            );
+          })}
         </div>
       )}
     </div>

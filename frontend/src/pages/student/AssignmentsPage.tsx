@@ -1,378 +1,287 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-
-interface Assignment {
-  id: string;
-  title: string;
-  description: string;
-  dueDate: string;
-  maxScore: number;
-  status: 'PENDING' | 'SUBMITTED' | 'GRADED' | 'OVERDUE';
-  score?: number;
-  submittedAt?: string;
-  feedback?: string;
-  submissionLink?: string;
-}
+import { studentService } from '../../services/student.service';
+import type { AssignmentItem } from '../../types';
 
 const AssignmentsPage: React.FC = () => {
-  const { classId } = useParams<{ classId: string }>();
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'ALL' | 'PENDING' | 'GRADED'>('ALL');
+  const { id } = useParams<{ id: string }>();
+  const [assignments, setAssignments] = useState<AssignmentItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [filter, setFilter] = useState<'ALL' | 'PENDING' | 'SUBMITTED' | 'GRADED'>('ALL');
+  const [submittingId, setSubmittingId] = useState<string | null>(null);
+  const [submitNote, setSubmitNote] = useState('');
   const [showSubmitModal, setShowSubmitModal] = useState<string | null>(null);
-  const [submissionLink, setSubmissionLink] = useState('');
-  const [submissionNote, setSubmissionNote] = useState('');
 
   useEffect(() => {
-    // Mock data - sẽ thay bằng API: GET /api/student/classes/:classId/assignments
-    setTimeout(() => {
-      const mockAssignments: Assignment[] = [
-        {
-          id: 'a1',
-          title: 'Bài tập 2: Xây dựng RESTful API với Express và MongoDB',
-          description:
-            'Thiết kế và xây dựng RESTful API cho ứng dụng quản lý sách sử dụng Express, Mongoose, MongoDB Atlas. Bao gồm CRUD operations, validation, error handling.',
-          dueDate: '23:59 - 10/10/2026',
-          maxScore: 10,
-          status: 'PENDING',
-        },
-        {
-          id: 'a2',
-          title: 'Bài tập 1: Xây dựng giao diện responsive với HTML5/CSS3',
-          description: 'Thiết kế landing page responsive, áp dụng Flexbox, Grid, media queries.',
-          dueDate: '02/10/2026',
-          maxScore: 10,
-          status: 'GRADED',
-          score: 9,
-          submittedAt: '01/10/2026 22:30',
-          feedback: 'Bài làm tốt, giao diện đẹp. Cần cải thiện phần accessibility.',
-        },
-        {
-          id: 'a3',
-          title: 'Bài tập 3: Authentication với JWT',
-          description: 'Xây dựng hệ thống đăng nhập/đăng ký với JWT, refresh token, middleware phân quyền.',
-          dueDate: '23:59 - 20/10/2026',
-          maxScore: 10,
-          status: 'PENDING',
-        },
-        {
-          id: 'a4',
-          title: 'Bài tập 4: Upload file & Validation',
-          description: 'Implement upload ảnh với Multer, validate form với Joi/Yup.',
-          dueDate: '23:59 - 30/09/2026',
-          maxScore: 10,
-          status: 'OVERDUE',
-        },
-      ];
-      setAssignments(mockAssignments);
-      setLoading(false);
-    }, 500);
-  }, [classId]);
+    if (id) fetchAssignments();
+  }, [id]);
 
-  const handleSubmit = (assignmentId: string) => {
-    if (!submissionLink.trim()) {
-      alert('Vui lòng nhập link bài nộp!');
-      return;
+  const fetchAssignments = async () => {
+    if (!id) return;
+    try {
+      setIsLoading(true);
+      setError(null);
+      const res = await studentService.getAssignments(id);
+      if (res.success && res.data) setAssignments(res.data.assignments);
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.message || 'Không thể tải bài tập');
+    } finally {
+      setIsLoading(false);
     }
-    setAssignments((prev) =>
-      prev.map((a) =>
-        a.id === assignmentId
-          ? {
-              ...a,
-              status: 'SUBMITTED',
-              submittedAt: new Date().toLocaleString('vi-VN'),
-              submissionLink,
-            }
-          : a
-      )
-    );
-    setShowSubmitModal(null);
-    setSubmissionLink('');
-    setSubmissionNote('');
-    alert('Đã nộp bài tập thành công! Giảng viên sẽ chấm điểm sớm.');
   };
 
-  if (loading) {
+  const handleSubmit = async (assignmentId: string) => {
+    try {
+      setSubmittingId(assignmentId);
+      await studentService.submitAssignment(assignmentId, new FormData());
+      await fetchAssignments();
+      setShowSubmitModal(null);
+      setSubmitNote('');
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Nộp bài thất bại');
+    } finally {
+      setSubmittingId(null);
+    }
+  };
+
+  const filtered = assignments.filter(a => {
+    if (filter === 'ALL') return true;
+    if (filter === 'PENDING') return !a.submissionStatus;
+    return a.submissionStatus === filter;
+  });
+
+  const statusConfig = (s?: string) => {
+    if (!s) return { label: 'Chưa nộp', cls: 'badge-amber', icon: '⏳' };
+    if (s === 'GRADED') return { label: `Đã chấm: ${s}`, cls: 'badge-blue', icon: '🏆' };
+    if (s === 'LATE') return { label: 'Nộp trễ', cls: 'badge-purple', icon: '⏰' };
+    return { label: 'Đã nộp', cls: 'badge-green', icon: '✅' };
+  };
+
+  const filterTabs: { key: typeof filter; label: string }[] = [
+    { key: 'ALL', label: `Tất cả (${assignments.length})` },
+    { key: 'PENDING', label: `Chưa nộp (${assignments.filter(a => !a.submissionStatus).length})` },
+    { key: 'SUBMITTED', label: `Đã nộp (${assignments.filter(a => a.submissionStatus === 'SUBMITTED' || a.submissionStatus === 'LATE').length})` },
+    { key: 'GRADED', label: `Đã chấm (${assignments.filter(a => a.submissionStatus === 'GRADED').length})` },
+  ];
+
+  if (isLoading) {
     return (
-      <div className="dash-container">
-        <div className="dash-card" style={{ textAlign: 'center', padding: '3rem' }}>
-          <p>Đang tải danh sách bài tập...</p>
-        </div>
+      <div className="dash-container" style={{ textAlign: 'center', padding: '3rem' }}>
+        <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⏳</div>
+        <p>Đang tải bài tập...</p>
       </div>
     );
   }
 
-  const filtered = assignments.filter((a) => {
-    if (filter === 'ALL') return true;
-    if (filter === 'PENDING') return a.status === 'PENDING' || a.status === 'OVERDUE' || a.status === 'SUBMITTED';
-    if (filter === 'GRADED') return a.status === 'GRADED';
-    return true;
-  });
-
-  const stats = {
-    total: assignments.length,
-    pending: assignments.filter((a) => a.status === 'PENDING').length,
-    submitted: assignments.filter((a) => a.status === 'SUBMITTED').length,
-    graded: assignments.filter((a) => a.status === 'GRADED').length,
-    overdue: assignments.filter((a) => a.status === 'OVERDUE').length,
-  };
-
   return (
     <div className="dash-container">
-      {/* ── Banner ── */}
+      {/* ── Page Header ── */}
       <div className="dash-banner">
         <div className="dash-banner-content">
-          <div className="dash-banner-badge">📝 Bài Tập Về Nhà • EduCenter Portal</div>
-          <h1>Bài tập của bạn</h1>
-          <p>Theo dõi và nộp các bài tập về nhà. Đừng quên deadline nhé!</p>
+          <div className="dash-banner-badge">📝 Bài Tập</div>
+          <h1>Bài Tập Lớp Học</h1>
+          <p>
+            {assignments.length > 0
+              ? `Tổng cộng ${assignments.length} bài tập. Đã nộp: ${assignments.filter(a => a.submissionStatus).length}`
+              : 'Chưa có bài tập nào cho lớp này.'}
+          </p>
         </div>
         <div className="dash-banner-right">
           <div className="dash-date-pill">
-            <div>📚 Lớp: WEB-K24-A</div>
-            <div className="sub">{stats.total} bài tập tổng</div>
+            <div>📝 {assignments.filter(a => !a.submissionStatus).length} chưa nộp</div>
+            <div className="sub">Lớp ID: {id}</div>
           </div>
         </div>
       </div>
 
-      {/* ── Stats Grid ── */}
-      <div className="dash-metrics-grid">
-        <div className="dash-metric-card">
-          <div className="dash-metric-info">
-            <span className="dash-metric-label">Tổng bài tập</span>
-            <span className="dash-metric-val">{stats.total} bài</span>
-            <span className="dash-metric-trend up">Đã giao</span>
-          </div>
-          <div className="dash-metric-icon icon-blue">📚</div>
-        </div>
-        <div className="dash-metric-card">
-          <div className="dash-metric-info">
-            <span className="dash-metric-label">Cần nộp</span>
-            <span className="dash-metric-val">{stats.pending} bài</span>
-            <span className="dash-metric-trend down">Chưa hoàn thành</span>
-          </div>
-          <div className="dash-metric-icon icon-amber">⏰</div>
-        </div>
-        <div className="dash-metric-card">
-          <div className="dash-metric-info">
-            <span className="dash-metric-label">Đã nộp</span>
-            <span className="dash-metric-val">{stats.submitted} bài</span>
-            <span className="dash-metric-trend neutral">Chờ chấm</span>
-          </div>
-          <div className="dash-metric-icon icon-purple">📤</div>
-        </div>
-        <div className="dash-metric-card">
-          <div className="dash-metric-info">
-            <span className="dash-metric-label">Đã chấm</span>
-            <span className="dash-metric-val">{stats.graded} bài</span>
-            <span className="dash-metric-trend up">Có điểm</span>
-          </div>
-          <div className="dash-metric-icon icon-emerald">🏆</div>
-        </div>
+      {/* ── Quick Nav ── */}
+      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+        <Link to={`/student/classes/${id}`} className="dash-quick-btn" style={{ textDecoration: 'none' }}>
+          ← Chi Tiết Lớp
+        </Link>
+        <Link to={`/student/classes/${id}/attendance`} className="dash-quick-btn" style={{ textDecoration: 'none' }}>
+          📅 Điểm Danh
+        </Link>
+        <Link to={`/student/classes/${id}/grades`} className="dash-quick-btn" style={{ textDecoration: 'none' }}>
+          📊 Bảng Điểm
+        </Link>
       </div>
 
-      {/* ── Filter + List ── */}
-      <div className="dash-card">
-        <div className="dash-card-header">
-          <h2 className="dash-card-title">
-            <span>📋</span> Danh Sách Bài Tập
-          </h2>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <Link
-              to={`/student/classes/${classId}`}
-              className="dash-quick-btn"
-              style={{ textDecoration: 'none', padding: '0.35rem 0.85rem', fontSize: '0.8rem' }}
+      {/* ── Error ── */}
+      {error && (
+        <div style={{ textAlign: 'center', padding: '1.5rem', background: 'rgba(239,68,68,0.1)', borderRadius: '12px', marginBottom: '1.5rem' }}>
+          <p style={{ color: '#ef4444', marginBottom: '0.75rem' }}>{error}</p>
+          <button className="dash-quick-btn primary" onClick={fetchAssignments}>Thử lại</button>
+        </div>
+      )}
+
+      {/* ── Metrics ── */}
+      {assignments.length > 0 && (
+        <div className="dash-metrics-grid" style={{ marginBottom: '1.5rem' }}>
+          <div className="dash-metric-card">
+            <div className="dash-metric-info">
+              <span className="dash-metric-label">Tổng bài tập</span>
+              <span className="dash-metric-val">{assignments.length}</span>
+              <span className="dash-metric-trend up">Đã nộp: {assignments.filter(a => a.submissionStatus).length}</span>
+            </div>
+            <div className="dash-metric-icon icon-blue">📝</div>
+          </div>
+          <div className="dash-metric-card">
+            <div className="dash-metric-info">
+              <span className="dash-metric-label">Chưa nộp</span>
+              <span className="dash-metric-val">{assignments.filter(a => !a.submissionStatus).length}</span>
+              <span className="dash-metric-trend">
+                Cần hoàn thành sớm
+              </span>
+            </div>
+            <div className="dash-metric-icon icon-amber">⏳</div>
+          </div>
+          <div className="dash-metric-card">
+            <div className="dash-metric-info">
+              <span className="dash-metric-label">Đã chấm điểm</span>
+              <span className="dash-metric-val">{assignments.filter(a => a.submissionStatus === 'GRADED').length}</span>
+              <span className="dash-metric-trend">
+                {assignments.filter(a => a.submissionStatus === 'GRADED').length > 0 ? 'Chúc mừng! 🎉' : 'Chờ giảng viên chấm'}
+              </span>
+            </div>
+            <div className="dash-metric-icon icon-emerald">🏆</div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Filter Tabs ── */}
+      {assignments.length > 0 && (
+        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+          {filterTabs.map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setFilter(tab.key)}
+              className={`dash-quick-btn ${filter === tab.key ? 'primary' : ''}`}
+              style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }}
             >
-              ← Quay lại
-            </Link>
-            {(['ALL', 'PENDING', 'GRADED'] as const).map((f) => (
-              <button
-                key={f}
-                type="button"
-                onClick={() => setFilter(f)}
-                className={`dash-quick-btn ${filter === f ? 'primary' : ''}`}
-                style={{ padding: '0.35rem 0.85rem', fontSize: '0.8rem' }}
-              >
-                {f === 'ALL' ? 'Tất cả' : f === 'PENDING' ? 'Cần làm' : 'Đã chấm'}
-              </button>
-            ))}
-          </div>
+              {tab.label}
+            </button>
+          ))}
         </div>
+      )}
 
-        <div className="dash-item-list">
-          {filtered.map((a) => (
-            <div key={a.id} className="dash-subcard">
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'flex-start',
-                  flexWrap: 'wrap',
-                  gap: '0.5rem',
-                }}
-              >
-                <div style={{ flex: 1, minWidth: '250px' }}>
-                  <h3 className="dash-subcard-title" style={{ margin: 0 }}>
+      {/* ── Assignment List ── */}
+      {filtered.length === 0 && !isLoading ? (
+        <div style={{ textAlign: 'center', padding: '3rem', background: 'var(--dash-card-subtle)', borderRadius: '16px' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📭</div>
+          <h2>Không có bài tập</h2>
+          <p style={{ opacity: 0.7 }}>Không có bài tập nào phù hợp với bộ lọc hiện tại.</p>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {filtered.map((a) => {
+            const status = statusConfig(a.submissionStatus);
+            const isPastDue = !a.submissionStatus && new Date(a.dueDate) < new Date();
+            return (
+              <div key={a._id} className="dash-card">
+                <div className="dash-card-header">
+                  <h2 className="dash-card-title">
+                    <span>{status.icon}</span>
                     {a.title}
-                  </h3>
-                  <p style={{ fontSize: '0.85rem', opacity: 0.75, margin: '0.5rem 0' }}>
-                    {a.description}
-                  </p>
-                  <div className="dash-subcard-meta">
-                    ⏰ <strong>Hạn nộp:</strong> {a.dueDate}
+                  </h2>
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <span className={`badge-pill ${isPastDue ? 'badge-purple' : status.cls}`}>
+                      {isPastDue ? '⏰ Quá hạn' : status.label}
+                    </span>
                   </div>
-                  {a.submittedAt && (
-                    <div className="dash-subcard-meta">
-                      📤 <strong>Đã nộp:</strong> {a.submittedAt}
-                    </div>
-                  )}
-                  {a.feedback && (
-                    <div
-                      className="dash-subcard"
-                      style={{
-                        marginTop: '0.5rem',
-                        background: 'rgba(16, 185, 129, 0.08)',
-                        borderLeft: '3px solid #10b981',
-                        padding: '0.5rem 0.75rem',
-                      }}
-                    >
-                      <strong style={{ fontSize: '0.8rem', color: '#10b981' }}>💬 Nhận xét:</strong>
-                      <p style={{ fontSize: '0.85rem', margin: '0.25rem 0 0 0' }}>{a.feedback}</p>
-                    </div>
-                  )}
                 </div>
-                <div style={{ textAlign: 'right' }}>
-                  {a.status === 'PENDING' && (
-                    <span className="badge-pill badge-amber">⏳ Chưa nộp</span>
+
+                <div className="dash-subcard">
+                  {a.description && (
+                    <div style={{ marginBottom: '1rem' }}>
+                      <div className="dash-subcard-label">Mô tả</div>
+                      <div className="dash-subcard-value">{a.description}</div>
+                    </div>
                   )}
-                  {a.status === 'SUBMITTED' && (
-                    <span className="badge-pill badge-blue">📤 Chờ chấm</span>
-                  )}
-                  {a.status === 'GRADED' && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem 1.5rem', marginBottom: '1rem' }}>
                     <div>
-                      <span className="badge-pill badge-green">✅ Đã chấm</span>
-                      <div
-                        style={{
-                          fontSize: '1.5rem',
-                          fontWeight: 800,
-                          color: '#10b981',
-                          marginTop: '0.25rem',
-                        }}
-                      >
-                        {a.score} / {a.maxScore}
+                      <div className="dash-subcard-label">Kỹ năng</div>
+                      <div className="dash-subcard-value">{a.skill || '—'}</div>
+                    </div>
+                    <div>
+                      <div className="dash-subcard-label">Hạn nộp</div>
+                      <div className="dash-subcard-value" style={{ color: isPastDue ? '#ef4444' : 'inherit' }}>
+                        {new Date(a.dueDate).toLocaleDateString('vi-VN')}
+                        {isPastDue && ' ⚠️'}
                       </div>
                     </div>
-                  )}
-                  {a.status === 'OVERDUE' && (
-                    <span className="badge-pill" style={{ background: '#ef4444', color: 'white' }}>
-                      ⚠️ Quá hạn
+                    <div>
+                      <div className="dash-subcard-label">Điểm tối đa</div>
+                      <div className="dash-subcard-value">{a.maxScore}</div>
+                    </div>
+                    {a.submissionStatus === 'GRADED' && a.score !== undefined && (
+                      <div>
+                        <div className="dash-subcard-label">Điểm của bạn</div>
+                        <div className="dash-subcard-value" style={{ color: '#3b82f6', fontWeight: 700 }}>
+                          {a.score} / {a.maxScore}
+                        </div>
+                      </div>
+                    )}
+                    {a.submissionDate && (
+                      <div>
+                        <div className="dash-subcard-label">Ngày nộp</div>
+                        <div className="dash-subcard-value">
+                          {new Date(a.submissionDate).toLocaleDateString('vi-VN')}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {!a.submissionStatus ? (
+                    <button
+                      className="dash-quick-btn primary"
+                      onClick={() => handleSubmit(a._id)}
+                      disabled={submittingId === a._id}
+                    >
+                      {submittingId === a._id ? '⏳ Đang nộp...' : '📤 Nộp bài ngay'}
+                    </button>
+                  ) : (
+                    <span className={`badge-pill ${status.cls}`}>
+                      {status.icon} {status.label}
+                      {a.submissionStatus === 'GRADED' && a.score !== undefined && ` — ${a.score} điểm`}
                     </span>
                   )}
                 </div>
               </div>
-
-              {(a.status === 'PENDING' || a.status === 'OVERDUE') && (
-                <button
-                  type="button"
-                  onClick={() => setShowSubmitModal(a.id)}
-                  className="dash-quick-btn primary"
-                  style={{ marginTop: '0.75rem' }}
-                >
-                  📤 Nộp Bài Tập
-                </button>
-              )}
-
-              {a.status === 'SUBMITTED' && a.submissionLink && (
-                <a
-                  href={a.submissionLink}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="dash-quick-btn"
-                  style={{ marginTop: '0.75rem', textDecoration: 'none', display: 'inline-block' }}
-                >
-                  🔗 Xem bài đã nộp
-                </a>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
-      </div>
+      )}
 
       {/* ── Submit Modal ── */}
       {showSubmitModal && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-          }}
-          onClick={() => setShowSubmitModal(null)}
-        >
-          <div
-            className="dash-card"
-            style={{ maxWidth: '500px', width: '90%' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 style={{ margin: '0 0 1rem 0' }}>📤 Nộp bài tập</h3>
-            <div style={{ marginBottom: '1rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>
-                Link GitHub / Google Drive / URL bài nộp: <span style={{ color: '#ef4444' }}>*</span>
-              </label>
-              <input
-                type="url"
-                value={submissionLink}
-                onChange={(e) => setSubmissionLink(e.target.value)}
-                placeholder="https://github.com/username/repo"
-                style={{
-                  width: '100%',
-                  padding: '0.5rem',
-                  borderRadius: '6px',
-                  border: '1px solid #d1d5db',
-                }}
-              />
-            </div>
-            <div style={{ marginBottom: '1rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>
-                Ghi chú (tùy chọn):
-              </label>
-              <textarea
-                value={submissionNote}
-                onChange={(e) => setSubmissionNote(e.target.value)}
-                placeholder="Mô tả ngắn về bài làm..."
-                rows={3}
-                style={{
-                  width: '100%',
-                  padding: '0.5rem',
-                  borderRadius: '6px',
-                  border: '1px solid #d1d5db',
-                  resize: 'vertical',
-                }}
-              />
-            </div>
-            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+        <>
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000 }} onClick={() => setShowSubmitModal(null)} />
+          <div style={{
+            position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
+            background: 'white', borderRadius: '16px', padding: '2rem', width: '90%', maxWidth: '480px',
+            zIndex: 1001, boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
+          }}>
+            <h2 style={{ marginBottom: '1rem' }}>📤 Nộp Bài Tập</h2>
+            <textarea
+              value={submitNote}
+              onChange={e => setSubmitNote(e.target.value)}
+              placeholder="Ghi chú khi nộp bài (tùy chọn)..."
+              style={{ width: '100%', minHeight: '100px', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e5e7eb', marginBottom: '1rem', fontFamily: 'inherit' }}
+            />
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+              <button className="dash-quick-btn" onClick={() => setShowSubmitModal(null)}>Hủy</button>
               <button
-                type="button"
-                onClick={() => setShowSubmitModal(null)}
-                className="dash-quick-btn"
-              >
-                Hủy
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSubmit(showSubmitModal)}
                 className="dash-quick-btn primary"
+                onClick={() => handleSubmit(showSubmitModal)}
+                disabled={submittingId === showSubmitModal}
               >
-                ✅ Xác nhận nộp
+                {submittingId === showSubmitModal ? 'Đang nộp...' : 'Xác nhận nộp'}
               </button>
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

@@ -1,360 +1,229 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-
-interface Payment {
-  id: string;
-  enrollmentId: string;
-  classCode: string;
-  courseName: string;
-  amount: number;
-  paymentMethod: 'CASH' | 'BANK_TRANSFER' | 'VNPAY' | 'MOMO';
-  transactionCode: string;
-  paymentDate: string;
-  status: 'PENDING' | 'COMPLETED' | 'FAILED' | 'REFUNDED';
-  tuitionStatus: 'PAID' | 'PENDING';
-}
+import { useAuth } from '../../contexts/AuthContext';
+import { studentService } from '../../services/student.service';
+import type { PaymentItem } from '../../types';
 
 const PaymentsPage: React.FC = () => {
-  const [payments, setPayments] = useState<Payment[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'ALL' | 'PENDING' | 'COMPLETED'>('ALL');
-  const [showPayModal, setShowPayModal] = useState<string | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<'BANK_TRANSFER' | 'VNPAY' | 'MOMO' | 'CASH'>('VNPAY');
+  const { user } = useAuth();
+  const [payments, setPayments] = useState<PaymentItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [filter, setFilter] = useState<'ALL' | 'PAID' | 'PENDING' | 'FAILED'>('ALL');
 
   useEffect(() => {
-    // Mock data - sẽ thay bằng API: GET /api/student/payments
-    setTimeout(() => {
-      const mockPayments: Payment[] = [
-        {
-          id: 'p1',
-          enrollmentId: 'e1',
-          classCode: 'WEB-K24-A',
-          courseName: 'Lập trình Web Full-Stack MERN',
-          amount: 5000000,
-          paymentMethod: 'VNPAY',
-          transactionCode: 'VNP-20260901-001',
-          paymentDate: '01/09/2026 09:30',
-          status: 'COMPLETED',
-          tuitionStatus: 'PAID',
-        },
-        {
-          id: 'p2',
-          enrollmentId: 'e2',
-          classCode: 'REACT-K23-B',
-          courseName: 'ReactJS Nâng Cao & State Management',
-          amount: 4500000,
-          paymentMethod: 'MOMO',
-          transactionCode: 'MOMO-20260515-002',
-          paymentDate: '15/05/2026 14:20',
-          status: 'COMPLETED',
-          tuitionStatus: 'PAID',
-        },
-        {
-          id: 'p3',
-          enrollmentId: 'e3',
-          classCode: 'NODE-K25-A',
-          courseName: 'Node.js Backend Development',
-          amount: 5500000,
-          paymentMethod: 'VNPAY',
-          transactionCode: '',
-          paymentDate: '',
-          status: 'PENDING',
-          tuitionStatus: 'PENDING',
-        },
-      ];
-      setPayments(mockPayments);
-      setLoading(false);
-    }, 500);
+    fetchPayments();
   }, []);
 
-  const handlePayNow = (paymentId: string) => {
-    // Simulate payment
-    setPayments((prev) =>
-      prev.map((p) =>
-        p.id === paymentId
-          ? {
-              ...p,
-              status: 'COMPLETED',
-              tuitionStatus: 'PAID',
-              paymentMethod,
-              transactionCode: `${paymentMethod}-${Date.now()}`,
-              paymentDate: new Date().toLocaleString('vi-VN'),
-            }
-          : p
-      )
-    );
-    setShowPayModal(null);
-    alert(`Thanh toán thành công qua ${paymentMethod}!`);
+  const fetchPayments = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const res = await studentService.getPayments();
+      if (res.success && res.data) setPayments(res.data.payments);
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.message || 'Không thể tải lịch sử thanh toán');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  if (loading) {
-    return (
-      <div className="dash-container">
-        <div className="dash-card" style={{ textAlign: 'center', padding: '3rem' }}>
-          <p>Đang tải dữ liệu thanh toán...</p>
-        </div>
-      </div>
-    );
-  }
+  const statusConfig = (s: string) => {
+    if (s === 'PAID') return { label: 'Đã thanh toán', cls: 'badge-green', icon: '✅' };
+    if (s === 'PENDING') return { label: 'Chờ thanh toán', cls: 'badge-amber', icon: '⏳' };
+    if (s === 'FAILED') return { label: 'Thất bại', cls: 'badge-purple', icon: '❌' };
+    if (s === 'REFUNDED') return { label: 'Đã hoàn tiền', cls: 'badge-blue', icon: '💸' };
+    return { label: s, cls: 'badge-amber', icon: '❓' };
+  };
 
-  const filtered = payments.filter((p) => {
+  const filtered = payments.filter(p => {
     if (filter === 'ALL') return true;
     return p.status === filter;
   });
 
-  const totalPaid = payments.filter((p) => p.status === 'COMPLETED').reduce((s, p) => s + p.amount, 0);
-  const totalPending = payments.filter((p) => p.status === 'PENDING').reduce((s, p) => s + p.amount, 0);
+  const totalPaid = payments.filter(p => p.status === 'PAID').reduce((sum, p) => sum + p.amount, 0);
+  const totalPending = payments.filter(p => p.status === 'PENDING').reduce((sum, p) => sum + p.amount, 0);
+
+  const filterTabs: { key: typeof filter; label: string }[] = [
+    { key: 'ALL', label: `Tất cả (${payments.length})` },
+    { key: 'PAID', label: `✅ Đã thanh toán (${payments.filter(p => p.status === 'PAID').length})` },
+    { key: 'PENDING', label: `⏳ Chờ thanh toán (${payments.filter(p => p.status === 'PENDING').length})` },
+    { key: 'FAILED', label: `❌ Thất bại (${payments.filter(p => p.status === 'FAILED').length})` },
+  ];
+
+  if (isLoading) {
+    return (
+      <div className="dash-container" style={{ textAlign: 'center', padding: '3rem' }}>
+        <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⏳</div>
+        <p>Đang tải lịch sử thanh toán...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="dash-container">
-      {/* ── Banner ── */}
+      {/* ── Page Header ── */}
       <div className="dash-banner">
         <div className="dash-banner-content">
-          <div className="dash-banner-badge">💳 Học Phí & Thanh Toán • EduCenter Portal</div>
-          <h1>Quản lý học phí</h1>
-          <p>Thanh toán học phí các lớp đã đăng ký và theo dõi lịch sử giao dịch.</p>
+          <div className="dash-banner-badge">💳 Thanh Toán</div>
+          <h1>Lịch Sử Thanh Toán Học Phí</h1>
+          <p>
+            {payments.length > 0
+              ? `Tổng ${payments.length} giao dịch. Đã thanh toán: ${totalPaid.toLocaleString('vi-VN')} VNĐ`
+              : 'Chưa có giao dịch thanh toán nào.'}
+          </p>
         </div>
         <div className="dash-banner-right">
           <div className="dash-date-pill">
-            <div>💰 Tổng đã đóng: {(totalPaid / 1000000).toFixed(1)}M</div>
-            <div className="sub">Còn phải đóng: {(totalPending / 1000000).toFixed(1)}M</div>
+            <div>💳 {payments.length} giao dịch</div>
+            <div className="sub">Học viên: {user?.fullName}</div>
           </div>
         </div>
       </div>
 
-      {/* ── Stats Grid ── */}
-      <div className="dash-metrics-grid">
-        <div className="dash-metric-card">
-          <div className="dash-metric-info">
-            <span className="dash-metric-label">Tổng đã thanh toán</span>
-            <span className="dash-metric-val">{(totalPaid / 1000000).toFixed(1)}M đ</span>
-            <span className="dash-metric-trend up">Thành công</span>
-          </div>
-          <div className="dash-metric-icon icon-emerald">✅</div>
-        </div>
-        <div className="dash-metric-card">
-          <div className="dash-metric-info">
-            <span className="dash-metric-label">Còn phải đóng</span>
-            <span className="dash-metric-val">{(totalPending / 1000000).toFixed(1)}M đ</span>
-            <span className={`dash-metric-trend ${totalPending > 0 ? 'down' : 'up'}`}>
-              {totalPending > 0 ? 'Cần thanh toán' : 'Hoàn tất'}
-            </span>
-          </div>
-          <div className="dash-metric-icon icon-amber">⏰</div>
-        </div>
-        <div className="dash-metric-card">
-          <div className="dash-metric-info">
-            <span className="dash-metric-label">Số lớp đã đóng</span>
-            <span className="dash-metric-val">
-              {payments.filter((p) => p.status === 'COMPLETED').length} lớp
-            </span>
-            <span className="dash-metric-trend up">Hoàn tất</span>
-          </div>
-          <div className="dash-metric-icon icon-blue">📚</div>
-        </div>
-        <div className="dash-metric-card">
-          <div className="dash-metric-info">
-            <span className="dash-metric-label">Lớp chờ thanh toán</span>
-            <span className="dash-metric-val">
-              {payments.filter((p) => p.status === 'PENDING').length} lớp
-            </span>
-            <span className="dash-metric-trend down">Cần xử lý</span>
-          </div>
-          <div className="dash-metric-icon icon-purple">💳</div>
-        </div>
+      {/* ── Quick Nav ── */}
+      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+        <Link to="/student/dashboard" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
+          ← Dashboard
+        </Link>
+        <Link to="/student/classes" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
+          📚 Lớp Học
+        </Link>
+        <Link to="/student/requests" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
+          🔄 Yêu Cầu
+        </Link>
       </div>
 
-      {/* ── Filter + List ── */}
-      <div className="dash-card">
-        <div className="dash-card-header">
-          <h2 className="dash-card-title">
-            <span>💰</span> Lịch Sử Giao Dịch
-          </h2>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            {(['ALL', 'PENDING', 'COMPLETED'] as const).map((f) => (
-              <button
-                key={f}
-                type="button"
-                onClick={() => setFilter(f)}
-                className={`dash-quick-btn ${filter === f ? 'primary' : ''}`}
-                style={{ padding: '0.35rem 0.85rem', fontSize: '0.8rem' }}
-              >
-                {f === 'ALL' ? 'Tất cả' : f === 'PENDING' ? 'Chờ thanh toán' : 'Đã thanh toán'}
-              </button>
-            ))}
-          </div>
+      {/* ── Error ── */}
+      {error && (
+        <div style={{ textAlign: 'center', padding: '1.5rem', background: 'rgba(239,68,68,0.1)', borderRadius: '12px', marginBottom: '1.5rem' }}>
+          <p style={{ color: '#ef4444', marginBottom: '0.75rem' }}>{error}</p>
+          <button className="dash-quick-btn primary" onClick={fetchPayments}>Thử lại</button>
         </div>
+      )}
 
-        <div className="dash-item-list">
-          {filtered.map((p) => (
-            <div key={p.id} className="dash-subcard">
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'flex-start',
-                  flexWrap: 'wrap',
-                  gap: '0.5rem',
-                }}
-              >
-                <div style={{ flex: 1, minWidth: '250px' }}>
-                  <h3 className="dash-subcard-title" style={{ margin: 0 }}>
-                    {p.courseName}
-                  </h3>
-                  <div className="dash-subcard-meta" style={{ marginTop: '0.4rem' }}>
-                    📚 Mã lớp: <strong>{p.classCode}</strong>
-                  </div>
-                  {p.paymentDate && (
-                    <div className="dash-subcard-meta">
-                      📅 Ngày thanh toán: {p.paymentDate}
-                    </div>
-                  )}
-                  {p.transactionCode && (
-                    <div className="dash-subcard-meta" style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
-                      🔖 Mã GD: {p.transactionCode}
-                    </div>
-                  )}
-                  {p.paymentMethod && p.status === 'COMPLETED' && (
-                    <div className="dash-subcard-meta">💳 Phương thức: {p.paymentMethod}</div>
-                  )}
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div
-                    style={{
-                      fontSize: '1.5rem',
-                      fontWeight: 800,
-                      color: p.status === 'COMPLETED' ? '#10b981' : '#f59e0b',
-                    }}
-                  >
-                    {p.amount.toLocaleString('vi-VN')} đ
-                  </div>
-                  {p.status === 'COMPLETED' && (
-                    <span className="badge-pill badge-green" style={{ marginTop: '0.25rem' }}>
-                      ✅ Thành công
-                    </span>
-                  )}
-                  {p.status === 'PENDING' && (
-                    <span className="badge-pill badge-amber" style={{ marginTop: '0.25rem' }}>
-                      ⏳ Chờ thanh toán
-                    </span>
-                  )}
-                  {p.status === 'FAILED' && (
-                    <span
-                      className="badge-pill"
-                      style={{ background: '#ef4444', color: 'white', marginTop: '0.25rem' }}
-                    >
-                      ❌ Thất bại
-                    </span>
-                  )}
-                  {p.status === 'REFUNDED' && (
-                    <span className="badge-pill badge-blue" style={{ marginTop: '0.25rem' }}>
-                      ↩️ Đã hoàn tiền
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {p.status === 'PENDING' && (
-                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
-                  <button
-                    type="button"
-                    onClick={() => setShowPayModal(p.id)}
-                    className="dash-quick-btn primary"
-                  >
-                    💳 Thanh toán ngay
-                  </button>
-                  <Link
-                    to="/student/requests"
-                    className="dash-quick-btn"
-                    style={{ textDecoration: 'none' }}
-                  >
-                    📞 Liên hệ hỗ trợ
-                  </Link>
-                </div>
-              )}
-
-              {p.status === 'COMPLETED' && (
-                <button
-                  type="button"
-                  onClick={() => alert(`In hóa đơn cho giao dịch ${p.transactionCode}`)}
-                  className="dash-quick-btn"
-                  style={{ marginTop: '0.75rem' }}
-                >
-                  🧾 In hóa đơn
-                </button>
-              )}
+      {/* ── Metrics ── */}
+      {payments.length > 0 && (
+        <div className="dash-metrics-grid" style={{ marginBottom: '1.5rem' }}>
+          <div className="dash-metric-card">
+            <div className="dash-metric-info">
+              <span className="dash-metric-label">Đã thanh toán</span>
+              <span className="dash-metric-val" style={{ color: '#10b981' }}>
+                {totalPaid.toLocaleString('vi-VN')} <span style={{ fontSize: '0.8em', fontWeight: 400 }}>VNĐ</span>
+              </span>
+              <span className="dash-metric-trend up">
+                {payments.filter(p => p.status === 'PAID').length} giao dịch
+              </span>
             </div>
+            <div className="dash-metric-icon icon-emerald">✅</div>
+          </div>
+          <div className="dash-metric-card">
+            <div className="dash-metric-info">
+              <span className="dash-metric-label">Chờ thanh toán</span>
+              <span className="dash-metric-val" style={{ color: '#f59e0b' }}>
+                {totalPending.toLocaleString('vi-VN')} <span style={{ fontSize: '0.8em', fontWeight: 400 }}>VNĐ</span>
+              </span>
+              <span className="dash-metric-trend">
+                {payments.filter(p => p.status === 'PENDING').length} khoản chưa thanh toán
+              </span>
+            </div>
+            <div className="dash-metric-icon icon-amber">⏳</div>
+          </div>
+          <div className="dash-metric-card">
+            <div className="dash-metric-info">
+              <span className="dash-metric-label">Tổng phí đã chi</span>
+              <span className="dash-metric-val">
+                {(totalPaid + totalPending).toLocaleString('vi-VN')} <span style={{ fontSize: '0.8em', fontWeight: 400 }}>VNĐ</span>
+              </span>
+              <span className="dash-metric-trend">
+                {payments.length} giao dịch
+              </span>
+            </div>
+            <div className="dash-metric-icon icon-blue">💰</div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Filter Tabs ── */}
+      {payments.length > 0 && (
+        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+          {filterTabs.map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setFilter(tab.key)}
+              className={`dash-quick-btn ${filter === tab.key ? 'primary' : ''}`}
+              style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }}
+            >
+              {tab.label}
+            </button>
           ))}
         </div>
-      </div>
+      )}
 
-      {/* ── Payment Modal ── */}
-      {showPayModal && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-          }}
-          onClick={() => setShowPayModal(null)}
-        >
-          <div
-            className="dash-card"
-            style={{ maxWidth: '500px', width: '90%' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 style={{ margin: '0 0 1rem 0' }}>💳 Chọn phương thức thanh toán</h3>
-            {(['VNPAY', 'MOMO', 'BANK_TRANSFER', 'CASH'] as const).map((m) => (
-              <label
-                key={m}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  padding: '0.75rem',
-                  border: paymentMethod === m ? '2px solid #6366f1' : '1px solid #e5e7eb',
-                  borderRadius: '8px',
-                  marginBottom: '0.5rem',
-                  cursor: 'pointer',
-                }}
-              >
-                <input
-                  type="radio"
-                  name="paymentMethod"
-                  checked={paymentMethod === m}
-                  onChange={() => setPaymentMethod(m)}
-                />
-                <span style={{ fontWeight: 600 }}>
-                  {m === 'VNPAY'
-                    ? '💳 VNPay (ATM/Internet Banking)'
-                    : m === 'MOMO'
-                      ? '📱 Ví MoMo'
-                      : m === 'BANK_TRANSFER'
-                        ? '🏦 Chuyển khoản ngân hàng'
-                        : '💵 Tiền mặt (tại văn phòng)'}
-                </span>
-              </label>
-            ))}
-            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
-              <button type="button" onClick={() => setShowPayModal(null)} className="dash-quick-btn">
-                Hủy
-              </button>
-              <button
-                type="button"
-                onClick={() => handlePayNow(showPayModal)}
-                className="dash-quick-btn primary"
-              >
-                ✅ Xác nhận thanh toán
-              </button>
-            </div>
-          </div>
+      {/* ── Payment List ── */}
+      {filtered.length === 0 && !isLoading ? (
+        <div style={{ textAlign: 'center', padding: '3rem', background: 'var(--dash-card-subtle)', borderRadius: '16px' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📭</div>
+          <h2>Không có giao dịch</h2>
+          <p style={{ opacity: 0.7 }}>Không có giao dịch nào phù hợp với bộ lọc hiện tại.</p>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {filtered.map((p) => {
+            const status = statusConfig(p.status);
+            return (
+              <div key={p._id} className="dash-card">
+                <div className="dash-card-header">
+                  <h2 className="dash-card-title">
+                    <span>{status.icon}</span>
+                    Thanh toán học phí
+                  </h2>
+                  <span className={`badge-pill ${status.cls}`}>{status.label}</span>
+                </div>
+
+                <div className="dash-subcard">
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.75rem 1.5rem' }}>
+                    <div>
+                      <div className="dash-subcard-label">Mã giao dịch</div>
+                      <div className="dash-subcard-value">{p.transactionId || p._id}</div>
+                    </div>
+                    <div>
+                      <div className="dash-subcard-label">Số tiền</div>
+                      <div className="dash-subcard-value" style={{ fontWeight: 800, color: '#10b981', fontSize: '1.1rem' }}>
+                        {p.amount.toLocaleString('vi-VN')} VNĐ
+                      </div>
+                    </div>
+                    <div>
+                      <div className="dash-subcard-label">Phương thức</div>
+                      <div className="dash-subcard-value">{p.method || '—'}</div>
+                    </div>
+                    {p.paymentDate && (
+                      <div>
+                        <div className="dash-subcard-label">Ngày thanh toán</div>
+                        <div className="dash-subcard-value">
+                          {new Date(p.paymentDate).toLocaleDateString('vi-VN')}
+                        </div>
+                      </div>
+                    )}
+                    {p.dueDate && (
+                      <div>
+                        <div className="dash-subcard-label">Hạn thanh toán</div>
+                        <div className="dash-subcard-value" style={{ color: p.status === 'PENDING' ? '#f59e0b' : 'inherit' }}>
+                          {new Date(p.dueDate).toLocaleDateString('vi-VN')}
+                        </div>
+                      </div>
+                    )}
+                    <div>
+                      <div className="dash-subcard-label">Ngày tạo</div>
+                      <div className="dash-subcard-value">
+                        {new Date(p.createdAt).toLocaleDateString('vi-VN')}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

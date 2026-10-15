@@ -1,186 +1,193 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-
-interface ScheduleItem {
-  dayOfWeek: string;
-  startTime: string;
-  endTime: string;
-  room: string;
-  sessionNumber: number;
-  topic: string;
-  date: string;
-}
+import { studentService } from '../../services/student.service';
+import type { ScheduleItem } from '../../types';
 
 const SchedulePage: React.FC = () => {
-  const { classId } = useParams<{ classId: string }>();
-  const [schedules, setSchedules] = useState<ScheduleItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<'WEEKLY' | 'LIST'>('WEEKLY');
+  const { id } = useParams<{ id: string }>();
+  const [schedule, setSchedule] = useState<ScheduleItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Mock data - sẽ thay bằng API: GET /api/student/classes/:classId/schedule
-    setTimeout(() => {
-      const mockSchedules: ScheduleItem[] = [
-        { dayOfWeek: 'Thứ 2', startTime: '18:30', endTime: '20:30', room: 'Lab 302', sessionNumber: 13, topic: 'Middleware & Error Handling', date: '20/10/2026' },
-        { dayOfWeek: 'Thứ 4', startTime: '18:30', endTime: '20:30', room: 'Lab 302', sessionNumber: 14, topic: 'Authentication với JWT', date: '22/10/2026' },
-        { dayOfWeek: 'Thứ 6', startTime: '18:30', endTime: '20:30', room: 'Lab 302', sessionNumber: 15, topic: 'Upload file & Validation', date: '24/10/2026' },
-        { dayOfWeek: 'Thứ 2', startTime: '18:30', endTime: '20:30', room: 'Lab 302', sessionNumber: 16, topic: 'React Hooks nâng cao', date: '27/10/2026' },
-        { dayOfWeek: 'Thứ 4', startTime: '18:30', endTime: '20:30', room: 'Lab 302', sessionNumber: 17, topic: 'State Management với Redux Toolkit', date: '29/10/2026' },
-        { dayOfWeek: 'Thứ 6', startTime: '18:30', endTime: '20:30', room: 'Lab 302', sessionNumber: 18, topic: 'React Router v6', date: '31/10/2026' },
-      ];
-      setSchedules(mockSchedules);
-      setLoading(false);
-    }, 500);
-  }, [classId]);
+    if (id) fetchSchedule();
+  }, [id]);
 
-  if (loading) {
+  const fetchSchedule = async () => {
+    if (!id) return;
+    try {
+      setIsLoading(true);
+      setError(null);
+      const res = await studentService.getSchedule(id);
+      if (res.success && res.data) setSchedule(res.data.schedule);
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.message || 'Không thể tải lịch học');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const dayColors: Record<string, string> = {
+    'Thứ Hai': '#3b82f6',
+    'Thứ Ba': '#10b981',
+    'Thứ Tư': '#f59e0b',
+    'Thứ Năm': '#8b5cf6',
+    'Thứ Sáu': '#ec4899',
+    'Thứ Bảy': '#f97316',
+    'Chủ Nhật': '#ef4444',
+  };
+
+  const dayNames = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+
+  const getDayLabel = (d: string) => {
+    const normalized = dayNames.find(n => n.toLowerCase().includes(d.toLowerCase())) || d;
+    return normalized;
+  };
+
+  const groupedByDay: Record<string, ScheduleItem[]> = {};
+  schedule.forEach(s => {
+    const day = getDayLabel(s.dayOfWeek);
+    if (!groupedByDay[day]) groupedByDay[day] = [];
+    groupedByDay[day].push(s);
+  });
+
+  if (isLoading) {
     return (
-      <div className="dash-container">
-        <div className="dash-card" style={{ textAlign: 'center', padding: '3rem' }}>
-          <p>Đang tải thời khóa biểu...</p>
-        </div>
+      <div className="dash-container" style={{ textAlign: 'center', padding: '3rem' }}>
+        <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⏳</div>
+        <p>Đang tải lịch học...</p>
       </div>
     );
   }
 
-  const days = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
-
-  // Lấy tuần hiện tại
-  const today = new Date();
-  const currentWeek: ScheduleItem[] = schedules.filter((s) => {
-    const itemDate = s.date.split('/').reverse().join('-');
-    const itemD = new Date(itemDate);
-    const diff = (itemD.getTime() - today.getTime()) / (1000 * 60 * 60 * 24);
-    return diff >= 0 && diff <= 7;
-  });
-
   return (
     <div className="dash-container">
-      {/* ── Banner ── */}
+      {/* ── Page Header ── */}
       <div className="dash-banner">
         <div className="dash-banner-content">
-          <div className="dash-banner-badge">📅 Thời Khóa Biểu • EduCenter Portal</div>
-          <h1>Lịch học tuần này</h1>
-          <p>Xem lịch học chi tiết theo tuần hoặc danh sách toàn bộ.</p>
+          <div className="dash-banner-badge">🗓️ Lịch Học</div>
+          <h1>Lịch Học Chi Tiết</h1>
+          <p>
+            {schedule.length > 0
+              ? `Tổng cộng ${schedule.length} buổi học trong tuần`
+              : 'Chưa có lịch học cho lớp này.'}
+          </p>
         </div>
         <div className="dash-banner-right">
           <div className="dash-date-pill">
-            <div>📚 Lớp: WEB-K24-A</div>
-            <div className="sub">MERN Full-Stack</div>
+            <div>🗓️ {Object.keys(groupedByDay).length} ngày học/tuần</div>
+            <div className="sub">Lớp ID: {id}</div>
           </div>
         </div>
       </div>
 
-      {/* ── Filter Tabs ── */}
-      <div className="dash-card">
-        <div className="dash-card-header">
-          <h2 className="dash-card-title">
-            <span>📆</span> Thời Khóa Biểu
-          </h2>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <Link
-              to={`/student/classes/${classId}`}
-              className="dash-quick-btn"
-              style={{ textDecoration: 'none', padding: '0.35rem 0.85rem', fontSize: '0.8rem' }}
-            >
-              ← Quay lại
-            </Link>
-            {(['WEEKLY', 'LIST'] as const).map((v) => (
-              <button
-                key={v}
-                type="button"
-                onClick={() => setView(v)}
-                className={`dash-quick-btn ${view === v ? 'primary' : ''}`}
-                style={{ padding: '0.35rem 0.85rem', fontSize: '0.8rem' }}
-              >
-                {v === 'WEEKLY' ? 'Theo tuần' : 'Danh sách'}
-              </button>
-            ))}
+      {/* ── Quick Nav ── */}
+      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+        <Link to={`/student/classes/${id}`} className="dash-quick-btn" style={{ textDecoration: 'none' }}>
+          ← Chi Tiết Lớp
+        </Link>
+        <Link to={`/student/classes/${id}/assignments`} className="dash-quick-btn" style={{ textDecoration: 'none' }}>
+          📝 Bài Tập
+        </Link>
+        <Link to={`/student/classes/${id}/attendance`} className="dash-quick-btn" style={{ textDecoration: 'none' }}>
+          📅 Điểm Danh
+        </Link>
+        <Link to={`/student/classes/${id}/grades`} className="dash-quick-btn" style={{ textDecoration: 'none' }}>
+          📊 Bảng Điểm
+        </Link>
+      </div>
+
+      {/* ── Error ── */}
+      {error && (
+        <div style={{ textAlign: 'center', padding: '1.5rem', background: 'rgba(239,68,68,0.1)', borderRadius: '12px', marginBottom: '1.5rem' }}>
+          <p style={{ color: '#ef4444', marginBottom: '0.75rem' }}>{error}</p>
+          <button className="dash-quick-btn primary" onClick={fetchSchedule}>Thử lại</button>
+        </div>
+      )}
+
+      {/* ── Metrics ── */}
+      {schedule.length > 0 && (
+        <div className="dash-metrics-grid" style={{ marginBottom: '1.5rem' }}>
+          <div className="dash-metric-card">
+            <div className="dash-metric-info">
+              <span className="dash-metric-label">Số buổi / tuần</span>
+              <span className="dash-metric-val">{schedule.length}</span>
+              <span className="dash-metric-trend up">{Object.keys(groupedByDay).length} ngày học</span>
+            </div>
+            <div className="dash-metric-icon icon-blue">📅</div>
+          </div>
+          <div className="dash-metric-card">
+            <div className="dash-metric-info">
+              <span className="dash-metric-label">Ngày nghỉ</span>
+              <span className="dash-metric-val">{7 - Object.keys(groupedByDay).length}</span>
+              <span className="dash-metric-trend">
+                {7 - Object.keys(groupedByDay).length === 0 ? 'Học đủ 7 ngày' : 'Có thể nghỉ ngơi'}
+              </span>
+            </div>
+            <div className="dash-metric-icon icon-emerald">🏖️</div>
+          </div>
+          <div className="dash-metric-card">
+            <div className="dash-metric-info">
+              <span className="dash-metric-label">Phòng học</span>
+              <span className="dash-metric-val">{schedule[0]?.classroom || '—'}</span>
+              <span className="dash-metric-trend">
+                {schedule.length > 0 ? 'Cố định phòng' : 'Chưa có thông tin'}
+              </span>
+            </div>
+            <div className="dash-metric-icon icon-purple">🏫</div>
           </div>
         </div>
+      )}
 
-        {view === 'WEEKLY' ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.5rem' }}>
-            {days.map((day) => {
-              const daySchedules = currentWeek.filter((s) => s.dayOfWeek === day);
-              return (
-                <div
-                  key={day}
-                  style={{
-                    background: 'rgba(99, 102, 241, 0.05)',
-                    borderRadius: '8px',
-                    padding: '0.75rem',
-                    minHeight: '200px',
-                  }}
-                >
-                  <h4
-                    style={{
-                      margin: '0 0 0.5rem 0',
-                      fontSize: '0.85rem',
-                      textAlign: 'center',
-                      color: '#6366f1',
-                      fontWeight: 700,
-                    }}
-                  >
-                    {day}
-                  </h4>
-                  {daySchedules.length === 0 ? (
-                    <p style={{ textAlign: 'center', fontSize: '0.75rem', opacity: 0.5 }}>—</p>
-                  ) : (
-                    daySchedules.map((s) => (
-                      <div
-                        key={s.sessionNumber}
-                        style={{
-                          background: 'white',
-                          border: '2px solid #6366f1',
-                          borderRadius: '6px',
-                          padding: '0.5rem',
-                          fontSize: '0.75rem',
-                          marginBottom: '0.5rem',
-                        }}
-                      >
-                        <div style={{ fontWeight: 700, color: '#6366f1' }}>Buổi {s.sessionNumber}</div>
-                        <div style={{ marginTop: '0.25rem' }}>{s.startTime} - {s.endTime}</div>
-                        <div style={{ marginTop: '0.25rem', opacity: 0.7 }}>📍 {s.room}</div>
-                        <div style={{ marginTop: '0.4rem', fontWeight: 600, fontSize: '0.7rem' }}>
-                          {s.topic}
-                        </div>
-                      </div>
-                    ))
-                  )}
+      {/* ── Weekly Calendar View ── */}
+      {schedule.length === 0 && !isLoading && !error ? (
+        <div style={{ textAlign: 'center', padding: '3rem', background: 'var(--dash-card-subtle)', borderRadius: '16px' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📭</div>
+          <h2>Chưa có lịch học</h2>
+          <p style={{ opacity: 0.7 }}>Lịch học sẽ được cập nhật bởi trung tâm.</p>
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
+          {dayNames
+            .filter(day => groupedByDay[day])
+            .map(day => (
+              <div key={day} className="dash-card">
+                <div className="dash-card-header" style={{ borderLeft: `4px solid ${dayColors[day] || '#64748b'}` }}>
+                  <h2 className="dash-card-title">
+                    <span>📅</span> {day}
+                  </h2>
+                  <span className="badge-pill badge-blue">{groupedByDay[day].length} buổi</span>
                 </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="dash-item-list">
-            {schedules.map((s) => (
-              <div key={s.sessionNumber} className="dash-subcard">
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-start',
-                    flexWrap: 'wrap',
-                    gap: '0.5rem',
-                  }}
-                >
-                  <div>
-                    <h3 className="dash-subcard-title" style={{ margin: 0 }}>
-                      Buổi {s.sessionNumber}: {s.topic}
-                    </h3>
-                    <div className="dash-subcard-meta" style={{ marginTop: '0.4rem' }}>
-                      📅 <strong>{s.dayOfWeek}, {s.date}</strong> • ⏰ {s.startTime} - {s.endTime}
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', padding: '0.5rem 0' }}>
+                  {groupedByDay[day].map((item) => (
+                    <div
+                      key={item._id}
+                      style={{
+                        background: 'var(--dash-card-subtle)',
+                        borderRadius: '10px',
+                        padding: '0.75rem 1rem',
+                        borderLeft: `3px solid ${dayColors[day] || '#64748b'}`,
+                      }}
+                    >
+                      <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '0.25rem' }}>
+                        🕐 {item.startTime} — {item.endTime}
+                      </div>
+                      {item.topic && (
+                        <div style={{ fontSize: '0.82rem', color: '#475569', marginBottom: '0.25rem' }}>
+                          📖 {item.topic}
+                        </div>
+                      )}
+                      <div style={{ fontSize: '0.82rem', color: '#64748b' }}>
+                        🏫 Phòng: {item.classroom}
+                      </div>
                     </div>
-                    <div className="dash-subcard-meta">📍 {s.room}</div>
-                  </div>
-                  <span className="badge-pill badge-blue">Buổi {s.sessionNumber}</span>
+                  ))}
                 </div>
               </div>
             ))}
-          </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };

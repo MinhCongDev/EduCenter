@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { Link } from 'react-router-dom';
 import { studentService } from '../../services/student.service';
 import type { MyClass, Assignment } from '../../types';
 
@@ -10,7 +11,7 @@ const StudentDashboard: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch dữ liệu khi mount
+  // Fetch data thật từ backend (MongoDB Atlas)
   useEffect(() => {
     fetchDashboardData();
   }, []);
@@ -36,51 +37,20 @@ const StudentDashboard: React.FC = () => {
       }
     } catch (err: any) {
       console.error('Lỗi khi fetch dữ liệu:', err);
-      setError(err.message || 'Không thể tải dữ liệu dashboard');
+      setError(err.response?.data?.message || err.message || 'Không thể tải dữ liệu dashboard');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Xử lý nộp bài tập
-  const handleSubmitAssignment = async (assignment: Assignment) => {
-    const link = prompt('Dán link GitHub repo hoặc bài nộp của bạn:', 'https://github.com/my-student-repo');
-    if (!link) return;
-
-    try {
-      const res = await studentService.submitAssignment({
-        assignmentId: assignment._id,
-        content: link,
-        attachmentUrl: link,
-      });
-
-      if (res.success) {
-        // Cập nhật state
-        setAssignments(prev =>
-          prev.map(a =>
-            a._id === assignment._id
-              ? { ...a, submissionStatus: 'SUBMITTED', submittedAt: new Date().toISOString() }
-              : a
-          )
-        );
-        alert('Đã nộp bài tập thành công! Giảng viên sẽ chấm điểm sớm.');
-      } else {
-        alert(res.message || 'Nộp bài thất bại');
-      }
-    } catch (err: any) {
-      alert(err.response?.data?.message || 'Lỗi khi nộp bài');
-    }
-  };
-
-  // Tính stats
-  const pendingAssignments = assignments.filter(a => !a.submissionStatus);
+  const pendingAssignments = assignments.filter((a) => !a.submissionStatus);
   const currentClass = myClasses.length > 0 ? myClasses[0] : null;
 
   if (isLoading) {
     return (
       <div className="dash-container" style={{ textAlign: 'center', padding: '3rem' }}>
         <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⏳</div>
-        <p>Đang tải dữ liệu...</p>
+        <p>Đang tải dữ liệu từ server...</p>
       </div>
     );
   }
@@ -128,38 +98,34 @@ const StudentDashboard: React.FC = () => {
 
       {/* ── Quick Action Toolbar ── */}
       <div className="dash-actions-row">
-        <button
-          type="button"
-          className="dash-quick-btn primary"
-          onClick={() => window.location.href = '/student/schedule'}
-        >
+        <Link to="/student/classes" className="dash-quick-btn primary" style={{ textDecoration: 'none' }}>
           <span>📖</span>
-          <span>Xem Lịch Học</span>
-        </button>
-        <button
-          type="button"
-          className="dash-quick-btn"
-          onClick={() => window.location.href = '/student/assignments'}
-        >
-          <span>📝</span>
-          <span>Bài Tập Cần Nộp</span>
-        </button>
-        <button
-          type="button"
-          className="dash-quick-btn"
-          onClick={() => window.location.href = '/student/attendance'}
-        >
-          <span>📅</span>
-          <span>Điểm Danh</span>
-        </button>
-        <button
-          type="button"
-          className="dash-quick-btn"
-          onClick={() => window.location.href = '/student/payments'}
-        >
+          <span>Lớp Học Của Tôi</span>
+        </Link>
+        {currentClass && (
+          <>
+            <Link
+              to={`/student/classes/${currentClass.class._id}/assignments`}
+              className="dash-quick-btn"
+              style={{ textDecoration: 'none' }}
+            >
+              <span>📝</span>
+              <span>Bài Tập Cần Nộp</span>
+            </Link>
+            <Link
+              to={`/student/classes/${currentClass.class._id}/attendance`}
+              className="dash-quick-btn"
+              style={{ textDecoration: 'none' }}
+            >
+              <span>📅</span>
+              <span>Điểm Danh</span>
+            </Link>
+          </>
+        )}
+        <Link to="/student/payments" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
           <span>💳</span>
           <span>Thanh Toán Học Phí</span>
-        </button>
+        </Link>
       </div>
 
       {/* ── Key Metrics ── */}
@@ -169,7 +135,7 @@ const StudentDashboard: React.FC = () => {
             <span className="dash-metric-label">Lớp đang học</span>
             <span className="dash-metric-val">{myClasses.length} lớp</span>
             <span className="dash-metric-trend up">
-              {currentClass?.class.course?.title || 'Đang tải...'}
+              {currentClass?.class.course?.code || 'Đang tải...'}
             </span>
           </div>
           <div className="dash-metric-icon icon-blue">📚</div>
@@ -194,10 +160,10 @@ const StudentDashboard: React.FC = () => {
           <div className="dash-metric-info">
             <span className="dash-metric-label">Bài tập đã nộp</span>
             <span className="dash-metric-val">
-              {assignments.filter(a => a.submissionStatus).length} / {assignments.length}
+              {assignments.filter((a) => a.submissionStatus).length} / {assignments.length}
             </span>
             <span className="dash-metric-trend up">
-              {assignments.filter(a => a.submissionStatus === 'GRADED').length} đã chấm điểm
+              {assignments.filter((a) => a.submissionStatus === 'GRADED').length} đã chấm điểm
             </span>
           </div>
           <div className="dash-metric-icon icon-amber">🏆</div>
@@ -228,14 +194,14 @@ const StudentDashboard: React.FC = () => {
                 <h2 className="dash-card-title">
                   <span>⏰</span> Lớp Học Hiện Tại
                 </h2>
-                <span className="badge-pill badge-green">{currentClass.enrollmentStatus}</span>
+                <span className="badge-pill badge-green">{currentClass.status || currentClass.enrollmentStatus}</span>
               </div>
 
               <div className="dash-subcard">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div>
                     <h3 className="dash-subcard-title">
-                      {currentClass.class.course?.title || 'Đang tải...'}
+                      {currentClass.class.course?.code || 'Đang tải...'}
                     </h3>
                     <div className="dash-subcard-meta" style={{ marginTop: '0.25rem' }}>
                       Mã lớp: <strong>{currentClass.class.classCode}</strong>
@@ -254,20 +220,20 @@ const StudentDashboard: React.FC = () => {
                 </div>
 
                 <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem', flexWrap: 'wrap' }}>
-                  <button
-                    type="button"
+                  <Link
+                    to={`/student/classes/${currentClass.class._id}/schedule`}
                     className="dash-quick-btn primary"
-                    onClick={() => window.location.href = `/student/classes/${currentClass.class._id}/schedule`}
+                    style={{ textDecoration: 'none' }}
                   >
                     📅 Xem Lịch Học
-                  </button>
-                  <button
-                    type="button"
+                  </Link>
+                  <Link
+                    to={`/student/classes/${currentClass.class._id}`}
                     className="dash-quick-btn"
-                    onClick={() => window.location.href = `/student/classes/${currentClass.class._id}`}
+                    style={{ textDecoration: 'none' }}
                   >
                     ℹ️ Xem Chi Tiết
-                  </button>
+                  </Link>
                 </div>
               </div>
             </div>
@@ -289,12 +255,12 @@ const StudentDashboard: React.FC = () => {
                 </div>
               ) : (
                 myClasses.map((item) => (
-                  <div key={item.enrollmentId} className="dash-item">
+                  <div key={item._id || item.enrollmentId} className="dash-item">
                     <div className="dash-item-main">
                       <div className="dash-item-icon">📚</div>
                       <div>
                         <div className="dash-item-title">
-                          {item.class.course?.title || 'Đang tải...'}
+                          {item.class.course?.code || 'Đang tải...'}
                         </div>
                         <div className="dash-item-sub">
                           Lớp: {item.class.classCode} • {item.class.scheduleDays?.join(', ')}
@@ -305,14 +271,13 @@ const StudentDashboard: React.FC = () => {
                       <span className={`badge-pill ${item.tuitionStatus === 'PAID' ? 'badge-green' : 'badge-amber'}`}>
                         {item.tuitionStatus === 'PAID' ? 'Đã thanh toán' : 'Chưa TT'}
                       </span>
-                      <button
-                        type="button"
+                      <Link
+                        to={`/student/classes/${item.class._id}`}
                         className="dash-quick-btn"
-                        style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem' }}
-                        onClick={() => window.location.href = `/student/classes/${item.class._id}`}
+                        style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', textDecoration: 'none' }}
                       >
                         Chi tiết →
-                      </button>
+                      </Link>
                     </div>
                   </div>
                 ))
@@ -337,10 +302,10 @@ const StudentDashboard: React.FC = () => {
             <div className="dash-item-list">
               {assignments.length === 0 ? (
                 <div style={{ padding: '1rem', textAlign: 'center', opacity: 0.7 }}>
-                  Không có bài tập nào
+                  {currentClass ? 'Chưa có bài tập nào' : 'Chưa đăng ký lớp nào'}
                 </div>
               ) : (
-                assignments.map((item) => (
+                assignments.slice(0, 5).map((item) => (
                   <div key={item._id} className="dash-item">
                     <div className="dash-item-main">
                       <div className="dash-item-icon">
@@ -354,7 +319,7 @@ const StudentDashboard: React.FC = () => {
                             month: '2-digit',
                             year: 'numeric',
                             hour: '2-digit',
-                            minute: '2-digit'
+                            minute: '2-digit',
                           })}
                         </div>
                       </div>
@@ -362,16 +327,19 @@ const StudentDashboard: React.FC = () => {
 
                     <div>
                       {!item.submissionStatus ? (
-                        <button
-                          type="button"
-                          onClick={() => handleSubmitAssignment(item)}
+                        <Link
+                          to={`/student/classes/${currentClass?.class._id}/assignments`}
                           className="dash-quick-btn primary"
-                          style={{ padding: '0.35rem 0.85rem', fontSize: '0.775rem' }}
+                          style={{ padding: '0.35rem 0.85rem', fontSize: '0.775rem', textDecoration: 'none' }}
                         >
                           Nộp bài
-                        </button>
+                        </Link>
                       ) : (
-                        <span className={`badge-pill ${item.submissionStatus === 'GRADED' ? 'badge-blue' : 'badge-green'}`}>
+                        <span
+                          className={`badge-pill ${
+                            item.submissionStatus === 'GRADED' ? 'badge-blue' : 'badge-green'
+                          }`}
+                        >
                           {item.submissionStatus === 'GRADED' ? 'Đã chấm' : 'Đã nộp'}
                         </span>
                       )}
@@ -381,15 +349,15 @@ const StudentDashboard: React.FC = () => {
               )}
             </div>
 
-            {assignments.length > 0 && (
+            {currentClass && assignments.length > 0 && (
               <div style={{ padding: '0.75rem', borderTop: '1px solid #e5e7eb', textAlign: 'center' }}>
-                <button
-                  type="button"
+                <Link
+                  to={`/student/classes/${currentClass.class._id}/assignments`}
                   className="dash-quick-btn"
-                  onClick={() => currentClass && (window.location.href = `/student/classes/${currentClass.class._id}/assignments`)}
+                  style={{ textDecoration: 'none' }}
                 >
                   Xem tất cả bài tập →
-                </button>
+                </Link>
               </div>
             )}
           </div>
@@ -402,33 +370,32 @@ const StudentDashboard: React.FC = () => {
               </h2>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <button
-                type="button"
+              <Link
+                to="/student/requests"
                 className="dash-quick-btn"
-                onClick={() => window.location.href = '/student/requests'}
-                style={{ justifyContent: 'flex-start' }}
+                style={{ justifyContent: 'flex-start', textDecoration: 'none' }}
               >
                 <span>🔄</span>
                 <span>Yêu cầu đổi lớp / lịch học</span>
-              </button>
-              <button
-                type="button"
+              </Link>
+              {currentClass && (
+                <Link
+                  to={`/student/classes/${currentClass.class._id}/grades`}
+                  className="dash-quick-btn"
+                  style={{ justifyContent: 'flex-start', textDecoration: 'none' }}
+                >
+                  <span>📊</span>
+                  <span>Xem bảng điểm</span>
+                </Link>
+              )}
+              <Link
+                to="/student/payments"
                 className="dash-quick-btn"
-                onClick={() => window.location.href = '/student/requests'}
-                style={{ justifyContent: 'flex-start' }}
-              >
-                <span>📊</span>
-                <span>Theo dõi yêu cầu đã gửi</span>
-              </button>
-              <button
-                type="button"
-                className="dash-quick-btn"
-                onClick={() => window.location.href = '/student/payments'}
-                style={{ justifyContent: 'flex-start' }}
+                style={{ justifyContent: 'flex-start', textDecoration: 'none' }}
               >
                 <span>💳</span>
                 <span>Thanh toán học phí</span>
-              </button>
+              </Link>
             </div>
           </div>
         </div>
