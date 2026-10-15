@@ -46,7 +46,7 @@ const Navbar: React.FC = () => {
                 Dashboard
               </Link>
               <div className="user-avatar" aria-label={`Logged in as ${user.fullName}`}>
-                {user.fullName.charAt(0).toUpperCase()}
+                {(user.fullName || user.email || 'U').charAt(0).toUpperCase()}
               </div>
               <button
                 id="logout-button"
