@@ -3,7 +3,6 @@ import { AuthRequest } from '../middlewares/auth.middleware';
 import {
   User,
   Student,
-  Teacher,
   Course,
   Class,
   Enrollment,
@@ -14,6 +13,7 @@ import {
   ChangeRequest,
   ClassSchedule,
 } from '../models';
+
 
 /**
  * Helper to ensure real database documents exist across models if database was freshly created
@@ -238,17 +238,23 @@ export const getDirectorDashboard = async (_req: AuthRequest, res: Response): Pr
       center,
       classes,
       changeRequests,
+      successfulPayments,
     ] = await Promise.all([
       User.countDocuments({ role: 'STUDENT' }),
       Student.countDocuments(),
-      Teacher.countDocuments(),
+      User.countDocuments({ role: 'TEACHER' }),
       Course.countDocuments({ status: 'ACTIVE' }),
       Class.countDocuments(),
       Enrollment.countDocuments(),
       Center.findOne(),
       Class.find().populate('course teacher').limit(5),
       ChangeRequest.find().sort({ createdAt: -1 }).limit(5),
+      Payment.find({ status: 'SUCCESS' }),
     ]);
+
+    // Calculate real revenue strictly from database Payment documents
+    const totalRevenueNum = successfulPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+    const revenueFormatted = `${totalRevenueNum.toLocaleString('vi-VN')} ₫`;
 
     // Format campus stats strictly from Center model in MongoDB
     const branches = center?.branches || [];
@@ -256,11 +262,11 @@ export const getDirectorDashboard = async (_req: AuthRequest, res: Response): Pr
       id: (b as any)._id,
       name: b.branchName,
       address: b.address,
-      students: b.studentCount || 100,
-      classes: b.classCount || 5,
-      revenue: b.revenue || '500.000.000 ₫',
-      fillRate: b.fillRate || 80,
-      status: b.status || (b.fillRate && b.fillRate >= 90 ? 'Tăng trưởng nhanh' : 'Hoạt động tốt'),
+      students: b.studentCount || 0,
+      classes: b.classCount || 0,
+      revenue: b.revenue || '0 ₫',
+      fillRate: b.fillRate || 0,
+      status: b.status || 'Hoạt động tốt',
     }));
 
     // Approvals taken directly from ChangeRequest collection in MongoDB
@@ -276,16 +282,18 @@ export const getDirectorDashboard = async (_req: AuthRequest, res: Response): Pr
       message: 'Lấy dữ liệu Giám đốc thành công',
       data: {
         stats: {
-          revenue: '2.45 Tỷ ₫',
+          revenue: revenueFormatted,
+          totalRevenueNumber: totalRevenueNum,
           revenueGrowth: '+14.8%',
-          totalStudents: totalStudents > 100 ? totalStudents : 1428,
+          totalStudents: totalStudents,
           activeClasses: totalClasses,
-          totalTeachers: totalTeachers > 10 ? totalTeachers : 42,
+          totalTeachers: totalTeachers,
           totalCourses: totalCourses,
           totalEnrollments: totalEnrollments,
           totalStudentProfiles: totalStudentProfiles,
           targetAchievementRate: '96.8%',
         },
+
         campusStats,
         recentClasses: classes.map((c) => ({
           id: c._id,

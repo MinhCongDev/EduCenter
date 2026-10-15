@@ -9,6 +9,11 @@ import { centerRouter } from './routes/center.routes';
 import { courseRouter } from './routes/course.routes';
 import { announcementRouter } from './routes/announcement.routes';
 import { dashboardRouter } from './routes/dashboard.routes';
+import { studentRouter } from './routes/student.routes';
+import { teacherRouter } from './routes/teacher.routes';
+import { staffRouter } from './routes/staff.routes';
+import { directorRouter } from './routes/director.routes';
+import { notificationRouter } from './routes/notification.routes';
 import { errorHandler } from './middlewares/error.middleware';
 import { notFound } from './middlewares/notFound.middleware';
 
@@ -54,6 +59,12 @@ app.use('/api/center', centerRouter);
 app.use('/api/courses', courseRouter);
 app.use('/api/announcements', announcementRouter);
 app.use('/api/dashboard', dashboardRouter);
+app.use('/api/student', studentRouter);
+app.use('/api/teacher', teacherRouter);
+app.use('/api/staff', staffRouter);
+app.use('/api/director', directorRouter);
+app.use('/api/notifications', notificationRouter);
+
 
 // ===========================
 // 404 Handler

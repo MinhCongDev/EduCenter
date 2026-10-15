@@ -1,6 +1,7 @@
 import mongoose, { Document, Schema, Model, Types } from 'mongoose';
 
 export type AssignmentStatus = 'DRAFT' | 'PUBLISHED' | 'CLOSED';
+export type AssignmentType = 'HOMEWORK' | 'FINAL_EXAM' | 'QUIZ';
 
 export interface IAssignment extends Document {
   class: Types.ObjectId;
@@ -11,6 +12,7 @@ export interface IAssignment extends Document {
   maxScore: number;
   attachments: string[];
   status: AssignmentStatus;
+  type?: AssignmentType;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -54,6 +56,11 @@ const assignmentSchema = new Schema<IAssignment>(
       enum: ['DRAFT', 'PUBLISHED', 'CLOSED'],
       default: 'PUBLISHED',
     },
+    type: {
+      type: String,
+      enum: ['HOMEWORK', 'FINAL_EXAM', 'QUIZ'],
+      default: 'HOMEWORK',
+    },
   },
   {
     timestamps: true,
@@ -61,3 +68,4 @@ const assignmentSchema = new Schema<IAssignment>(
 );
 
 export const Assignment: Model<IAssignment> = mongoose.model<IAssignment>('Assignment', assignmentSchema);
+

@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import type { UserRole } from '../types';
 import { ProfileModal } from './ProfileModal';
 import { ChangePasswordModal } from './ChangePasswordModal';
+import { NotificationModal } from './NotificationModal';
 
 // Role-based dashboard path mapping
 const getDashboardPath = (role: UserRole): string => {
@@ -23,6 +24,8 @@ const Navbar: React.FC = () => {
   const [targetScore, setTargetScore] = useState(7.5);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+
 
   const handleLogout = () => {
     logout();
@@ -223,6 +226,19 @@ const Navbar: React.FC = () => {
             </svg>
           </Link>
 
+          {/* Notification Button */}
+          {isAuthenticated && (
+            <button
+              type="button"
+              className="dmr-store-btn"
+              onClick={() => setIsNotificationOpen(true)}
+              title="Thông báo hệ thống"
+              style={{ position: 'relative' }}
+            >
+              <span style={{ fontSize: '18px' }}>🔔</span>
+            </button>
+          )}
+
           {/* Auth Section */}
           {isAuthenticated && user ? (
             <div className="dmr-user-pill">
@@ -234,6 +250,7 @@ const Navbar: React.FC = () => {
               >
                 {user.fullName.charAt(0).toUpperCase()}
               </div>
+
               <div
                 style={{ display: 'flex', flexDirection: 'column', cursor: 'pointer' }}
                 onClick={() => setIsProfileOpen(true)}
@@ -407,8 +424,15 @@ const Navbar: React.FC = () => {
         isOpen={isChangePasswordOpen}
         onClose={() => setIsChangePasswordOpen(false)}
       />
+
+      {/* View Notifications Modal */}
+      <NotificationModal
+        isOpen={isNotificationOpen}
+        onClose={() => setIsNotificationOpen(false)}
+      />
     </nav>
   );
 };
+
 
 export default Navbar;

@@ -11,6 +11,9 @@ export interface IEnrollment extends Document {
   enrollmentDate: Date;
   status: EnrollmentStatus;
   tuitionStatus: TuitionStatus;
+  finalScore?: number;
+  midtermScore?: number;
+  academicResult?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -48,6 +51,20 @@ const enrollmentSchema = new Schema<IEnrollment>(
       enum: ['PENDING', 'PAID', 'REFUNDED'],
       default: 'PENDING',
     },
+    finalScore: {
+      type: Number,
+      min: 0,
+      max: 10,
+    },
+    midtermScore: {
+      type: Number,
+      min: 0,
+      max: 10,
+    },
+    academicResult: {
+      type: String,
+      default: '',
+    },
   },
   {
     timestamps: true,
@@ -55,3 +72,4 @@ const enrollmentSchema = new Schema<IEnrollment>(
 );
 
 export const Enrollment: Model<IEnrollment> = mongoose.model<IEnrollment>('Enrollment', enrollmentSchema);
+

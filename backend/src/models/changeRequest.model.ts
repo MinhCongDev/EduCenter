@@ -5,6 +5,7 @@ export type RequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
 export interface IChangeRequest extends Document {
   student: Types.ObjectId;
+  requesterRole?: 'STUDENT' | 'TEACHER';
   requestType: RequestType;
   currentClass: Types.ObjectId;
   targetClass?: Types.ObjectId;
@@ -23,7 +24,12 @@ const changeRequestSchema = new Schema<IChangeRequest>(
     student: {
       type: Schema.Types.ObjectId,
       ref: 'User',
-      required: [true, 'Học viên yêu cầu là bắt buộc'],
+      required: [true, 'Người yêu cầu là bắt buộc'],
+    },
+    requesterRole: {
+      type: String,
+      enum: ['STUDENT', 'TEACHER'],
+      default: 'STUDENT',
     },
     requestType: {
       type: String,
@@ -35,6 +41,7 @@ const changeRequestSchema = new Schema<IChangeRequest>(
       ref: 'Class',
       required: [true, 'Lớp học hiện tại là bắt buộc'],
     },
+
     targetClass: {
       type: Schema.Types.ObjectId,
       ref: 'Class',

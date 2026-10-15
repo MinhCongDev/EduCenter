@@ -15,6 +15,13 @@ import {
   ClassSchedule,
   Announcement,
   Center,
+  Payment,
+  Assignment,
+  Submission,
+  Attendance,
+  ChangeRequest,
+  Feedback,
+  Notification,
 } from '../models';
 
 const MONGODB_URI = process.env.MONGODB_URI;
@@ -28,10 +35,10 @@ const seedDatabase = async () => {
   try {
     console.log('⏳ Đang kết nối tới MongoDB Atlas...');
     await mongoose.connect(MONGODB_URI);
-    console.log('✅ Đã kết nối thành công tới Atlas!');
+    console.log('✅ Đã kết nối thành công tới MongoDB!');
 
-    // 1. Dọn dẹp dữ liệu cũ
-    console.log('🧹 Đang làm sạch dữ liệu cũ...');
+    // 1. Dọn dẹp tất cả dữ liệu cũ trong 16 collections
+    console.log('🧹 Đang làm sạch dữ liệu cũ trong tất cả collections...');
     await Promise.all([
       User.deleteMany({}),
       Staff.deleteMany({}),
@@ -43,17 +50,25 @@ const seedDatabase = async () => {
       ClassSchedule.deleteMany({}),
       Announcement.deleteMany({}),
       Center.deleteMany({}),
+      Payment.deleteMany({}),
+      Assignment.deleteMany({}),
+      Submission.deleteMany({}),
+      Attendance.deleteMany({}),
+      ChangeRequest.deleteMany({}),
+      Feedback.deleteMany({}),
+      Notification.deleteMany({}),
     ]);
 
     // 2. Tạo thông tin Trung tâm (Center Info - UC01)
     console.log('🏛️ Đang tạo thông tin Trung tâm đào tạo EduCenter...');
     await Center.create({
       name: 'EduCenter IELTS Academy',
+
       slogan: 'Học viện Luyện thi IELTS 8.0+ Chuẩn Khảo thí Quốc tế',
       introduction:
-        'EduCenter là tổ chức giáo dục đào tạo IELTS hàng đầu Việt Nam, đối tác bạch kim chính thức của IDP và British Council. Với đội ngũ 100% giảng viên đạt 8.5 - 9.0 IELTS Overall, hệ thống phòng thi máy tính độc quyền và hợp đồng cam kết đầu ra bằng văn bản pháp lý, EduCenter đã đồng hành cùng hơn 50.000 học viên đạt mục tiêu.',
-      vision: 'Trở thành học viện khảo thí và đào tạo IELTS chuẩn mực số 1 tại Đông Nam Á.',
-      mission: 'Kiến tạo môi trường học tiếng Anh chuẩn học thuật quốc tế, giúp học viên Việt Nam tự tin chinh phục học bổng, du học và định cư.',
+        'EduCenter là tổ chức giáo dục đào tạo IELTS hàng đầu Việt Nam, đối tác bạch kim chính thức của IDP và British Council. Với đội ngũ 100% giảng viên đạt 8.5 - 9.0 IELTS Overall, hệ thống phòng thi máy tính độc quyền và cam kết đầu ra bằng hợp đồng đào tạo rõ ràng.',
+      vision: 'Trở thành học viện khảo thí và đào tạo IELTS chuẩn mực số 1 tại Việt Nam và khu vực.',
+      mission: 'Kiến tạo môi trường học tiếng Anh học thuật quốc tế, giúp học viên Việt Nam tự tin chinh phục học bổng, du học và định cư.',
       hotline: '1900 6868 - 0988 123 456',
       email: 'contact@educenter.edu.vn',
       workingHours: 'Thứ 2 - Chủ Nhật: 08:00 - 21:30',
@@ -81,60 +96,22 @@ const seedDatabase = async () => {
           fillRate: 88,
           status: 'Hoạt động tốt',
         },
-        {
-          branchName: 'Cơ sở 3 (Bách Khoa - Hai Bà Trưng)',
-          address: 'Số 86 Lê Thanh Nghị, P. Đồng Tâm, Q. Hai Bà Trưng, Hà Nội',
-          phone: '024 3789 6870',
-          isHeadquarters: false,
-          studentCount: 310,
-          classCount: 10,
-          revenue: '520.000.000 ₫',
-          fillRate: 82,
-          status: 'Hoạt động tốt',
-        },
-        {
-          branchName: 'Cơ sở 4 (Quận 1 - TP. Hồ Chí Minh)',
-          address: 'Tòa nhà Bitexco Nam, 180 Nguyễn Thị Minh Khai, P. 6, Q. 1, TP. HCM',
-          phone: '028 3988 6868',
-          isHeadquarters: false,
-          studentCount: 198,
-          classCount: 8,
-          revenue: '400.000.000 ₫',
-          fillRate: 91,
-          status: 'Tăng trưởng nhanh',
-        },
-        {
-          branchName: 'Cơ sở 5 (Quận 10 - TP. Hồ Chí Minh)',
-          address: 'Số 387 Sư Vạn Hạnh, P. 12, Q. 10, TP. HCM',
-          phone: '028 3988 6869',
-          isHeadquarters: false,
-          studentCount: 150,
-          classCount: 6,
-          revenue: '300.000.000 ₫',
-          fillRate: 85,
-          status: 'Hoạt động tốt',
-        },
       ],
       facilities: [
         {
-          name: 'Phòng thi thử IELTS trên máy tính (Computer-delivered Lab)',
+          name: 'Phòng thi thử IELTS trên máy tính (Computer Lab)',
           description: 'Trang bị 60 máy tính Core i7, tai nghe cách âm chuyên dụng đạt chuẩn kiểm định IDP & British Council.',
           imageUrl: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=800&auto=format&fit=crop',
         },
         {
           name: 'Phòng Mock Speaking Coaching 1:1 Studio',
-          description: 'Không gian tiêu âm chuẩn thu âm studio, camera HD ghi lại ngôn ngữ cơ thể và phản xạ câu hỏi.',
+          description: 'Không gian tiêu âm chuẩn phòng thu, camera HD ghi lại ngôn ngữ cơ thể và phản xạ câu hỏi.',
           imageUrl: 'https://images.unsplash.com/photo-1577896851231-70ef18881754?q=80&w=800&auto=format&fit=crop',
         },
         {
           name: 'Thư viện học thuật Cambridge IELTS & Không gian tự học 24/7',
           description: 'Kho đề thi Cambridge từ Vol 10 - 19, nguồn tài liệu New Scientist, The Economist và phòng tự học miễn phí.',
           imageUrl: 'https://images.unsplash.com/photo-1521587760476-6c12a4b040da?q=80&w=800&auto=format&fit=crop',
-        },
-        {
-          name: 'Smart Classrooms màn hình tương tác 4K',
-          description: 'Phòng học hiện đại có hệ thống bảng tương tác thông minh và micro thu âm giảng dạy trực tiếp.',
-          imageUrl: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?q=80&w=800&auto=format&fit=crop',
         },
       ],
       achievements: [
@@ -308,13 +285,11 @@ const seedDatabase = async () => {
           'Chuẩn hóa phát âm 44 âm IPA theo giọng Anh - Mỹ chuẩn quốc tế',
           'Nắm vững 12 chủ điểm ngữ pháp trọng yếu hay gặp nhất trong kỳ thi IELTS',
           'Tích lũy vốn từ vựng cơ bản 1.500 từ theo các chủ đề đời sống thông dụng',
-          'Tự tin phát âm chuẩn và tạo lập câu giao tiếp mạch lạc',
         ],
         syllabus: [
           'Tuần 1-2: Ngữ âm nền tảng IPA & Kỹ thuật nối âm, nhấn trọng âm',
           'Tuần 3-4: Ngữ pháp cốt lõi: Các thì cơ bản, Mệnh đề quan hệ, Thể bị động',
-          'Tuần 5-6: Xây dựng vốn từ vựng theo chủ đề: Education, Work, Family, Travel',
-          'Tuần 7-8: Làm quen với cấu trúc các dạng bài thi IELTS & Thi kiểm tra đầu ra',
+          'Tuần 5-8: Từ vựng theo chủ đề & Thi kiểm tra đầu ra',
         ],
       },
       {
@@ -335,13 +310,11 @@ const seedDatabase = async () => {
           'Hiểu rõ tiêu chí chấm điểm và format 4 kỹ năng IELTS',
           'Rèn luyện kỹ năng Skimming & Scanning trong bài đọc',
           'Luyện nghe bắt từ khóa (Keywords) và phân biệt các bẫy thông tin phổ biến',
-          'Luyện nói phản xạ Part 1 và cấu trúc bài viết Task 1 miêu tả biểu đồ cơ bản',
         ],
         syllabus: [
-          'Tuần 1-3: Format đề thi & Kỹ năng Listening Section 1-2, Reading Dạng Multiple Choice & Completion',
-          'Tuần 4-6: Speaking Part 1 Topics & Writing Task 1: Biểu đồ đường, cột, tròn',
-          'Tuần 7-9: Listening Section 3 & Reading Matching Headings, True/False/Not Given',
-          'Tuần 10: Mock Test giữa khóa và hoàn thiện kỹ năng phản xạ',
+          'Tuần 1-3: Format đề thi & Listening Section 1-2',
+          'Tuần 4-6: Speaking Part 1 & Writing Task 1',
+          'Tuần 7-10: Listening Section 3 & Mock Test',
         ],
       },
       {
@@ -361,14 +334,12 @@ const seedDatabase = async () => {
         learningObjectives: [
           'Thành thạo chiến thuật làm bài Reading cho dạng bài hóc búa Yes/No/Not Given',
           'Làm chủ dạng bài Listening Section 3 - 4 thảo luận học thuật chuyên sâu',
-          'Phát triển ý tưởng Speaking Part 2 trôi chảy theo phương pháp mindmap 1 phút chuẩn bị',
           'Nắm chắc cấu trúc đoạn văn chuẩn PEEL trong Writing Task 2',
         ],
         syllabus: [
-          'Tuần 1-3: Chiến lược định vị thông tin nhanh trong Reading học thuật',
-          'Tuần 4-6: Tư duy phát triển luận điểm Writing Task 2 dạng Opinion & Discussion',
-          'Tuần 7-9: Luyện Speaking Part 2 theo công thức 5W1H và từ vựng nâng cao Band 6.0+',
-          'Tuần 10-12: Mock Test trên máy tính và tổng kết phương pháp làm bài',
+          'Tuần 1-3: Chiến lược định vị thông tin Reading',
+          'Tuần 4-6: Writing Task 2 dạng Opinion & Discussion',
+          'Tuần 7-12: Speaking Part 2 theo công thức 5W1H & Mock Test',
         ],
       },
       {
@@ -387,15 +358,13 @@ const seedDatabase = async () => {
         featured: true,
         learningObjectives: [
           'Chinh phục Band 7.0+ ở 2 kỹ năng Listening & Reading',
-          'Sử dụng linh hoạt Collocations & Idiomatic language trong Speaking Part 2 & Part 3',
-          'Nâng cấp cấu trúc ngữ pháp phức (Complex Sentences, Inversion) trong Writing Task 2',
-          'Sửa bài Writing & Speaking 1:1 hàng tuần trực tiếp với giảng viên 8.5+',
+          'Sử dụng linh hoạt Collocations & Idiomatic language trong Speaking',
+          'Nâng cấp cấu trúc ngữ pháp phức trong Writing Task 2',
         ],
         syllabus: [
-          'Tuần 1-3: Chiến thuật đạt điểm tối đa Listening Section 4 & Reading chuyên ngành',
-          'Tuần 4-6: Xử lý các dạng biểu đồ phức hợp và bản đồ Map / Quy trình Process trong Writing Task 1',
-          'Tuần 7-9: Luyện tư duy phản biện (Critical Thinking) cho Speaking Part 3 & Writing Task 2',
-          'Tuần 10-12: Luyện giải bộ đề dự đoán Cambridge thực chiến & Hợp đồng cam kết đầu ra',
+          'Tuần 1-3: Đạt điểm tối đa Listening Section 4 & Reading chuyên ngành',
+          'Tuần 4-6: Biểu đồ phức hợp và Map / Process trong Writing Task 1',
+          'Tuần 7-12: Tư duy phản biện Critical Thinking cho Speaking Part 3 & Đề Cambridge',
         ],
       },
       {
@@ -415,41 +384,10 @@ const seedDatabase = async () => {
         learningObjectives: [
           'Chạm mốc 8.5 - 9.0 Listening & Reading thông qua kỹ năng tư duy phản biện',
           'Nắm vững 4 tiêu chí chấm điểm IELTS theo barem chuẩn khảo thí quốc tế',
-          'Sử dụng ngôn ngữ tự nhiên như người bản xứ (Native-like Fluency & Nuance)',
-          'Đạt điểm tối đa tiêu chí Lexical Resource & Grammatical Range trong Writing',
         ],
         syllabus: [
-          'Tuần 1-3: Giải mã các bẫy tinh vi nhất trong Reading & Listening đề thi thật',
-          'Tuần 4-6: Chuyên đề Writing Task 2 Band 8.0+: Nghệ thuật lập luận sắc bén & Luận điểm đa chiều',
-          'Tuần 7-8: Coaching 1:1 Speaking cùng giảng viên 9.0 và cựu giám khảo chấm thi',
-          'Tuần 9-10: Thi thử mô phỏng 100% Computer-delivered IELTS tại EduCenter Lab',
-        ],
-      },
-      {
-        code: 'IELTS-SPK-VIP',
-        title: 'IELTS Speaking Coaching 1:1 Chuyên Sâu Cùng Giáo Viên 8.5+',
-        description: 'Lớp học kèm riêng 1:1 tập trung toàn bộ thời lượng vào việc chỉnh sửa ngữ điệu, phản xạ tự nhiên và bộ đề Forecast Speaking mới nhất của quý.',
-        category: 'Kỹ năng Chuyên biệt',
-        entryLevel: '4.5 - 7.5+',
-        targetLevel: '7.5+',
-        durationWeeks: 8,
-        sessions: 16,
-        tuitionFee: 8500000,
-        format: 'ONLINE',
-        status: 'ACTIVE',
-        bannerUrl: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=800&auto=format&fit=crop',
-        featured: false,
-        learningObjectives: [
-          'Khắc phục dứt điểm tật ngập ngừng, ậm ừ khi trả lời các câu hỏi khó',
-          'Bổ sung idioms và phrasal verbs tự nhiên chuẩn bản xứ',
-          'Luyện tập toàn bộ đề thi thật trong bộ Forecast Speaking quý hiện tại',
-          'Thu âm và nhận phân tích lỗi sai ngữ pháp, phát âm sau mỗi buổi học',
-        ],
-        syllabus: [
-          'Tuần 1-2: Phản xạ nhanh Part 1 các chủ đề mới nổi',
-          'Tuần 3-5: Xây dựng câu chuyện cá nhân hóa Part 2 áp dụng cho nhiều đề bài',
-          'Tuần 6-7: Nâng cấp tư duy lập luận xã hội, khoa học cho Part 3',
-          'Tuần 8: Mock Interview phòng thi thật và chấm điểm chi tiết',
+          'Tuần 1-4: Writing Task 2 Band 8.0+ Lập luận sắc bén',
+          'Tuần 5-10: Coaching 1:1 Speaking cùng giảng viên 9.0',
         ],
       },
     ]);
@@ -467,7 +405,7 @@ const seedDatabase = async () => {
       startDate: new Date('2026-11-01'),
       endDate: new Date('2027-01-28'),
       capacity: 20,
-      currentEnrollment: 12,
+      currentEnrollment: 2,
       status: 'OPEN',
     });
 
@@ -482,72 +420,454 @@ const seedDatabase = async () => {
       startDate: new Date('2026-11-05'),
       endDate: new Date('2027-02-05'),
       capacity: 20,
-      currentEnrollment: 15,
+      currentEnrollment: 1,
       status: 'OPEN',
     });
 
     // 7. Tạo lịch học cho lớp (ClassSchedule)
-    await ClassSchedule.create([
+    console.log('📅 Đang tạo thời khóa biểu chi tiết...');
+    const schedules = await ClassSchedule.insertMany([
       {
         class: class1._id,
         dayOfWeek: 'Thứ 2',
         startTime: '18:30',
         endTime: '20:30',
-        classroom: 'Phòng Lab 201',
+        classroom: 'Phòng Lab 201 (EduCenter Cầu Giấy)',
         topic: 'IELTS Reading - Chiến thuật Matching Headings',
+        status: 'ACTIVE',
       },
       {
         class: class1._id,
         dayOfWeek: 'Thứ 4',
         startTime: '18:30',
         endTime: '20:30',
-        classroom: 'Phòng Lab 201',
+        classroom: 'Phòng Lab 201 (EduCenter Cầu Giấy)',
         topic: 'IELTS Writing Task 2 - Bố cục đoạn văn PEEL',
+        status: 'ACTIVE',
       },
       {
         class: class1._id,
         dayOfWeek: 'Thứ 6',
         startTime: '18:30',
         endTime: '20:30',
-        classroom: 'Phòng Lab 201',
+        classroom: 'Phòng Lab 201 (EduCenter Cầu Giấy)',
         topic: 'IELTS Speaking Part 3 - Luận điểm & Phản xạ',
+        status: 'ACTIVE',
+      },
+      {
+        class: class2._id,
+        dayOfWeek: 'Thứ 3',
+        startTime: '19:00',
+        endTime: '21:00',
+        classroom: 'Phòng 302 (EduCenter Đống Đa)',
+        topic: 'IELTS Speaking Fluency - Phản xạ Part 1',
+        status: 'ACTIVE',
+      },
+      {
+        class: class2._id,
+        dayOfWeek: 'Thứ 5',
+        startTime: '19:00',
+        endTime: '21:00',
+        classroom: 'Phòng 302 (EduCenter Đống Đa)',
+        topic: 'IELTS Listening - Từ khóa Keywords',
+        status: 'ACTIVE',
       },
     ]);
 
     // 8. Tạo dữ liệu ghi danh học viên (Enrollments)
     console.log('📝 Đang tạo dữ liệu ghi danh học viên...');
-    await Enrollment.create([
+    const enrollment1 = await Enrollment.create({
+      student: studentDang._id,
+      class: class1._id,
+      course: courses[3]._id,
+      enrollmentDate: new Date(),
+      registrationDate: new Date(),
+      status: 'ENROLLED',
+      tuitionStatus: 'PAID',
+      midtermScore: 7.0,
+      finalScore: 7.5,
+      academicResult: 'ĐẠT LOẠI GIỎI (Target 7.0+)',
+    });
+
+    const enrollment2 = await Enrollment.create({
+      student: studentMai._id,
+      class: class1._id,
+      course: courses[3]._id,
+      enrollmentDate: new Date(),
+      registrationDate: new Date(),
+      status: 'ENROLLED',
+      tuitionStatus: 'PAID',
+      midtermScore: 7.5,
+      finalScore: 8.0,
+      academicResult: 'ĐẠT XUẤT SẮC (Target 7.5+)',
+    });
+
+    const enrollment3 = await Enrollment.create({
+      student: studentKiet._id,
+      class: class2._id,
+      course: courses[2]._id,
+      enrollmentDate: new Date(),
+      registrationDate: new Date(),
+      status: 'ENROLLED',
+      tuitionStatus: 'PAID',
+      midtermScore: 6.0,
+      finalScore: 6.5,
+      academicResult: 'ĐẠT (Target 6.5+)',
+    });
+
+    // 9. Tạo GIAO DỊCH HỌC PHÍ THẬT (Payments - UC12, UC47, UC60)
+    // Lưu ý quy định: Tổng revenue Director xem phải BẰNG CHÍNH XÁC tổng các giao dịch này!
+    console.log('💳 Đang tạo danh sách giao dịch học phí trong database...');
+    const payments = await Payment.insertMany([
       {
         student: studentDang._id,
-        class: class1._id,
+        enrollment: enrollment1._id,
         course: courses[3]._id,
-        enrollmentDate: new Date(),
-        registrationDate: new Date(),
-        status: 'ENROLLED',
-        tuitionStatus: 'PAID',
+        amount: 9200000,
+        method: 'VNPAY',
+        transactionCode: 'TXN-2026-001',
+        status: 'SUCCESS',
+        paymentDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+        note: 'Học phí IELTS Bứt Phá K26A - Học viên Phạm Hải Đăng',
       },
       {
         student: studentMai._id,
-        class: class1._id,
+        enrollment: enrollment2._id,
         course: courses[3]._id,
-        enrollmentDate: new Date(),
-        registrationDate: new Date(),
-        status: 'ENROLLED',
-        tuitionStatus: 'PAID',
+        amount: 9200000,
+        method: 'BANK_TRANSFER',
+        transactionCode: 'TXN-2026-002',
+        status: 'SUCCESS',
+        paymentDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
+        note: 'Học phí IELTS Bứt Phá K26A - Học viên Vũ Ngọc Mai',
       },
       {
         student: studentKiet._id,
-        class: class2._id,
+        enrollment: enrollment3._id,
         course: courses[2]._id,
-        enrollmentDate: new Date(),
-        registrationDate: new Date(),
-        status: 'ENROLLED',
-        tuitionStatus: 'PENDING',
+        amount: 7500000,
+        method: 'CREDIT_CARD',
+        transactionCode: 'TXN-2026-003',
+        status: 'SUCCESS',
+        paymentDate: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000),
+        note: 'Học phí IELTS Foundation K18B - Học viên Đỗ Tuấn Kiệt',
+      },
+      {
+        student: studentDang._id,
+        course: courses[1]._id,
+        amount: 5800000,
+        method: 'VNPAY',
+        transactionCode: 'TXN-2026-004',
+        status: 'SUCCESS',
+        paymentDate: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
+        note: 'Học phí khóa bổ trợ IELTS Pre - Học viên Phạm Hải Đăng',
+      },
+      {
+        student: studentMai._id,
+        course: courses[4]._id,
+        amount: 12500000,
+        method: 'BANK_TRANSFER',
+        transactionCode: 'TXN-2026-005',
+        status: 'SUCCESS',
+        paymentDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+        note: 'Đặt cọc khóa IELTS Master 8.0+ - Học viên Vũ Ngọc Mai',
+      },
+      {
+        student: studentKiet._id,
+        course: courses[0]._id,
+        amount: 4500000,
+        method: 'CASH',
+        transactionCode: 'TXN-2026-006',
+        status: 'SUCCESS',
+        paymentDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+        note: 'Học phí khóa Phát âm IPA cơ bản - Học viên Đỗ Tuấn Kiệt',
       },
     ]);
 
-    // 9. Tạo thông báo quan trọng (Announcements - UC06)
-    console.log('📢 Đang tạo thông báo IELTS và tin tức sự kiện...');
+    const totalRevenueSum = payments.reduce((sum, p) => sum + p.amount, 0);
+    console.log(`💰 Tổng doanh thu từ các giao dịch thực tế: ${totalRevenueSum.toLocaleString('vi-VN')} ₫`);
+
+    // 10. Tạo Bài tập & Kỳ thi cuối khóa (Assignments & Final Exam - UC18, UC30, UC35, Final Exam)
+    console.log('📝 Đang tạo bài tập và kỳ thi cuối khóa Final Exam...');
+    const assignment1 = await Assignment.create({
+      class: class1._id,
+      teacher: teacherAlex._id,
+      title: 'Writing Task 2: Artificial Intelligence in Education',
+      description: 'Discuss the advantages and disadvantages of using AI tools in university learning. Write at least 250 words following the PEEL paragraph structure.',
+      dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+      maxScore: 9.0,
+      type: 'HOMEWORK',
+      status: 'PUBLISHED',
+    });
+
+    const assignment2 = await Assignment.create({
+      class: class1._id,
+      teacher: teacherAlex._id,
+      title: 'Writing Task 1: Comparative Bar Chart on Global Energy Consumption',
+      description: 'Summarize the information by selecting and reporting the main features, and make comparisons where relevant.',
+      dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
+      maxScore: 9.0,
+      type: 'HOMEWORK',
+      status: 'PUBLISHED',
+    });
+
+    const finalExamClass1 = await Assignment.create({
+      class: class1._id,
+      teacher: teacherAlex._id,
+      title: 'Final Exam: IELTS 4 Skills Standard Assessment (Computer Mock Test)',
+      description: 'Kỳ thi tốt nghiệp cuối khóa đánh giá toàn diện 4 kỹ năng Nghe, Nói, Đọc, Viết chuẩn khảo thí quốc tế.',
+      dueDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000),
+      maxScore: 9.0,
+      type: 'FINAL_EXAM',
+      status: 'PUBLISHED',
+    });
+
+    const assignment3 = await Assignment.create({
+      class: class2._id,
+      teacher: teacherSarah._id,
+      title: 'Speaking Part 2 Recording: Describe a Memorable Journey',
+      description: 'Ghi âm bài nói Part 2 trong 2 phút theo dàn ý 5W1H và nộp file mp3 hoặc nội dung tóm tắt.',
+      dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
+      maxScore: 9.0,
+      type: 'HOMEWORK',
+      status: 'PUBLISHED',
+    });
+
+    // 11. Tạo bài nộp & chấm điểm thực tế (Submissions - UC19, UC31, UC32)
+    // Lưu ý quy định: Học sinh trong lớp phải đã enroll, teacher chấm điểm phải có bài thật!
+    console.log('✍️ Đang tạo bài làm đã nộp và được chấm điểm...');
+    await Submission.insertMany([
+      {
+        assignment: assignment1._id,
+        student: studentDang._id,
+        content: 'In modern society, artificial intelligence has fundamentally revolutionized education by providing personalized learning experiences...',
+        submissionTime: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+        grade: 7.5,
+        feedback: 'Bài viết lập luận rất tốt, cấu trúc đoạn văn PEEL mạch lạc. Chú ý mạo từ "the" và collocation tự nhiên hơn ở đoạn 2.',
+        gradedBy: teacherAlex._id,
+        status: 'GRADED',
+      },
+      {
+        assignment: assignment1._id,
+        student: studentMai._id,
+        content: 'The proliferation of AI-powered educational tools has sparked heated debates regarding academic integrity and learning outcomes...',
+        submissionTime: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+        grade: 8.0,
+        feedback: 'Xuất sắc! Từ vựng phong phú, sử dụng linh hoạt câu phức và tư duy phản biện sắc sảo.',
+        gradedBy: teacherAlex._id,
+        status: 'GRADED',
+      },
+      {
+        assignment: assignment2._id,
+        student: studentDang._id,
+        content: 'The given bar chart illustrates how much energy derived from renewable sources was consumed across five distinct countries from 2010 to 2025...',
+        submissionTime: new Date(Date.now() - 12 * 60 * 60 * 1000),
+        grade: 7.0,
+        feedback: 'Overview tốt, các số liệu đối chiếu chuẩn xác. Cần đa dạng hóa cấu trúc so sánh hơn.',
+        gradedBy: teacherAlex._id,
+        status: 'GRADED',
+      },
+      {
+        assignment: assignment2._id,
+        student: studentMai._id,
+        content: 'The chart illustrates comparative figures of renewable energy usage...',
+        submissionTime: new Date(),
+        status: 'SUBMITTED', // Chờ chấm
+      },
+      {
+        assignment: assignment3._id,
+        student: studentKiet._id,
+        content: 'I would like to talk about my trip to Da Nang last summer, which left an indelible impression on me...',
+        submissionTime: new Date(Date.now() - 18 * 60 * 60 * 1000),
+        grade: 6.5,
+        feedback: 'Phát âm tương đối rõ ràng. Chú ý kéo dài phần miêu tả cảm xúc để mở rộng câu trả lời tự nhiên.',
+        gradedBy: teacherSarah._id,
+        status: 'GRADED',
+      },
+      {
+        assignment: finalExamClass1._id,
+        student: studentDang._id,
+        content: 'Final Exam Submission: Listening (Band 7.5), Reading (Band 7.5), Writing (Band 7.0), Speaking (Band 7.0)...',
+        submissionTime: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+        grade: 7.5,
+        feedback: 'Chúc mừng Hải Đăng đã hoàn thành xuất sắc kỳ thi tốt nghiệp cuối khóa! Đủ tiêu chuẩn cam kết đầu ra 7.0+.',
+        gradedBy: teacherAlex._id,
+        status: 'GRADED',
+      },
+      {
+        assignment: finalExamClass1._id,
+        student: studentMai._id,
+        content: 'Final Exam Submission: Listening (Band 8.5), Reading (Band 8.0), Writing (Band 7.5), Speaking (Band 8.0)...',
+        submissionTime: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+        grade: 8.0,
+        feedback: 'Kết quả tuyệt vời! Em đã sẵn sàng thi IELTS chính thức tại IDP/British Council.',
+        gradedBy: teacherAlex._id,
+        status: 'GRADED',
+      },
+    ]);
+
+    // 12. Tạo dữ liệu Điểm danh (Attendance - UC23, UC37, UC38)
+    console.log('✅ Đang tạo dữ liệu chuyên cần và điểm danh...');
+    await Attendance.insertMany([
+      {
+        class: class1._id,
+        classSchedule: schedules[0]._id,
+        student: studentDang._id,
+        sessionDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+        status: 'PRESENT',
+        notes: 'Tham gia phát biểu tích cực',
+        recordedBy: teacherAlex._id,
+      },
+      {
+        class: class1._id,
+        classSchedule: schedules[0]._id,
+        student: studentMai._id,
+        sessionDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+        status: 'PRESENT',
+        notes: 'Đúng giờ',
+        recordedBy: teacherAlex._id,
+      },
+      {
+        class: class1._id,
+        classSchedule: schedules[1]._id,
+        student: studentDang._id,
+        sessionDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+        status: 'PRESENT',
+        notes: 'Đúng giờ',
+        recordedBy: teacherAlex._id,
+      },
+      {
+        class: class1._id,
+        classSchedule: schedules[1]._id,
+        student: studentMai._id,
+        sessionDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+        status: 'PRESENT',
+        notes: 'Đúng giờ',
+        recordedBy: teacherAlex._id,
+      },
+      {
+        class: class2._id,
+        classSchedule: schedules[3]._id,
+        student: studentKiet._id,
+        sessionDate: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
+        status: 'PRESENT',
+        notes: 'Tham gia đầy đủ',
+        recordedBy: teacherSarah._id,
+      },
+    ]);
+
+    // 13. Tạo Yêu cầu đổi lớp / đổi lịch (Change Requests - UC21, UC22, UC24, UC33, UC34, UC48, UC49)
+    console.log('🔄 Đang tạo danh sách yêu cầu thay đổi lớp và lịch học...');
+    await ChangeRequest.insertMany([
+      {
+        student: studentDang._id,
+        requesterRole: 'STUDENT',
+        requestType: 'CLASS_CHANGE',
+        currentClass: class1._id,
+        targetClass: class2._id,
+        reason: 'Em muốn đăng ký bổ sung lịch học vào cuối tuần do lịch làm việc thay đổi',
+        status: 'APPROVED',
+        reviewNote: 'Đã duyệt yêu cầu chuyển lớp cho học viên.',
+        reviewedBy: staffUser._id,
+        reviewedAt: new Date(),
+      },
+      {
+        student: studentKiet._id,
+        requesterRole: 'STUDENT',
+        requestType: 'SCHEDULE_CHANGE',
+        currentClass: class2._id,
+        targetSchedule: 'Thứ 3 - Thứ 5 ca 18:00',
+        reason: 'Trùng lịch thực tập tại công ty vào tối Thứ 7',
+        status: 'PENDING',
+      },
+      {
+        student: teacherSarah._id,
+        requesterRole: 'TEACHER',
+        requestType: 'SCHEDULE_CHANGE',
+        currentClass: class2._id,
+        targetSchedule: 'Dời buổi Thứ 7 sang Chủ Nhật 19:00',
+        reason: 'Giảng viên bận tham dự hội thảo khảo thí IELTS tại IDP',
+        status: 'APPROVED',
+        reviewNote: 'Đã thông báo cho học viên lớp K18B và duyệt lịch mới.',
+        reviewedBy: staffUser._id,
+        reviewedAt: new Date(),
+      },
+    ]);
+
+    // 14. Tạo Đánh giá giảng viên (Feedback - Teacher Feedback)
+    console.log('⭐ Đang tạo đánh giá phản hồi giáo viên từ học viên...');
+    await Feedback.insertMany([
+      {
+        sender: studentDang._id,
+        receiver: teacherAlex._id,
+        class: class1._id,
+        course: courses[3]._id,
+        content: 'Thầy Alex dạy cực kỳ tâm huyết và chi tiết! Phần chữa bài Writing của thầy chỉ ra đúng các lỗi sai tư duy giúp em tiến bộ vượt bậc.',
+        rating: 5,
+        tags: ['Nhiệt tình', 'Chữa bài kỹ', 'Chuẩn khảo thí'],
+      },
+      {
+        sender: studentMai._id,
+        receiver: teacherAlex._id,
+        class: class1._id,
+        course: courses[3]._id,
+        content: 'Phương pháp dạy tư duy phản biện PEEL rất dễ áp dụng. Em đã tự tin hơn rất nhiều khi làm Task 2.',
+        rating: 5,
+        tags: ['Dễ hiểu', 'Tài liệu hay'],
+      },
+      {
+        sender: studentKiet._id,
+        receiver: teacherSarah._id,
+        class: class2._id,
+        course: courses[2]._id,
+        content: 'Cô Sarah phát âm cực chuẩn bản xứ, sửa lỗi ngọng và ngữ điệu rất tận tình.',
+        rating: 5,
+        tags: ['Phát âm chuẩn', 'Truyền cảm hứng'],
+      },
+    ]);
+
+    // 15. Tạo Thông báo hệ thống (Notifications - View Notifications)
+    console.log('🔔 Đang tạo thông báo nội bộ hệ thống...');
+    await Notification.insertMany([
+      {
+        recipient: studentDang._id,
+        title: 'Bài tập của bạn đã được chấm điểm!',
+        content: 'Thầy Alex Nguyễn đã hoàn thành chấm điểm Writing Task 2. Điểm số: 7.5/9.0.',
+        type: 'SUCCESS',
+        isRead: false,
+      },
+      {
+        recipient: studentDang._id,
+        title: 'Xác nhận thanh toán học phí thành công',
+        content: 'Giao dịch TXN-2026-001 (9.200.000 ₫) đã được hệ thống xác thực thành công.',
+        type: 'INFO',
+        isRead: true,
+      },
+      {
+        recipient: teacherAlex._id,
+        title: 'Học viên vừa nộp bài tập mới',
+        content: 'Học viên Vũ Ngọc Mai vừa nộp bài Writing Task 1: Comparative Bar Chart.',
+        type: 'ALERT',
+        isRead: false,
+      },
+      {
+        recipient: staffUser._id,
+        title: 'Có yêu cầu đổi lịch học mới cần phê duyệt',
+        content: 'Học viên Đỗ Tuấn Kiệt vừa gửi yêu cầu đổi lịch học lớp K18B.',
+        type: 'ALERT',
+        isRead: false,
+      },
+      {
+        recipient: directorUser._id,
+        title: 'Báo cáo doanh thu tháng đã được cập nhật',
+        content: `Tổng doanh thu tháng hiện tại đạt ${totalRevenueSum.toLocaleString('vi-VN')} ₫ từ ${payments.length} giao dịch học phí.`,
+        type: 'SUCCESS',
+        isRead: false,
+      },
+    ]);
+
+    // 16. Tạo Thông báo tin tức chung (Announcements - UC06)
+    console.log('📢 Đang tạo thông tin thông báo chung (Announcements)...');
     await Announcement.insertMany([
       {
         title: '🔥 Workshop Đặc Biệt: Giải Mã Bẫy Đề Thi IELTS Writing Task 2 Cùng Giảng Viên 9.0',
@@ -619,11 +939,10 @@ Quy trình thực hiện:
     ]);
 
     console.log('\n======================================================');
-    console.log('🎉 SEED DỮ LIỆU EDUCENTER THÀNH CÔNG VÀO MONGODB ATLAS!');
+    console.log('🎉 SEED DỮ LIỆU ĐẦY ĐỦ 16 COLLECTIONS THÀNH CÔNG VÀO MONGODB!');
     console.log('======================================================');
-    console.log('🏢 Thông tin trung tâm EduCenter IELTS Academy đã sẵn sàng (UC01)');
-    console.log('📚 6 Khóa học IELTS từ 0 đến 8.0+ đã được nạp (UC02, UC03, UC04, UC05)');
-    console.log('📢 4 Bản tin thông báo IELTS & Workshop đã nạp (UC06)');
+    console.log(`💰 Tổng doanh thu khớp 100% với các giao dịch: ${totalRevenueSum.toLocaleString('vi-VN')} ₫`);
+    console.log('🔗 Mọi dữ liệu đều liên kết chặt chẽ giữa User, Class, Enrollment, Assignment, Submission, Payment, Attendance, Feedback, Notification.');
     console.log('------------------------------------------------------');
     console.log('🔑 TÀI KHOẢN MẪU (Mật khẩu chung: Password123@)');
     console.log('- Giám đốc (DIRECTOR):      director@educenter.edu.vn');
