@@ -5,9 +5,32 @@ import morgan from 'morgan';
 import { config } from './config';
 import { healthRouter } from './routes/health.routes';
 import { authRouter } from './routes/auth.routes';
+import { centerRouter } from './routes/center.routes';
+import { courseRouter } from './routes/course.routes';
+import { announcementRouter } from './routes/announcement.routes';
+import { classRouter } from './routes/class.routes';
+import { teacherRouter } from './routes/teacher.routes';
 import { studentRouter } from './routes/student.routes';
 import { errorHandler } from './middlewares/error.middleware';
 import { notFound } from './middlewares/notFound.middleware';
+
+// ===========================
+// Register all Mongoose models
+// (Required for populate() to work)
+// ===========================
+import './models/user.model';
+import './models/course.model';
+import './models/class.model';
+import './models/enrollment.model';
+import './models/student.model';
+import './models/assignment.model';
+import './models/submission.model';
+import './models/grade.model';
+import './models/attendance.model';
+import './models/payment.model';
+import './models/classSchedule.model';
+import './models/changeRequest.model';
+import './models/announcement.model';
 
 const app: Application = express();
 
@@ -18,7 +41,11 @@ app.use(helmet());
 
 app.use(
   cors({
-    origin: config.corsOrigin,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, or Postman)
+      if (!origin) return callback(null, true);
+      return callback(null, true);
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -43,6 +70,11 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // ===========================
 app.use('/api/health', healthRouter);
 app.use('/api/auth', authRouter);
+app.use('/api/center', centerRouter);
+app.use('/api/courses', courseRouter);
+app.use('/api/announcements', announcementRouter);
+app.use('/api/classes', classRouter);
+app.use('/api/teacher', teacherRouter);
 app.use('/api/student', studentRouter);
 
 // ===========================

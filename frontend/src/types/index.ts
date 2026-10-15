@@ -227,3 +227,118 @@ export interface MyClass {
   enrolledAt: string;
   class: Class;
 }
+
+// ===========================
+// Student Portal Types
+// ===========================
+
+export interface MyClass {
+  _id: string;
+  enrollmentId: string;
+  class: {
+    _id: string;
+    classCode: string;
+    room: string;
+    scheduleDays: string[];
+    timeSlot: string;
+    startDate: string;
+    endDate: string;
+    status: 'OPEN' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+    course?: {
+      _id: string;
+      code: string;
+      title: string;
+      description?: string;
+      durationWeeks?: number;
+      sessions?: number;
+      tuitionFee?: number;
+    };
+    teacher?: {
+      _id: string;
+      fullName: string;
+      email: string;
+      avatarUrl?: string;
+    };
+  };
+  status: string;
+  enrollmentStatus: string;
+  tuitionStatus: 'PAID' | 'PENDING' | 'UNPAID';
+  enrollmentDate: string;
+}
+
+export interface AssignmentItem {
+  _id: string;
+  class: string;
+  teacher: string;
+  title: string;
+  description: string;
+  skill: string;
+  dueDate: string;
+  maxScore: number;
+  status: string;
+  submissionStatus?: 'PENDING' | 'SUBMITTED' | 'LATE' | 'GRADED';
+  submissionId?: string;
+  submissionDate?: string;
+  score?: number;
+}
+
+export interface AttendanceItem {
+  _id: string;
+  class: string;
+  sessionDate: string;
+  status: 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED';
+  notes?: string;
+}
+
+export interface GradeItem {
+  _id: string;
+  student: string;
+  class: string;
+  teacher: string;
+  evaluationType: string;
+  title: string;
+  testDate: string;
+  overallBand?: number;
+  listening?: number;
+  reading?: number;
+  writing?: number;
+  speaking?: number;
+  feedback?: string;
+  status: string;
+}
+
+export interface PaymentItem {
+  _id: string;
+  student: string;
+  class: string;
+  amount: number;
+  status: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
+  method?: string;
+  transactionId?: string;
+  paymentDate?: string;
+  dueDate?: string;
+  createdAt: string;
+}
+
+export interface ScheduleItem {
+  _id: string;
+  class: string;
+  dayOfWeek: string;
+  startTime: string;
+  endTime: string;
+  classroom: string;
+  topic?: string;
+}
+
+export interface ChangeRequestItem {
+  _id: string;
+  student: string;
+  type: 'CHANGE_CLASS' | 'CHANGE_SCHEDULE' | 'WITHDRAW';
+  currentClass?: string;
+  requestedClass?: string;
+  reason: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  processedBy?: string;
+  processedAt?: string;
+  createdAt: string;
+}

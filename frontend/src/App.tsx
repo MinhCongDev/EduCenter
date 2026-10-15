@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import GuestLayout from './layouts/GuestLayout';
 import DashboardLayout from './layouts/DashboardLayout';
@@ -20,14 +20,16 @@ const RegisterPage = lazy(() => import('./pages/public/RegisterPage'));
 const StudentDashboard = lazy(() => import('./pages/student/StudentDashboard'));
 const MyClassesPage = lazy(() => import('./pages/student/MyClassesPage'));
 const ClassDetailsPage = lazy(() => import('./pages/student/ClassDetailsPage'));
-const SchedulePage = lazy(() => import('./pages/student/SchedulePage'));
 const AssignmentsPage = lazy(() => import('./pages/student/AssignmentsPage'));
-const GradesPage = lazy(() => import('./pages/student/GradesPage'));
 const AttendancePage = lazy(() => import('./pages/student/AttendancePage'));
+const GradesPage = lazy(() => import('./pages/student/GradesPage'));
+const SchedulePage = lazy(() => import('./pages/student/SchedulePage'));
 const PaymentsPage = lazy(() => import('./pages/student/PaymentsPage'));
 const RequestsPage = lazy(() => import('./pages/student/RequestsPage'));
 const TeacherDashboard = lazy(() => import('./pages/teacher/TeacherDashboard'));
 const StaffDashboard = lazy(() => import('./pages/staff/StaffDashboard'));
+const CoursesManagementPage = lazy(() => import('./pages/staff/CoursesManagementPage'));
+const ClassesManagementPage = lazy(() => import('./pages/staff/ClassesManagementPage'));
 const DirectorDashboard = lazy(() => import('./pages/director/DirectorDashboard'));
 
 // Error pages
@@ -45,22 +47,12 @@ const PageFallback: React.FC = () => (
 
 // ===========================
 // Auth-aware redirect for "/"
-// When logged in, redirect to the appropriate dashboard.
+// Auth-aware render for "/"
 // ===========================
 const HomeRedirect: React.FC = () => {
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const { isLoading } = useAuth();
 
   if (isLoading) return <PageFallback />;
-
-  if (isAuthenticated && user) {
-    const dashboardMap: Record<string, string> = {
-      STUDENT: '/student/dashboard',
-      TEACHER: '/teacher/dashboard',
-      TRAINING_STAFF: '/staff/dashboard',
-      DIRECTOR: '/director/dashboard',
-    };
-    return <Navigate to={dashboardMap[user.role] || '/student/dashboard'} replace />;
-  }
 
   return (
     <GuestLayout>
@@ -114,14 +106,6 @@ const AppRouter: React.FC = () => {
 
         {/* ── Student Routes ───────────────────────── */}
         <Route
-          path="/student"
-          element={
-            <ProtectedRoute allowedRoles={['STUDENT']}>
-              <Navigate to="/student/dashboard" replace />
-            </ProtectedRoute>
-          }
-        />
-        <Route
           path="/student/dashboard"
           element={
             <ProtectedRoute allowedRoles={['STUDENT']}>
@@ -142,7 +126,7 @@ const AppRouter: React.FC = () => {
           }
         />
         <Route
-          path="/student/classes/:classId"
+          path="/student/classes/:id"
           element={
             <ProtectedRoute allowedRoles={['STUDENT']}>
               <DashboardLayout>
@@ -152,17 +136,7 @@ const AppRouter: React.FC = () => {
           }
         />
         <Route
-          path="/student/classes/:classId/schedule"
-          element={
-            <ProtectedRoute allowedRoles={['STUDENT']}>
-              <DashboardLayout>
-                <SchedulePage />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/student/classes/:classId/assignments"
+          path="/student/classes/:id/assignments"
           element={
             <ProtectedRoute allowedRoles={['STUDENT']}>
               <DashboardLayout>
@@ -172,7 +146,17 @@ const AppRouter: React.FC = () => {
           }
         />
         <Route
-          path="/student/classes/:classId/grades"
+          path="/student/classes/:id/attendance"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <DashboardLayout>
+                <AttendancePage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/classes/:id/grades"
           element={
             <ProtectedRoute allowedRoles={['STUDENT']}>
               <DashboardLayout>
@@ -182,11 +166,11 @@ const AppRouter: React.FC = () => {
           }
         />
         <Route
-          path="/student/classes/:classId/attendance"
+          path="/student/classes/:id/schedule"
           element={
             <ProtectedRoute allowedRoles={['STUDENT']}>
               <DashboardLayout>
-                <AttendancePage />
+                <SchedulePage />
               </DashboardLayout>
             </ProtectedRoute>
           }
@@ -231,6 +215,26 @@ const AppRouter: React.FC = () => {
             <ProtectedRoute allowedRoles={['TRAINING_STAFF']}>
               <DashboardLayout>
                 <StaffDashboard />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/staff/courses"
+          element={
+            <ProtectedRoute allowedRoles={['TRAINING_STAFF']}>
+              <DashboardLayout>
+                <CoursesManagementPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/staff/classes"
+          element={
+            <ProtectedRoute allowedRoles={['TRAINING_STAFF']}>
+              <DashboardLayout>
+                <ClassesManagementPage />
               </DashboardLayout>
             </ProtectedRoute>
           }
