@@ -1,7 +1,19 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import NotificationBell from './NotificationBell';
 import type { UserRole } from '../types';
+
+// Role-based profile path mapping
+const getProfilePath = (role: UserRole): string => {
+  const paths: Record<UserRole, string> = {
+    STUDENT: '/student/profile',
+    TEACHER: '/teacher/dashboard',
+    TRAINING_STAFF: '/staff/dashboard',
+    DIRECTOR: '/director/dashboard',
+  };
+  return paths[role] || '/';
+};
 
 // Role-based dashboard path mapping
 const getDashboardPath = (role: UserRole): string => {
@@ -17,6 +29,7 @@ const getDashboardPath = (role: UserRole): string => {
 const Navbar: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
+  const [avatarHover, setAvatarHover] = React.useState(false);
 
   const handleLogout = () => {
     logout();
@@ -45,9 +58,39 @@ const Navbar: React.FC = () => {
               <Link to={getDashboardPath(user.role)} className="btn btn-ghost">
                 Dashboard
               </Link>
-              <div className="user-avatar" aria-label={`Logged in as ${user.fullName}`}>
-                {(user.fullName || user.email || 'U').charAt(0).toUpperCase()}
-              </div>
+              {user.role === 'STUDENT' && <NotificationBell />}
+              <Link
+                to={getProfilePath(user.role)}
+                className="user-avatar"
+                aria-label={`Hồ sơ của ${user.fullName}`}
+                title="Hồ sơ cá nhân"
+                onMouseEnter={() => setAvatarHover(true)}
+                onMouseLeave={() => setAvatarHover(false)}
+                style={{
+                  textDecoration: 'none',
+                  cursor: 'pointer',
+                  transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                  transform: avatarHover ? 'scale(1.08)' : 'scale(1)',
+                  boxShadow: avatarHover
+                    ? '0 0 0 3px rgba(59,130,246,0.4)'
+                    : 'none',
+                }}
+              >
+                {user.avatarUrl ? (
+                  <img
+                    src={user.avatarUrl}
+                    alt={user.fullName}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                    }}
+                  />
+                ) : (
+                  (user.fullName || user.email || 'U').charAt(0).toUpperCase()
+                )}
+              </Link>
               <button
                 id="logout-button"
                 type="button"

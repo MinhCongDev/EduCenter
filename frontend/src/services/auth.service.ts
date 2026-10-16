@@ -1,12 +1,16 @@
 import api from './api';
-import type { AuthResponse, LoginCredentials, RegisterData, User } from '../types';
+import type { ApiResponse, AuthResponse, LoginCredentials, RegisterData, User } from '../types';
 
 const TOKEN_KEY = 'educenter_token';
 const USER_KEY = 'educenter_user';
 
-// ===========================
-// Auth Service
-// ===========================
+export interface UpdateProfilePayload {
+  fullName?: string;
+  phone?: string;
+  address?: string;
+  dob?: string;
+  avatarUrl?: string;
+}
 
 export const authService = {
   /**
@@ -34,6 +38,49 @@ export const authService = {
    */
   getMe: async (): Promise<{ success: boolean; data: { user: User } }> => {
     const response = await api.get('/auth/me');
+    return response.data;
+  },
+
+  /**
+   * Update current user's profile
+   */
+  updateProfile: async (
+    payload: UpdateProfilePayload
+  ): Promise<ApiResponse<{ user: User }>> => {
+    const response = await api.put<ApiResponse<{ user: User }>>('/auth/profile', payload);
+    if (response.data.success && response.data.data?.user) {
+      localStorage.setItem(USER_KEY, JSON.stringify(response.data.data.user));
+    }
+    return response.data;
+  },
+
+  /**
+   * Change password
+   */
+  changePassword: async (payload: {
+    currentPassword: string;
+    newPassword: string;
+    confirmPassword?: string;
+  }): Promise<ApiResponse> => {
+    const response = await api.post<ApiResponse>('/auth/change-password', payload);
+    return response.data;
+  },
+
+  /**
+   * Upload avatar (multipart/form-data)
+   * Returns the updated user
+   */
+  uploadAvatar: async (file: File): Promise<ApiResponse<{ user: User }>> => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    const response = await api.post<ApiResponse<{ user: User }>>(
+      '/auth/avatar',
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    );
+    if (response.data.success && response.data.data?.user) {
+      localStorage.setItem(USER_KEY, JSON.stringify(response.data.data.user));
+    }
     return response.data;
   },
 

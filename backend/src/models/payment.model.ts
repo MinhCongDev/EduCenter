@@ -1,53 +1,74 @@
 import mongoose, { Document, Schema, Model, Types } from 'mongoose';
 
-export type PaymentStatus = 'PENDING' | 'COMPLETED' | 'FAILED' | 'REFUNDED';
-export type PaymentMethod = 'CASH' | 'BANK_TRANSFER' | 'VNPAY' | 'MOMO';
+export type PaymentStatus = 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
+export type PaymentMethod = 'CASH' | 'BANK_TRANSFER' | 'VNPAY' | 'MOMO' | 'CARD';
 
 export interface IPayment extends Document {
-  enrollment: Types.ObjectId;
+  student: Types.ObjectId;
+  enrollment?: Types.ObjectId;
+  class?: Types.ObjectId;
   amount: number;
-  paymentMethod: PaymentMethod;
-  transactionCode?: string;
-  paymentDate: Date;
+  method: PaymentMethod;
+  transactionId?: string;
+  paymentDate?: Date;
+  dueDate?: Date;
   status: PaymentStatus;
+  notes?: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
 const paymentSchema = new Schema<IPayment>(
   {
+    student: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: [true, 'Sinh viên là bắt buộc'],
+      index: true,
+    },
     enrollment: {
       type: Schema.Types.ObjectId,
       ref: 'Enrollment',
-      required: [true, 'Đăng ký học phí là bắt buộc'],
+    },
+    class: {
+      type: Schema.Types.ObjectId,
+      ref: 'Class',
     },
     amount: {
       type: Number,
       required: [true, 'Số tiền là bắt buộc'],
       min: 0,
     },
-    paymentMethod: {
+    method: {
       type: String,
-      enum: ['CASH', 'BANK_TRANSFER', 'VNPAY', 'MOMO'],
+      enum: ['CASH', 'BANK_TRANSFER', 'VNPAY', 'MOMO', 'CARD'],
       default: 'CASH',
     },
-    transactionCode: {
+    transactionId: {
       type: String,
       default: '',
     },
     paymentDate: {
       type: Date,
-      default: Date.now,
+    },
+    dueDate: {
+      type: Date,
     },
     status: {
       type: String,
-      enum: ['PENDING', 'COMPLETED', 'FAILED', 'REFUNDED'],
+      enum: ['PENDING', 'PAID', 'FAILED', 'REFUNDED'],
       default: 'PENDING',
+    },
+    notes: {
+      type: String,
+      default: '',
     },
   },
   {
     timestamps: true,
   }
 );
+
+paymentSchema.index({ student: 1, createdAt: -1 });
 
 export const Payment: Model<IPayment> = mongoose.model<IPayment>('Payment', paymentSchema);

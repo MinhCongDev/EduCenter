@@ -1,14 +1,31 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 import { studentService } from '../../services/student.service';
-import type { MyClass } from '../../types';
+import type { Enrollment, TuitionStatus } from '../../types';
+import { EmptyState, SkeletonPage } from '../../components/Skeleton';
+import { formatDate, formatVND } from '../../utils/format';
+
+const tuitionLabel = (s: TuitionStatus) => {
+  if (s === 'PAID') return { label: 'Đã thanh toán', cls: 'badge-green' };
+  return { label: 'Chưa thanh toán', cls: 'badge-amber' };
+};
+
+const enrollmentLabel = (s: string) => {
+  if (s === 'ENROLLED') return { label: 'Đang học', cls: 'badge-green' };
+  if (s === 'COMPLETED') return { label: 'Hoàn thành', cls: 'badge-blue' };
+  return { label: s, cls: 'badge-purple' };
+};
 
 const MyClassesPage: React.FC = () => {
   const { user } = useAuth();
-  const [classes, setClasses] = useState<MyClass[]>([]);
+  const toast = useToast();
+  const [classes, setClasses] = useState<Enrollment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [tuitionFilter, setTuitionFilter] = useState<'ALL' | TuitionStatus>('ALL');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'ENROLLED' | 'COMPLETED'>('ALL');
 
   useEffect(() => {
     fetchClasses();
@@ -17,42 +34,46 @@ const MyClassesPage: React.FC = () => {
   const fetchClasses = async () => {
     try {
       setIsLoading(true);
-      setError(null);
       const res = await studentService.getMyClasses();
-      if (res.success && res.data) {
-        setClasses(res.data.classes);
-      }
+      if (res.success && res.data) setClasses(res.data.classes);
+      else toast.error(res.message || 'Không thể tải danh sách lớp học');
     } catch (err: any) {
-      setError(err.response?.data?.message || err.message || 'Không thể tải danh sách lớp học');
+      toast.error(err.response?.data?.message || 'Không thể tải danh sách lớp học');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const tuitionStatusLabel = (s: string) => {
-    if (s === 'PAID') return { label: 'Đã thanh toán', cls: 'badge-green' };
-    if (s === 'PENDING') return { label: 'Chờ thanh toán', cls: 'badge-amber' };
-    return { label: 'Chưa thanh toán', cls: 'badge-purple' };
-  };
+  if (isLoading) return <SkeletonPage message="Đang tải danh sách lớp học..." />;
 
-  const enrollmentStatusLabel = (s: string) => {
-    if (s === 'ACTIVE' || s === 'ENROLLED') return { label: 'Đang học', cls: 'badge-green' };
-    if (s === 'DROPPED') return { label: 'Đã bỏ', cls: 'badge-purple' };
-    return { label: s, cls: 'badge-blue' };
-  };
+  const totalPaid = classes.filter((c) => c.tuitionStatus === 'PAID').length;
+  const inProgress = classes.filter((c) => (c.class as any).status === 'IN_PROGRESS').length;
 
-  if (isLoading) {
-    return (
-      <div className="dash-container" style={{ textAlign: 'center', padding: '3rem' }}>
-        <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⏳</div>
-        <p>Đang tải danh sách lớp học...</p>
-      </div>
-    );
-  }
+  // ── M5: search & filter ──
+  const filtered = classes.filter((item) => {
+    const cls = item.class as any;
+    if (tuitionFilter !== 'ALL' && item.tuitionStatus !== tuitionFilter) return false;
+    if (statusFilter !== 'ALL' && item.enrollmentStatus !== statusFilter) return false;
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      const hay = [
+        cls.classCode,
+        cls.course?.code,
+        cls.course?.title,
+        cls.teacher?.fullName,
+        cls.room,
+        cls.scheduleDays?.join(' '),
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
 
   return (
     <div className="dash-container">
-      {/* ── Page Header ── */}
       <div className="dash-banner">
         <div className="dash-banner-content">
           <div className="dash-banner-badge">📚 Lớp Học Của Tôi</div>
@@ -60,7 +81,7 @@ const MyClassesPage: React.FC = () => {
           <p>
             {classes.length > 0
               ? `Bạn đang theo học ${classes.length} lớp. Nhấn vào lớp để xem chi tiết.`
-              : 'Bạn chưa đăng ký lớp học nào. Hãy liên hệ trung tâm để được hỗ trợ.'}
+              : 'Bạn chưa đăng ký lớp học nào.'}
           </p>
         </div>
         <div className="dash-banner-right">
@@ -71,35 +92,32 @@ const MyClassesPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Metrics ── */}
       {classes.length > 0 && (
         <div className="dash-metrics-grid" style={{ marginBottom: '1.5rem' }}>
           <div className="dash-metric-card">
             <div className="dash-metric-info">
               <span className="dash-metric-label">Tổng số lớp</span>
               <span className="dash-metric-val">{classes.length} lớp</span>
-              <span className="dash-metric-trend up">
-                {classes.filter(c => c.tuitionStatus === 'PAID').length} đã thanh toán
-              </span>
+              <span className="dash-metric-trend up">{totalPaid} đã thanh toán</span>
             </div>
             <div className="dash-metric-icon icon-blue">📚</div>
           </div>
           <div className="dash-metric-card">
             <div className="dash-metric-info">
               <span className="dash-metric-label">Đã thanh toán</span>
-              <span className="dash-metric-val">{classes.filter(c => c.tuitionStatus === 'PAID').length}</span>
+              <span className="dash-metric-val">{totalPaid}</span>
               <span className="dash-metric-trend up">
-                {classes.filter(c => c.tuitionStatus !== 'PAID').length} chưa thanh toán
+                {classes.length - totalPaid} chưa thanh toán
               </span>
             </div>
             <div className="dash-metric-icon icon-emerald">✅</div>
           </div>
           <div className="dash-metric-card">
             <div className="dash-metric-info">
-              <span className="dash-metric-label">Lớp đang học</span>
-              <span className="dash-metric-val">{classes.filter(c => c.class.status === 'IN_PROGRESS').length}</span>
+              <span className="dash-metric-label">Đang học</span>
+              <span className="dash-metric-val">{inProgress}</span>
               <span className="dash-metric-trend">
-                {classes.filter(c => c.class.status === 'OPEN').length} đang mở đăng ký
+                {classes.filter((c) => (c.class as any).status === 'OPEN').length} đang mở
               </span>
             </div>
             <div className="dash-metric-icon icon-purple">🎓</div>
@@ -107,37 +125,86 @@ const MyClassesPage: React.FC = () => {
         </div>
       )}
 
-      {/* ── Error ── */}
-      {error && (
-        <div style={{ textAlign: 'center', padding: '1.5rem', background: 'rgba(239,68,68,0.1)', borderRadius: '12px', marginBottom: '1.5rem' }}>
-          <p style={{ color: '#ef4444', marginBottom: '0.75rem' }}>{error}</p>
-          <button className="dash-quick-btn primary" onClick={fetchClasses}>Thử lại</button>
-        </div>
-      )}
-
-      {/* ── Classes List ── */}
-      {classes.length === 0 && !isLoading && !error ? (
-        <div style={{ textAlign: 'center', padding: '3rem', background: 'var(--dash-card-subtle)', borderRadius: '16px' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📭</div>
-          <h2 style={{ marginBottom: '0.5rem' }}>Chưa có lớp học nào</h2>
-          <p style={{ opacity: 0.7, marginBottom: '1.5rem' }}>
-            Bạn chưa đăng ký lớp học nào. Vui lòng liên hệ trung tâm để được tư vấn.
-          </p>
-          <Link to="/courses" className="dash-quick-btn primary" style={{ textDecoration: 'none' }}>
-            📖 Xem các khóa học
-          </Link>
-        </div>
+      {classes.length === 0 ? (
+        <EmptyState
+          icon="📭"
+          title="Chưa có lớp học nào"
+          description="Bạn chưa đăng ký lớp học nào. Vui lòng liên hệ trung tâm để được tư vấn."
+          action={
+            <Link to="/courses" className="dash-quick-btn primary" style={{ textDecoration: 'none' }}>
+              📖 Xem các khóa học
+            </Link>
+          }
+        />
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {classes.map((item) => {
-            const tuition = tuitionStatusLabel(item.tuitionStatus);
-            const enrollment = enrollmentStatusLabel(item.enrollmentStatus);
+        <>
+          {/* ── M5: Search & Filter bar ── */}
+          <div
+            className="dash-card"
+            style={{ marginBottom: '1rem', padding: '0.75rem 1rem' }}
+          >
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'minmax(220px, 2fr) 1fr 1fr auto',
+                gap: '0.75rem',
+                alignItems: 'center',
+              }}
+            >
+              <input
+                type="text"
+                placeholder="🔍 Tìm theo mã lớp, tên khóa học, giảng viên..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                style={{
+                  padding: '0.5rem 0.75rem',
+                  borderRadius: '8px',
+                  border: '1px solid #e5e7eb',
+                  fontSize: '0.9rem',
+                }}
+              />
+              <select
+                value={tuitionFilter}
+                onChange={(e) => setTuitionFilter(e.target.value as any)}
+                style={selectStyle}
+              >
+                <option value="ALL">💳 Tất cả học phí</option>
+                <option value="PAID">✅ Đã thanh toán</option>
+                <option value="PENDING">⏳ Chưa thanh toán</option>
+              </select>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as any)}
+                style={selectStyle}
+              >
+                <option value="ALL">📊 Tất cả trạng thái</option>
+                <option value="ENROLLED">🎓 Đang học</option>
+                <option value="COMPLETED">🏆 Hoàn thành</option>
+              </select>
+              <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
+                {filtered.length}/{classes.length} lớp
+              </span>
+            </div>
+          </div>
+
+          {filtered.length === 0 ? (
+            <EmptyState
+              icon="🔍"
+              title="Không tìm thấy lớp phù hợp"
+              description="Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm."
+            />
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {filtered.map((item) => {
+            const tuition = tuitionLabel(item.tuitionStatus);
+            const enrollment = enrollmentLabel(item.enrollmentStatus);
+            const cls = item.class as any;
             return (
               <div key={item._id} className="dash-card">
                 <div className="dash-card-header">
                   <h2 className="dash-card-title">
                     <span>📘</span>
-                    {item.class.course?.code || 'Khóa học'} — {item.class.course?.title || ''}
+                    {cls.course?.code || 'Khóa học'} — {cls.course?.title || ''}
                   </h2>
                   <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                     <span className={`badge-pill ${enrollment.cls}`}>{enrollment.label}</span>
@@ -146,80 +213,66 @@ const MyClassesPage: React.FC = () => {
                 </div>
 
                 <div className="dash-subcard">
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem 1.5rem' }}>
-                    <div>
-                      <div className="dash-subcard-label">Mã lớp</div>
-                      <div className="dash-subcard-value">{item.class.classCode}</div>
-                    </div>
-                    <div>
-                      <div className="dash-subcard-label">Giảng viên</div>
-                      <div className="dash-subcard-value">{item.class.teacher?.fullName || '—'}</div>
-                    </div>
-                    <div>
-                      <div className="dash-subcard-label">Phòng học</div>
-                      <div className="dash-subcard-value">{item.class.room}</div>
-                    </div>
-                    <div>
-                      <div className="dash-subcard-label">Lịch học</div>
-                      <div className="dash-subcard-value">{item.class.scheduleDays?.join(', ')}</div>
-                    </div>
-                    <div>
-                      <div className="dash-subcard-label">Ca học</div>
-                      <div className="dash-subcard-value">{item.class.timeSlot}</div>
-                    </div>
-                    <div>
-                      <div className="dash-subcard-label">Thời gian</div>
-                      <div className="dash-subcard-value">
-                        {new Date(item.class.startDate).toLocaleDateString('vi-VN')} — {new Date(item.class.endDate).toLocaleDateString('vi-VN')}
-                      </div>
-                    </div>
-                    {item.class.course?.tuitionFee && (
-                      <div>
-                        <div className="dash-subcard-label">Học phí</div>
-                        <div className="dash-subcard-value">
-                          {item.class.course.tuitionFee.toLocaleString('vi-VN')} VNĐ
-                        </div>
-                      </div>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                      gap: '0.75rem 1.5rem',
+                    }}
+                  >
+                    <Field label="Mã lớp" value={cls.classCode} />
+                    <Field label="Giảng viên" value={cls.teacher?.fullName || '—'} />
+                    <Field label="Phòng học" value={cls.room} />
+                    <Field label="Lịch học" value={cls.scheduleDays?.join(', ')} />
+                    <Field label="Ca học" value={cls.timeSlot} />
+                    <Field
+                      label="Thời gian"
+                      value={`${formatDate(cls.startDate)} — ${formatDate(cls.endDate)}`}
+                    />
+                    {cls.course?.tuitionFee !== undefined && (
+                      <Field label="Học phí" value={formatVND(cls.course.tuitionFee)} />
                     )}
-                    <div>
-                      <div className="dash-subcard-label">Ngày đăng ký</div>
-                      <div className="dash-subcard-value">
-                        {new Date(item.enrollmentDate).toLocaleDateString('vi-VN')}
-                      </div>
-                    </div>
+                    <Field label="Ngày đăng ký" value={formatDate(item.enrollmentDate)} />
                   </div>
 
-                  <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.25rem', flexWrap: 'wrap' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: '0.75rem',
+                      marginTop: '1.25rem',
+                      flexWrap: 'wrap',
+                    }}
+                  >
                     <Link
-                      to={`/student/classes/${item.class._id}`}
+                      to={`/student/classes/${cls._id}`}
                       className="dash-quick-btn primary"
                       style={{ textDecoration: 'none' }}
                     >
                       ℹ️ Xem Chi Tiết
                     </Link>
                     <Link
-                      to={`/student/classes/${item.class._id}/assignments`}
+                      to={`/student/classes/${cls._id}/assignments`}
                       className="dash-quick-btn"
                       style={{ textDecoration: 'none' }}
                     >
                       📝 Bài Tập
                     </Link>
                     <Link
-                      to={`/student/classes/${item.class._id}/attendance`}
+                      to={`/student/classes/${cls._id}/attendance`}
                       className="dash-quick-btn"
                       style={{ textDecoration: 'none' }}
                     >
                       📅 Điểm Danh
                     </Link>
                     <Link
-                      to={`/student/classes/${item.class._id}/grades`}
+                      to={`/student/classes/${cls._id}/grades`}
                       className="dash-quick-btn"
                       style={{ textDecoration: 'none' }}
                     >
                       📊 Bảng Điểm
                     </Link>
                     <Link
-                      to={`/student/classes/${item.class._id}/schedule`}
+                      to={`/student/classes/${cls._id}/schedule`}
                       className="dash-quick-btn"
                       style={{ textDecoration: 'none' }}
                     >
@@ -230,10 +283,27 @@ const MyClassesPage: React.FC = () => {
               </div>
             );
           })}
-        </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
 };
+
+const selectStyle: React.CSSProperties = {
+  padding: '0.5rem 0.75rem',
+  borderRadius: '8px',
+  border: '1px solid #e5e7eb',
+  fontSize: '0.9rem',
+  background: 'white',
+};
+
+const Field: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => (
+  <div>
+    <div className="dash-subcard-label">{label}</div>
+    <div className="dash-subcard-value">{value || '—'}</div>
+  </div>
+);
 
 export default MyClassesPage;

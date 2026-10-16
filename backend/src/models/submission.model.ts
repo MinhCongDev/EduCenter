@@ -9,6 +9,11 @@ export interface ISubmission extends Document {
   attachmentUrl?: string;
   submittedAt: Date;
   status: SubmissionStatus;
+  // Convenience: stores latest grade inline so frontend can read without extra join
+  score?: number;
+  feedback?: string;
+  gradedAt?: Date;
+  gradedBy?: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -41,6 +46,21 @@ const submissionSchema = new Schema<ISubmission>(
       type: String,
       enum: ['SUBMITTED', 'LATE', 'GRADED'],
       default: 'SUBMITTED',
+    },
+    score: {
+      type: Number,
+      min: 0,
+    },
+    feedback: {
+      type: String,
+      default: '',
+    },
+    gradedAt: {
+      type: Date,
+    },
+    gradedBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
     },
   },
   {

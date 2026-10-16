@@ -2,10 +2,12 @@ import express, { Application, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import path from 'path';
 import { config } from './config';
 import { healthRouter } from './routes/health.routes';
 import { authRouter } from './routes/auth.routes';
 import { studentRouter } from './routes/student.routes';
+import { publicRouter } from './routes/public.routes';
 import { errorHandler } from './middlewares/error.middleware';
 import { notFound } from './middlewares/notFound.middleware';
 
@@ -26,24 +28,28 @@ import './models/payment.model';
 import './models/classSchedule.model';
 import './models/changeRequest.model';
 import './models/announcement.model';
+import './models/notification.model';
 
 const app: Application = express();
 
 // ===========================
 // Security Middlewares
 // ===========================
-app.use(helmet());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+);
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps, curl, or Postman)
       if (!origin) return callback(null, true);
       return callback(null, true);
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   })
 );
 
@@ -53,6 +59,17 @@ app.use(
 if (!config.isTest) {
   app.use(morgan(config.isDevelopment ? 'dev' : 'combined'));
 }
+
+// ===========================
+// Static files (uploaded submissions)
+// ===========================
+app.use(
+  '/uploads',
+  express.static(path.join(process.cwd(), 'uploads'), {
+    maxAge: '1d',
+    etag: true,
+  })
+);
 
 // ===========================
 // Body Parsing Middlewares
@@ -65,6 +82,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // ===========================
 app.use('/api/health', healthRouter);
 app.use('/api/auth', authRouter);
+app.use('/api/public', publicRouter);
 app.use('/api/student', studentRouter);
 
 // ===========================

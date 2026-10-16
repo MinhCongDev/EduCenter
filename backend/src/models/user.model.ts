@@ -9,9 +9,13 @@ export interface IUser extends Document {
   password: string;
   fullName: string;
   phone?: string;
+  address?: string;
+  dob?: Date;
   role: UserRole;
   status: UserStatus;
   avatarUrl?: string;
+  resetPasswordToken?: string;
+  resetPasswordExpires?: Date;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -30,7 +34,7 @@ const userSchema = new Schema<IUser>(
       type: String,
       required: [true, 'Mật khẩu là bắt buộc'],
       minlength: [6, 'Mật khẩu tối thiểu 6 ký tự'],
-      select: false, // Don't return password by default
+      select: false,
     },
     fullName: {
       type: String,
@@ -41,6 +45,14 @@ const userSchema = new Schema<IUser>(
       type: String,
       trim: true,
       default: '',
+    },
+    address: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    dob: {
+      type: Date,
     },
     role: {
       type: String,
@@ -55,6 +67,14 @@ const userSchema = new Schema<IUser>(
     avatarUrl: {
       type: String,
       default: '',
+    },
+    resetPasswordToken: {
+      type: String,
+      select: false,
+    },
+    resetPasswordExpires: {
+      type: Date,
+      select: false,
     },
   },
   {

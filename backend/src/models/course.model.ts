@@ -9,6 +9,7 @@ export interface ICourse extends Document {
   tuitionFee: number;
   status: 'ACTIVE' | 'INACTIVE';
   syllabus: string[];
+  sessions?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -54,6 +55,11 @@ const courseSchema = new Schema<ICourse>(
     syllabus: {
       type: [String],
       default: [],
+    },
+    sessions: {
+      type: Number,
+      default: 0,
+      min: 0,
     },
   },
   {

@@ -7,8 +7,10 @@ import {
   changePassword,
   forgotPassword,
   resetPassword,
+  uploadAvatar,
 } from '../controllers/auth.controller';
 import { authenticate } from '../middlewares/auth.middleware';
+import { uploadAvatar as uploadAvatarMiddleware, handleUploadError } from '../middlewares/upload.middleware';
 
 const router = Router();
 
@@ -23,6 +25,15 @@ router.get('/me', authenticate, getMe);
 
 // UC07: Update Personal Information
 router.put('/profile', authenticate, updateProfile);
+
+// UC07: Upload Avatar (multipart/form-data)
+router.post(
+  '/avatar',
+  authenticate,
+  uploadAvatarMiddleware.single('avatar'),
+  handleUploadError,
+  uploadAvatar
+);
 
 // UC10: Change Password
 router.post('/change-password', authenticate, changePassword);

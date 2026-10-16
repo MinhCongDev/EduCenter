@@ -239,7 +239,6 @@ const seedDatabase = async () => {
 
     const courseIELTS_F = courses[0];
     const courseIELTS_A = courses[1];
-    const courseTOEIC = courses[2];
     const courseSPEAKING = courses[3];
 
     // 4. Tạo Classes (Lớp học)
@@ -285,7 +284,6 @@ const seedDatabase = async () => {
     console.log(`   ✅ Đã tạo ${classes.length} lớp học\n`);
 
     const classIELTS_A = classes[0];
-    const classIELTS_B = classes[1];
     const classSPEAKING = classes[2];
 
     // 5. Tạo Enrollments (Ghi danh)
@@ -323,50 +321,50 @@ const seedDatabase = async () => {
         teacher: teacherNam._id,
         title: 'Listening Practice Test 1',
         description: 'Luyện nghe IELTS Listening Part 1-4. Thời gian: 30 phút. Làm bài và nộp bản scan/photo đáp án.',
-        skill: 'IELTS Listening',
+        skill: 'LISTENING',
         dueDate: new Date('2026-10-25T23:59:59'),
         maxScore: 9,
-        status: 'PUBLISHED',
+        status: 'ACTIVE',
       },
       {
         class: classIELTS_A._id,
         teacher: teacherNam._id,
         title: 'Writing Task 1 - Bar Chart',
         description: 'Viết bài mô tả biểu đồ cột (Bar Chart) về số liệu thống kê. Tối thiểu 150 từ, IELTS Writing format.',
-        skill: 'IELTS Writing',
+        skill: 'WRITING',
         dueDate: new Date('2026-10-28T23:59:59'),
         maxScore: 9,
-        status: 'PUBLISHED',
+        status: 'ACTIVE',
       },
       {
         class: classIELTS_A._id,
         teacher: teacherNam._id,
         title: 'Speaking Part 2 Self-Introduction',
         description: 'Ghi âm bài nói Part 2 giới thiệu bản thân trong 1-2 phút. Upload file mp3.',
-        skill: 'IELTS Speaking',
+        skill: 'SPEAKING',
         dueDate: new Date('2026-10-30T23:59:59'),
         maxScore: 9,
-        status: 'PUBLISHED',
+        status: 'ACTIVE',
       },
       {
         class: classIELTS_A._id,
         teacher: teacherNam._id,
         title: 'Reading Passage Practice',
         description: 'Đọc passage và trả lời 14 câu hỏi. Thời gian: 20 phút.',
-        skill: 'IELTS Reading',
+        skill: 'READING',
         dueDate: new Date('2026-11-01T23:59:59'),
         maxScore: 9,
-        status: 'PUBLISHED',
+        status: 'ACTIVE',
       },
       {
         class: classSPEAKING._id,
         teacher: teacherEmily._id,
         title: 'Self-Introduction Recording',
         description: 'Ghi âm bài giới thiệu bản thân bằng tiếng Anh (2-3 phút).',
-        skill: 'Speaking Communication',
+        skill: 'SPEAKING',
         dueDate: new Date('2026-10-25T23:59:59'),
         maxScore: 10,
-        status: 'PUBLISHED',
+        status: 'ACTIVE',
       },
     ]);
     console.log(`   ✅ Đã tạo ${assignments.length} bài tập\n`);
@@ -379,9 +377,9 @@ const seedDatabase = async () => {
       {
         assignment: assignment1._id,
         student: studentTuan._id,
-        submissionDate: new Date('2026-10-24T14:30:00'),
-        fileUrl: '/uploads/submissions/tuan-listening-1.pdf',
-        notes: 'Đã hoàn thành đầy đủ 40 câu',
+        submittedAt: new Date('2026-10-24T14:30:00'),
+        attachmentUrl: '/uploads/submissions/tuan-listening-1.pdf',
+        content: 'Đã hoàn thành đầy đủ 40 câu',
       },
     ]);
     console.log(`   ✅ Đã tạo ${submissions.length} bài nộp\n`);
@@ -393,9 +391,11 @@ const seedDatabase = async () => {
         student: studentTuan._id,
         class: classIELTS_A._id,
         teacher: teacherNam._id,
-        evaluationType: 'MOCK_TEST',
+        evaluationType: 'OVERALL',
         title: 'Mock Test IELTS - Tháng 10/2026',
         testDate: new Date('2026-10-20'),
+        maxScore: 9,
+        score: 6.5,
         overallBand: 6.5,
         listening: 7.0,
         reading: 6.5,
@@ -408,9 +408,11 @@ const seedDatabase = async () => {
         student: studentHuong._id,
         class: classIELTS_A._id,
         teacher: teacherNam._id,
-        evaluationType: 'ASSIGNMENT',
+        evaluationType: 'WRITING',
         title: 'Writing Task 1 - Bar Chart',
         testDate: new Date('2026-10-28'),
+        maxScore: 9,
+        score: 6.0,
         overallBand: 6.0,
         writing: 6.0,
         feedback: 'Bài viết có cấu trúc rõ ràng. Cần cải thiện từ vựng học thuật và đa dạng câu phức.',
@@ -420,9 +422,11 @@ const seedDatabase = async () => {
         student: studentAnh._id,
         class: classSPEAKING._id,
         teacher: teacherEmily._id,
-        evaluationType: 'SPEAKING_ASSESSMENT',
+        evaluationType: 'SPEAKING',
         title: 'Speaking Assessment - Self Introduction',
         testDate: new Date('2026-10-25'),
+        maxScore: 9,
+        score: 7.0,
         overallBand: 7.0,
         speaking: 7.0,
         feedback: 'Phát âm tốt, tự nhiên. Cần cải thiện fluency ở Part 2.',

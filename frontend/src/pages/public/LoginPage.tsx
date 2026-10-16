@@ -8,7 +8,7 @@ const DEMO_ACCOUNTS = [
   { role: 'DIRECTOR' as UserRole, label: 'Giám đốc', email: 'director@educenter.edu.vn', icon: '👔' },
   { role: 'TRAINING_STAFF' as UserRole, label: 'Giáo vụ', email: 'staff@educenter.edu.vn', icon: '📋' },
   { role: 'TEACHER' as UserRole, label: 'Giảng viên', email: 'teacher.an@educenter.edu.vn', icon: '👨‍🏫' },
-  { role: 'STUDENT' as UserRole, label: 'Học viên', email: 'student.dang@gmail.com', icon: '🎓' },
+  { role: 'STUDENT' as UserRole, label: 'Học viên', email: 'student.tuan@gmail.com', icon: '🎓' },
 ];
 
 const LoginPage: React.FC = () => {

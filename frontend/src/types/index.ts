@@ -1,26 +1,34 @@
 // ===========================
 // EduCenter – Shared Types
+// (Single source of truth – aligned with backend models)
 // ===========================
 
-// User roles as defined in the system spec
+// ─── User & Auth ──────────────────────────
 export type UserRole = 'STUDENT' | 'TEACHER' | 'TRAINING_STAFF' | 'DIRECTOR';
-
-// User status
 export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
 
-// Base user interface (matches backend User model)
 export interface User {
   _id: string;
   email: string;
   fullName: string;
   phone?: string;
+  address?: string;
+  dob?: string;
   role: UserRole;
   status: UserStatus;
+  avatarUrl?: string;
   createdAt: string;
   updatedAt: string;
 }
 
-// Auth-related types
+export interface StudentProfile {
+  studentCode: string;
+  birthDate?: string;
+  address?: string;
+  major?: string;
+  status: 'ACTIVE' | 'INACTIVE' | 'GRADUATED' | 'SUSPENDED';
+}
+
 export interface AuthState {
   user: User | null;
   token: string | null;
@@ -49,7 +57,7 @@ export interface AuthResponse {
   };
 }
 
-// API response wrapper
+// ─── API Wrapper ──────────────────────────
 export interface ApiResponse<T = unknown> {
   success: boolean;
   message: string;
@@ -57,7 +65,6 @@ export interface ApiResponse<T = unknown> {
   errors?: unknown;
 }
 
-// Pagination
 export interface PaginatedResponse<T> {
   success: boolean;
   message: string;
@@ -70,7 +77,7 @@ export interface PaginatedResponse<T> {
   };
 }
 
-// Navigation item for role-based menus
+// ─── Navigation ──────────────────────────
 export interface NavItem {
   label: string;
   path: string;
@@ -79,35 +86,8 @@ export interface NavItem {
 }
 
 // ============================================
-// STUDENT MODULE TYPES
+// STUDENT MODULE TYPES (aligned with backend)
 // ============================================
-
-// Enrollment
-export interface Enrollment {
-  _id: string;
-  student: string;
-  class: Class;
-  enrollmentDate: string;
-  status: 'ENROLLED' | 'DROPPED' | 'COMPLETED';
-  tuitionStatus: 'PENDING' | 'PAID';
-  createdAt: string;
-  updatedAt: string;
-}
-
-// Class
-export interface Class {
-  _id: string;
-  classCode: string;
-  course: Course;
-  teacher: User;
-  room: string;
-  scheduleDays: string[];
-  timeSlot: string;
-  startDate: string;
-  endDate: string;
-  capacity: number;
-  status: 'OPEN' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
-}
 
 // Course
 export interface Course {
@@ -119,6 +99,25 @@ export interface Course {
   durationWeeks: number;
   tuitionFee: number;
   status: 'ACTIVE' | 'INACTIVE';
+  sessions?: number;
+}
+
+// Class
+export type ClassStatus = 'OPEN' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+export interface Class {
+  _id: string;
+  classCode: string;
+  course: Course;
+  teacher: Pick<User, '_id' | 'fullName' | 'email' | 'phone' | 'avatarUrl'>;
+  room: string;
+  scheduleDays: string[];
+  timeSlot: string;
+  startDate: string;
+  endDate: string;
+  capacity: number;
+  currentStudents?: number;
+  sessions?: number;
+  status: ClassStatus;
 }
 
 // Class Schedule
@@ -129,20 +128,40 @@ export interface ClassSchedule {
   startTime: string;
   endTime: string;
   room: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // Assignment
+export type AssignmentStatus = 'ACTIVE' | 'CLOSED';
+export type AssignmentSkill =
+  | 'LISTENING'
+  | 'READING'
+  | 'WRITING'
+  | 'SPEAKING'
+  | 'OVERALL'
+  | 'VOCABULARY'
+  | 'GRAMMAR'
+  | 'OTHER';
+export type SubmissionStatus = 'PENDING' | 'SUBMITTED' | 'LATE' | 'GRADED';
+
 export interface Assignment {
   _id: string;
   class: string;
+  teacher?: string;
   title: string;
   description: string;
+  skill: AssignmentSkill;
   dueDate: string;
   maxScore: number;
-  status: 'ACTIVE' | 'CLOSED';
-  submissionStatus?: 'SUBMITTED' | 'LATE' | 'GRADED' | null;
-  submittedAt?: string | null;
-  submissionId?: string | null;
+  status: AssignmentStatus;
+  attachmentUrl?: string;
+  // enriched fields from backend
+  submissionStatus?: SubmissionStatus | null;
+  submissionId?: string;
+  submissionDate?: string;
+  score?: number;
+  feedback?: string;
 }
 
 // Submission
@@ -154,33 +173,55 @@ export interface Submission {
   attachmentUrl?: string;
   submittedAt: string;
   status: 'SUBMITTED' | 'LATE' | 'GRADED';
+  score?: number;
+  feedback?: string;
+  gradedAt?: string;
+  gradedBy?: string;
 }
 
 // Grade
+export type GradeEvaluationType =
+  | 'LISTENING'
+  | 'READING'
+  | 'WRITING'
+  | 'SPEAKING'
+  | 'OVERALL'
+  | 'QUIZ'
+  | 'MIDTERM'
+  | 'FINAL'
+  | 'OTHER';
+export type GradeStatus = 'DRAFT' | 'PUBLISHED';
+
 export interface Grade {
-  assignment: Assignment;
-  submission: {
-    _id: string;
-    content: string;
-    submittedAt: string;
-    status: string;
-  };
-  grade: {
-    score: number;
-    feedback: string;
-    gradedAt: string;
-    teacher: { fullName: string };
-  } | null;
+  _id: string;
+  student: string;
+  class: string;
+  teacher: Pick<User, '_id' | 'fullName' | 'email'>;
+  evaluationType: GradeEvaluationType;
+  title: string;
+  testDate: string;
+  maxScore: number;
+  score: number;
+  listening?: number;
+  reading?: number;
+  writing?: number;
+  speaking?: number;
+  overallBand?: number;
+  feedback?: string;
+  status: GradeStatus;
 }
 
 // Attendance
+export type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED';
 export interface Attendance {
   _id: string;
-  schedule: ClassSchedule;
-  student: string;
-  status: 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED';
-  note?: string;
-  date: string;
+  class: string;
+  student?: string;
+  schedule?: string;
+  sessionDate: string;
+  status: AttendanceStatus;
+  notes?: string;
+  recordedBy?: string;
 }
 
 export interface AttendanceStats {
@@ -189,156 +230,131 @@ export interface AttendanceStats {
   absent: number;
   late: number;
   excused: number;
+  rate: number;
 }
 
 // Payment
+export type PaymentStatus = 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
+export type PaymentMethod = 'CASH' | 'BANK_TRANSFER' | 'VNPAY' | 'MOMO' | 'CARD';
+
 export interface Payment {
   _id: string;
-  enrollment: string;
+  student: string;
+  enrollment?: string;
+  class?: Pick<Class, '_id' | 'classCode' | 'room' | 'course'>;
   amount: number;
-  paymentMethod: 'CASH' | 'BANK_TRANSFER' | 'VNPAY' | 'MOMO';
-  transactionCode?: string;
-  paymentDate: string;
-  status: 'PENDING' | 'COMPLETED' | 'FAILED' | 'REFUNDED';
+  method: PaymentMethod;
+  transactionId?: string;
+  paymentDate?: string;
+  dueDate?: string;
+  status: PaymentStatus;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PaymentStats {
+  total: number;
+  paidCount: number;
+  pendingCount: number;
+  failedCount: number;
+  totalPaid: number;
+  totalPending: number;
 }
 
 // Change Request
+export type ChangeRequestType = 'CHANGE_CLASS' | 'CHANGE_SCHEDULE' | 'WITHDRAW';
+export type ChangeRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
 export interface ChangeRequest {
   _id: string;
   student: string;
-  type: 'CLASS_CHANGE' | 'SCHEDULE_CHANGE';
-  currentClass?: Class;
-  targetClass?: Class;
-  currentSchedule?: ClassSchedule;
-  targetSchedule?: ClassSchedule;
+  type: ChangeRequestType;
+  currentClass?: Pick<Class, '_id' | 'classCode'> | string;
+  targetClass?: Pick<Class, '_id' | 'classCode'> | string;
+  currentClassCode?: string;
+  targetClassCode?: string;
+  currentSchedule?: string;
+  targetSchedule?: string;
   reason: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  status: ChangeRequestStatus;
   adminNote?: string;
+  processedBy?: string;
   processedAt?: string;
   createdAt: string;
   updatedAt: string;
 }
 
-// My Class (with enrollment info)
-export interface MyClass {
-  enrollmentId: string;
-  enrollmentStatus: string;
-  tuitionStatus: string;
-  enrolledAt: string;
-  class: Class;
+export interface CreateChangeRequestInput {
+  type: ChangeRequestType;
+  reason: string;
+  currentClass?: string;
+  targetClass?: string;
+  currentClassCode?: string;
+  targetClassCode?: string;
+  currentSchedule?: string;
+  targetSchedule?: string;
 }
 
-// ===========================
-// Student Portal Types
-// ===========================
+// Enrollment / My Class
+export type EnrollmentStatus = 'ENROLLED' | 'DROPPED' | 'COMPLETED';
+export type TuitionStatus = 'PENDING' | 'PAID';
 
-export interface MyClass {
+export interface Enrollment {
   _id: string;
   enrollmentId: string;
-  class: {
-    _id: string;
-    classCode: string;
-    room: string;
-    scheduleDays: string[];
-    timeSlot: string;
-    startDate: string;
-    endDate: string;
-    status: 'OPEN' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
-    course?: {
-      _id: string;
-      code: string;
-      title: string;
-      description?: string;
-      durationWeeks?: number;
-      sessions?: number;
-      tuitionFee?: number;
-    };
-    teacher?: {
-      _id: string;
-      fullName: string;
-      email: string;
-      avatarUrl?: string;
-    };
-  };
-  status: string;
-  enrollmentStatus: string;
-  tuitionStatus: 'PAID' | 'PENDING' | 'UNPAID';
+  class: Class;
+  status: EnrollmentStatus;
+  enrollmentStatus: EnrollmentStatus;
+  tuitionStatus: TuitionStatus;
   enrollmentDate: string;
 }
 
-export interface AssignmentItem {
+export interface DashboardStats {
+  totalClasses: number;
+  pendingAssignments: number;
+  totalAssignments: number;
+  pendingRequests: number;
+  tuitionPaid: number;
+  tuitionPending: number;
+}
+
+export interface DashboardData {
+  stats: DashboardStats;
+  currentClass: (Enrollment & { _id: string }) | null;
+  myClasses: Enrollment[];
+}
+
+// ─── Notifications (M4) ──────────────────────────
+export type NotificationType =
+  | 'GRADE_PUBLISHED'
+  | 'ASSIGNMENT_GRADED'
+  | 'REQUEST_APPROVED'
+  | 'REQUEST_REJECTED'
+  | 'PAYMENT_RECEIVED'
+  | 'CLASS_ANNOUNCEMENT'
+  | 'ATTENDANCE_MARKED'
+  | 'SYSTEM';
+
+export interface NotificationItem {
   _id: string;
-  class: string;
-  teacher: string;
+  user: string;
+  type: NotificationType;
   title: string;
-  description: string;
-  skill: string;
-  dueDate: string;
-  maxScore: number;
-  status: string;
-  submissionStatus?: 'PENDING' | 'SUBMITTED' | 'LATE' | 'GRADED';
-  submissionId?: string;
-  submissionDate?: string;
-  score?: number;
-}
-
-export interface AttendanceItem {
-  _id: string;
-  class: string;
-  sessionDate: string;
-  status: 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED';
-  notes?: string;
-}
-
-export interface GradeItem {
-  _id: string;
-  student: string;
-  class: string;
-  teacher: string;
-  evaluationType: string;
-  title: string;
-  testDate: string;
-  overallBand?: number;
-  listening?: number;
-  reading?: number;
-  writing?: number;
-  speaking?: number;
-  feedback?: string;
-  status: string;
-}
-
-export interface PaymentItem {
-  _id: string;
-  student: string;
-  class: string;
-  amount: number;
-  status: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
-  method?: string;
-  transactionId?: string;
-  paymentDate?: string;
-  dueDate?: string;
+  message: string;
+  link?: string;
+  read: boolean;
+  readAt?: string;
   createdAt: string;
+  updatedAt: string;
 }
 
-export interface ScheduleItem {
-  _id: string;
-  class: string;
-  dayOfWeek: string;
-  startTime: string;
-  endTime: string;
-  classroom: string;
-  topic?: string;
-}
-
-export interface ChangeRequestItem {
-  _id: string;
-  student: string;
-  type: 'CHANGE_CLASS' | 'CHANGE_SCHEDULE' | 'WITHDRAW';
-  currentClass?: string;
-  requestedClass?: string;
-  reason: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
-  processedBy?: string;
-  processedAt?: string;
-  createdAt: string;
+// ─── Toast & UI ──────────────────────────
+export type ToastType = 'success' | 'error' | 'warning' | 'info';
+export interface Toast {
+  id: string;
+  type: ToastType;
+  title?: string;
+  message: string;
+  duration?: number;
 }

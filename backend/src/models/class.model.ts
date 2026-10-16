@@ -12,6 +12,8 @@ export interface IClass extends Document {
   startDate: Date;
   endDate: Date;
   capacity: number;
+  sessions?: number;
+  currentStudents?: number;
   status: ClassStatus;
   createdAt: Date;
   updatedAt: Date;
@@ -61,6 +63,16 @@ const classSchema = new Schema<IClass>(
       type: Number,
       default: 30,
       min: 1,
+    },
+    sessions: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    currentStudents: {
+      type: Number,
+      default: 0,
+      min: 0,
     },
     status: {
       type: String,

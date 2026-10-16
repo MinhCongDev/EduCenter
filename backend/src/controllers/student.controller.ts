@@ -1,7 +1,8 @@
 import { Response } from 'express';
+import mongoose from 'mongoose';
 import { AuthRequest } from '../middlewares/auth.middleware';
+import { createError } from '../middlewares/error.middleware';
 import { Enrollment } from '../models/enrollment.model';
-import { Class } from '../models/class.model';
 import { Assignment } from '../models/assignment.model';
 import { Submission } from '../models/submission.model';
 import { Attendance } from '../models/attendance.model';
@@ -9,32 +10,124 @@ import { Grade } from '../models/grade.model';
 import { Payment } from '../models/payment.model';
 import { ChangeRequest } from '../models/changeRequest.model';
 import { ClassSchedule } from '../models/classSchedule.model';
+import { Notification } from '../models/notification.model';
 
-/**
- * GET /api/student/classes
- * Lấy danh sách lớp học của học viên hiện tại
- */
-export const getMyClasses = async (req: AuthRequest, res: Response): Promise<void> => {
+// =====================================================
+//  Helpers
+// =====================================================
+
+const requireUser = (req: AuthRequest): NonNullable<AuthRequest['user']> => {
+  if (!req.user) throw createError('Chưa xác thực', 401);
+  return req.user;
+};
+
+const isValidId = (id: string): boolean => mongoose.Types.ObjectId.isValid(id);
+
+// =====================================================
+//  POST /api/student/enrollments  (M7)
+//  Student self-enrolls into an OPEN class
+// =====================================================
+export const enrollIntoClass = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    if (!req.user) {
-      res.status(401).json({ success: false, message: 'Chưa xác thực' });
-      return;
+    const user = requireUser(req);
+    const { classId } = req.body;
+    if (!classId || !isValidId(classId)) {
+      throw createError('ID lớp học không hợp lệ', 400);
     }
 
-    const enrollments = await Enrollment.find({ student: req.user._id })
+    // Import models here to avoid circular import at top-level
+    const { Class } = await import('../models/class.model');
+
+    const cls = await Class.findById(classId);
+    if (!cls) {
+      throw createError('Không tìm thấy lớp học', 404);
+    }
+    if (cls.status !== 'OPEN' && cls.status !== 'IN_PROGRESS') {
+      throw createError(`Lớp học hiện không nhận đăng ký (trạng thái: ${cls.status})`, 400);
+    }
+    const currentCount = cls.currentStudents ?? 0;
+    if (typeof cls.capacity === 'number' && currentCount >= cls.capacity) {
+      throw createError('Lớp học đã đầy, không thể đăng ký', 400);
+    }
+
+    // Already enrolled?
+    const existing = await Enrollment.findOne({
+      student: user._id,
+      class: classId,
+    });
+    if (existing && existing.status !== 'DROPPED') {
+      throw createError('Bạn đã đăng ký lớp học này rồi', 409);
+    }
+
+    let enrollment;
+    if (existing) {
+      existing.status = 'ENROLLED';
+      existing.enrollmentDate = new Date();
+      await existing.save();
+      enrollment = existing;
+    } else {
+      enrollment = await Enrollment.create({
+        student: user._id,
+        class: classId,
+        status: 'ENROLLED',
+        enrollmentDate: new Date(),
+        tuitionStatus: 'PENDING',
+      });
+    }
+
+    // Bump class.currentStudents
+    cls.currentStudents = currentCount + 1;
+    if (cls.currentStudents >= cls.capacity && cls.status === 'OPEN') {
+      cls.status = 'IN_PROGRESS';
+    }
+    await cls.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'Đăng ký lớp học thành công',
+      data: { enrollment },
+    });
+  } catch (error: any) {
+    if (error.statusCode) {
+      res.status(error.statusCode).json({ success: false, message: error.message });
+      return;
+    }
+    if (error.code === 11000) {
+      res.status(409).json({ success: false, message: 'Bạn đã đăng ký lớp học này rồi' });
+      return;
+    }
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Lỗi server khi đăng ký lớp học',
+    });
+  }
+};
+
+// =====================================================
+//  GET /api/student/classes
+//  My enrolled classes
+// =====================================================
+export const getMyClasses = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const user = requireUser(req);
+
+    const enrollments = await Enrollment.find({
+      student: user._id,
+      status: { $ne: 'DROPPED' },
+    })
       .populate({
         path: 'class',
         populate: [
-          { path: 'course', select: 'code title' },
-          { path: 'teacher', select: 'fullName email' },
+          { path: 'course', select: 'code title description durationWeeks sessions tuitionFee' },
+          { path: 'teacher', select: 'fullName email phone avatarUrl' },
         ],
       })
       .sort({ createdAt: -1 });
 
     const classes = enrollments
-      .filter((e: any) => e.class) // skip if class is null
+      .filter((e: any) => e.class)
       .map((e: any) => ({
-        _id: e._id,
+        _id: e._id.toString(),
         enrollmentId: e._id.toString(),
         class: {
           _id: e.class._id,
@@ -44,6 +137,9 @@ export const getMyClasses = async (req: AuthRequest, res: Response): Promise<voi
           timeSlot: e.class.timeSlot,
           startDate: e.class.startDate,
           endDate: e.class.endDate,
+          capacity: e.class.capacity,
+          currentStudents: e.class.currentStudents,
+          sessions: e.class.sessions,
           status: e.class.status,
           course: e.class.course,
           teacher: e.class.teacher,
@@ -57,9 +153,13 @@ export const getMyClasses = async (req: AuthRequest, res: Response): Promise<voi
     res.json({
       success: true,
       message: 'Lấy danh sách lớp học thành công',
-      data: { classes },
+      data: { classes, total: classes.length },
     });
   } catch (error: any) {
+    if (error.statusCode) {
+      res.status(error.statusCode).json({ success: false, message: error.message });
+      return;
+    }
     console.error('Error getMyClasses:', error);
     res.status(500).json({
       success: false,
@@ -68,21 +168,20 @@ export const getMyClasses = async (req: AuthRequest, res: Response): Promise<voi
   }
 };
 
-/**
- * GET /api/student/classes/:id
- * Chi tiết lớp học
- */
+// =====================================================
+//  GET /api/student/classes/:id
+//  Class details
+// =====================================================
 export const getClassDetails = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    if (!req.user) {
-      res.status(401).json({ success: false, message: 'Chưa xác thực' });
-      return;
-    }
-
+    const user = requireUser(req);
     const { id } = req.params;
+    if (!isValidId(id)) throw createError('ID lớp học không hợp lệ', 400);
+
     const enrollment = await Enrollment.findOne({
-      student: req.user._id,
+      student: user._id,
       class: id,
+      status: { $ne: 'DROPPED' },
     }).populate({
       path: 'class',
       populate: [
@@ -92,15 +191,15 @@ export const getClassDetails = async (req: AuthRequest, res: Response): Promise<
     });
 
     if (!enrollment) {
-      res.status(404).json({ success: false, message: 'Không tìm thấy lớp học' });
-      return;
+      throw createError('Bạn chưa đăng ký lớp học này', 404);
     }
 
     res.json({
       success: true,
+      message: 'Lấy chi tiết lớp học thành công',
       data: {
         class: {
-          _id: enrollment._id,
+          _id: (enrollment as any).class._id,
           enrollmentId: enrollment._id,
           class: (enrollment as any).class,
           status: enrollment.status,
@@ -111,6 +210,10 @@ export const getClassDetails = async (req: AuthRequest, res: Response): Promise<
       },
     });
   } catch (error: any) {
+    if (error.statusCode) {
+      res.status(error.statusCode).json({ success: false, message: error.message });
+      return;
+    }
     res.status(500).json({
       success: false,
       message: error.message || 'Lỗi server khi lấy chi tiết lớp học',
@@ -118,23 +221,22 @@ export const getClassDetails = async (req: AuthRequest, res: Response): Promise<
   }
 };
 
-/**
- * GET /api/student/classes/:id/assignments
- * Bài tập của lớp
- */
+// =====================================================
+//  GET /api/student/classes/:id/assignments
+// =====================================================
 export const getAssignments = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    if (!req.user) {
-      res.status(401).json({ success: false, message: 'Chưa xác thực' });
-      return;
-    }
-
+    const user = requireUser(req);
     const { id } = req.params;
+    if (!isValidId(id)) throw createError('ID lớp học không hợp lệ', 400);
+
+    const enrolled = await Enrollment.exists({ student: user._id, class: id, status: 'ENROLLED' });
+    if (!enrolled) throw createError('Bạn chưa đăng ký lớp học này', 403);
+
     const assignments = await Assignment.find({ class: id }).sort({ dueDate: 1 });
 
-    // Get submissions for this student
     const submissions = await Submission.find({
-      student: req.user._id,
+      student: user._id,
       assignment: { $in: assignments.map((a) => a._id) },
     });
 
@@ -145,6 +247,12 @@ export const getAssignments = async (req: AuthRequest, res: Response): Promise<v
 
     const enriched = assignments.map((a: any) => {
       const sub = submissionMap.get(a._id.toString());
+      let submissionStatus: 'PENDING' | 'SUBMITTED' | 'LATE' | 'GRADED' | null = null;
+      if (sub) {
+        if (sub.score !== undefined && sub.score !== null) submissionStatus = 'GRADED';
+        else if (sub.status === 'LATE') submissionStatus = 'LATE';
+        else submissionStatus = 'SUBMITTED';
+      }
       return {
         _id: a._id,
         class: a.class,
@@ -155,24 +263,25 @@ export const getAssignments = async (req: AuthRequest, res: Response): Promise<v
         dueDate: a.dueDate,
         maxScore: a.maxScore,
         status: a.status,
-        submissionStatus: sub
-          ? sub.grade !== undefined && sub.grade !== null
-            ? 'GRADED'
-            : sub.status === 'LATE'
-            ? 'LATE'
-            : 'SUBMITTED'
-          : null,
+        attachmentUrl: a.attachmentUrl,
+        submissionStatus,
         submissionId: sub?._id,
-        submissionDate: sub?.submissionDate,
-        score: sub?.grade,
+        submissionDate: sub?.submittedAt,
+        score: sub?.score,
+        feedback: sub?.feedback,
       };
     });
 
     res.json({
       success: true,
+      message: 'Lấy danh sách bài tập thành công',
       data: { assignments: enriched },
     });
   } catch (error: any) {
+    if (error.statusCode) {
+      res.status(error.statusCode).json({ success: false, message: error.message });
+      return;
+    }
     res.status(500).json({
       success: false,
       message: error.message || 'Lỗi server khi lấy bài tập',
@@ -180,28 +289,44 @@ export const getAssignments = async (req: AuthRequest, res: Response): Promise<v
   }
 };
 
-/**
- * GET /api/student/classes/:id/attendance
- * Điểm danh của lớp
- */
+// =====================================================
+//  GET /api/student/classes/:id/attendance
+// =====================================================
 export const getAttendance = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    if (!req.user) {
-      res.status(401).json({ success: false, message: 'Chưa xác thực' });
-      return;
-    }
-
+    const user = requireUser(req);
     const { id } = req.params;
-    const attendance = await Attendance.find({
+    if (!isValidId(id)) throw createError('ID lớp học không hợp lệ', 400);
+
+    const enrolled = await Enrollment.exists({ student: user._id, class: id, status: 'ENROLLED' });
+    if (!enrolled) throw createError('Bạn chưa đăng ký lớp học này', 403);
+
+    const records = await Attendance.find({
       class: id,
-      student: req.user._id,
+      student: user._id,
     }).sort({ sessionDate: -1 });
+
+    const stats = {
+      total: records.length,
+      present: records.filter((r) => r.status === 'PRESENT').length,
+      absent: records.filter((r) => r.status === 'ABSENT').length,
+      late: records.filter((r) => r.status === 'LATE').length,
+      excused: records.filter((r) => r.status === 'EXCUSED').length,
+      rate: records.length
+        ? Math.round((records.filter((r) => r.status === 'PRESENT').length / records.length) * 100)
+        : 0,
+    };
 
     res.json({
       success: true,
-      data: { attendance },
+      message: 'Lấy dữ liệu điểm danh thành công',
+      data: { attendance: records, stats },
     });
   } catch (error: any) {
+    if (error.statusCode) {
+      res.status(error.statusCode).json({ success: false, message: error.message });
+      return;
+    }
     res.status(500).json({
       success: false,
       message: error.message || 'Lỗi server khi lấy điểm danh',
@@ -209,28 +334,40 @@ export const getAttendance = async (req: AuthRequest, res: Response): Promise<vo
   }
 };
 
-/**
- * GET /api/student/classes/:id/grades
- * Bảng điểm
- */
+// =====================================================
+//  GET /api/student/classes/:id/grades
+// =====================================================
 export const getGrades = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    if (!req.user) {
-      res.status(401).json({ success: false, message: 'Chưa xác thực' });
-      return;
-    }
-
+    const user = requireUser(req);
     const { id } = req.params;
+    if (!isValidId(id)) throw createError('ID lớp học không hợp lệ', 400);
+
+    const enrolled = await Enrollment.exists({ student: user._id, class: id, status: 'ENROLLED' });
+    if (!enrolled) throw createError('Bạn chưa đăng ký lớp học này', 403);
+
     const grades = await Grade.find({
       class: id,
-      student: req.user._id,
-    }).sort({ testDate: -1 });
+      student: user._id,
+    })
+      .populate('teacher', 'fullName email')
+      .sort({ testDate: -1 });
+
+    const byType: Record<string, number> = {};
+    grades.forEach((g: any) => {
+      byType[g.evaluationType] = (byType[g.evaluationType] || 0) + 1;
+    });
 
     res.json({
       success: true,
-      data: { grades },
+      message: 'Lấy bảng điểm thành công',
+      data: { grades, stats: { total: grades.length, byType } },
     });
   } catch (error: any) {
+    if (error.statusCode) {
+      res.status(error.statusCode).json({ success: false, message: error.message });
+      return;
+    }
     res.status(500).json({
       success: false,
       message: error.message || 'Lỗi server khi lấy điểm',
@@ -238,27 +375,79 @@ export const getGrades = async (req: AuthRequest, res: Response): Promise<void> 
   }
 };
 
-/**
- * GET /api/student/classes/:id/schedule
- * Lịch học
- */
-export const getSchedule = async (req: AuthRequest, res: Response): Promise<void> => {
+// =====================================================
+//  GET /api/student/schedule/all  (M6)
+//  Combined schedule across all my enrolled classes
+// =====================================================
+export const getCombinedSchedule = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    if (!req.user) {
-      res.status(401).json({ success: false, message: 'Chưa xác thực' });
-      return;
-    }
+    const user = requireUser(req);
 
-    const { id } = req.params;
-    const schedule = await ClassSchedule.find({ class: id, status: 'ACTIVE' }).sort({
-      dayOfWeek: 1,
-    });
+    const enrollments = await Enrollment.find({
+      student: user._id,
+      status: { $ne: 'DROPPED' },
+    })
+      .populate({
+        path: 'class',
+        populate: [
+          { path: 'course', select: 'code title' },
+          { path: 'teacher', select: 'fullName' },
+        ],
+      });
+
+    const classIds = enrollments
+      .map((e: any) => e.class?._id)
+      .filter(Boolean);
+
+    const schedule = await ClassSchedule.find({ class: { $in: classIds } })
+      .populate({
+        path: 'class',
+        select: 'classCode room',
+        populate: { path: 'course', select: 'code title' },
+      })
+      .sort({ dayOfWeek: 1, startTime: 1 });
 
     res.json({
       success: true,
+      message: 'Lấy lịch học tổng hợp thành công',
+      data: { schedule, classCount: classIds.length },
+    });
+  } catch (error: any) {
+    if (error.statusCode) {
+      res.status(error.statusCode).json({ success: false, message: error.message });
+      return;
+    }
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Lỗi server khi lấy lịch học tổng hợp',
+    });
+  }
+};
+
+// =====================================================
+//  GET /api/student/classes/:id/schedule
+// =====================================================
+export const getSchedule = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const user = requireUser(req);
+    const { id } = req.params;
+    if (!isValidId(id)) throw createError('ID lớp học không hợp lệ', 400);
+
+    const enrolled = await Enrollment.exists({ student: user._id, class: id, status: 'ENROLLED' });
+    if (!enrolled) throw createError('Bạn chưa đăng ký lớp học này', 403);
+
+    const schedule = await ClassSchedule.find({ class: id }).sort({ dayOfWeek: 1, startTime: 1 });
+
+    res.json({
+      success: true,
+      message: 'Lấy lịch học thành công',
       data: { schedule },
     });
   } catch (error: any) {
+    if (error.statusCode) {
+      res.status(error.statusCode).json({ success: false, message: error.message });
+      return;
+    }
     res.status(500).json({
       success: false,
       message: error.message || 'Lỗi server khi lấy lịch học',
@@ -266,29 +455,48 @@ export const getSchedule = async (req: AuthRequest, res: Response): Promise<void
   }
 };
 
-/**
- * GET /api/student/payments
- * Lịch sử thanh toán
- */
+// =====================================================
+//  GET /api/student/payments
+// =====================================================
 export const getPayments = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    if (!req.user) {
-      res.status(401).json({ success: false, message: 'Chưa xác thực' });
-      return;
-    }
+    const user = requireUser(req);
 
-    const payments = await Payment.find({ student: req.user._id })
+    const payments = await Payment.find({ student: user._id })
       .populate({
-        path: 'enrollment',
-        populate: { path: 'class', select: 'classCode' },
+        path: 'class',
+        select: 'classCode room',
+        populate: { path: 'course', select: 'code title' },
       })
       .sort({ createdAt: -1 });
 
+    const totalPaid = payments
+      .filter((p) => p.status === 'PAID')
+      .reduce((sum, p) => sum + p.amount, 0);
+    const totalPending = payments
+      .filter((p) => p.status === 'PENDING')
+      .reduce((sum, p) => sum + p.amount, 0);
+
     res.json({
       success: true,
-      data: { payments },
+      message: 'Lấy lịch sử thanh toán thành công',
+      data: {
+        payments,
+        stats: {
+          total: payments.length,
+          paidCount: payments.filter((p) => p.status === 'PAID').length,
+          pendingCount: payments.filter((p) => p.status === 'PENDING').length,
+          failedCount: payments.filter((p) => p.status === 'FAILED').length,
+          totalPaid,
+          totalPending,
+        },
+      },
     });
   } catch (error: any) {
+    if (error.statusCode) {
+      res.status(error.statusCode).json({ success: false, message: error.message });
+      return;
+    }
     res.status(500).json({
       success: false,
       message: error.message || 'Lỗi server khi lấy lịch sử thanh toán',
@@ -296,27 +504,28 @@ export const getPayments = async (req: AuthRequest, res: Response): Promise<void
   }
 };
 
-/**
- * GET /api/student/requests
- * Yêu cầu thay đổi
- */
+// =====================================================
+//  GET /api/student/requests
+// =====================================================
 export const getChangeRequests = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    if (!req.user) {
-      res.status(401).json({ success: false, message: 'Chưa xác thực' });
-      return;
-    }
+    const user = requireUser(req);
 
-    const requests = await ChangeRequest.find({ student: req.user._id })
+    const requests = await ChangeRequest.find({ student: user._id })
       .populate('currentClass', 'classCode')
       .populate('targetClass', 'classCode')
       .sort({ createdAt: -1 });
 
     res.json({
       success: true,
+      message: 'Lấy danh sách yêu cầu thành công',
       data: { requests },
     });
   } catch (error: any) {
+    if (error.statusCode) {
+      res.status(error.statusCode).json({ success: false, message: error.message });
+      return;
+    }
     res.status(500).json({
       success: false,
       message: error.message || 'Lỗi server khi lấy yêu cầu',
@@ -324,44 +533,63 @@ export const getChangeRequests = async (req: AuthRequest, res: Response): Promis
   }
 };
 
-/**
- * POST /api/student/requests
- * Tạo yêu cầu thay đổi mới
- */
+// =====================================================
+//  POST /api/student/requests
+// =====================================================
 export const createChangeRequest = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    if (!req.user) {
-      res.status(401).json({ success: false, message: 'Chưa xác thực' });
-      return;
-    }
-
-    const { requestType, currentClass, targetClass, reason, currentSchedule, targetSchedule } = req.body;
-
-    if (!requestType || !currentClass || !reason) {
-      res.status(400).json({
-        success: false,
-        message: 'Vui lòng cung cấp loại yêu cầu, lớp hiện tại và lý do',
-      });
-      return;
-    }
-
-    const request = await ChangeRequest.create({
-      student: req.user._id,
-      type: requestType,
+    const user = requireUser(req);
+    const {
+      type,
       currentClass,
       targetClass,
+      currentClassCode,
+      targetClassCode,
       currentSchedule,
       targetSchedule,
       reason,
+    } = req.body;
+
+    if (!type || !['CHANGE_CLASS', 'CHANGE_SCHEDULE', 'WITHDRAW'].includes(type)) {
+      throw createError('Loại yêu cầu không hợp lệ', 400);
+    }
+    if (!reason || reason.trim().length < 5) {
+      throw createError('Lý do phải có ít nhất 5 ký tự', 400);
+    }
+    if ((type === 'CHANGE_CLASS' || type === 'CHANGE_SCHEDULE') && !currentClass && !currentClassCode) {
+      throw createError('Vui lòng cung cấp lớp hiện tại', 400);
+    }
+
+    const payload: any = {
+      student: user._id,
+      type,
+      reason: reason.trim(),
       status: 'PENDING',
-    });
+    };
+
+    if (currentClass && isValidId(currentClass)) payload.currentClass = currentClass;
+    if (targetClass && isValidId(targetClass)) payload.targetClass = targetClass;
+    if (currentClassCode) payload.currentClassCode = currentClassCode.trim();
+    if (targetClassCode) payload.targetClassCode = targetClassCode.trim();
+    if (currentSchedule) payload.currentSchedule = currentSchedule.trim();
+    if (targetSchedule) payload.targetSchedule = targetSchedule.trim();
+
+    const request = await ChangeRequest.create(payload);
 
     res.status(201).json({
       success: true,
-      message: 'Tạo yêu cầu thành công',
+      message: 'Tạo yêu cầu thành công. Vui lòng chờ nhân viên xử lý.',
       data: { request },
     });
   } catch (error: any) {
+    if (error.statusCode) {
+      res.status(error.statusCode).json({ success: false, message: error.message });
+      return;
+    }
+    if (error.name === 'ValidationError') {
+      res.status(400).json({ success: false, message: error.message });
+      return;
+    }
     res.status(500).json({
       success: false,
       message: error.message || 'Lỗi server khi tạo yêu cầu',
@@ -369,45 +597,371 @@ export const createChangeRequest = async (req: AuthRequest, res: Response): Prom
   }
 };
 
-/**
- * POST /api/student/assignments/:id/submit
- * Nộp bài tập
- */
+// =====================================================
+//  DELETE /api/student/requests/:id  (M3)
+//  Student cancels their own PENDING change request
+// =====================================================
+export const cancelChangeRequest = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const user = requireUser(req);
+    const { id } = req.params;
+    if (!isValidId(id)) throw createError('ID yêu cầu không hợp lệ', 400);
+
+    const request = await ChangeRequest.findOne({ _id: id, student: user._id });
+    if (!request) {
+      throw createError('Không tìm thấy yêu cầu hoặc bạn không có quyền hủy', 404);
+    }
+    if (request.status !== 'PENDING') {
+      throw createError(
+        `Không thể hủy yêu cầu đã được ${request.status === 'APPROVED' ? 'duyệt' : 'từ chối'}`,
+        400
+      );
+    }
+
+    await ChangeRequest.deleteOne({ _id: id });
+
+    res.status(200).json({
+      success: true,
+      message: 'Đã hủy yêu cầu thành công',
+    });
+  } catch (error: any) {
+    if (error.statusCode) {
+      res.status(error.statusCode).json({ success: false, message: error.message });
+      return;
+    }
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Lỗi server khi hủy yêu cầu',
+    });
+  }
+};
+
+// =====================================================
+//  POST /api/student/assignments/:id/submit
+// =====================================================
 export const submitAssignment = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    if (!req.user) {
-      res.status(401).json({ success: false, message: 'Chưa xác thực' });
-      return;
-    }
-
+    const user = requireUser(req);
     const { id } = req.params;
-    const { fileUrl, notes } = req.body;
+    if (!isValidId(id)) throw createError('ID bài tập không hợp lệ', 400);
 
     const assignment = await Assignment.findById(id);
-    if (!assignment) {
-      res.status(404).json({ success: false, message: 'Không tìm thấy bài tập' });
-      return;
+    if (!assignment) throw createError('Không tìm thấy bài tập', 404);
+
+    if (assignment.status === 'CLOSED') {
+      throw createError('Bài tập đã đóng, không thể nộp', 400);
     }
 
-    const isLate = new Date() > new Date(assignment.dueDate);
-    const submission = await Submission.create({
-      assignment: id,
-      student: req.user._id,
-      submissionDate: new Date(),
-      fileUrl: fileUrl || '',
-      notes: notes || '',
-      status: isLate ? 'LATE' : 'SUBMITTED',
+    const enrolled = await Enrollment.exists({
+      student: user._id,
+      class: assignment.class,
+      status: 'ENROLLED',
     });
+    if (!enrolled) throw createError('Bạn chưa đăng ký lớp học của bài tập này', 403);
 
-    res.status(201).json({
+    const { content, notes } = req.body;
+    let attachmentUrl = (req.body && (req.body.attachmentUrl || req.body.fileUrl)) || '';
+
+    const file = (req as any).file;
+    if (file) {
+      attachmentUrl = `/uploads/submissions/${file.filename}`;
+    }
+
+    const existing = await Submission.findOne({ assignment: id, student: user._id });
+    const isLate = new Date() > new Date(assignment.dueDate);
+    const status = isLate ? 'LATE' : 'SUBMITTED';
+
+    let submission;
+    if (existing) {
+      existing.content = content || notes || existing.content;
+      if (attachmentUrl) existing.attachmentUrl = attachmentUrl;
+      existing.submittedAt = new Date();
+      existing.status = status;
+      await existing.save();
+      submission = existing;
+    } else {
+      submission = await Submission.create({
+        assignment: id,
+        student: user._id,
+        content: content || notes || '',
+        attachmentUrl,
+        submittedAt: new Date(),
+        status,
+      });
+    }
+
+    res.status(existing ? 200 : 201).json({
       success: true,
       message: isLate ? 'Đã nộp bài (trễ hạn)' : 'Nộp bài thành công',
       data: { submission },
     });
   } catch (error: any) {
+    if (error.statusCode) {
+      res.status(error.statusCode).json({ success: false, message: error.message });
+      return;
+    }
+    if (error.code === 11000) {
+      res.status(409).json({ success: false, message: 'Bạn đã nộp bài tập này rồi' });
+      return;
+    }
     res.status(500).json({
       success: false,
       message: error.message || 'Lỗi server khi nộp bài',
+    });
+  }
+};
+
+// =====================================================
+//  GET /api/student/dashboard
+// =====================================================
+export const getDashboard = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const user = requireUser(req);
+
+    const [enrollments, payments, requests] = await Promise.all([
+      Enrollment.find({ student: user._id, status: { $ne: 'DROPPED' } })
+        .populate({
+          path: 'class',
+          populate: [
+            { path: 'course', select: 'code title' },
+            { path: 'teacher', select: 'fullName email' },
+          ],
+        })
+        .sort({ createdAt: -1 }),
+      Payment.find({ student: user._id }).sort({ createdAt: -1 }).limit(10),
+      ChangeRequest.find({ student: user._id, status: 'PENDING' }).countDocuments(),
+    ]);
+
+    const currentClass = enrollments.find((e: any) => e.class) || null;
+
+    let pendingAssignments = 0;
+    let totalAssignments = 0;
+    if (currentClass) {
+      const aList = await Assignment.find({ class: (currentClass as any).class._id });
+      totalAssignments = aList.length;
+      const submitted = await Submission.find({
+        student: user._id,
+        assignment: { $in: aList.map((a) => a._id) },
+      }).select('assignment');
+      const submittedSet = new Set(submitted.map((s) => s.assignment.toString()));
+      pendingAssignments = aList.filter((a) => !submittedSet.has(a._id.toString())).length;
+    }
+
+    const tuitionPaid = payments
+      .filter((p) => p.status === 'PAID')
+      .reduce((sum, p) => sum + p.amount, 0);
+    const tuitionPending = payments
+      .filter((p) => p.status === 'PENDING')
+      .reduce((sum, p) => sum + p.amount, 0);
+
+    res.json({
+      success: true,
+      message: 'Lấy dữ liệu dashboard thành công',
+      data: {
+        stats: {
+          totalClasses: enrollments.length,
+          pendingAssignments,
+          totalAssignments,
+          pendingRequests: requests,
+          tuitionPaid,
+          tuitionPending,
+        },
+        currentClass: currentClass
+          ? {
+              enrollmentId: (currentClass as any)._id,
+              class: (currentClass as any).class,
+              status: (currentClass as any).status,
+              tuitionStatus: (currentClass as any).tuitionStatus,
+              enrollmentDate: (currentClass as any).enrollmentDate,
+            }
+          : null,
+        myClasses: enrollments
+          .filter((e: any) => e.class)
+          .map((e: any) => ({
+            _id: e._id,
+            enrollmentId: e._id,
+            class: e.class,
+            status: e.status,
+            tuitionStatus: e.tuitionStatus,
+            enrollmentDate: e.enrollmentDate,
+          })),
+      },
+    });
+  } catch (error: any) {
+    if (error.statusCode) {
+      res.status(error.statusCode).json({ success: false, message: error.message });
+      return;
+    }
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Lỗi server khi lấy dashboard',
+    });
+  }
+};
+
+// =====================================================
+//  GET /api/student/profile
+// =====================================================
+export const getMyProfile = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const user = requireUser(req);
+    const { Student } = await import('../models/student.model');
+
+    const student = await Student.findOne({ user: user._id });
+
+    res.json({
+      success: true,
+      message: 'Lấy thông tin cá nhân thành công',
+      data: {
+        user: {
+          _id: user._id,
+          email: user.email,
+          fullName: user.fullName,
+          phone: user.phone,
+          address: user.address,
+          dob: user.dob,
+          role: user.role,
+          status: user.status,
+          avatarUrl: user.avatarUrl,
+          createdAt: user.createdAt,
+        },
+        student: student
+          ? {
+              studentCode: student.studentCode,
+              birthDate: student.birthDate,
+              address: student.address,
+              major: student.major,
+              status: student.status,
+            }
+          : null,
+      },
+    });
+  } catch (error: any) {
+    if (error.statusCode) {
+      res.status(error.statusCode).json({ success: false, message: error.message });
+      return;
+    }
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Lỗi server khi lấy thông tin cá nhân',
+    });
+  }
+};
+
+// =====================================================
+//  GET /api/student/notifications  (M4)
+// =====================================================
+export const getMyNotifications = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const user = requireUser(req);
+    const limit = Math.min(parseInt((req.query.limit as string) || '50', 10), 100);
+
+    const items = await Notification.find({ user: user._id })
+      .sort({ createdAt: -1 })
+      .limit(limit);
+
+    const unreadCount = await Notification.countDocuments({
+      user: user._id,
+      read: false,
+    });
+
+    res.json({
+      success: true,
+      message: 'Lấy danh sách thông báo thành công',
+      data: { items, unreadCount },
+    });
+  } catch (error: any) {
+    if (error.statusCode) {
+      res.status(error.statusCode).json({ success: false, message: error.message });
+      return;
+    }
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Lỗi server khi lấy thông báo',
+    });
+  }
+};
+
+// =====================================================
+//  PATCH /api/student/notifications/:id/read  (M4)
+// =====================================================
+export const markAsRead = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const user = requireUser(req);
+    const { id } = req.params;
+    if (!isValidId(id)) throw createError('ID thông báo không hợp lệ', 400);
+
+    const noti = await Notification.findOne({ _id: id, user: user._id });
+    if (!noti) {
+      throw createError('Không tìm thấy thông báo', 404);
+    }
+    if (!noti.read) {
+      noti.read = true;
+      noti.readAt = new Date();
+      await noti.save();
+    }
+    res.json({ success: true, message: 'Đã đánh dấu đã đọc' });
+  } catch (error: any) {
+    if (error.statusCode) {
+      res.status(error.statusCode).json({ success: false, message: error.message });
+      return;
+    }
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Lỗi server khi cập nhật thông báo',
+    });
+  }
+};
+
+// =====================================================
+//  PATCH /api/student/notifications/read-all  (M4)
+// =====================================================
+export const markAllAsRead = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const user = requireUser(req);
+    const result = await Notification.updateMany(
+      { user: user._id, read: false },
+      { $set: { read: true, readAt: new Date() } }
+    );
+    res.json({
+      success: true,
+      message: `Đã đánh dấu ${result.modifiedCount} thông báo là đã đọc`,
+      data: { modified: result.modifiedCount },
+    });
+  } catch (error: any) {
+    if (error.statusCode) {
+      res.status(error.statusCode).json({ success: false, message: error.message });
+      return;
+    }
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Lỗi server khi cập nhật thông báo',
+    });
+  }
+};
+
+// =====================================================
+//  DELETE /api/student/notifications/:id  (M4)
+// =====================================================
+export const deleteNotification = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const user = requireUser(req);
+    const { id } = req.params;
+    if (!isValidId(id)) throw createError('ID thông báo không hợp lệ', 400);
+
+    const result = await Notification.deleteOne({ _id: id, user: user._id });
+    if (result.deletedCount === 0) {
+      throw createError('Không tìm thấy thông báo', 404);
+    }
+    res.json({ success: true, message: 'Đã xóa thông báo' });
+  } catch (error: any) {
+    if (error.statusCode) {
+      res.status(error.statusCode).json({ success: false, message: error.message });
+      return;
+    }
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Lỗi server khi xóa thông báo',
     });
   }
 };

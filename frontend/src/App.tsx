@@ -1,6 +1,7 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ToastProvider } from './contexts/ToastContext';
 import GuestLayout from './layouts/GuestLayout';
 import DashboardLayout from './layouts/DashboardLayout';
 import ProtectedRoute from './routes/ProtectedRoute';
@@ -26,6 +27,8 @@ const GradesPage = lazy(() => import('./pages/student/GradesPage'));
 const SchedulePage = lazy(() => import('./pages/student/SchedulePage'));
 const PaymentsPage = lazy(() => import('./pages/student/PaymentsPage'));
 const RequestsPage = lazy(() => import('./pages/student/RequestsPage'));
+const ProfilePage = lazy(() => import('./pages/student/ProfilePage'));
+const CombinedSchedulePage = lazy(() => import('./pages/student/CombinedSchedulePage'));
 const TeacherDashboard = lazy(() => import('./pages/teacher/TeacherDashboard'));
 const StaffDashboard = lazy(() => import('./pages/staff/StaffDashboard'));
 const CoursesManagementPage = lazy(() => import('./pages/staff/CoursesManagementPage'));
@@ -195,6 +198,26 @@ const AppRouter: React.FC = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/student/profile"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <DashboardLayout>
+                <ProfilePage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/schedule"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <DashboardLayout>
+                <CombinedSchedulePage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
 
         {/* ── Teacher Routes ───────────────────────── */}
         <Route
@@ -280,9 +303,11 @@ const AppRouter: React.FC = () => {
 const App: React.FC = () => {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <AppRouter />
-      </AuthProvider>
+      <ToastProvider>
+        <AuthProvider>
+          <AppRouter />
+        </AuthProvider>
+      </ToastProvider>
     </BrowserRouter>
   );
 };

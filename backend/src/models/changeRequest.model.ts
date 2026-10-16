@@ -1,18 +1,23 @@
 import mongoose, { Document, Schema, Model, Types } from 'mongoose';
 
-export type ChangeRequestType = 'CLASS_CHANGE' | 'SCHEDULE_CHANGE';
+export type ChangeRequestType = 'CHANGE_CLASS' | 'CHANGE_SCHEDULE' | 'WITHDRAW';
 export type ChangeRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
 export interface IChangeRequest extends Document {
   student: Types.ObjectId;
   type: ChangeRequestType;
+  // For CHANGE_CLASS / CHANGE_SCHEDULE
   currentClass?: Types.ObjectId;
   targetClass?: Types.ObjectId;
-  currentSchedule?: Types.ObjectId;
-  targetSchedule?: Types.ObjectId;
+  // Free-text fallbacks (e.g. user types class code manually)
+  currentClassCode?: string;
+  targetClassCode?: string;
+  currentSchedule?: string;
+  targetSchedule?: string;
   reason: string;
   status: ChangeRequestStatus;
   adminNote?: string;
+  processedBy?: Types.ObjectId;
   processedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -27,7 +32,7 @@ const changeRequestSchema = new Schema<IChangeRequest>(
     },
     type: {
       type: String,
-      enum: ['CLASS_CHANGE', 'SCHEDULE_CHANGE'],
+      enum: ['CHANGE_CLASS', 'CHANGE_SCHEDULE', 'WITHDRAW'],
       required: [true, 'Loại yêu cầu là bắt buộc'],
     },
     currentClass: {
@@ -38,18 +43,15 @@ const changeRequestSchema = new Schema<IChangeRequest>(
       type: Schema.Types.ObjectId,
       ref: 'Class',
     },
-    currentSchedule: {
-      type: Schema.Types.ObjectId,
-      ref: 'ClassSchedule',
-    },
-    targetSchedule: {
-      type: Schema.Types.ObjectId,
-      ref: 'ClassSchedule',
-    },
+    currentClassCode: { type: String, default: '' },
+    targetClassCode: { type: String, default: '' },
+    currentSchedule: { type: String, default: '' },
+    targetSchedule: { type: String, default: '' },
     reason: {
       type: String,
       required: [true, 'Lý do là bắt buộc'],
       trim: true,
+      minlength: [5, 'Lý do phải có ít nhất 5 ký tự'],
     },
     status: {
       type: String,
@@ -60,6 +62,10 @@ const changeRequestSchema = new Schema<IChangeRequest>(
       type: String,
       default: '',
     },
+    processedBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+    },
     processedAt: {
       type: Date,
     },
@@ -68,5 +74,7 @@ const changeRequestSchema = new Schema<IChangeRequest>(
     timestamps: true,
   }
 );
+
+changeRequestSchema.index({ student: 1, createdAt: -1 });
 
 export const ChangeRequest: Model<IChangeRequest> = mongoose.model<IChangeRequest>('ChangeRequest', changeRequestSchema);

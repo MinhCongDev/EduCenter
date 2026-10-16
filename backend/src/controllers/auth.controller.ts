@@ -1,10 +1,13 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
 import { User } from '../models/user.model';
 import { Student } from '../models/student.model';
 import { config } from '../config';
 import { AuthRequest } from '../middlewares/auth.middleware';
+import { buildAvatarUrl } from '../middlewares/upload.middleware';
 
 const generateToken = (userId: string, role: string): string => {
   return jwt.sign({ id: userId, role }, config.jwt.secret, {
@@ -209,6 +212,71 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
     res.status(500).json({
       success: false,
       message: error.message || 'Lỗi server khi lấy thông tin tài khoản',
+    });
+  }
+};
+
+/**
+ * UC07: Upload Avatar (multipart)
+ * POST /api/auth/avatar
+ * FormData: avatar=<file>
+ */
+export const uploadAvatar = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Vui lòng đăng nhập' });
+      return;
+    }
+    const file = (req as any).file;
+    if (!file) {
+      res.status(400).json({ success: false, message: 'Vui lòng chọn file ảnh' });
+      return;
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      res.status(404).json({ success: false, message: 'Không tìm thấy tài khoản' });
+      return;
+    }
+
+    // Delete old avatar file (if it was an uploaded one)
+    if (user.avatarUrl && user.avatarUrl.includes('/uploads/avatars/')) {
+      try {
+        const oldFilename = user.avatarUrl.split('/uploads/avatars/')[1];
+        const oldPath = path.join(process.cwd(), 'uploads', 'avatars', oldFilename);
+        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      } catch (_) {
+        // Non-fatal
+      }
+    }
+
+    const url = buildAvatarUrl(req, file.filename);
+    user.avatarUrl = url;
+    await user.save();
+
+    const userResponse = {
+      _id: user._id,
+      email: user.email,
+      fullName: user.fullName,
+      phone: user.phone,
+      address: user.address,
+      dob: user.dob,
+      role: user.role,
+      status: user.status,
+      avatarUrl: user.avatarUrl,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
+
+    res.status(200).json({
+      success: true,
+      message: 'Cập nhật ảnh đại diện thành công',
+      data: { user: userResponse },
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Lỗi server khi upload ảnh đại diện',
     });
   }
 };

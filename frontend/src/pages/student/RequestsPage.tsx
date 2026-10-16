@@ -1,24 +1,55 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { studentService } from '../../services/student.service';
-import type { ChangeRequestItem } from '../../types';
+import { useToast } from '../../contexts/ToastContext';
+import type {
+  ChangeRequest,
+  ChangeRequestStatus,
+  ChangeRequestType,
+  CreateChangeRequestInput,
+} from '../../types';
+import { Button } from '../../components/Button';
+import { EmptyState, SkeletonPage } from '../../components/Skeleton';
+import { formatDate } from '../../utils/format';
+
+type FilterKey = 'ALL' | ChangeRequestStatus;
+
+const statusCfg = (s: ChangeRequestStatus) => {
+  const map: Record<ChangeRequestStatus, { label: string; cls: string; icon: string }> = {
+    PENDING: { label: 'Đang chờ', cls: 'badge-amber', icon: '⏳' },
+    APPROVED: { label: 'Đã duyệt', cls: 'badge-green', icon: '✅' },
+    REJECTED: { label: 'Từ chối', cls: 'badge-purple', icon: '❌' },
+  };
+  return map[s];
+};
+
+const typeCfg = (t: ChangeRequestType) => {
+  const map: Record<ChangeRequestType, { label: string; icon: string }> = {
+    CHANGE_CLASS: { label: 'Đổi lớp', icon: '🔄' },
+    CHANGE_SCHEDULE: { label: 'Đổi lịch học', icon: '🗓️' },
+    WITHDRAW: { label: 'Rút khỏi lớp', icon: '🚪' },
+  };
+  return map[t];
+};
 
 const RequestsPage: React.FC = () => {
-  const [requests, setRequests] = useState<ChangeRequestItem[]>([]);
+  const toast = useToast();
+  const [requests, setRequests] = useState<ChangeRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('ALL');
+  const [filter, setFilter] = useState<FilterKey>('ALL');
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Form state
-  const [formData, setFormData] = useState({
-    requestType: 'CHANGE_CLASS' as 'CHANGE_CLASS' | 'CHANGE_SCHEDULE' | 'WITHDRAW',
-    currentClass: '',
-    targetClass: '',
+  const [form, setForm] = useState<CreateChangeRequestInput>({
+    type: 'CHANGE_CLASS',
     reason: '',
+    currentClassCode: '',
+    targetClassCode: '',
+    currentSchedule: '',
+    targetSchedule: '',
   });
   const [formError, setFormError] = useState<string | null>(null);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchRequests();
@@ -27,29 +58,50 @@ const RequestsPage: React.FC = () => {
   const fetchRequests = async () => {
     try {
       setIsLoading(true);
-      setError(null);
       const res = await studentService.getChangeRequests();
       if (res.success && res.data) setRequests(res.data.requests);
+      else toast.error(res.message || 'Không thể tải yêu cầu');
     } catch (err: any) {
-      setError(err.response?.data?.message || err.message || 'Không thể tải yêu cầu');
+      toast.error(err.response?.data?.message || 'Không thể tải yêu cầu');
     } finally {
       setIsLoading(false);
     }
   };
 
+  const resetForm = () => {
+    setForm({
+      type: 'CHANGE_CLASS',
+      reason: '',
+      currentClassCode: '',
+      targetClassCode: '',
+      currentSchedule: '',
+      targetSchedule: '',
+    });
+    setFormError(null);
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.reason.trim()) {
-      setFormError('Vui lòng nhập lý do yêu cầu');
+    if (!form.reason.trim() || form.reason.trim().length < 5) {
+      setFormError('Lý do phải có ít nhất 5 ký tự');
+      return;
+    }
+    if ((form.type === 'CHANGE_CLASS' || form.type === 'CHANGE_SCHEDULE') && !form.currentClassCode?.trim()) {
+      setFormError('Vui lòng nhập mã lớp hiện tại');
       return;
     }
     try {
       setSubmitting(true);
       setFormError(null);
-      await studentService.createChangeRequest(formData);
-      await fetchRequests();
-      setShowForm(false);
-      setFormData({ requestType: 'CHANGE_CLASS', currentClass: '', targetClass: '', reason: '' });
+      const res = await studentService.createChangeRequest(form);
+      if (res.success) {
+        toast.success(res.message || 'Tạo yêu cầu thành công');
+        setShowForm(false);
+        resetForm();
+        await fetchRequests();
+      } else {
+        setFormError(res.message || 'Tạo yêu cầu thất bại');
+      }
     } catch (err: any) {
       setFormError(err.response?.data?.message || 'Tạo yêu cầu thất bại');
     } finally {
@@ -57,63 +109,60 @@ const RequestsPage: React.FC = () => {
     }
   };
 
-  const statusConfig = (s: string) => {
-    if (s === 'PENDING') return { label: 'Đang chờ', cls: 'badge-amber', icon: '⏳' };
-    if (s === 'APPROVED') return { label: 'Đã duyệt', cls: 'badge-green', icon: '✅' };
-    if (s === 'REJECTED') return { label: 'Từ chối', cls: 'badge-purple', icon: '❌' };
-    return { label: s, cls: 'badge-amber', icon: '❓' };
+  const handleCancel = async (id: string) => {
+    if (!window.confirm('Bạn có chắc muốn hủy yêu cầu này? Hành động này không thể hoàn tác.')) {
+      return;
+    }
+    try {
+      setCancellingId(id);
+      const res = await studentService.cancelChangeRequest(id);
+      if (res.success) {
+        toast.success('Đã hủy yêu cầu thành công');
+        await fetchRequests();
+      } else {
+        toast.error(res.message || 'Hủy yêu cầu thất bại');
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Hủy yêu cầu thất bại');
+    } finally {
+      setCancellingId(null);
+    }
   };
 
-  const typeConfig = (t: string) => {
-    if (t === 'CHANGE_CLASS') return { label: 'Đổi lớp', icon: '🔄' };
-    if (t === 'CHANGE_SCHEDULE') return { label: 'Đổi lịch học', icon: '🗓️' };
-    if (t === 'WITHDRAW') return { label: 'Rút khỏi lớp', icon: '🚪' };
-    return { label: t, icon: '📋' };
-  };
+  const filtered = requests.filter((r) => filter === 'ALL' || r.status === filter);
 
-  const filtered = requests.filter(r => {
-    if (filter === 'ALL') return true;
-    return r.status === filter;
-  });
+  if (isLoading) return <SkeletonPage message="Đang tải yêu cầu..." />;
 
-  const filterTabs: { key: typeof filter; label: string }[] = [
-    { key: 'ALL', label: `Tất cả (${requests.length})` },
-    { key: 'PENDING', label: `⏳ Chờ duyệt (${requests.filter(r => r.status === 'PENDING').length})` },
-    { key: 'APPROVED', label: `✅ Đã duyệt (${requests.filter(r => r.status === 'APPROVED').length})` },
-    { key: 'REJECTED', label: `❌ Từ chối (${requests.filter(r => r.status === 'REJECTED').length})` },
+  const tabs: { key: FilterKey; label: string; count: number }[] = [
+    { key: 'ALL', label: 'Tất cả', count: requests.length },
+    { key: 'PENDING', label: '⏳ Chờ duyệt', count: requests.filter((r) => r.status === 'PENDING').length },
+    { key: 'APPROVED', label: '✅ Đã duyệt', count: requests.filter((r) => r.status === 'APPROVED').length },
+    { key: 'REJECTED', label: '❌ Từ chối', count: requests.filter((r) => r.status === 'REJECTED').length },
   ];
 
-  if (isLoading) {
-    return (
-      <div className="dash-container" style={{ textAlign: 'center', padding: '3rem' }}>
-        <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⏳</div>
-        <p>Đang tải yêu cầu...</p>
-      </div>
-    );
-  }
+  const showScheduleFields = form.type === 'CHANGE_SCHEDULE';
+  const showTargetClass = form.type === 'CHANGE_CLASS';
 
   return (
     <div className="dash-container">
-      {/* ── Page Header ── */}
       <div className="dash-banner">
         <div className="dash-banner-content">
           <div className="dash-banner-badge">🔄 Yêu Cầu</div>
           <h1>Yêu Cầu Thay Đổi</h1>
           <p>
             {requests.length > 0
-              ? `${requests.filter(r => r.status === 'PENDING').length} yêu cầu đang chờ duyệt`
+              ? `${requests.filter((r) => r.status === 'PENDING').length} yêu cầu đang chờ duyệt`
               : 'Gửi yêu cầu thay đổi lớp, lịch học hoặc rút khỏi lớp.'}
           </p>
         </div>
         <div className="dash-banner-right">
           <div className="dash-date-pill">
             <div>🔄 {requests.length} yêu cầu</div>
-            <div className="sub">{requests.filter(r => r.status === 'PENDING').length} đang chờ</div>
+            <div className="sub">{requests.filter((r) => r.status === 'PENDING').length} đang chờ</div>
           </div>
         </div>
       </div>
 
-      {/* ── Quick Nav ── */}
       <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
         <Link to="/student/dashboard" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
           ← Dashboard
@@ -126,15 +175,6 @@ const RequestsPage: React.FC = () => {
         </Link>
       </div>
 
-      {/* ── Error ── */}
-      {error && (
-        <div style={{ textAlign: 'center', padding: '1.5rem', background: 'rgba(239,68,68,0.1)', borderRadius: '12px', marginBottom: '1.5rem' }}>
-          <p style={{ color: '#ef4444', marginBottom: '0.75rem' }}>{error}</p>
-          <button className="dash-quick-btn primary" onClick={fetchRequests}>Thử lại</button>
-        </div>
-      )}
-
-      {/* ── Metrics ── */}
       {requests.length > 0 && (
         <div className="dash-metrics-grid" style={{ marginBottom: '1.5rem' }}>
           <div className="dash-metric-card">
@@ -142,7 +182,7 @@ const RequestsPage: React.FC = () => {
               <span className="dash-metric-label">Tổng yêu cầu</span>
               <span className="dash-metric-val">{requests.length}</span>
               <span className="dash-metric-trend">
-                {requests.filter(r => r.status === 'APPROVED').length} đã duyệt
+                {requests.filter((r) => r.status === 'APPROVED').length} đã duyệt
               </span>
             </div>
             <div className="dash-metric-icon icon-blue">📋</div>
@@ -151,11 +191,9 @@ const RequestsPage: React.FC = () => {
             <div className="dash-metric-info">
               <span className="dash-metric-label">Đang chờ duyệt</span>
               <span className="dash-metric-val" style={{ color: '#f59e0b' }}>
-                {requests.filter(r => r.status === 'PENDING').length}
+                {requests.filter((r) => r.status === 'PENDING').length}
               </span>
-              <span className="dash-metric-trend">
-                Đang chờ nhân viên xử lý
-              </span>
+              <span className="dash-metric-trend">Đang chờ nhân viên xử lý</span>
             </div>
             <div className="dash-metric-icon icon-amber">⏳</div>
           </div>
@@ -163,10 +201,10 @@ const RequestsPage: React.FC = () => {
             <div className="dash-metric-info">
               <span className="dash-metric-label">Đã duyệt</span>
               <span className="dash-metric-val" style={{ color: '#10b981' }}>
-                {requests.filter(r => r.status === 'APPROVED').length}
+                {requests.filter((r) => r.status === 'APPROVED').length}
               </span>
               <span className="dash-metric-trend up">
-                {requests.filter(r => r.status === 'REJECTED').length} bị từ chối
+                {requests.filter((r) => r.status === 'REJECTED').length} bị từ chối
               </span>
             </div>
             <div className="dash-metric-icon icon-emerald">✅</div>
@@ -174,172 +212,261 @@ const RequestsPage: React.FC = () => {
         </div>
       )}
 
-      {/* ── Filter + New Request ── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', gap: '1rem', flexWrap: 'wrap' }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '1.5rem',
+          gap: '1rem',
+          flexWrap: 'wrap',
+        }}
+      >
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-          {filterTabs.map(tab => (
+          {tabs.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setFilter(tab.key)}
               className={`dash-quick-btn ${filter === tab.key ? 'primary' : ''}`}
               style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }}
             >
-              {tab.label}
+              {tab.label} ({tab.count})
             </button>
           ))}
         </div>
-        <button
-          className="dash-quick-btn primary"
-          onClick={() => setShowForm(!showForm)}
-        >
+        <Button variant="primary" onClick={() => setShowForm((v) => !v)}>
           {showForm ? '✕ Đóng' : '➕ Tạo Yêu Cầu Mới'}
-        </button>
+        </Button>
       </div>
 
-      {/* ── New Request Form ── */}
       {showForm && (
-        <div className="dash-card" style={{ marginBottom: '1.5rem', border: '2px solid rgba(59,130,246,0.4)' }}>
+        <div
+          className="dash-card"
+          style={{ marginBottom: '1.5rem', border: '2px solid rgba(59,130,246,0.4)' }}
+        >
           <div className="dash-card-header">
             <h2 className="dash-card-title"><span>➕</span> Tạo Yêu Cầu Mới</h2>
           </div>
           <div className="dash-subcard">
             <form onSubmit={handleCreate}>
               {formError && (
-                <div style={{ background: 'rgba(239,68,68,0.1)', borderRadius: '8px', padding: '0.75rem', marginBottom: '1rem', color: '#ef4444', fontSize: '0.9rem' }}>
+                <div
+                  style={{
+                    background: 'rgba(239,68,68,0.1)',
+                    borderRadius: '8px',
+                    padding: '0.75rem',
+                    marginBottom: '1rem',
+                    color: '#ef4444',
+                    fontSize: '0.9rem',
+                  }}
+                >
                   ⚠️ {formError}
                 </div>
               )}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                  gap: '1rem',
+                  marginBottom: '1rem',
+                }}
+              >
                 <div>
                   <label className="dash-subcard-label">Loại yêu cầu *</label>
                   <select
-                    value={formData.requestType}
-                    onChange={e => setFormData({ ...formData, requestType: e.target.value as any })}
-                    style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: '8px', border: '1px solid #e5e7eb', fontSize: '0.9rem', marginTop: '0.25rem', fontFamily: 'inherit' }}
+                    value={form.type}
+                    onChange={(e) =>
+                      setForm({ ...form, type: e.target.value as ChangeRequestType })
+                    }
+                    style={inputStyle}
                   >
                     <option value="CHANGE_CLASS">🔄 Đổi lớp</option>
                     <option value="CHANGE_SCHEDULE">🗓️ Đổi lịch học</option>
                     <option value="WITHDRAW">🚪 Rút khỏi lớp</option>
                   </select>
                 </div>
-                <div>
-                  <label className="dash-subcard-label">Lớp hiện tại (mã lớp)</label>
-                  <input
-                    type="text"
-                    value={formData.currentClass}
-                    onChange={e => setFormData({ ...formData, currentClass: e.target.value })}
-                    placeholder="VD: IELTS-PRE-01"
-                    style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: '8px', border: '1px solid #e5e7eb', fontSize: '0.9rem', marginTop: '0.25rem', fontFamily: 'inherit' }}
-                  />
-                </div>
-                {(formData.requestType === 'CHANGE_CLASS' || formData.requestType === 'CHANGE_SCHEDULE') && (
+                {form.type !== 'WITHDRAW' && (
                   <div>
-                    <label className="dash-subcard-label">Lớp/Lịch mong muốn</label>
+                    <label className="dash-subcard-label">Mã lớp hiện tại *</label>
                     <input
                       type="text"
-                      value={formData.targetClass}
-                      onChange={e => setFormData({ ...formData, targetClass: e.target.value })}
-                      placeholder="VD: IELTS-FOUND-02"
-                      style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: '8px', border: '1px solid #e5e7eb', fontSize: '0.9rem', marginTop: '0.25rem', fontFamily: 'inherit' }}
+                      value={form.currentClassCode || ''}
+                      onChange={(e) => setForm({ ...form, currentClassCode: e.target.value })}
+                      placeholder="VD: IELTS-PRE-01"
+                      style={inputStyle}
                     />
                   </div>
                 )}
+                {showTargetClass && (
+                  <div>
+                    <label className="dash-subcard-label">Mã lớp mong muốn</label>
+                    <input
+                      type="text"
+                      value={form.targetClassCode || ''}
+                      onChange={(e) => setForm({ ...form, targetClassCode: e.target.value })}
+                      placeholder="VD: IELTS-FOUND-02"
+                      style={inputStyle}
+                    />
+                  </div>
+                )}
+                {showScheduleFields && (
+                  <>
+                    <div>
+                      <label className="dash-subcard-label">Lịch học hiện tại</label>
+                      <input
+                        type="text"
+                        value={form.currentSchedule || ''}
+                        onChange={(e) => setForm({ ...form, currentSchedule: e.target.value })}
+                        placeholder="VD: Thứ 2,4,6 - 18:30-20:30"
+                        style={inputStyle}
+                      />
+                    </div>
+                    <div>
+                      <label className="dash-subcard-label">Lịch học mong muốn</label>
+                      <input
+                        type="text"
+                        value={form.targetSchedule || ''}
+                        onChange={(e) => setForm({ ...form, targetSchedule: e.target.value })}
+                        placeholder="VD: Thứ 3,5,7 - 19:00-21:00"
+                        style={inputStyle}
+                      />
+                    </div>
+                  </>
+                )}
               </div>
               <div style={{ marginBottom: '1rem' }}>
-                <label className="dash-subcard-label">Lý do *</label>
+                <label className="dash-subcard-label">Lý do * (tối thiểu 5 ký tự)</label>
                 <textarea
-                  value={formData.reason}
-                  onChange={e => setFormData({ ...formData, reason: e.target.value })}
+                  value={form.reason}
+                  onChange={(e) => setForm({ ...form, reason: e.target.value })}
                   placeholder="Mô tả chi tiết lý do bạn muốn thay đổi..."
-                  required
                   rows={4}
-                  style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e5e7eb', fontSize: '0.9rem', marginTop: '0.25rem', fontFamily: 'inherit', resize: 'vertical' }}
+                  style={{ ...inputStyle, resize: 'vertical' }}
                 />
               </div>
               <div style={{ display: 'flex', gap: '0.75rem' }}>
-                <button type="submit" className="dash-quick-btn primary" disabled={submitting}>
-                  {submitting ? '⏳ Đang gửi...' : '📤 Gửi Yêu Cầu'}
-                </button>
-                <button type="button" className="dash-quick-btn" onClick={() => setShowForm(false)}>
+                <Button type="submit" variant="primary" loading={submitting} icon="📤">
+                  Gửi Yêu Cầu
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    setShowForm(false);
+                    resetForm();
+                  }}
+                >
                   Hủy
-                </button>
+                </Button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* ── Requests List ── */}
-      {filtered.length === 0 && !isLoading ? (
-        <div style={{ textAlign: 'center', padding: '3rem', background: 'var(--dash-card-subtle)', borderRadius: '16px' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📭</div>
-          <h2>Không có yêu cầu nào</h2>
-          <p style={{ opacity: 0.7, marginBottom: '1.5rem' }}>
-            {filter !== 'ALL' ? 'Không có yêu cầu nào phù hợp với bộ lọc.' : 'Bạn chưa gửi yêu cầu nào.'}
-          </p>
-          {filter === 'ALL' && !showForm && (
-            <button className="dash-quick-btn primary" onClick={() => setShowForm(true)}>
-              ➕ Tạo Yêu Cầu Đầu Tiên
-            </button>
-          )}
-        </div>
+      {filtered.length === 0 ? (
+        <EmptyState
+          icon="📭"
+          title="Không có yêu cầu nào"
+          description={
+            filter !== 'ALL'
+              ? 'Không có yêu cầu nào phù hợp với bộ lọc.'
+              : 'Bạn chưa gửi yêu cầu nào.'
+          }
+          action={
+            filter === 'ALL' && !showForm ? (
+              <Button variant="primary" onClick={() => setShowForm(true)}>
+                ➕ Tạo Yêu Cầu Đầu Tiên
+              </Button>
+            ) : undefined
+          }
+        />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {filtered.map((r) => {
-            const status = statusConfig(r.status);
-            const type = typeConfig(r.type);
+            const status = statusCfg(r.status);
+            const type = typeCfg(r.type);
+            const currentCode = (r.currentClass as any)?.classCode || r.currentClassCode;
+            const targetCode = (r.targetClass as any)?.classCode || r.targetClassCode;
             return (
               <div key={r._id} className="dash-card">
                 <div className="dash-card-header">
                   <h2 className="dash-card-title">
-                    <span>{type.icon}</span>
-                    {type.label}
+                    <span>{type.icon}</span> {type.label}
                   </h2>
-                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                    <span className={`badge-pill ${status.cls}`}>
-                      {status.icon} {status.label}
-                    </span>
-                  </div>
+                  <span className={`badge-pill ${status.cls}`}>
+                    {status.icon} {status.label}
+                  </span>
                 </div>
 
                 <div className="dash-subcard">
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.75rem 1.5rem', marginBottom: '0.75rem' }}>
-                    <div>
-                      <div className="dash-subcard-label">Loại yêu cầu</div>
-                      <div className="dash-subcard-value">{type.label}</div>
-                    </div>
-                    {r.currentClass && (
-                      <div>
-                        <div className="dash-subcard-label">Lớp hiện tại</div>
-                        <div className="dash-subcard-value">{r.currentClass}</div>
-                      </div>
-                    )}
-                    {r.requestedClass && (
-                      <div>
-                        <div className="dash-subcard-label">Lớp mong muốn</div>
-                        <div className="dash-subcard-value">{r.requestedClass}</div>
-                      </div>
-                    )}
-                    <div>
-                      <div className="dash-subcard-label">Ngày gửi</div>
-                      <div className="dash-subcard-value">
-                        {new Date(r.createdAt).toLocaleDateString('vi-VN')}
-                      </div>
-                    </div>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+                      gap: '0.75rem 1.5rem',
+                      marginBottom: '0.75rem',
+                    }}
+                  >
+                    <Field label="Loại yêu cầu" value={type.label} />
+                    {currentCode && <Field label="Lớp hiện tại" value={currentCode} />}
+                    {targetCode && <Field label="Lớp mong muốn" value={targetCode} />}
+                    {r.currentSchedule && <Field label="Lịch hiện tại" value={r.currentSchedule} />}
+                    {r.targetSchedule && <Field label="Lịch mong muốn" value={r.targetSchedule} />}
+                    <Field label="Ngày gửi" value={formatDate(r.createdAt, true)} />
                     {r.processedAt && (
-                      <div>
-                        <div className="dash-subcard-label">Ngày xử lý</div>
-                        <div className="dash-subcard-value">
-                          {new Date(r.processedAt).toLocaleDateString('vi-VN')}
-                        </div>
-                      </div>
+                      <Field label="Ngày xử lý" value={formatDate(r.processedAt, true)} />
                     )}
                   </div>
 
-                  <div style={{ background: 'rgba(59,130,246,0.06)', borderRadius: '8px', padding: '0.75rem' }}>
+                  <div
+                    style={{
+                      background: 'rgba(59,130,246,0.06)',
+                      borderRadius: '8px',
+                      padding: '0.75rem',
+                    }}
+                  >
                     <div className="dash-subcard-label">📝 Lý do</div>
-                    <div style={{ marginTop: '0.25rem', fontSize: '0.9rem', color: '#475569' }}>{r.reason}</div>
+                    <div style={{ marginTop: '0.25rem', fontSize: '0.9rem', color: '#475569' }}>
+                      {r.reason}
+                    </div>
                   </div>
+
+                  {r.adminNote && (
+                    <div
+                      style={{
+                        background: 'rgba(245,158,11,0.08)',
+                        borderRadius: '8px',
+                        padding: '0.75rem',
+                        marginTop: '0.5rem',
+                      }}
+                    >
+                      <div className="dash-subcard-label">💬 Phản hồi từ nhân viên</div>
+                      <div style={{ marginTop: '0.25rem', fontSize: '0.9rem', color: '#475569' }}>
+                        {r.adminNote}
+                      </div>
+                    </div>
+                  )}
+
+                  {r.status === 'PENDING' && (
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: '0.5rem',
+                        marginTop: '0.75rem',
+                        justifyContent: 'flex-end',
+                      }}
+                    >
+                      <Button
+                        variant="secondary"
+                        onClick={() => handleCancel(r._id)}
+                        loading={cancellingId === r._id}
+                        icon="🗑️"
+                      >
+                        Hủy yêu cầu
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -349,5 +476,22 @@ const RequestsPage: React.FC = () => {
     </div>
   );
 };
+
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '0.6rem 0.75rem',
+  borderRadius: '8px',
+  border: '1px solid #e5e7eb',
+  fontSize: '0.9rem',
+  marginTop: '0.25rem',
+  fontFamily: 'inherit',
+};
+
+const Field: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => (
+  <div>
+    <div className="dash-subcard-label">{label}</div>
+    <div className="dash-subcard-value">{value || '—'}</div>
+  </div>
+);
 
 export default RequestsPage;
