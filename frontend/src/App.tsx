@@ -14,6 +14,8 @@ const HomePage = lazy(() => import('./pages/public/HomePage'));
 const CoursesPage = lazy(() => import('./pages/public/CoursesPage'));
 const AnnouncementsPage = lazy(() => import('./pages/public/AnnouncementsPage'));
 const AuthPage = lazy(() => import('./pages/public/AuthPage'));
+const VerifyEmailPage = lazy(() => import('./pages/public/VerifyEmailPage'));
+const ResendVerificationPage = lazy(() => import('./pages/public/ResendVerificationPage'));
 
 // Dashboard pages
 const StudentDashboard = lazy(() => import('./pages/student/StudentDashboard'));
@@ -91,6 +93,22 @@ const AppRouter: React.FC = () => {
           element={
             <GuestLayout>
               <AuthPage defaultMode="register" />
+            </GuestLayout>
+          }
+        />
+        <Route
+          path="/verify-email"
+          element={
+            <GuestLayout>
+              <VerifyEmailPage />
+            </GuestLayout>
+          }
+        />
+        <Route
+          path="/resend-verification"
+          element={
+            <GuestLayout>
+              <ResendVerificationPage />
             </GuestLayout>
           }
         />

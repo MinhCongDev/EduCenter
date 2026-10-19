@@ -142,6 +142,7 @@ const seedDatabase = async () => {
         phone: '0988111222',
         address: 'Hà Nội',
         role: 'DIRECTOR',
+        isVerified: true,
         status: 'ACTIVE',
       },
       {
@@ -151,6 +152,7 @@ const seedDatabase = async () => {
         phone: '0977222333',
         address: 'Hà Nội',
         role: 'TRAINING_STAFF',
+        isVerified: true,
         status: 'ACTIVE',
       },
       {
@@ -160,6 +162,7 @@ const seedDatabase = async () => {
         phone: '0911333444',
         address: 'Cầu Giấy, Hà Nội',
         role: 'TEACHER',
+        isVerified: true,
         status: 'ACTIVE',
         avatarUrl: 'https://cdn.dungmori.com/assets/img/new_home/06-2024/thaydung.png',
       },
@@ -170,6 +173,7 @@ const seedDatabase = async () => {
         phone: '0912444555',
         address: 'Đống Đa, Hà Nội',
         role: 'TEACHER',
+        isVerified: true,
         status: 'ACTIVE',
         avatarUrl: 'https://cdn.dungmori.com/assets/img/new_home/06-2024/cothanh.png',
       },
@@ -180,6 +184,7 @@ const seedDatabase = async () => {
         phone: '0933555666',
         address: 'Hà Nội',
         role: 'STUDENT',
+        isVerified: true,
         status: 'ACTIVE',
       },
       {
@@ -189,6 +194,7 @@ const seedDatabase = async () => {
         phone: '0934666777',
         address: 'Hà Nội',
         role: 'STUDENT',
+        isVerified: true,
         status: 'ACTIVE',
       },
       {
@@ -198,6 +204,7 @@ const seedDatabase = async () => {
         phone: '0935777888',
         address: 'TP. Hồ Chí Minh',
         role: 'STUDENT',
+        isVerified: true,
         status: 'ACTIVE',
       },
     ]);

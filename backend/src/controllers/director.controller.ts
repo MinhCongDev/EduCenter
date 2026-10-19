@@ -91,6 +91,7 @@ export const addStaffAccount = async (req: AuthRequest, res: Response): Promise<
       address: address?.trim() || '',
       role: 'TRAINING_STAFF',
       status: 'ACTIVE',
+      isVerified: true,
     });
 
     const staffCode = `STF-${Date.now().toString().slice(-4)}`;

@@ -89,6 +89,21 @@ Frontend will start at: **http://localhost:5173**
 | `JWT_REFRESH_SECRET` | JWT refresh signing secret | *(required)* |
 | `JWT_REFRESH_EXPIRES_IN` | Refresh token TTL | `30d` |
 | `CORS_ORIGIN` | Allowed CORS origin | `http://localhost:5173` |
+| `FRONTEND_URL` | Base URL used in verification email links | `http://localhost:5173` |
+| `VERIFY_EMAIL_URL` | Full verification page URL (optional override) | `${FRONTEND_URL}/verify-email` |
+| `SMTP_HOST` | SMTP server host (empty in dev → link logged to console) | *(optional)* |
+| `SMTP_PORT` | SMTP port (`587` STARTTLS, `465` implicit TLS) | `587` |
+| `SMTP_SECURE` | Set `true` for port 465 | `false` |
+| `SMTP_USER` | SMTP username | *(optional)* |
+| `SMTP_PASS` | SMTP password / Gmail App Password | *(optional)* |
+| `SMTP_FROM` | Sender name and address | `"EduCenter" <no-reply@educenter.edu.vn>` |
+| `GOOGLE_CLIENT_ID` | OAuth 2.0 Client ID for Google Sign-In | *(optional)* |
+
+> **Email verification:** registration creates an inactive-unverified account, sends a
+> 15-minute verification link, and blocks login until the email is verified
+> (`GET /api/auth/verify-email?token=...`). Use `POST /api/auth/resend-email-verify`
+> to resend. In development, leave `SMTP_HOST` empty to have the link printed to the
+> server console (and returned as `devVerificationUrl`).
 
 ### Frontend (`frontend/.env`)
 
@@ -96,6 +111,7 @@ Frontend will start at: **http://localhost:5173**
 |---|---|---|
 | `VITE_API_URL` | Backend API base URL | `http://localhost:5000/api` |
 | `VITE_APP_NAME` | Application name | `EduCenter` |
+| `VITE_GOOGLE_CLIENT_ID` | OAuth 2.0 Client ID for Google Sign-In (same as backend) | *(optional)* |
 
 ---
 

@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { authService } from '../../services/auth.service';
 import type { UserRole } from '../../types';
+import { PASSWORD_POLICY_HINT, getPasswordError } from '../../utils/password';
 import { ForgotPasswordModal } from '../../components/ForgotPasswordModal';
+import GoogleAuthButton, { GoogleAuthProvider } from '../../components/GoogleAuthButton';
 import './AuthPage.css';
 
 interface AuthPageProps {
@@ -18,7 +20,7 @@ const DEMO_ACCOUNTS = [
 ];
 
 export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
-  const { login, register, isLoading } = useAuth();
+  const { login, loginWithGoogle, register, isLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -37,6 +39,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
 
   const switchMode = (newMode: 'login' | 'register') => {
     setMode(newMode);
+    setRegisterSuccess(null);
     // Update URL smoothly without full reload
     navigate(newMode === 'register' ? '/register' : '/login', { replace: true });
   };
@@ -50,6 +53,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
   const [loginError, setLoginError] = useState<string | null>(null);
   const [loginSubmitting, setLoginSubmitting] = useState(false);
   const [loginSuccessNotice, setLoginSuccessNotice] = useState<string | null>(initialSuccessMessage);
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
 
   // Forgot password modal state
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
@@ -64,11 +68,16 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
   });
   const [registerError, setRegisterError] = useState<string | null>(null);
   const [registerSubmitting, setRegisterSubmitting] = useState(false);
+  const [registerSuccess, setRegisterSuccess] = useState<{
+    email: string;
+    devVerificationUrl?: string;
+  } | null>(null);
 
   // ── Handlers ───────────────────────────────────────────────────────────
   const handleLoginChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setLoginForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
     setLoginError(null);
+    setUnverifiedEmail(null);
   };
 
   const handleRegisterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -84,6 +93,41 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
     setLoginError(null);
   };
 
+  const navigateAfterAuth = () => {
+    const storedUser = authService.getStoredUser();
+    if (!storedUser) {
+      navigate('/', { replace: true });
+      return;
+    }
+
+    const dashboardPaths: Record<string, string> = {
+      STUDENT: '/student/dashboard',
+      TEACHER: '/teacher/dashboard',
+      TRAINING_STAFF: '/staff/dashboard',
+      DIRECTOR: '/director/dashboard',
+    };
+
+    const rolePrefixes: Record<string, string> = {
+      STUDENT: '/student',
+      TEACHER: '/teacher',
+      TRAINING_STAFF: '/staff',
+      DIRECTOR: '/director',
+    };
+
+    let targetPath = dashboardPaths[storedUser.role] || '/';
+
+    if (from && !from.includes('/unauthorized') && !from.includes('/login') && !from.includes('/register')) {
+      const isOtherRolePath = Object.entries(rolePrefixes).some(
+        ([role, prefix]) => role !== storedUser.role && from.startsWith(prefix)
+      );
+      if (!isOtherRolePath) {
+        targetPath = from;
+      }
+    }
+
+    navigate(targetPath, { replace: true });
+  };
+
   const handleLoginSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!loginForm.email || !loginForm.password) {
@@ -93,48 +137,53 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
 
     setLoginSubmitting(true);
     setLoginError(null);
+    setUnverifiedEmail(null);
 
     try {
       await login({ email: loginForm.email, password: loginForm.password });
-      
-      const storedUser = authService.getStoredUser();
-      if (storedUser) {
-        const dashboardPaths: Record<string, string> = {
-          STUDENT: '/student/dashboard',
-          TEACHER: '/teacher/dashboard',
-          TRAINING_STAFF: '/staff/dashboard',
-          DIRECTOR: '/director/dashboard',
-        };
-
-        const rolePrefixes: Record<string, string> = {
-          STUDENT: '/student',
-          TEACHER: '/teacher',
-          TRAINING_STAFF: '/staff',
-          DIRECTOR: '/director',
-        };
-
-        let targetPath = dashboardPaths[storedUser.role] || '/';
-
-        if (from && !from.includes('/unauthorized') && !from.includes('/login') && !from.includes('/register')) {
-          const isOtherRolePath = Object.entries(rolePrefixes).some(
-            ([role, prefix]) => role !== storedUser.role && from.startsWith(prefix)
-          );
-          if (!isOtherRolePath) {
-            targetPath = from;
-          }
-        }
-
-        navigate(targetPath, { replace: true });
-      } else {
-        navigate('/', { replace: true });
-      }
+      navigateAfterAuth();
     } catch (err: unknown) {
+      const errorData = (
+        err as { response?: { data?: { message?: string; code?: string } } }
+      )?.response?.data;
       const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        errorData?.message ||
         'Đăng nhập không thành công. Vui lòng kiểm tra lại email và mật khẩu.';
+
+      if (errorData?.code === 'AUTH_ACCOUNT_NOT_VERIFIED') {
+        setUnverifiedEmail(loginForm.email.trim());
+      }
       setLoginError(msg);
     } finally {
       setLoginSubmitting(false);
+    }
+  };
+
+  const handleGoogleSuccess = async (credential: string) => {
+    setLoginError(null);
+    setRegisterError(null);
+
+    try {
+      await loginWithGoogle(credential);
+      navigateAfterAuth();
+    } catch (err: unknown) {
+      const message =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        'Đăng nhập bằng Google thất bại. Vui lòng thử lại.';
+      if (mode === 'register') {
+        setRegisterError(message);
+      } else {
+        setLoginError(message);
+      }
+    }
+  };
+
+  const handleGoogleError = () => {
+    const message = 'Không thể kết nối với Google. Vui lòng thử lại.';
+    if (mode === 'register') {
+      setRegisterError(message);
+    } else {
+      setLoginError(message);
     }
   };
 
@@ -151,8 +200,9 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
       setRegisterError('Vui lòng nhập địa chỉ email.');
       return;
     }
-    if (registerForm.password.length < 6) {
-      setRegisterError('Mật khẩu phải có ít nhất 6 ký tự.');
+    const passwordError = getPasswordError(registerForm.password);
+    if (passwordError) {
+      setRegisterError(passwordError);
       return;
     }
     if (registerForm.password !== registerForm.confirmPassword) {
@@ -162,15 +212,18 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
 
     setRegisterSubmitting(true);
     try {
-      await register({
+      const response = await register({
         fullName: registerForm.fullName.trim(),
         email: registerForm.email,
         phone: registerForm.phone || undefined,
         password: registerForm.password,
       });
 
-      // On register success: the account is created and logged in, redirect to student dashboard
-      navigate('/student/dashboard', { replace: true });
+      // Account created but not logged in – it must verify its email first.
+      setRegisterSuccess({
+        email: response.data.email,
+        devVerificationUrl: response.data.devVerificationUrl,
+      });
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
@@ -199,6 +252,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
   }
 
   return (
+    <GoogleAuthProvider>
     <div className="auth-wrapper">
       <div className={`auth-master-card mode-${mode}`}>
         
@@ -238,6 +292,12 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
                 <p className="auth-panel-subtitle">Truy cập hệ thống quản lý học tập &amp; luyện thi EduCenter</p>
               </div>
 
+            <GoogleAuthButton
+              onSuccess={handleGoogleSuccess}
+              onError={handleGoogleError}
+              text="signin_with"
+            />
+
             {/* Quick Demo Fill Buttons */}
             <div className="auth-demo-accounts">
               <p className="auth-demo-title">
@@ -270,6 +330,21 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
               <div className="auth-alert auth-alert-error" role="alert">
                 <span>⚠️</span>
                 <span>{loginError}</span>
+              </div>
+            )}
+
+            {unverifiedEmail && (
+              <div className="auth-alert auth-alert-info" role="status">
+                <span>📧</span>
+                <span>
+                  Chưa nhận được email?{' '}
+                  <Link
+                    className="auth-alert-action"
+                    to={`/resend-verification?email=${encodeURIComponent(unverifiedEmail)}`}
+                  >
+                    Gửi lại email xác thực
+                  </Link>
+                </span>
               </div>
             )}
 
@@ -363,6 +438,58 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
                 <p className="auth-panel-subtitle">Bắt đầu lộ trình chinh phục chứng chỉ quốc tế 7.5 - 8.5+</p>
               </div>
 
+            {registerSuccess ? (
+              <div className="auth-register-success" role="status">
+                <div className="auth-success-icon" aria-hidden="true">
+                  ✓
+                </div>
+                <h3 className="auth-success-title">Kiểm tra email của bạn</h3>
+                <p className="auth-success-text">
+                  Chúng tôi đã gửi liên kết xác thực tới{' '}
+                  <strong>{registerSuccess.email}</strong>. Vui lòng mở email và bấm
+                  “Xác thực ngay” để kích hoạt tài khoản.
+                </p>
+                <p className="auth-success-note">
+                  Liên kết có hiệu lực trong 15 phút. Nếu không thấy email, hãy kiểm tra thư mục
+                  Spam.
+                </p>
+
+                {registerSuccess.devVerificationUrl && (
+                  <a
+                    className="auth-dev-link"
+                    href={registerSuccess.devVerificationUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Mở liên kết xác thực (dev)
+                  </a>
+                )}
+
+                <button
+                  type="button"
+                  className="auth-submit-btn"
+                  onClick={() => switchMode('login')}
+                >
+                  Đăng nhập
+                </button>
+
+                <div className="auth-mobile-switch auth-success-switch">
+                  Chưa nhận được email?
+                  <Link
+                    className="auth-inline-switch-btn"
+                    to={`/resend-verification?email=${encodeURIComponent(registerSuccess.email)}`}
+                  >
+                    Gửi lại email xác thực
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <>
+            <GoogleAuthButton
+              onSuccess={handleGoogleSuccess}
+              onError={handleGoogleError}
+              text="signup_with"
+            />
             {registerError && (
               <div className="auth-alert auth-alert-error" role="alert">
                 <span>⚠️</span>
@@ -444,12 +571,14 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
                     value={registerForm.password}
                     onChange={handleRegisterChange}
                     className="auth-input-control"
-                    placeholder="Tối thiểu 6 ký tự"
+                    placeholder="10–20 ký tự, có hoa, thường và số"
                     autoComplete="new-password"
                     required
-                    minLength={6}
+                    minLength={10}
+                    maxLength={20}
                     disabled={registerSubmitting}
                   />
+                  <p className="auth-password-hint">{PASSWORD_POLICY_HINT}</p>
                 </div>
 
                 <div className="auth-input-group">
@@ -466,6 +595,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
                     placeholder="Nhập lại mật khẩu"
                     autoComplete="new-password"
                     required
+                    maxLength={20}
                     disabled={registerSubmitting}
                   />
                 </div>
@@ -499,6 +629,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
                 Đăng nhập
               </button>
             </div>
+              </>
+            )}
             </div>
           </div>
         </div>
@@ -617,6 +749,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
         }}
       />
     </div>
+    </GoogleAuthProvider>
   );
 };
 
