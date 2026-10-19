@@ -6,7 +6,7 @@ import { User, IUser } from '../models/user.model';
 import { Student } from '../models/student.model';
 import { config } from '../config';
 import { AuthRequest } from '../middlewares/auth.middleware';
-import { sendVerificationEmail } from '../services/email.service';
+import { sendPasswordResetEmail, sendVerificationEmail } from '../services/email.service';
 import {
   PASSWORD_POLICY_MESSAGE,
   isValidEmail,
@@ -136,7 +136,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       // Non-fatal if student profile creation fails
     }
 
-    const { delivered, verificationUrl } = await sendVerificationEmail({
+    await sendVerificationEmail({
       to: user.email,
       fullName: user.fullName,
       token: verificationToken,
@@ -150,8 +150,6 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       data: {
         email: user.email,
         verificationRequired: true,
-        // Only expose the link when email could not be delivered in development.
-        ...(config.isDevelopment && !delivered ? { devVerificationUrl: verificationUrl } : {}),
       },
     });
   } catch (error: any) {
@@ -508,7 +506,7 @@ export const resendVerificationEmail = async (req: Request, res: Response): Prom
     user.emailVerificationExpires = new Date(Date.now() + VERIFICATION_TOKEN_TTL_MS);
     await user.save();
 
-    const { delivered, verificationUrl } = await sendVerificationEmail({
+    await sendVerificationEmail({
       to: user.email,
       fullName: user.fullName,
       token: verificationToken,
@@ -520,7 +518,6 @@ export const resendVerificationEmail = async (req: Request, res: Response): Prom
       message: 'Email xác thực đã được gửi lại. Vui lòng kiểm tra hộp thư của bạn.',
       data: {
         email: user.email,
-        ...(config.isDevelopment && !delivered ? { devVerificationUrl: verificationUrl } : {}),
       },
     });
   } catch (error: any) {
@@ -694,8 +691,9 @@ export const changePassword = async (req: AuthRequest, res: Response): Promise<v
 export const forgotPassword = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email } = req.body;
+    const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
 
-    if (!email) {
+    if (!normalizedEmail) {
       res.status(400).json({
         success: false,
         message: 'Vui lòng nhập địa chỉ email đã đăng ký',
@@ -703,9 +701,16 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!isValidEmail(normalizedEmail)) {
+      res.status(400).json({
+        success: false,
+        message: 'Địa chỉ email không đúng định dạng',
+      });
+      return;
+    }
+
+    const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
-      // Don't disclose if user doesn't exist for security, but return generic success or standard notice
       res.status(404).json({
         success: false,
         message: 'Không tìm thấy tài khoản nào gắn với email này',
@@ -713,7 +718,22 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    // Generate 6-digit verification code or token
+    const rateLimit = canSendVerificationEmail(normalizedEmail);
+    if (!rateLimit.allowed) {
+      const retryAfter = rateLimit.retryAfterSeconds ?? 0;
+      res.setHeader('Retry-After', String(retryAfter));
+      res.status(429).json({
+        success: false,
+        code: 'VALIDATION_RATE_LIMIT_EXCEEDED',
+        message: `Bạn đã yêu cầu gửi email quá nhiều lần. Vui lòng thử lại sau ${Math.max(
+          1,
+          Math.ceil(retryAfter / 60)
+        )} phút.`,
+      });
+      return;
+    }
+
+    // Generate a 6-digit code, store only its hash in the database.
     const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
     const hashedCode = crypto.createHash('sha256').update(resetCode).digest('hex');
 
@@ -721,14 +741,22 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
     user.resetPasswordExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes expiry
     await user.save();
 
-    // In production, an email would be sent. For this system/demo, we return the reset code in the response
-    // so user can easily test and complete the verification immediately without external mail SMTP dependencies.
+    const { delivered } = await sendPasswordResetEmail({
+      to: user.email,
+      fullName: user.fullName,
+      code: resetCode,
+    });
+    recordVerificationEmailSent(normalizedEmail);
+
     res.status(200).json({
       success: true,
-      message: 'Mã xác nhận đặt lại mật khẩu đã được tạo (hiệu lực trong 15 phút).',
+      message: delivered
+        ? 'Mã xác nhận đặt lại mật khẩu đã được gửi tới email của bạn (hiệu lực trong 15 phút).'
+        : config.isDevelopment
+          ? 'Chưa cấu hình SMTP. Mã xác nhận đã được in ở console của server (chỉ môi trường development).'
+          : 'Yêu cầu đặt lại mật khẩu đã được ghi nhận. Vui lòng kiểm tra email của bạn.',
       data: {
         email: user.email,
-        resetCode, // Provided for instant demo verification
         expiresInMinutes: 15,
       },
     });

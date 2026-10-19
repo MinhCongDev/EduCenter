@@ -56,10 +56,11 @@ export const authService = {
    */
   resendVerificationEmail: async (
     email: string
-  ): Promise<ApiResponse<{ email: string; devVerificationUrl?: string }>> => {
-    const response = await api.post<
-      ApiResponse<{ email: string; devVerificationUrl?: string }>
-    >('/auth/resend-email-verify', { email });
+  ): Promise<ApiResponse<{ email: string }>> => {
+    const response = await api.post<ApiResponse<{ email: string }>>(
+      '/auth/resend-email-verify',
+      { email }
+    );
     return response.data;
   },
 
@@ -106,10 +107,15 @@ export const authService = {
   },
 
   /**
-   * UC11: Forgot Password - Request code/token
+   * UC11: Forgot Password - request a code sent to the registered email
    */
-  forgotPassword: async (data: ForgotPasswordData): Promise<ApiResponse<{ email: string; resetCode: string }>> => {
-    const response = await api.post<ApiResponse<{ email: string; resetCode: string }>>('/auth/forgot-password', data);
+  forgotPassword: async (
+    data: ForgotPasswordData
+  ): Promise<ApiResponse<{ email: string; expiresInMinutes: number }>> => {
+    const response = await api.post<ApiResponse<{ email: string; expiresInMinutes: number }>>(
+      '/auth/forgot-password',
+      data
+    );
     return response.data;
   },
 

@@ -5,7 +5,6 @@ import './EmailVerification.css';
 
 interface ResendSuccess {
   email: string;
-  devVerificationUrl?: string;
 }
 
 const ResendVerificationPage: React.FC = () => {
@@ -31,7 +30,6 @@ const ResendVerificationPage: React.FC = () => {
       const response = await authService.resendVerificationEmail(trimmed);
       setSuccess({
         email: response.data?.email ?? trimmed,
-        devVerificationUrl: response.data?.devVerificationUrl,
       });
     } catch (err: unknown) {
       const message = (
@@ -64,17 +62,6 @@ const ResendVerificationPage: React.FC = () => {
             <p className="verify-note">
               Liên kết có hiệu lực trong 15 phút. Hãy kiểm tra cả thư mục Spam.
             </p>
-
-            {success.devVerificationUrl && (
-              <a
-                className="verify-dev-link"
-                href={success.devVerificationUrl}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Mở liên kết xác thực (dev)
-              </a>
-            )}
 
             <div className="verify-actions">
               <button type="button" className="verify-btn" onClick={() => setSuccess(null)}>

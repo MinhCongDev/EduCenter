@@ -82,7 +82,6 @@ export interface AuthResponse {
 export interface RegisterResult {
   email: string;
   verificationRequired: boolean;
-  devVerificationUrl?: string;
 }
 
 export interface RegisterResponse {

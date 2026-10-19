@@ -68,10 +68,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
   });
   const [registerError, setRegisterError] = useState<string | null>(null);
   const [registerSubmitting, setRegisterSubmitting] = useState(false);
-  const [registerSuccess, setRegisterSuccess] = useState<{
-    email: string;
-    devVerificationUrl?: string;
-  } | null>(null);
+  const [registerSuccess, setRegisterSuccess] = useState<{ email: string } | null>(null);
 
   // ── Handlers ───────────────────────────────────────────────────────────
   const handleLoginChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -220,10 +217,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
       });
 
       // Account created but not logged in – it must verify its email first.
-      setRegisterSuccess({
-        email: response.data.email,
-        devVerificationUrl: response.data.devVerificationUrl,
-      });
+      setRegisterSuccess({ email: response.data.email });
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
@@ -453,17 +447,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
                   Liên kết có hiệu lực trong 15 phút. Nếu không thấy email, hãy kiểm tra thư mục
                   Spam.
                 </p>
-
-                {registerSuccess.devVerificationUrl && (
-                  <a
-                    className="auth-dev-link"
-                    href={registerSuccess.devVerificationUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Mở liên kết xác thực (dev)
-                  </a>
-                )}
 
                 <button
                   type="button"

@@ -1,6 +1,6 @@
 import nodemailer, { Transporter } from 'nodemailer';
 import { config } from '../config';
-import { buildVerificationEmail } from './emailTemplate';
+import { buildPasswordResetEmail, buildVerificationEmail } from './emailTemplate';
 
 let transporter: Transporter | null = null;
 
@@ -30,6 +30,12 @@ export interface SendVerificationEmailInput {
 export interface SendVerificationEmailResult {
   delivered: boolean;
   verificationUrl: string;
+}
+
+export interface SendPasswordResetEmailInput {
+  to: string;
+  fullName: string;
+  code: string;
 }
 
 /**
@@ -71,5 +77,42 @@ export const sendVerificationEmail = async ({
   } catch (error) {
     console.error(`[email] Gửi email xác thực tới ${to} thất bại:`, error);
     return { delivered: false, verificationUrl };
+  }
+};
+
+/**
+ * Send a password-reset code email.
+ * Never throws: a failed/unconfigured SMTP setup must not expose errors to the client.
+ */
+export const sendPasswordResetEmail = async ({
+  to,
+  fullName,
+  code,
+}: SendPasswordResetEmailInput): Promise<{ delivered: boolean }> => {
+  if (!config.isSmtpConfigured) {
+    if (config.isDevelopment) {
+      console.warn(
+        `[email] SMTP chưa được cấu hình. Mã đặt lại mật khẩu cho ${to}: ${code} (log chỉ ở development)`
+      );
+    } else {
+      console.warn('[email] SMTP chưa được cấu hình – không thể gửi email đặt lại mật khẩu.');
+    }
+    return { delivered: false };
+  }
+
+  const { subject, html, text } = buildPasswordResetEmail({ fullName, code });
+
+  try {
+    await getTransporter().sendMail({
+      from: config.smtp.from,
+      to,
+      subject,
+      html,
+      text,
+    });
+    return { delivered: true };
+  } catch (error) {
+    console.error(`[email] Gửi email đặt lại mật khẩu tới ${to} thất bại:`, error);
+    return { delivered: false };
   }
 };
