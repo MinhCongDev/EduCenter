@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { authService } from '../../services/auth.service';
 import type { UserRole } from '../../types';
 import { PASSWORD_POLICY_HINT, getPasswordError } from '../../utils/password';
+import { getMailboxUrl } from '../../utils/mailbox';
 import { ForgotPasswordModal } from '../../components/ForgotPasswordModal';
 import GoogleAuthButton, { GoogleAuthProvider } from '../../components/GoogleAuthButton';
 import './AuthPage.css';
@@ -69,6 +70,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
   const [registerError, setRegisterError] = useState<string | null>(null);
   const [registerSubmitting, setRegisterSubmitting] = useState(false);
   const [registerSuccess, setRegisterSuccess] = useState<{ email: string } | null>(null);
+  const registerMailboxUrl = registerSuccess ? getMailboxUrl(registerSuccess.email) : null;
 
   // ── Handlers ───────────────────────────────────────────────────────────
   const handleLoginChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -447,6 +449,17 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
                   Liên kết có hiệu lực trong 15 phút. Nếu không thấy email, hãy kiểm tra thư mục
                   Spam.
                 </p>
+
+                {registerMailboxUrl && (
+                  <a
+                    className="auth-mailbox-btn"
+                    href={registerMailboxUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    📬 Mở hộp thư của bạn
+                  </a>
+                )}
 
                 <button
                   type="button"

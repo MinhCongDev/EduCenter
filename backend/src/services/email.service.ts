@@ -66,13 +66,14 @@ export const sendVerificationEmail = async ({
   const { subject, html, text } = buildVerificationEmail({ fullName, verifyUrl: verificationUrl });
 
   try {
-    await getTransporter().sendMail({
+    const info = await getTransporter().sendMail({
       from: config.smtp.from,
       to,
       subject,
       html,
       text,
     });
+    console.log(`[email] Đã gửi email xác thực tới ${to} (messageId: ${info.messageId})`);
     return { delivered: true, verificationUrl };
   } catch (error) {
     console.error(`[email] Gửi email xác thực tới ${to} thất bại:`, error);
@@ -103,13 +104,14 @@ export const sendPasswordResetEmail = async ({
   const { subject, html, text } = buildPasswordResetEmail({ fullName, code });
 
   try {
-    await getTransporter().sendMail({
+    const info = await getTransporter().sendMail({
       from: config.smtp.from,
       to,
       subject,
       html,
       text,
     });
+    console.log(`[email] Đã gửi email đặt lại mật khẩu tới ${to} (messageId: ${info.messageId})`);
     return { delivered: true };
   } catch (error) {
     console.error(`[email] Gửi email đặt lại mật khẩu tới ${to} thất bại:`, error);

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { authService } from '../../services/auth.service';
+import { getMailboxUrl } from '../../utils/mailbox';
 import './EmailVerification.css';
 
 interface ResendSuccess {
@@ -62,6 +63,17 @@ const ResendVerificationPage: React.FC = () => {
             <p className="verify-note">
               Liên kết có hiệu lực trong 15 phút. Hãy kiểm tra cả thư mục Spam.
             </p>
+
+            {getMailboxUrl(success.email) && (
+              <a
+                className="verify-mailbox-btn"
+                href={getMailboxUrl(success.email)!}
+                target="_blank"
+                rel="noreferrer"
+              >
+                📬 Mở hộp thư của bạn
+              </a>
+            )}
 
             <div className="verify-actions">
               <button type="button" className="verify-btn" onClick={() => setSuccess(null)}>
