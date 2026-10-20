@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { authService } from '../../services/auth.service';
 import type { ApiResponse } from '../../types';
+import { getApiErrorMessage } from '../../utils/apiError';
 import './EmailVerification.css';
 
 type Status = 'loading' | 'success' | 'invalid' | 'error';
@@ -52,8 +53,7 @@ const VerifyEmailPage: React.FC = () => {
 
         setStatus(isInvalid ? 'invalid' : 'error');
         setMessage(
-          response?.data?.message ||
-            'Không thể xác thực email lúc này. Vui lòng thử lại sau.'
+          getApiErrorMessage(err, 'Không thể xác thực email lúc này. Vui lòng thử lại sau.')
         );
       });
 

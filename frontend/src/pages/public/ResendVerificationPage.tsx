@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { authService } from '../../services/auth.service';
 import { getMailboxUrl } from '../../utils/mailbox';
+import { getApiErrorMessage } from '../../utils/apiError';
 import './EmailVerification.css';
 
 interface ResendSuccess {
@@ -33,10 +34,9 @@ const ResendVerificationPage: React.FC = () => {
         email: response.data?.email ?? trimmed,
       });
     } catch (err: unknown) {
-      const message = (
-        err as { response?: { data?: { message?: string } } }
-      )?.response?.data?.message;
-      setError(message || 'Không thể gửi lại email xác thực. Vui lòng thử lại sau.');
+      setError(
+        getApiErrorMessage(err, 'Không thể gửi lại email xác thực. Vui lòng thử lại sau.')
+      );
     } finally {
       setSubmitting(false);
     }

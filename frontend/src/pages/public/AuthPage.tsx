@@ -5,6 +5,7 @@ import { authService } from '../../services/auth.service';
 import type { UserRole } from '../../types';
 import { PASSWORD_POLICY_HINT, getPasswordError } from '../../utils/password';
 import { getMailboxUrl } from '../../utils/mailbox';
+import { getApiErrorMessage } from '../../utils/apiError';
 import { ForgotPasswordModal } from '../../components/ForgotPasswordModal';
 import GoogleAuthButton, { GoogleAuthProvider } from '../../components/GoogleAuthButton';
 import './AuthPage.css';
@@ -145,9 +146,10 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
       const errorData = (
         err as { response?: { data?: { message?: string; code?: string } } }
       )?.response?.data;
-      const msg =
-        errorData?.message ||
-        'Đăng nhập không thành công. Vui lòng kiểm tra lại email và mật khẩu.';
+      const msg = getApiErrorMessage(
+        err,
+        'Đăng nhập không thành công. Vui lòng kiểm tra lại email và mật khẩu.'
+      );
 
       if (errorData?.code === 'AUTH_ACCOUNT_NOT_VERIFIED') {
         setUnverifiedEmail(loginForm.email.trim());
@@ -166,9 +168,10 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
       await loginWithGoogle(credential);
       navigateAfterAuth();
     } catch (err: unknown) {
-      const message =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        'Đăng nhập bằng Google thất bại. Vui lòng thử lại.';
+      const message = getApiErrorMessage(
+        err,
+        'Đăng nhập bằng Google thất bại. Vui lòng thử lại.'
+      );
       if (mode === 'register') {
         setRegisterError(message);
       } else {
@@ -221,9 +224,10 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
       // Account created but not logged in – it must verify its email first.
       setRegisterSuccess({ email: response.data.email });
     } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        'Đăng ký không thành công. Vui lòng kiểm tra lại thông tin.';
+      const msg = getApiErrorMessage(
+        err,
+        'Đăng ký không thành công. Vui lòng kiểm tra lại thông tin.'
+      );
       setRegisterError(msg);
     } finally {
       setRegisterSubmitting(false);
