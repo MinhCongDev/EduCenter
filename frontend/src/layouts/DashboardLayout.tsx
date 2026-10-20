@@ -42,15 +42,36 @@ const getMenuItems = (role: UserRole): DashboardItem[] => {
     ];
   }
 
-  const roleTasks: Record<Exclude<UserRole, 'TRAINING_STAFF'>, string[]> = {
-    STUDENT: ['Khóa học của tôi', 'Lịch học', 'Kết quả học tập', 'Thông báo'],
-    TEACHER: ['Lớp đang dạy', 'Lịch giảng dạy', 'Bài tập', 'Báo cáo'],
-    DIRECTOR: ['Học viên', 'Nhân sự', 'Báo cáo', 'Cài đặt'],
-  };
+  if (role === 'TEACHER') {
+    return [
+      { label: 'Tổng quan', path: '/teacher/dashboard' },
+      { label: 'Quản lý lớp học', path: '/teacher/dashboard?tab=classes_students' },
+      { label: 'Lịch dạy & Điểm danh', path: '/teacher/dashboard?tab=schedule_attendance' },
+      { label: 'Bài tập & Chấm bài', path: '/teacher/dashboard?tab=assignments_grading' },
+      { label: 'Kết quả học tập', path: '/teacher/dashboard?tab=academic_grades' },
+      { label: 'Báo cáo' },
+      { label: 'Cài đặt' },
+    ];
+  }
+
+  if (role === 'STUDENT') {
+    return [
+      { label: 'Tổng quan', path: '/student/dashboard' },
+      { label: 'Khóa học của tôi', path: '/student/dashboard?tab=courses' },
+      { label: 'Lịch học', path: '/student/dashboard?tab=schedule' },
+      { label: 'Bài tập về nhà', path: '/student/dashboard?tab=assignments' },
+      { label: 'Kết quả học tập', path: '/student/dashboard?tab=grades' },
+      { label: 'Thông báo' },
+      { label: 'Cài đặt' },
+    ];
+  }
 
   return [
     { label: 'Tổng quan', path: dashboardPaths[role] },
-    ...roleTasks[role].map((label) => ({ label })),
+    { label: 'Học viên' },
+    { label: 'Nhân sự' },
+    { label: 'Báo cáo' },
+    { label: 'Cài đặt' },
   ];
 };
 
@@ -79,16 +100,18 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         <div className="dashboard-nav-label">KHÔNG GIAN LÀM VIỆC</div>
         <nav className="dashboard-nav" aria-label="Điều hướng tác vụ">
           {items.map((item) => {
-            const isCurrent = item.path === location.pathname;
+            const currentFull = location.pathname + (location.search || '');
+            const isCurrent = item.path
+              ? item.path.includes('?')
+                ? currentFull === item.path
+                : location.pathname === item.path && (!location.search || location.search === '')
+              : false;
 
             return item.path ? (
               <NavLink
                 key={item.label}
                 to={item.path}
-                end
-                className={({ isActive }) =>
-                  `dashboard-nav-item${isActive ? ' is-active' : ''}`
-                }
+                className={`dashboard-nav-item${isCurrent ? ' is-active' : ''}`}
                 aria-current={isCurrent ? 'page' : undefined}
               >
                 {item.label}

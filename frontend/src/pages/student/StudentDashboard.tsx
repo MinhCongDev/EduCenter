@@ -32,21 +32,24 @@ const StudentDashboard: React.FC = () => {
     }
   };
 
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Chào buổi sáng' : hour < 18 ? 'Chào buổi chiều' : 'Chào buổi tối';
+
   return (
     <div className="dash-container">
       {/* ── Welcome Banner ── */}
-      <div className="dash-banner">
+      <div className="dash-banner" style={{ background: 'linear-gradient(135deg, #064e3b 0%, #065f46 50%, #047857 100%)' }}>
         <div className="dash-banner-content">
           <div className="dash-banner-badge">
-            🎓 Cổng Học Viên • EduCenter Portal
+            Cổng Học Viên • EduCenter Portal
           </div>
-          <h1>Chào mừng, {user?.fullName || 'Học viên'}!</h1>
+          <h1>{greeting}, {user?.fullName || 'Học viên'}!</h1>
           <p>Chúc bạn một tuần học tập hiệu quả. Bạn có 1 buổi học diễn ra vào tối nay!</p>
         </div>
         <div className="dash-banner-right">
           <div className="dash-date-pill">
-            <div>📍 Lớp học: WEB-K24-A</div>
-            <div className="sub">Phòng Lab 302 • 18:30 Tối nay</div>
+            <div>Trạng thái: Đang theo học</div>
+            <div className="sub">Kỳ tuyển sinh Đợt 4 • Năm 2026</div>
           </div>
         </div>
       </div>
@@ -56,34 +59,30 @@ const StudentDashboard: React.FC = () => {
         <button
           type="button"
           className="dash-quick-btn primary"
-          onClick={() => alert('Mở tài liệu và slide của buổi học tối nay')}
+          onClick={() => alert('Mở danh sách khóa học của tôi')}
         >
-          <span>📖</span>
-          <span>Tài Liệu Buổi Học Hôm Nay</span>
+          Khóa học của tôi
         </button>
         <button
           type="button"
           className="dash-quick-btn"
           onClick={() => alert('Chuyển tới danh sách bài tập cần hoàn thành')}
         >
-          <span>📝</span>
-          <span>Nộp Bài Tập Về Nhà</span>
+          Nộp bài tập về nhà
         </button>
         <button
           type="button"
           className="dash-quick-btn"
-          onClick={() => alert('Mở bảng theo dõi chuyên cần và điểm danh')}
+          onClick={() => alert('Mở bảng theo dõi chuyên cần và lịch học')}
         >
-          <span>📅</span>
-          <span>Xem Lịch Học & Điểm Danh</span>
+          Xem lịch học
         </button>
         <button
           type="button"
           className="dash-quick-btn"
-          onClick={() => alert('Mở form góp ý và đánh giá buổi học')}
+          onClick={() => alert('Mở bảng điểm và kết quả học tập')}
         >
-          <span>💬</span>
-          <span>Góp Ý Cho Giảng Viên</span>
+          Kết quả học tập
         </button>
       </div>
 
