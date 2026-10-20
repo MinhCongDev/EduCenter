@@ -8,17 +8,14 @@ import { formatDate, bandColor, bandLabel, formatVND } from '../../utils/format'
 
 const typeCfg = (t: GradeEvaluationType) => {
   const map: Record<GradeEvaluationType, { label: string; color: string; icon: string }> = {
-    LISTENING: { label: 'Listening', color: '#3b82f6', icon: '🎧' },
-    READING: { label: 'Reading', color: '#10b981', icon: '📖' },
-    WRITING: { label: 'Writing', color: '#f59e0b', icon: '✍️' },
-    SPEAKING: { label: 'Speaking', color: '#8b5cf6', icon: '🎙️' },
-    OVERALL: { label: 'Overall', color: '#ef4444', icon: '🏆' },
-    QUIZ: { label: 'Quiz', color: '#06b6d4', icon: '📝' },
-    MIDTERM: { label: 'Giữa kỳ', color: '#ec4899', icon: '📋' },
-    FINAL: { label: 'Cuối kỳ', color: '#dc2626', icon: '🎓' },
-    OTHER: { label: 'Khác', color: '#64748b', icon: '📊' },
+    MOCK_TEST:            { label: 'Mock Test',      color: '#3b82f6', icon: '🎧' },
+    MID_TERM:             { label: 'Giữa kỳ',       color: '#ec4899', icon: '📋' },
+    FINAL_TEST:           { label: 'Cuối kỳ',       color: '#dc2626', icon: '🎓' },
+    ASSIGNMENT:           { label: 'Bài tập',       color: '#06b6d4', icon: '📝' },
+    SPEAKING_ASSESSMENT:  { label: 'Speaking',       color: '#8b5cf6', icon: '🎙️' },
+    WRITING_ASSESSMENT:  { label: 'Writing',        color: '#f59e0b', icon: '✍️' },
   };
-  return map[t] || map.OTHER;
+  return map[t] ?? { label: t, color: '#64748b', icon: '📊' };
 };
 
 const GradesPage: React.FC = () => {
