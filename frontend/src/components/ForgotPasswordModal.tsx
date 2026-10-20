@@ -38,13 +38,38 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
     try {
       const res = await authService.forgotPassword({ email: email.trim() });
       if (res.success) {
-        const receivedCode = res.data?.resetCode || '';
-        setResetCode(receivedCode);
-        setMessage(`Mã xác thực đã được gửi! Mã xác nhận của bạn: ${receivedCode}`);
+        setResetCode('');
+        setMessage(
+          `Mã xác nhận đã được gửi tới ${email.trim()}. Vui lòng kiểm tra hộp thư (cả thư mục Spam) rồi nhập mã 6 chữ số bên dưới.`
+        );
         setStep(2);
       }
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Có lỗi xảy ra khi yêu cầu cấp lại mật khẩu.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleResendCode = async () => {
+    if (!email.trim()) {
+      setStep(1);
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError(null);
+    setMessage(null);
+
+    try {
+      const res = await authService.forgotPassword({ email: email.trim() });
+      if (res.success) {
+        setMessage(
+          `Mã xác nhận mới đã được gửi tới ${email.trim()}. Vui lòng kiểm tra email của bạn.`
+        );
+      }
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'Không thể gửi lại mã xác nhận.');
     } finally {
       setIsSubmitting(false);
     }
@@ -321,13 +346,14 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <button
                   type="button"
-                  onClick={() => setStep(1)}
+                  onClick={handleResendCode}
+                  disabled={isSubmitting}
                   style={{
                     background: 'none',
                     border: 'none',
                     color: '#64748b',
                     fontSize: '0.85rem',
-                    cursor: 'pointer',
+                    cursor: isSubmitting ? 'not-allowed' : 'pointer',
                     padding: 0,
                   }}
                 >
