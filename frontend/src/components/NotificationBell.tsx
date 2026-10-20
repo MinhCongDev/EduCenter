@@ -2,18 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { studentService } from '../services/student.service';
 import { useToast } from '../contexts/ToastContext';
-import type { NotificationItem, NotificationType } from '../types';
-
-const typeMeta: Record<NotificationType, { icon: string; color: string }> = {
-  GRADE_PUBLISHED: { icon: '📊', color: '#3b82f6' },
-  ASSIGNMENT_GRADED: { icon: '✅', color: '#10b981' },
-  REQUEST_APPROVED: { icon: '👍', color: '#10b981' },
-  REQUEST_REJECTED: { icon: '⛔', color: '#ef4444' },
-  PAYMENT_RECEIVED: { icon: '💰', color: '#10b981' },
-  CLASS_ANNOUNCEMENT: { icon: '📢', color: '#8b5cf6' },
-  ATTENDANCE_MARKED: { icon: '🗓️', color: '#f59e0b' },
-  SYSTEM: { icon: 'ℹ️', color: '#64748b' },
-};
+import type { NotificationItem } from '../types';
+import { NOTIFICATION_META } from '../types';
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -75,12 +65,12 @@ const NotificationBell: React.FC = () => {
 
   const handleItemClick = async (n: NotificationItem) => {
     setOpen(false);
-    if (!n.read) {
+    if (!n.isRead) {
       try {
         await studentService.markNotificationAsRead(n._id);
         setItems((prev) =>
           prev.map((x) =>
-            x._id === n._id ? { ...x, read: true, readAt: new Date().toISOString() } : x
+            x._id === n._id ? { ...x, isRead: true } : x
           )
         );
         setUnread((u) => Math.max(0, u - 1));
@@ -88,7 +78,7 @@ const NotificationBell: React.FC = () => {
         // ignore
       }
     }
-    if (n.link) navigate(n.link);
+    if (n.linkUrl) navigate(n.linkUrl);
   };
 
   const handleMarkAll = async () => {
@@ -97,7 +87,7 @@ const NotificationBell: React.FC = () => {
       if (res.success) {
         toast.success(res.message || 'Đã đánh dấu tất cả là đã đọc');
         setItems((prev) =>
-          prev.map((x) => ({ ...x, read: true, readAt: new Date().toISOString() }))
+          prev.map((x) => ({ ...x, isRead: true }))
         );
         setUnread(0);
       }
@@ -211,7 +201,7 @@ const NotificationBell: React.FC = () => {
           ) : (
             <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
               {items.map((n) => {
-                const meta = typeMeta[n.type] || typeMeta.SYSTEM;
+                const meta = NOTIFICATION_META[n.type] ?? NOTIFICATION_META.INFO;
                 return (
                   <li
                     key={n._id}
@@ -220,7 +210,7 @@ const NotificationBell: React.FC = () => {
                       padding: '0.75rem 1rem',
                       borderBottom: '1px solid #f1f5f9',
                       cursor: 'pointer',
-                      background: n.read ? 'white' : 'rgba(59,130,246,0.05)',
+                      background: n.isRead ? 'white' : 'rgba(59,130,246,0.05)',
                       display: 'flex',
                       gap: '0.75rem',
                       alignItems: 'flex-start',
@@ -246,7 +236,7 @@ const NotificationBell: React.FC = () => {
                       <div
                         style={{
                           fontSize: '0.875rem',
-                          fontWeight: n.read ? 400 : 600,
+                          fontWeight: n.isRead ? 400 : 600,
                           color: '#0f172a',
                           marginBottom: 2,
                         }}
@@ -264,7 +254,7 @@ const NotificationBell: React.FC = () => {
                           overflow: 'hidden',
                         }}
                       >
-                        {n.message}
+                        {n.content}
                       </div>
                       <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
                         {timeAgo(n.createdAt)}

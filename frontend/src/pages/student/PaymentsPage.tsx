@@ -11,7 +11,7 @@ type FilterKey = 'ALL' | PaymentStatus;
 
 const statusCfg = (s: PaymentStatus) => {
   const map: Record<PaymentStatus, { label: string; cls: string; icon: string }> = {
-    PAID: { label: 'Đã thanh toán', cls: 'badge-green', icon: '✅' },
+    SUCCESS: { label: 'Đã thanh toán', cls: 'badge-green', icon: '✅' },
     PENDING: { label: 'Chờ thanh toán', cls: 'badge-amber', icon: '⏳' },
     FAILED: { label: 'Thất bại', cls: 'badge-purple', icon: '❌' },
     REFUNDED: { label: 'Đã hoàn tiền', cls: 'badge-blue', icon: '💸' },
@@ -56,9 +56,9 @@ const PaymentsPage: React.FC = () => {
       const q = search.trim().toLowerCase();
       const cls = p.class as any;
       const hay = [
-        p.transactionId,
+        p.transactionCode,
         p.method,
-        p.notes,
+        p.note,
         cls?.classCode,
         cls?.course?.code,
         cls?.course?.title,
@@ -75,7 +75,7 @@ const PaymentsPage: React.FC = () => {
 
   const tabs: { key: FilterKey; label: string; count: number }[] = [
     { key: 'ALL', label: 'Tất cả', count: payments.length },
-    { key: 'PAID', label: '✅ Đã thanh toán', count: payments.filter((p) => p.status === 'PAID').length },
+    { key: 'SUCCESS', label: '✅ Đã thanh toán', count: payments.filter((p) => p.status === 'SUCCESS').length },
     { key: 'PENDING', label: '⏳ Chờ thanh toán', count: payments.filter((p) => p.status === 'PENDING').length },
     { key: 'FAILED', label: '❌ Thất bại', count: payments.filter((p) => p.status === 'FAILED').length },
   ];
@@ -199,7 +199,10 @@ const PaymentsPage: React.FC = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {filtered.map((p) => {
             const status = statusCfg(p.status);
+            // p.class is populated as: { classCode, room, course: { code, title } }
             const cls = p.class as any;
+            const displayCode = typeof cls === 'string' ? cls : cls?.classCode;
+            const displayCourse = typeof cls === 'string' ? null : cls?.course;
             return (
               <div key={p._id} className="dash-card">
                 <div className="dash-card-header">
@@ -210,11 +213,13 @@ const PaymentsPage: React.FC = () => {
                 </div>
 
                 <div className="dash-subcard">
-                  {cls && (
+                  {(displayCode || p.course) && (
                     <div style={{ marginBottom: '0.75rem' }}>
                       <div className="dash-subcard-label">Lớp học</div>
                       <div className="dash-subcard-value">
-                        {cls.course?.code ? `${cls.course.code} — ${cls.course.title}` : cls.classCode}
+                        {displayCourse?.code
+                          ? `${displayCourse.code} — ${displayCourse.title}`
+                          : displayCode ?? ''}
                       </div>
                     </div>
                   )}
@@ -225,7 +230,7 @@ const PaymentsPage: React.FC = () => {
                       gap: '0.75rem 1.5rem',
                     }}
                   >
-                    <Field label="Mã giao dịch" value={p.transactionId || p._id} />
+                    <Field label="Mã giao dịch" value={p.transactionCode || p._id} />
                     <Field
                       label="Số tiền"
                       value={

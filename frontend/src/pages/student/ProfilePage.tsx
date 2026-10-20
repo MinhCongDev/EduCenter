@@ -251,8 +251,13 @@ const ProfilePage: React.FC = () => {
                     </span>
                   }
                 />
-                {student.major && <Field label="Chuyên ngành" value={student.major} />}
-                {student.birthDate && <Field label="Ngày sinh (sinh viên)" value={formatDate(student.birthDate)} />}
+                {student.currentBand != null && (
+                  <Field label="Band hiện tại" value={`IELTS ${student.currentBand}`} />
+                )}
+                {student.targetBand != null && (
+                  <Field label="Band mục tiêu" value={`IELTS ${student.targetBand}`} />
+                )}
+                {student.dob && <Field label="Ngày sinh" value={formatDate(student.dob)} />}
               </div>
             </div>
           )}

@@ -463,13 +463,13 @@ export const getPayments = async (req: AuthRequest, res: Response): Promise<void
 
     const payments = await Payment.find({ student: user._id })
       .populate({
-        path: 'course',
-        select: 'code title',
+        path: 'class',
+        select: 'classCode room',
+        populate: { path: 'course', select: 'code title' },
       })
       .populate({
-        path: 'enrollment',
-        select: 'class',
-        populate: { path: 'class', select: 'classCode room' },
+        path: 'course',
+        select: 'code title',
       })
       .sort({ createdAt: -1 });
 

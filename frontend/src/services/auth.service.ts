@@ -14,14 +14,6 @@ import type {
 const TOKEN_KEY = 'educenter_token';
 const USER_KEY = 'educenter_user';
 
-export interface UpdateProfilePayload {
-  fullName?: string;
-  phone?: string;
-  address?: string;
-  dob?: string;
-  avatarUrl?: string;
-}
-
 export const authService = {
   /**
    * UC09: Login with email and password
@@ -81,7 +73,10 @@ export const authService = {
    * UC11: Forgot Password - Request code/token
    */
   forgotPassword: async (data: ForgotPasswordData): Promise<ApiResponse<{ email: string; resetCode: string }>> => {
-    const response = await api.post<ApiResponse<{ email: string; resetCode: string }>>('/auth/forgot-password', data);
+    const response = await api.post<ApiResponse<{ email: string; resetCode: string }>>(
+      '/auth/forgot-password',
+      data
+    );
     return response.data;
   },
 
@@ -90,31 +85,6 @@ export const authService = {
    */
   resetPassword: async (data: ResetPasswordData): Promise<ApiResponse> => {
     const response = await api.post<ApiResponse>('/auth/reset-password', data);
-    return response.data;
-  },
-
-  /**
-   * Update current user's profile
-   */
-  updateProfile: async (
-    payload: UpdateProfilePayload
-  ): Promise<ApiResponse<{ user: User }>> => {
-    const response = await api.put<ApiResponse<{ user: User }>>('/auth/profile', payload);
-    if (response.data.success && response.data.data?.user) {
-      localStorage.setItem(USER_KEY, JSON.stringify(response.data.data.user));
-    }
-    return response.data;
-  },
-
-  /**
-   * Change password
-   */
-  changePassword: async (payload: {
-    currentPassword: string;
-    newPassword: string;
-    confirmPassword?: string;
-  }): Promise<ApiResponse> => {
-    const response = await api.post<ApiResponse>('/auth/change-password', payload);
     return response.data;
   },
 

@@ -456,7 +456,15 @@ export interface Payment {
   _id: string;
   student: string;
   enrollment?: string;
-  course?: Pick<Course, '_id' | 'code' | 'title'>;
+  // class may be populated: { classCode, room, course: { code, title } }
+  // or just an ObjectId string
+  class?: string | {
+    classCode: string;
+    room?: string;
+    course?: { code: string; title: string };
+  };
+  // course may be populated: { code, title } or just an ObjectId string
+  course?: string | { code: string; title: string };
   amount: number;
   method: PaymentMethod;
   transactionCode?: string;
@@ -487,8 +495,8 @@ export interface ChangeRequest {
   teacher?: string;
   requesterRole: 'STUDENT' | 'TEACHER';
   requestType: RequestType;
-  currentClass: string;
-  targetClass?: string;
+  currentClass: string | { classCode: string };
+  targetClass?: string | { classCode: string };
   currentSchedule?: string;
   targetSchedule?: string;
   sessionDate?: string;
@@ -541,19 +549,41 @@ export interface DashboardData {
 }
 
 // ─── Notifications (M4) – aligned with main's schema: recipient, isRead, content ───
-export type NotificationType = 'INFO' | 'ALERT' | 'SUCCESS' | 'WARNING';
+// Supports both main's generic types (INFO/ALERT/SUCCESS/WARNING) and
+// student-specific semantic types for rich rendering in the bell UI.
+export type NotificationType =
+  | 'INFO' | 'ALERT' | 'SUCCESS' | 'WARNING'  // main schema
+  | 'GRADE_PUBLISHED' | 'ASSIGNMENT_GRADED'   // student-specific
+  | 'REQUEST_APPROVED' | 'REQUEST_REJECTED'
+  | 'PAYMENT_RECEIVED' | 'CLASS_ANNOUNCEMENT'
+  | 'ATTENDANCE_MARKED';
 
 export interface NotificationItem {
   _id: string;
   recipient: string;
   title: string;
-  content: string;
+  content: string;   // main uses 'content' (not 'message')
   type: NotificationType;
-  isRead: boolean;
-  linkUrl?: string;
+  isRead: boolean;  // main uses 'isRead' (not 'read')
+  linkUrl?: string; // main uses 'linkUrl' (not 'link')
   createdAt: string;
   updatedAt: string;
 }
+
+// Notification type metadata for NotificationBell rendering
+export const NOTIFICATION_META: Record<NotificationType, { icon: string; color: string; label: string }> = {
+  INFO:               { icon: 'ℹ️',  color: '#3b82f6', label: 'Thông tin' },
+  ALERT:              { icon: '🚨',  color: '#f59e0b', label: 'Cảnh báo' },
+  SUCCESS:            { icon: '✅',  color: '#10b981', label: 'Thành công' },
+  WARNING:            { icon: '⚠️',  color: '#f97316', label: 'Cảnh báo' },
+  GRADE_PUBLISHED:    { icon: '📊',  color: '#3b82f6', label: 'Điểm mới' },
+  ASSIGNMENT_GRADED:  { icon: '✅',  color: '#10b981', label: 'Chấm bài' },
+  REQUEST_APPROVED:   { icon: '👍',  color: '#10b981', label: 'Duyệt yêu cầu' },
+  REQUEST_REJECTED:   { icon: '⛔',  color: '#ef4444', label: 'Từ chối' },
+  PAYMENT_RECEIVED:   { icon: '💰',  color: '#10b981', label: 'Thanh toán' },
+  CLASS_ANNOUNCEMENT:{ icon: '📢',  color: '#8b5cf6', label: 'Thông báo lớp' },
+  ATTENDANCE_MARKED:  { icon: '🗓️',  color: '#f59e0b', label: 'Điểm danh' },
+};
 
 // ─── Toast & UI ──────────────────────────
 export type ToastType = 'success' | 'error' | 'warning' | 'info';

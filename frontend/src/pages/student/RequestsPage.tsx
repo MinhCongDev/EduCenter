@@ -41,7 +41,7 @@ const RequestsPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
 
   const [form, setForm] = useState<CreateChangeRequestInput>({
-    type: 'CHANGE_CLASS',
+    requestType: 'CLASS_CHANGE',
     reason: '',
     currentClassCode: '',
     targetClassCode: '',
@@ -70,7 +70,7 @@ const RequestsPage: React.FC = () => {
 
   const resetForm = () => {
     setForm({
-      type: 'CHANGE_CLASS',
+      requestType: 'CLASS_CHANGE',
       reason: '',
       currentClassCode: '',
       targetClassCode: '',
@@ -86,7 +86,7 @@ const RequestsPage: React.FC = () => {
       setFormError('Lý do phải có ít nhất 5 ký tự');
       return;
     }
-    if ((form.type === 'CHANGE_CLASS' || form.type === 'CHANGE_SCHEDULE') && !form.currentClassCode?.trim()) {
+    if ((form.requestType === 'CHANGE_CLASS' || form.requestType === 'CHANGE_SCHEDULE') && !form.currentClassCode?.trim()) {
       setFormError('Vui lòng nhập mã lớp hiện tại');
       return;
     }
@@ -140,8 +140,8 @@ const RequestsPage: React.FC = () => {
     { key: 'REJECTED', label: '❌ Từ chối', count: requests.filter((r) => r.status === 'REJECTED').length },
   ];
 
-  const showScheduleFields = form.type === 'CHANGE_SCHEDULE';
-  const showTargetClass = form.type === 'CHANGE_CLASS';
+  const showScheduleFields = form.requestType === 'CHANGE_SCHEDULE';
+  const showTargetClass = form.requestType === 'CHANGE_CLASS';
 
   return (
     <div className="dash-container">
@@ -274,9 +274,9 @@ const RequestsPage: React.FC = () => {
                 <div>
                   <label className="dash-subcard-label">Loại yêu cầu *</label>
                   <select
-                    value={form.type}
+                    value={form.requestType}
                     onChange={(e) =>
-                      setForm({ ...form, type: e.target.value as ChangeRequestType })
+                      setForm({ ...form, requestType: e.target.value as ChangeRequestType })
                     }
                     style={inputStyle}
                   >
@@ -285,7 +285,7 @@ const RequestsPage: React.FC = () => {
                     <option value="WITHDRAW">🚪 Rút khỏi lớp</option>
                   </select>
                 </div>
-                {form.type !== 'WITHDRAW' && (
+                {form.requestType !== 'WITHDRAW' && (
                   <div>
                     <label className="dash-subcard-label">Mã lớp hiện tại *</label>
                     <input
@@ -385,9 +385,9 @@ const RequestsPage: React.FC = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {filtered.map((r) => {
             const status = statusCfg(r.status);
-            const type = typeCfg(r.type);
-            const currentCode = (r.currentClass as any)?.classCode || r.currentClassCode;
-            const targetCode = (r.targetClass as any)?.classCode || r.targetClassCode;
+            const type = typeCfg(r.requestType);
+            const currentCode = (r.currentClass as any)?.classCode || r.currentClass;
+            const targetCode = (r.targetClass as any)?.classCode || r.targetClass;
             return (
               <div key={r._id} className="dash-card">
                 <div className="dash-card-header">
