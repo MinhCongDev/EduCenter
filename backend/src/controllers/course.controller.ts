@@ -15,6 +15,7 @@ export const getCourses = async (req: Request, res: Response): Promise<void> => 
       level,
       category,
       format,
+      status,
       minPrice,
       maxPrice,
       sortBy = 'newest',
@@ -22,7 +23,12 @@ export const getCourses = async (req: Request, res: Response): Promise<void> => 
       limit = 20,
     } = req.query;
 
-    const query: any = { status: 'ACTIVE' };
+    const query: any = {};
+    if (status && status !== 'ALL') {
+      query.status = status;
+    } else if (!status) {
+      query.status = 'ACTIVE';
+    }
 
     // UC04: Search Courses by keyword
     if (search && typeof search === 'string' && search.trim() !== '') {
@@ -201,7 +207,12 @@ export const createCourse = async (req: Request, res: Response): Promise<void> =
 export const updateCourse = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const course = await Course.findByIdAndUpdate(id, req.body, { new: true, runValidators: true });
+    const updateData = {
+      ...req.body,
+      ...(req.body.code ? { code: req.body.code.toUpperCase() } : {}),
+    };
+
+    const course = await Course.findByIdAndUpdate(id, updateData, { new: true, runValidators: true });
 
     if (!course) {
       res.status(404).json({

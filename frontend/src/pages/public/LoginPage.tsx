@@ -116,7 +116,6 @@ const LoginPage: React.FC = () => {
       </div>
     );
   }
-
   return (
     <div className="auth-page">
       <div className="auth-card" style={{ maxWidth: '440px' }}>

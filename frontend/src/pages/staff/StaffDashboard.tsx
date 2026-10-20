@@ -1,8 +1,117 @@
-import React, { useState } from 'react';
+
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+
+
 import { useAuth } from '../../contexts/AuthContext';
+import { courseService } from '../../services/course.service';
+
+interface DashboardStats {
+  totalCourses: number;
+  activeCourses: number;
+  inactiveCourses: number;
+}
 
 const StaffDashboard: React.FC = () => {
   const { user } = useAuth();
+  const [stats, setStats] = useState<DashboardStats>({
+    totalCourses: 0,
+    activeCourses: 0,
+    inactiveCourses: 0,
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const [all, active, inactive] = await Promise.all([
+          courseService.getCourses({ limit: 1 }),
+          courseService.getCourses({ status: 'ACTIVE', limit: 1 }),
+          courseService.getCourses({ status: 'INACTIVE', limit: 1 }),
+        ]);
+        setStats({
+          totalCourses: all.pagination?.total ?? 0,
+          activeCourses: active.pagination?.total ?? 0,
+          inactiveCourses: inactive.pagination?.total ?? 0,
+        });
+      } catch {
+        // backend might not be running – keep zeros
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  const statCards = [
+    {
+      id: 'stat-total-courses',
+      icon: '📚',
+      label: 'Tổng khóa học',
+      value: loading ? '…' : stats.totalCourses.toString(),
+      color: 'var(--primary-500)',
+      bg: 'var(--primary-50)',
+    },
+    {
+      id: 'stat-active-courses',
+      icon: '✅',
+      label: 'Đang hoạt động',
+      value: loading ? '…' : stats.activeCourses.toString(),
+      color: 'var(--success)',
+      bg: 'rgba(16,185,129,0.08)',
+    },
+    {
+      id: 'stat-inactive-courses',
+      icon: '⏸️',
+      label: 'Tạm dừng',
+      value: loading ? '…' : stats.inactiveCourses.toString(),
+      color: 'var(--warning)',
+      bg: 'rgba(245,158,11,0.08)',
+    },
+    {
+      id: 'stat-students',
+      icon: '👩‍🎓',
+      label: 'Học viên',
+      value: '–',
+      color: 'var(--accent-500)',
+      bg: 'rgba(6,182,212,0.08)',
+    },
+    {
+      id: 'stat-teachers',
+      icon: '👨‍🏫',
+      label: 'Giảng viên',
+      value: '–',
+      color: 'var(--primary-600)',
+      bg: 'var(--primary-50)',
+    },
+    {
+      id: 'stat-enrollments',
+      icon: '📋',
+      label: 'Đăng ký',
+      value: '–',
+      color: 'var(--info)',
+      bg: 'rgba(59,130,246,0.08)',
+    },
+  ];
+
+  const quickActions = [
+    {
+      id: 'action-manage-courses',
+      title: 'Quản lý khóa học',
+      description: 'Thêm, sửa, xóa các khóa học',
+      path: '/staff/courses',
+    },
+    {
+      id: 'action-manage-classes',
+      title: 'Quản lý lớp học',
+      description: 'Tổ chức và quản lý lịch lớp',
+      path: '/staff/classes',
+    },
+  ];
+
+  // Get greeting based on current hour
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Chào buổi sáng' : hour < 18 ? 'Chào buổi chiều' : 'Chào buổi tối';
 
   const [enrollments, setEnrollments] = useState([
     {
@@ -53,19 +162,20 @@ const StaffDashboard: React.FC = () => {
   };
 
   return (
+
     <div className="dash-container">
       {/* ── Welcome Banner ── */}
       <div className="dash-banner" style={{ background: 'linear-gradient(135deg, #064e3b 0%, #065f46 50%, #047857 100%)' }}>
         <div className="dash-banner-content">
           <div className="dash-banner-badge">
-            📋 Phòng Giáo Vụ • Quản Lý Đào Tạo
+            Phòng Giáo vụ • Quản lý đào tạo
           </div>
-          <h1>Xin chào cán bộ, {user?.fullName || 'Giáo vụ'}!</h1>
+          <h1>{greeting}, {user?.fullName || 'Cán bộ Giáo vụ'}!</h1>
           <p>Quản lý tuyển sinh, phân bổ lớp học, giảng viên và tiếp nhận học viên trung tâm.</p>
         </div>
         <div className="dash-banner-right">
           <div className="dash-date-pill">
-            <div>⚡ Trạng thái: Sẵn sàng</div>
+            <div>Trạng thái: Sẵn sàng</div>
             <div className="sub">Kỳ tuyển sinh Đợt 4 • Năm 2026</div>
           </div>
         </div>
@@ -73,38 +183,12 @@ const StaffDashboard: React.FC = () => {
 
       {/* ── Quick Action Bar ── */}
       <div className="dash-actions-row">
-        <button
-          type="button"
-          className="dash-quick-btn primary"
-          onClick={() => alert('Mở form tạo lớp học mới')}
-        >
-          <span>➕</span>
-          <span>Mở Lớp Học Mới</span>
-        </button>
-        <button
-          type="button"
-          className="dash-quick-btn"
-          onClick={() => alert('Mở form ghi danh học viên thủ công')}
-        >
-          <span>👤</span>
-          <span>Thêm Học Viên Thủ Công</span>
-        </button>
-        <button
-          type="button"
-          className="dash-quick-btn"
-          onClick={() => alert('Mở form tạo chương trình khóa học')}
-        >
-          <span>📚</span>
-          <span>Thêm Khóa Học Mới</span>
-        </button>
-        <button
-          type="button"
-          className="dash-quick-btn"
-          onClick={() => alert('Đang xuất danh sách tổng hợp điểm danh & sĩ số')}
-        >
-          <span>📑</span>
-          <span>Xuất Báo Cáo Sĩ Số</span>
-        </button>
+        <Link to="/staff/courses" className="dash-quick-btn primary">
+          Quản lý khóa học
+        </Link>
+        <Link to="/staff/classes" className="dash-quick-btn">
+          Quản lý lớp học
+        </Link>
       </div>
 
       {/* ── Key Metrics ── */}
@@ -344,7 +428,67 @@ const StaffDashboard: React.FC = () => {
             </div>
           </div>
         </div>
+
       </div>
+
+      {/* ── Stats Grid ── */}
+      <section className="staff-section" aria-label="Thống kê tổng quan">
+        <div className="staff-section-header">
+          <h2 className="staff-section-title">Tổng quan</h2>
+        </div>
+        <div className="staff-stats-grid">
+          {statCards.map((card) => (
+            <div
+              key={card.id}
+              id={card.id}
+              className="staff-stat-card"
+              style={{ '--card-color': card.color, '--card-bg': card.bg } as React.CSSProperties}
+            >
+              <div className="staff-stat-icon-wrap">
+                <span className="staff-stat-icon">{card.icon}</span>
+              </div>
+              <div className="staff-stat-info">
+                <span className="staff-stat-value">{card.value}</span>
+                <span className="staff-stat-label">{card.label}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Quick Actions ── */}
+      <section className="staff-section" aria-label="Quản lý nhanh">
+        <div className="staff-section-header">
+          <h2 className="staff-section-title">Quản lý nhanh</h2>
+          <p className="staff-section-subtitle">Truy cập nhanh các chức năng quản lý</p>
+        </div>
+        <div className="staff-actions-grid">
+          {quickActions.map((action) => (
+            <Link
+              key={action.id}
+              id={action.id}
+              to={action.path}
+              className="staff-action-card"
+            >
+              <div className="staff-action-content">
+                <h3 className="staff-action-title">{action.title}</h3>
+                <p className="staff-action-desc">{action.description}</p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Recent Activity placeholder ── */}
+      <section className="staff-section" aria-label="Hoạt động gần đây">
+        <div className="staff-section-header">
+          <h2 className="staff-section-title">Hoạt động gần đây</h2>
+        </div>
+        <div className="staff-empty-state">
+          <span className="staff-empty-icon">📡</span>
+          <p>Kết nối backend để hiển thị dữ liệu thực tế.</p>
+        </div>
+      </section>
     </div>
   );
 };

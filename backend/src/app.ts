@@ -8,6 +8,7 @@ import { authRouter } from './routes/auth.routes';
 import { centerRouter } from './routes/center.routes';
 import { courseRouter } from './routes/course.routes';
 import { announcementRouter } from './routes/announcement.routes';
+import { classRouter } from './routes/class.routes';
 import { teacherRouter } from './routes/teacher.routes';
 import { errorHandler } from './middlewares/error.middleware';
 import { notFound } from './middlewares/notFound.middleware';
@@ -53,6 +54,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/center', centerRouter);
 app.use('/api/courses', courseRouter);
 app.use('/api/announcements', announcementRouter);
+app.use('/api/classes', classRouter);
 app.use('/api/teacher', teacherRouter);
 
 // ===========================

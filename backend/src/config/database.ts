@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import dns from 'node:dns';
 import { config } from './index';
 
 let isConnected = false;
@@ -10,6 +11,16 @@ export const connectDB = async (): Promise<void> => {
   }
 
   try {
+    // Optional resolver override for machines whose system DNS proxy is unavailable.
+    const dnsServers = process.env.MONGODB_DNS_SERVERS
+      ?.split(',')
+      .map((server) => server.trim())
+      .filter(Boolean);
+
+    if (dnsServers?.length) {
+      dns.setServers(dnsServers);
+    }
+
     const conn = await mongoose.connect(config.mongodbUri, {
       // Recommended options for Mongoose 8+
     });
