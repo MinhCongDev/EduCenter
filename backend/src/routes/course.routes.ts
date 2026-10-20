@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { authenticate, authorize } from '../middlewares/auth.middleware';
 import {
   getCourses,
   getCourseById,
@@ -6,7 +7,6 @@ import {
   updateCourse,
   deleteCourse,
 } from '../controllers/course.controller';
-import { authenticate, authorize } from '../middlewares/auth.middleware';
 
 const router = Router();
 

@@ -189,6 +189,7 @@ export interface CourseQueryParams {
   level?: string;
   category?: string;
   format?: string;
+  status?: string;
   minPrice?: number;
   maxPrice?: number;
   sortBy?: 'newest' | 'price_asc' | 'price_desc' | 'duration' | 'title';
@@ -257,21 +258,7 @@ export interface NavItem {
 }
 
 // ── Course Types ─────────────────────────────
-export type CourseStatus = 'ACTIVE' | 'INACTIVE';
-
-export interface Course {
-  _id: string;
-  code: string;
-  title: string;
-  description: string;
-  category: string;
-  durationWeeks: number;
-  tuitionFee: number;
-  status: CourseStatus;
-  syllabus: string[];
-  createdAt: string;
-  updatedAt: string;
-}
+export type CourseStatus = 'ACTIVE' | 'INACTIVE' | 'DRAFT';
 
 export interface CourseFormData {
   code: string;

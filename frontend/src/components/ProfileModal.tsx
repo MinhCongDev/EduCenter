@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { authService } from '../services/auth.service';
 
@@ -13,7 +14,14 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   onClose,
   onOpenChangePassword,
 }) => {
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    onClose();
+    logout();
+    navigate('/login', { replace: true });
+  };
 
   const [formData, setFormData] = useState({
     fullName: user?.fullName || '',
@@ -109,7 +117,6 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <span style={{ fontSize: '1.5rem' }}>👤</span>
             <div>
               <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700 }}>
                 Thông Tin Cá Nhân (UC07)
@@ -125,9 +132,10 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
               background: 'rgba(255, 255, 255, 0.2)',
               border: 'none',
               color: '#FFFFFF',
-              width: '32px',
+              minWidth: '60px',
+              padding: '0 8px',
               height: '32px',
-              borderRadius: '50%',
+              borderRadius: '8px',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -135,7 +143,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
               fontWeight: 'bold',
             }}
           >
-            ✕
+            Đóng
           </button>
         </div>
 
@@ -273,28 +281,49 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
           </div>
 
           {/* Action buttons */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '0.5rem', borderTop: '1px solid #e2e8f0' }}>
-            {onOpenChangePassword && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '0.75rem', borderTop: '1px solid #e2e8f0', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              {onOpenChangePassword && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onOpenChangePassword();
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#26743d',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    padding: 0,
+                    textDecoration: 'underline',
+                  }}
+                >
+                  Đổi mật khẩu
+                </button>
+              )}
               <button
                 type="button"
-                onClick={() => {
-                  onClose();
-                  onOpenChangePassword();
-                }}
+                onClick={handleLogout}
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: '#2563eb',
+                  color: '#dc2626',
                   fontSize: '0.85rem',
                   fontWeight: 600,
                   cursor: 'pointer',
                   padding: 0,
-                  textDecoration: 'underline',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
                 }}
+                title="Đăng xuất khỏi hệ thống"
               >
-                🔐 Đổi mật khẩu
+                <span>Đăng xuất</span>
               </button>
-            )}
+            </div>
 
             <div style={{ display: 'flex', gap: '0.75rem', marginLeft: 'auto' }}>
               <button
@@ -321,7 +350,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                   padding: '0.55rem 1.25rem',
                   borderRadius: '8px',
                   border: 'none',
-                  backgroundColor: '#EC6E23',
+                  backgroundColor: '#26743d',
                   color: '#FFFFFF',
                   fontWeight: 700,
                   fontSize: '0.875rem',

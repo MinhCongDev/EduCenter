@@ -792,10 +792,11 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
+    const cleanEmail = email.toString().trim().toLowerCase();
     const hashedCode = crypto.createHash('sha256').update(resetCode.trim()).digest('hex');
 
     const user = await User.findOne({
-      email: email.toLowerCase(),
+      email: cleanEmail,
       resetPasswordToken: hashedCode,
       resetPasswordExpires: { $gt: new Date() },
     }).select('+resetPasswordToken +resetPasswordExpires');

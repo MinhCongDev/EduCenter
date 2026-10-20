@@ -1,51 +1,41 @@
 import { Router } from 'express';
+import { authenticate, authorize } from '../middlewares/auth.middleware';
 import {
-  getStaffList,
+  getDashboardStats,
+  getStaffAccountsList,
   addStaffAccount,
-  monitorCenterOperations,
-  monitorStudentActivities,
-  monitorTeacherActivities,
+  updateStaffStatus,
+  getCenterOperationsMonitoring,
+  getStudentActivitiesMonitoring,
+  getTeacherActivitiesMonitoring,
   getStudentReports,
   getTeacherReports,
-  getClassReports,
-  getCourseReports,
+  getClassAndCourseReports,
   getRevenueReports,
 } from '../controllers/director.controller';
-import { authenticate, authorize } from '../middlewares/auth.middleware';
 
 const router = Router();
 
-// Director routes require authentication and DIRECTOR role
+// Only DIRECTOR (and optionally master admin) can access director routes
 router.use(authenticate, authorize('DIRECTOR'));
 
-// UC52: View Staff Accounts List
-router.get('/staff-list', getStaffList);
+// 1. Dashboard Overview Stats
+router.get('/dashboard-stats', getDashboardStats);
 
-// UC53: Add Staff Account
-router.post('/staff-account', addStaffAccount);
+// 2. Staff Accounts Management (View list, Add account, Update status)
+router.get('/staff', getStaffAccountsList);
+router.post('/staff', addStaffAccount);
+router.patch('/staff/:id/status', updateStaffStatus);
 
-// UC54: Monitor Center Operations
-router.get('/operations', monitorCenterOperations);
+// 3. Center Operations & Activities Monitoring
+router.get('/monitoring/operations', getCenterOperationsMonitoring);
+router.get('/monitoring/students', getStudentActivitiesMonitoring);
+router.get('/monitoring/teachers', getTeacherActivitiesMonitoring);
 
-// Monitor Student Activities
-router.get('/student-activities', monitorStudentActivities);
-
-// Monitor Teacher Activities
-router.get('/teacher-activities', monitorTeacherActivities);
-
-// UC56: View Student Reports
+// 4. Detailed Reports & Analytics
 router.get('/reports/students', getStudentReports);
-
-// UC57: View Teacher Reports
 router.get('/reports/teachers', getTeacherReports);
-
-// UC58: View Class Reports
-router.get('/reports/classes', getClassReports);
-
-// UC59: View Course Reports
-router.get('/reports/courses', getCourseReports);
-
-// UC60: View Revenue Reports (strictly calculated from database transactions!)
+router.get('/reports/classes', getClassAndCourseReports);
 router.get('/reports/revenue', getRevenueReports);
 
 export { router as directorRouter };

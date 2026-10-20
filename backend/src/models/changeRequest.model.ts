@@ -1,15 +1,19 @@
 import mongoose, { Document, Schema, Model, Types } from 'mongoose';
 
-export type RequestType = 'CLASS_CHANGE' | 'SCHEDULE_CHANGE';
+export type RequestType = 'CLASS_CHANGE' | 'SCHEDULE_CHANGE' | 'TEACHER_SCHEDULE_CHANGE';
 export type RequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
 export interface IChangeRequest extends Document {
-  student: Types.ObjectId;
-  requesterRole?: 'STUDENT' | 'TEACHER';
+  student?: Types.ObjectId;
+  teacher?: Types.ObjectId;
+  requesterRole: 'STUDENT' | 'TEACHER';
   requestType: RequestType;
   currentClass: Types.ObjectId;
   targetClass?: Types.ObjectId;
+  currentSchedule?: string;
   targetSchedule?: string;
+  sessionDate?: Date;
+  targetDate?: Date;
   reason: string;
   status: RequestStatus;
   reviewedBy?: Types.ObjectId;
@@ -24,7 +28,12 @@ const changeRequestSchema = new Schema<IChangeRequest>(
     student: {
       type: Schema.Types.ObjectId,
       ref: 'User',
-      required: [true, 'Người yêu cầu là bắt buộc'],
+      required: false,
+    },
+    teacher: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: false,
     },
     requesterRole: {
       type: String,
@@ -33,7 +42,7 @@ const changeRequestSchema = new Schema<IChangeRequest>(
     },
     requestType: {
       type: String,
-      enum: ['CLASS_CHANGE', 'SCHEDULE_CHANGE'],
+      enum: ['CLASS_CHANGE', 'SCHEDULE_CHANGE', 'TEACHER_SCHEDULE_CHANGE'],
       required: [true, 'Loại yêu cầu là bắt buộc'],
     },
     currentClass: {
@@ -41,14 +50,23 @@ const changeRequestSchema = new Schema<IChangeRequest>(
       ref: 'Class',
       required: [true, 'Lớp học hiện tại là bắt buộc'],
     },
-
     targetClass: {
       type: Schema.Types.ObjectId,
       ref: 'Class',
     },
+    currentSchedule: {
+      type: String,
+      default: '',
+    },
     targetSchedule: {
       type: String,
       default: '',
+    },
+    sessionDate: {
+      type: Date,
+    },
+    targetDate: {
+      type: Date,
     },
     reason: {
       type: String,

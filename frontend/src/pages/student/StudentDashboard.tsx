@@ -1,1329 +1,682 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import studentService from '../../services/student.service';
-import '../dashboard/Dashboard.css';
 
-export const StudentDashboard: React.FC = () => {
+export type StudentTab = 'overview' | 'courses' | 'schedule' | 'assignments' | 'grades';
+
+const StudentDashboard: React.FC = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'overview' | 'classes' | 'schedule' | 'assignments' | 'results' | 'requests' | 'feedback' | 'payments'>('overview');
-
-  // Database States
-  const [classes, setClasses] = useState<any[]>([]);
-  const [schedule, setSchedule] = useState<any[]>([]);
-  const [assignments, setAssignments] = useState<any[]>([]);
-  const [academicResults, setAcademicResults] = useState<any>(null);
-  const [changeRequests, setChangeRequests] = useState<any[]>([]);
-  const [attendance, setAttendance] = useState<any>(null);
-  const [registrations, setRegistrations] = useState<any[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-
-  // Modal / Form States
-  const [selectedAssignment, setSelectedAssignment] = useState<any>(null);
-  const [submissionContent, setSubmissionContent] = useState<string>('');
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-
-  // Request form state
-  const [requestType, setRequestType] = useState<'CLASS_CHANGE' | 'SCHEDULE_CHANGE'>('CLASS_CHANGE');
-  const [requestCurrentClass, setRequestCurrentClass] = useState<string>('');
-  const [requestTargetSchedule, setRequestTargetSchedule] = useState<string>('');
-  const [requestReason, setRequestReason] = useState<string>('');
-
-  // Feedback form state
-  const [feedbackReceiver, setFeedbackReceiver] = useState<string>('');
-  const [feedbackClassId, setFeedbackClassId] = useState<string>('');
-  const [feedbackContent, setFeedbackContent] = useState<string>('');
-  const [feedbackRating, setFeedbackRating] = useState<number>(5);
-
-  // Payment form state
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState<boolean>(false);
-  const [paymentAmount, setPaymentAmount] = useState<number>(9200000);
-  const [paymentEnrollmentId, setPaymentEnrollmentId] = useState<string>('');
-  const [paymentMethod, setPaymentMethod] = useState<string>('VNPAY');
-  const [paymentNote, setPaymentNote] = useState<string>('');
-
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const [cls, sch, asg, res, cr, att, reg] = await Promise.all([
-        studentService.getClasses(),
-        studentService.getSchedule(),
-        studentService.getAssignments(),
-        studentService.getAcademicResults(),
-        studentService.getChangeRequests(),
-        studentService.getAttendance(),
-        studentService.getRegistrations(),
-      ]);
-
-      setClasses(cls || []);
-      setSchedule(sch || []);
-      setAssignments(asg || []);
-      setAcademicResults(res || null);
-      setChangeRequests(cr || []);
-      setAttendance(att || null);
-      setRegistrations(reg || []);
-
-      if (cls && cls.length > 0) {
-        setRequestCurrentClass(cls[0].classId);
-        setFeedbackClassId(cls[0].classId);
-        if (cls[0].teacher?._id) {
-          setFeedbackReceiver(cls[0].teacher._id);
-        }
-      }
-    } catch (err: any) {
-      console.error('Lỗi khi nạp dữ liệu học viên:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState<StudentTab>('overview');
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    const tabParam = searchParams.get('tab') as StudentTab | null;
+    if (tabParam && ['overview', 'courses', 'schedule', 'assignments', 'grades'].includes(tabParam)) {
+      setActiveTab(tabParam);
+    } else {
+      setActiveTab('overview');
+    }
+  }, [searchParams]);
 
-  const handleDoAssignment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedAssignment || !submissionContent.trim()) return;
-
-    try {
-      setIsSubmitting(true);
-      await studentService.submitAssignment(selectedAssignment._id, {
-        content: submissionContent,
-      });
-      setMessage({ type: 'success', text: 'Nộp bài tập thành công!' });
-      setSelectedAssignment(null);
-      setSubmissionContent('');
-      await fetchData();
-    } catch (err: any) {
-      setMessage({ type: 'error', text: err.response?.data?.message || 'Lỗi khi nộp bài' });
-    } finally {
-      setIsSubmitting(false);
+  const handleTabChange = (newTab: StudentTab) => {
+    setActiveTab(newTab);
+    if (newTab === 'overview') {
+      setSearchParams({});
+    } else {
+      setSearchParams({ tab: newTab });
     }
   };
 
-  const handleSubmitChangeRequest = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!requestCurrentClass || !requestReason.trim()) {
-      setMessage({ type: 'error', text: 'Vui lòng chọn lớp học và nhập lý do yêu cầu' });
-      return;
-    }
+  const [assignments, setAssignments] = useState([
+    {
+      id: 'ASM-1',
+      title: 'Bài tập 2: Xây dựng RESTful API với Express và MongoDB',
+      course: 'Lập trình Web Full-Stack MERN',
+      deadline: '23:59 - 10/10/2026',
+      status: 'PENDING',
+    },
+    {
+      id: 'ASM-2',
+      title: 'Bài tập 1: Xây dựng giao diện responsive với HTML5/CSS3',
+      course: 'Lập trình Web Full-Stack MERN',
+      deadline: '02/10/2026',
+      status: 'SUBMITTED',
+      score: '9.0 / 10',
+    },
+  ]);
 
-    try {
-      await studentService.createChangeRequest({
-        requestType,
-        currentClass: requestCurrentClass,
-        targetSchedule: requestTargetSchedule,
-        reason: requestReason,
-      });
-      setMessage({ type: 'success', text: 'Đã gửi yêu cầu thay đổi tới phòng Giáo vụ thành công!' });
-      setRequestReason('');
-      setRequestTargetSchedule('');
-      await fetchData();
-    } catch (err: any) {
-      setMessage({ type: 'error', text: err.response?.data?.message || 'Lỗi khi gửi yêu cầu' });
-    }
-  };
-
-  const handleSubmitFeedback = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!feedbackContent.trim()) {
-      setMessage({ type: 'error', text: 'Vui lòng nhập nội dung đánh giá' });
-      return;
-    }
-
-    try {
-      await studentService.submitFeedback({
-        receiver: feedbackReceiver || undefined,
-        classId: feedbackClassId || undefined,
-        content: feedbackContent,
-        rating: feedbackRating,
-      });
-      setMessage({ type: 'success', text: 'Cảm ơn bạn đã gửi đánh giá phản hồi tới Giảng viên!' });
-      setFeedbackContent('');
-    } catch (err: any) {
-      setMessage({ type: 'error', text: err.response?.data?.message || 'Lỗi khi gửi phản hồi' });
+  const handleSubmitAssignment = (id: string) => {
+    const link = prompt('Dán link GitHub repo hoặc bài nộp của bạn:', 'https://github.com/my-student-repo');
+    if (link) {
+      setAssignments((prev) =>
+        prev.map((a) => (a.id === id ? { ...a, status: 'SUBMITTED', score: 'Chờ chấm' } : a))
+      );
+      alert('Đã nộp bài tập thành công! Giảng viên sẽ chấm điểm sớm.');
     }
   };
 
-  const handleMakePayment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await studentService.makePayment({
-        enrollmentId: paymentEnrollmentId || undefined,
-        amount: Number(paymentAmount),
-        method: paymentMethod,
-        note: paymentNote || 'Thanh toán học phí IELTS',
-      });
-      setMessage({ type: 'success', text: 'Thanh toán học phí thành công! Giao dịch đã được lưu vào hệ thống.' });
-      setIsPaymentModalOpen(false);
-      await fetchData();
-    } catch (err: any) {
-      setMessage({ type: 'error', text: err.response?.data?.message || 'Lỗi thanh toán' });
-    }
-  };
-
-  const currentClass = classes[0];
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Chào buổi sáng' : hour < 18 ? 'Chào buổi chiều' : 'Chào buổi tối';
 
   return (
-    <div className="dmr-dashboard-wrapper">
-      <div className="dmr-dashboard-container">
-        {/* Top Header */}
-        <div className="dmr-dash-header">
-          <div className="dmr-dash-welcome">
-            <span className="dmr-dash-role-badge">🎓 Không Gian Học Viên • EduCenter IELTS</span>
-            <h1 className="dmr-dash-title">Cổng Thông Tin Học Viên</h1>
-            <p className="dmr-dash-subtitle">
-              Xin chào, <strong>{user?.fullName}</strong> • Mã HV: <span style={{ color: '#FCD34D', fontWeight: 700 }}>{academicResults?.profile?.studentCode || 'STU-1001'}</span>
-            </p>
+    <div className="dash-container">
+      {/* ── TỔNG QUAN: CHỈ HIỂN THỊ NỘI DUNG TỔNG QUAN ── */}
+      {activeTab === 'overview' && (
+        <>
+          {/* Welcome Banner */}
+          <div className="dash-banner" style={{ background: 'linear-gradient(135deg, #064e3b 0%, #065f46 50%, #047857 100%)' }}>
+            <div className="dash-banner-content">
+              <div className="dash-banner-badge">
+                Cổng Học Viên • EduCenter Portal
+              </div>
+              <h1>{greeting}, {user?.fullName || 'Học viên'}!</h1>
+              <p>Chúc bạn một tuần học tập hiệu quả. Bạn có 1 buổi học diễn ra vào tối nay!</p>
+            </div>
+            <div className="dash-banner-right">
+              <div className="dash-date-pill">
+                <div>Trạng thái: Đang theo học</div>
+                <div className="sub">Kỳ tuyển sinh Đợt 4 • Năm 2026</div>
+              </div>
+            </div>
           </div>
 
-          <div className="dmr-dash-actions">
+          {/* Quick Action Toolbar */}
+          <div className="dash-actions-row">
             <button
               type="button"
-              className="dmr-dash-btn dmr-dash-btn-secondary"
-              onClick={() => {
-                setActiveTab('feedback');
-              }}
+              className="dash-quick-btn"
+              onClick={() => handleTabChange('courses')}
             >
-              ⭐ Gửi phản hồi GV
+              📚 Khóa học của tôi
             </button>
             <button
               type="button"
-              className="dmr-dash-btn dmr-dash-btn-primary"
-              onClick={() => {
-                if (registrations.length > 0) {
-                  setPaymentEnrollmentId(registrations[0]._id);
-                }
-                setIsPaymentModalOpen(true);
-              }}
+              className="dash-quick-btn"
+              onClick={() => handleTabChange('assignments')}
             >
-              💳 Đóng học phí
+              📝 Nộp bài tập về nhà
             </button>
-          </div>
-        </div>
-
-        {/* Global Notice message */}
-        {message && (
-          <div
-            style={{
-              padding: '12px 18px',
-              borderRadius: '10px',
-              marginBottom: '20px',
-              backgroundColor: message.type === 'success' ? 'rgba(87, 208, 97, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-              border: `1px solid ${message.type === 'success' ? '#57D061' : '#EF4444'}`,
-              color: '#FFF',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
-            <span>{message.text}</span>
             <button
               type="button"
-              onClick={() => setMessage(null)}
-              style={{ background: 'none', border: 'none', color: '#FFF', cursor: 'pointer', fontSize: '1rem' }}
+              className="dash-quick-btn"
+              onClick={() => handleTabChange('schedule')}
             >
-              ✕
+              🗓️ Xem lịch học
             </button>
-          </div>
-        )}
-
-        {/* Navigation Tabs */}
-        <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '24px', paddingBottom: '4px' }}>
-          {[
-            { id: 'overview', label: '📊 Tổng quan', uc: 'UC14, UC20' },
-            { id: 'classes', label: '🏫 Lớp & Giảng viên', uc: 'UC14, UC16, UC17' },
-            { id: 'schedule', label: '📅 Thời khóa biểu', uc: 'UC15, UC23' },
-            { id: 'assignments', label: '✍️ Bài tập & Nộp bài', uc: 'UC18, UC19' },
-            { id: 'results', label: '🏆 Bảng điểm & Học tập', uc: 'UC20' },
-            { id: 'requests', label: '🔄 Đổi lớp & Lịch', uc: 'UC21, UC22, UC24' },
-            { id: 'feedback', label: '💬 Đánh giá GV', uc: 'Feedback' },
-            { id: 'payments', label: '💳 Học phí & Ghi danh', uc: 'UC12, UC13' },
-          ].map((tab) => (
             <button
-              key={tab.id}
               type="button"
-              onClick={() => setActiveTab(tab.id as any)}
-              style={{
-                padding: '10px 16px',
-                borderRadius: '25px',
-                border: 'none',
-                fontWeight: 700,
-                fontSize: '0.88rem',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-                transition: 'all 0.2s',
-                backgroundColor: activeTab === tab.id ? '#57D061' : 'rgba(255,255,255,0.08)',
-                color: activeTab === tab.id ? '#052F2E' : '#FFFFFF',
-              }}
+              className="dash-quick-btn"
+              onClick={() => handleTabChange('grades')}
             >
-              {tab.label}
+              📊 Kết quả học tập
             </button>
-          ))}
-        </div>
-
-        {loading ? (
-          <div style={{ textAlign: 'center', padding: '60px', color: '#DDD' }}>
-            <div className="loading-spinner" style={{ margin: '0 auto 16px' }} />
-            Đang tải dữ liệu từ database...
           </div>
-        ) : (
-          <>
-            {/* ── TAB 1: OVERVIEW ────────────────────────────────────── */}
-            {activeTab === 'overview' && (
-              <div>
-                <div className="dmr-kpi-grid">
-                  <div className="dmr-kpi-card">
-                    <div className="dmr-kpi-icon">📚</div>
-                    <div className="dmr-kpi-info">
-                      <span className="dmr-kpi-value" style={{ fontSize: '1.25rem' }}>
-                        {currentClass ? currentClass.classCode : 'Chưa xếp lớp'}
-                      </span>
-                      <span className="dmr-kpi-label">Lớp học hiện tại</span>
-                      <span className="dmr-kpi-trend dmr-trend-up">
-                        {currentClass?.teacher?.fullName ? `GV: ${currentClass.teacher.fullName}` : 'Chưa phân công'}
-                      </span>
-                    </div>
-                  </div>
 
-                  <div className="dmr-kpi-card">
-                    <div className="dmr-kpi-icon" style={{ background: 'rgba(245, 158, 11, 0.2)', borderColor: '#F59E0B' }}>
-                      🏆
-                    </div>
-                    <div className="dmr-kpi-info">
-                      <span className="dmr-kpi-value">
-                        {academicResults?.profile?.currentBand ? `IELTS ${academicResults.profile.currentBand}` : '5.5 Overall'}
-                      </span>
-                      <span className="dmr-kpi-label">Band điểm hiện tại</span>
-                      <span className="dmr-kpi-trend dmr-trend-highlight">
-                        Target: {academicResults?.profile?.targetBand || 7.0}+
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="dmr-kpi-card">
-                    <div className="dmr-kpi-icon">✅</div>
-                    <div className="dmr-kpi-info">
-                      <span className="dmr-kpi-value">{attendance?.stats?.attendanceRate || '100%'}</span>
-                      <span className="dmr-kpi-label">Tỷ lệ chuyên cần</span>
-                      <span className="dmr-kpi-trend dmr-trend-up">
-                        {attendance?.stats?.presentSessions || 0}/{attendance?.stats?.totalSessions || 0} buổi học
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="dmr-kpi-card">
-                    <div className="dmr-kpi-icon" style={{ background: 'rgba(236, 110, 35, 0.2)', borderColor: '#EC6E23' }}>
-                      📝
-                    </div>
-                    <div className="dmr-kpi-info">
-                      <span className="dmr-kpi-value">
-                        {assignments.filter((a) => !a.submission).length} Bài
-                      </span>
-                      <span className="dmr-kpi-label">Bài tập cần nộp</span>
-                      <span className="dmr-kpi-trend" style={{ color: '#FCD34D' }}>
-                        {assignments.filter((a) => a.submission).length} bài đã hoàn thành
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="dmr-dash-content-grid" style={{ marginTop: '24px' }}>
-                  {/* Left Column: Schedule Quickview */}
-                  <div className="dmr-card">
-                    <div className="dmr-card-header">
-                      <h3 className="dmr-card-title">📅 Lịch Học Tuần Này</h3>
-                      <button
-                        type="button"
-                        className="dmr-card-action"
-                        onClick={() => setActiveTab('schedule')}
-                      >
-                        Xem tất cả ➔
-                      </button>
-                    </div>
-                    {schedule.length === 0 ? (
-                      <p style={{ color: 'rgba(255,255,255,0.6)', padding: '16px' }}>Chưa có lịch học nào được sắp xếp.</p>
-                    ) : (
-                      <div className="dmr-schedule-list">
-                        {schedule.slice(0, 3).map((item) => (
-                          <div key={item._id} className="dmr-schedule-item">
-                            <div className="dmr-schedule-time">
-                              <span className="dmr-schedule-day">{item.dayOfWeek}</span>
-                              <span className="dmr-schedule-hours">{item.startTime} - {item.endTime}</span>
-                            </div>
-                            <div className="dmr-schedule-details">
-                              <h4 className="dmr-schedule-subject">{item.topic || 'Buổi học IELTS'}</h4>
-                              <p className="dmr-schedule-meta">
-                                📍 {item.classroom || item.room} • 👨‍🏫 {item.class?.teacher?.fullName || 'Giảng viên'}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Right Column: Homework Quickview */}
-                  <div className="dmr-card">
-                    <div className="dmr-card-header">
-                      <h3 className="dmr-card-title">✍️ Bài Tập Đang Chờ Nộp</h3>
-                      <button
-                        type="button"
-                        className="dmr-card-action"
-                        onClick={() => setActiveTab('assignments')}
-                      >
-                        Nộp bài ➔
-                      </button>
-                    </div>
-                    {assignments.length === 0 ? (
-                      <p style={{ color: 'rgba(255,255,255,0.6)', padding: '16px' }}>Không có bài tập nào cần làm.</p>
-                    ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        {assignments.slice(0, 4).map((a) => (
-                          <div
-                            key={a._id}
-                            style={{
-                              padding: '12px 16px',
-                              borderRadius: '10px',
-                              backgroundColor: 'rgba(255,255,255,0.04)',
-                              border: '1px solid rgba(255,255,255,0.08)',
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center',
-                            }}
-                          >
-                            <div>
-                              <strong style={{ fontSize: '0.95rem', color: '#FFF' }}>{a.title}</strong>
-                              <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)' }}>
-                                Hạn nộp: {new Date(a.dueDate).toLocaleDateString('vi-VN')}
-                              </p>
-                            </div>
-                            <div>
-                              {a.submission ? (
-                                <span style={{ padding: '4px 10px', borderRadius: '15px', fontSize: '0.75rem', backgroundColor: 'rgba(87,208,97,0.2)', color: '#57D061', fontWeight: 700 }}>
-                                  {a.submission.status === 'GRADED' ? `Điểm: ${a.submission.grade}` : 'Đã nộp'}
-                                </span>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setSelectedAssignment(a);
-                                    setActiveTab('assignments');
-                                  }}
-                                  style={{
-                                    backgroundColor: '#EC6E23',
-                                    border: 'none',
-                                    color: '#FFF',
-                                    padding: '6px 14px',
-                                    borderRadius: '15px',
-                                    fontWeight: 700,
-                                    fontSize: '0.78rem',
-                                    cursor: 'pointer',
-                                  }}
-                                >
-                                  Nộp ngay
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
+          {/* Key Metrics */}
+          <div className="dash-metrics-grid">
+            <div className="dash-metric-card" onClick={() => handleTabChange('courses')} style={{ cursor: 'pointer' }}>
+              <div className="dash-metric-info">
+                <span className="dash-metric-label">Khóa học đang học</span>
+                <span className="dash-metric-val">1 Khóa</span>
+                <span className="dash-metric-trend up">Web Full-Stack MERN ➔</span>
               </div>
-            )}
+              <div className="dash-metric-icon icon-blue">📚</div>
+            </div>
 
-            {/* ── TAB 2: CLASSES & TEACHER INFO (UC14, UC16, UC17) ────── */}
-            {activeTab === 'classes' && (
-              <div>
-                <h2 style={{ fontSize: '1.3rem', color: '#FFF', marginBottom: '16px' }}>
-                  Thông Tin Lớp Học &amp; Giảng Viên Giảng Dạy (UC14, UC16, UC17)
-                </h2>
-                {classes.length === 0 ? (
-                  <div className="dmr-card" style={{ textAlign: 'center', padding: '40px' }}>
-                    <p>Bạn chưa được ghi danh vào lớp học nào. Vui lòng liên hệ Phòng Giáo vụ để được phân lớp.</p>
-                  </div>
-                ) : (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '20px' }}>
-                    {classes.map((cls) => (
-                      <div key={cls.classId} className="dmr-card">
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-                          <div>
-                            <span style={{ fontSize: '0.8rem', color: '#FCD34D', fontWeight: 800 }}>MÃ LỚP: {cls.classCode}</span>
-                            <h3 style={{ margin: '4px 0 0', fontSize: '1.2rem', color: '#FFF' }}>{cls.name}</h3>
-                          </div>
-                          <span style={{ padding: '4px 10px', borderRadius: '15px', fontSize: '0.75rem', backgroundColor: '#57D061', color: '#052F2E', fontWeight: 800 }}>
-                            {cls.enrollmentStatus}
-                          </span>
-                        </div>
-
-                        <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '14px', marginTop: '10px' }}>
-                          <p style={{ margin: '6px 0', fontSize: '0.9rem', color: 'rgba(255,255,255,0.8)' }}>
-                            <strong>Phòng học:</strong> {cls.room}
-                          </p>
-                          <p style={{ margin: '6px 0', fontSize: '0.9rem', color: 'rgba(255,255,255,0.8)' }}>
-                            <strong>Lịch học:</strong> {cls.scheduleDays?.join(', ')} ({cls.timeSlot})
-                          </p>
-                          <p style={{ margin: '6px 0', fontSize: '0.9rem', color: 'rgba(255,255,255,0.8)' }}>
-                            <strong>Thời gian:</strong> {new Date(cls.startDate).toLocaleDateString('vi-VN')} ➔ {new Date(cls.endDate).toLocaleDateString('vi-VN')}
-                          </p>
-                          <p style={{ margin: '6px 0', fontSize: '0.9rem', color: 'rgba(255,255,255,0.8)' }}>
-                            <strong>Sĩ số lớp:</strong> {cls.currentEnrollment}/{cls.capacity} học viên
-                          </p>
-                          {cls.finalScore !== undefined && (
-                            <p style={{ margin: '6px 0', fontSize: '0.95rem', color: '#A0EC1D', fontWeight: 700 }}>
-                              <strong>Điểm tổng kết:</strong> {cls.finalScore}/10 ({cls.academicResult})
-                            </p>
-                          )}
-                        </div>
-
-                        {/* Teacher profile section */}
-                        {cls.teacher && (
-                          <div style={{ marginTop: '16px', padding: '14px', borderRadius: '12px', backgroundColor: 'rgba(87,208,97,0.06)', border: '1px solid rgba(87,208,97,0.2)' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                              <div style={{ width: '44px', height: '44px', borderRadius: '50%', backgroundColor: '#57D061', color: '#052F2E', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.2rem' }}>
-                                {cls.teacher.fullName?.charAt(0)}
-                              </div>
-                              <div>
-                                <span style={{ fontSize: '0.75rem', color: '#A0EC1D', textTransform: 'uppercase', fontWeight: 700 }}>Giảng Viên Phụ Trách</span>
-                                <h4 style={{ margin: 0, fontSize: '1rem', color: '#FFF' }}>{cls.teacher.fullName}</h4>
-                                <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)' }}>{cls.teacher.email} • {cls.teacher.phone}</span>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
+            <div className="dash-metric-card" onClick={() => handleTabChange('schedule')} style={{ cursor: 'pointer' }}>
+              <div className="dash-metric-info">
+                <span className="dash-metric-label">Tỷ lệ chuyên cần</span>
+                <span className="dash-metric-val">100%</span>
+                <span className="dash-metric-trend up">Đã tham gia 4/4 buổi ➔</span>
               </div>
-            )}
+              <div className="dash-metric-icon icon-emerald">✅</div>
+            </div>
 
-            {/* ── TAB 3: SCHEDULE & ATTENDANCE (UC15, UC23) ────────────── */}
-            {activeTab === 'schedule' && (
-              <div>
-                <h2 style={{ fontSize: '1.3rem', color: '#FFF', marginBottom: '16px' }}>
-                  Lịch Học Tuần &amp; Kết Quả Chuyên Cần (UC15, UC23)
-                </h2>
-                
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px', marginBottom: '24px' }}>
-                  {schedule.map((sc) => (
-                    <div key={sc._id} className="dmr-card">
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                        <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#FCD34D' }}>{sc.dayOfWeek}</span>
-                        <span style={{ padding: '3px 8px', borderRadius: '12px', fontSize: '0.75rem', backgroundColor: 'rgba(255,255,255,0.1)', color: '#FFF' }}>
-                          {sc.startTime} - {sc.endTime}
-                        </span>
-                      </div>
-                      <h4 style={{ margin: '0 0 8px', color: '#FFF', fontSize: '1rem' }}>{sc.topic || 'Buổi học IELTS'}</h4>
-                      <p style={{ margin: '4px 0', fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)' }}>
-                        📍 {sc.classroom || sc.room}
-                      </p>
-                      <p style={{ margin: '4px 0', fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)' }}>
-                        👨‍🏫 {sc.class?.teacher?.fullName || 'Giảng viên IELTS'}
-                      </p>
-                    </div>
-                  ))}
+            <div className="dash-metric-card" onClick={() => handleTabChange('grades')} style={{ cursor: 'pointer' }}>
+              <div className="dash-metric-info">
+                <span className="dash-metric-label">Điểm trung bình (GPA)</span>
+                <span className="dash-metric-val">9.0 / 10</span>
+                <span className="dash-metric-trend up">⭐ Xếp loại: Xuất sắc ➔</span>
+              </div>
+              <div className="dash-metric-icon icon-amber">🏆</div>
+            </div>
+
+            <div className="dash-metric-card" onClick={() => handleTabChange('assignments')} style={{ cursor: 'pointer' }}>
+              <div className="dash-metric-info">
+                <span className="dash-metric-label">Bài tập sắp đến hạn</span>
+                <span className="dash-metric-val">
+                  {assignments.filter((a) => a.status === 'PENDING').length} bài
+                </span>
+                <span className="dash-metric-trend neutral">Hạn: 23:59 ngày 10/10 ➔</span>
+              </div>
+              <div className="dash-metric-icon icon-purple">⏰</div>
+            </div>
+          </div>
+
+          {/* Main Two Column Grid */}
+          <div className="dash-two-col">
+            {/* Left Column */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              {/* Upcoming Class Session */}
+              <div className="dash-card">
+                <div className="dash-card-header">
+                  <h2 className="dash-card-title">
+                    <span>⏰</span> Buổi Học Kế Tiếp
+                  </h2>
+                  <span className="badge-pill badge-green">Tối nay lúc 18:30</span>
                 </div>
 
-                {/* Attendance details */}
-                {attendance && (
-                  <div className="dmr-card">
-                    <div className="dmr-card-header">
-                      <h3 className="dmr-card-title">📋 Lịch Sử Điểm Danh Chuyên Cần</h3>
-                      <span style={{ color: '#57D061', fontWeight: 700 }}>
-                        Tỷ lệ có mặt: {attendance.stats?.attendanceRate}
-                      </span>
-                    </div>
-                    {attendance.records?.length === 0 ? (
-                      <p style={{ color: 'rgba(255,255,255,0.6)' }}>Chưa có bản ghi điểm danh nào.</p>
-                    ) : (
-                      <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '12px', color: '#FFF' }}>
-                        <thead>
-                          <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', textAlign: 'left', fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)' }}>
-                            <th style={{ padding: '8px' }}>Ngày học</th>
-                            <th style={{ padding: '8px' }}>Lớp học</th>
-                            <th style={{ padding: '8px' }}>Trạng thái</th>
-                            <th style={{ padding: '8px' }}>Ghi chú của GV</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {attendance.records.map((r: any) => (
-                            <tr key={r._id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.9rem' }}>
-                              <td style={{ padding: '10px 8px' }}>{new Date(r.sessionDate).toLocaleDateString('vi-VN')}</td>
-                              <td style={{ padding: '10px 8px' }}>{r.class?.name || r.class?.classCode}</td>
-                              <td style={{ padding: '10px 8px' }}>
-                                <span style={{
-                                  padding: '3px 8px',
-                                  borderRadius: '10px',
-                                  fontSize: '0.75rem',
-                                  fontWeight: 700,
-                                  backgroundColor: r.status === 'PRESENT' ? 'rgba(87,208,97,0.2)' : 'rgba(239,68,68,0.2)',
-                                  color: r.status === 'PRESENT' ? '#57D061' : '#EF4444',
-                                }}>
-                                  {r.status === 'PRESENT' ? 'Có mặt' : r.status === 'LATE' ? 'Đi muộn' : 'Vắng'}
-                                </span>
-                              </td>
-                              <td style={{ padding: '10px 8px', color: 'rgba(255,255,255,0.7)' }}>{r.notes || '—'}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* ── TAB 4: ASSIGNMENTS & DO ASSIGNMENT (UC18, UC19) ──────── */}
-            {activeTab === 'assignments' && (
-              <div>
-                <h2 style={{ fontSize: '1.3rem', color: '#FFF', marginBottom: '16px' }}>
-                  Danh Sách Bài Tập &amp; Nộp Bài Trực Tuyến (UC18, UC19)
-                </h2>
-
-                {/* Submit Modal / Panel */}
-                {selectedAssignment && (
-                  <div className="dmr-card" style={{ marginBottom: '24px', borderColor: '#57D061' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                      <h3 style={{ margin: 0, color: '#57D061' }}>
-                        Nộp Bài: {selectedAssignment.title}
-                      </h3>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedAssignment(null)}
-                        style={{ background: 'none', border: 'none', color: '#FFF', cursor: 'pointer', fontSize: '1.2rem' }}
-                      >
-                        ✕
-                      </button>
-                    </div>
-                    <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.9rem', marginBottom: '14px' }}>
-                      {selectedAssignment.description}
-                    </p>
-                    <form onSubmit={handleDoAssignment}>
-                      <textarea
-                        rows={6}
-                        value={submissionContent}
-                        onChange={(e) => setSubmissionContent(e.target.value)}
-                        placeholder="Nhập nội dung bài làm của bạn tại đây (Writing Task / Speaking link / Câu trả lời)..."
-                        style={{
-                          width: '100%',
-                          padding: '12px',
-                          borderRadius: '8px',
-                          backgroundColor: 'rgba(0,0,0,0.3)',
-                          border: '1px solid rgba(255,255,255,0.2)',
-                          color: '#FFF',
-                          fontSize: '0.9rem',
-                          marginBottom: '12px',
-                        }}
-                      />
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedAssignment(null)}
-                          style={{
-                            padding: '8px 16px',
-                            borderRadius: '20px',
-                            border: '1px solid rgba(255,255,255,0.3)',
-                            background: 'none',
-                            color: '#FFF',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          Hủy bỏ
-                        </button>
-                        <button
-                          type="submit"
-                          disabled={isSubmitting}
-                          style={{
-                            padding: '8px 24px',
-                            borderRadius: '20px',
-                            backgroundColor: '#57D061',
-                            border: 'none',
-                            color: '#052F2E',
-                            fontWeight: 800,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          {isSubmitting ? 'Đang gửi...' : 'Nộp bài ngay'}
-                        </button>
-                      </div>
-                    </form>
-                  </div>
-                )}
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  {assignments.map((a) => (
-                    <div key={a._id} className="dmr-card">
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                            <span style={{
-                              padding: '2px 8px',
-                              borderRadius: '10px',
-                              fontSize: '0.72rem',
-                              fontWeight: 700,
-                              backgroundColor: a.type === 'FINAL_EXAM' ? '#EC6E23' : 'rgba(255,255,255,0.1)',
-                              color: '#FFF',
-                            }}>
-                              {a.type === 'FINAL_EXAM' ? 'KỲ THI CUỐI KHÓA' : 'BÀI TẬP VỀ NHÀ'}
-                            </span>
-                            <span style={{ fontSize: '0.8rem', color: '#FCD34D' }}>Lớp: {a.class?.name || a.class?.classCode}</span>
-                          </div>
-                          <h3 style={{ margin: '0 0 6px', color: '#FFF', fontSize: '1.15rem' }}>{a.title}</h3>
-                          <p style={{ margin: '0 0 10px', color: 'rgba(255,255,255,0.75)', fontSize: '0.9rem', lineHeight: 1.4 }}>
-                            {a.description}
-                          </p>
-                          <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>
-                            Hạn nộp: {new Date(a.dueDate).toLocaleDateString('vi-VN')} • Thang điểm tối đa: {a.maxScore}
-                          </span>
-                        </div>
-
-                        <div>
-                          {a.submission ? (
-                            <div style={{ textAlign: 'right' }}>
-                              <span style={{
-                                padding: '4px 12px',
-                                borderRadius: '15px',
-                                fontSize: '0.8rem',
-                                fontWeight: 800,
-                                backgroundColor: a.submission.status === 'GRADED' ? 'rgba(87,208,97,0.2)' : 'rgba(245,158,11,0.2)',
-                                color: a.submission.status === 'GRADED' ? '#57D061' : '#F59E0B',
-                              }}>
-                                {a.submission.status === 'GRADED' ? `Đã chấm: ${a.submission.grade}/${a.maxScore}` : 'Đã nộp bài (Chờ chấm)'}
-                              </span>
-                              {a.submission.feedback && (
-                                <p style={{ margin: '8px 0 0', fontSize: '0.85rem', color: '#A0EC1D', fontStyle: 'italic', maxWidth: '300px' }}>
-                                  Nhận xét của GV: "{a.submission.feedback}"
-                                </p>
-                              )}
-                            </div>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSelectedAssignment(a);
-                                setSubmissionContent('');
-                              }}
-                              style={{
-                                backgroundColor: '#57D061',
-                                border: 'none',
-                                color: '#052F2E',
-                                padding: '8px 20px',
-                                borderRadius: '20px',
-                                fontWeight: 800,
-                                cursor: 'pointer',
-                                fontSize: '0.85rem',
-                              }}
-                            >
-                              Làm bài
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* ── TAB 5: ACADEMIC RESULTS (UC20) ───────────────────────── */}
-            {activeTab === 'results' && (
-              <div>
-                <h2 style={{ fontSize: '1.3rem', color: '#FFF', marginBottom: '16px' }}>
-                  Bảng Điểm &amp; Kết Quả Đào Tạo Chi Tiết (UC20)
-                </h2>
-
-                <div className="dmr-card" style={{ marginBottom: '24px' }}>
-                  <h3 className="dmr-card-title">Kết Quả Đánh Giá Các Lớp Học</h3>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '12px', color: '#FFF' }}>
-                    <thead>
-                      <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', textAlign: 'left', fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)' }}>
-                        <th style={{ padding: '8px' }}>Khóa học / Lớp</th>
-                        <th style={{ padding: '8px' }}>Điểm Giữa kỳ</th>
-                        <th style={{ padding: '8px' }}>Điểm Cuối khóa</th>
-                        <th style={{ padding: '8px' }}>Kết quả học tập</th>
-                        <th style={{ padding: '8px' }}>Trạng thái học vụ</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {academicResults?.enrollments?.map((en: any) => (
-                        <tr key={en._id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.9rem' }}>
-                          <td style={{ padding: '10px 8px' }}>
-                            <strong>{en.class?.name || en.course?.title}</strong>
-                            <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)' }}>{en.class?.classCode}</div>
-                          </td>
-                          <td style={{ padding: '10px 8px', color: '#FCD34D' }}>{en.midtermScore !== undefined ? `${en.midtermScore}/10` : '—'}</td>
-                          <td style={{ padding: '10px 8px', color: '#57D061', fontWeight: 800 }}>{en.finalScore !== undefined ? `${en.finalScore}/10` : '—'}</td>
-                          <td style={{ padding: '10px 8px' }}>
-                            <span style={{ color: '#A0EC1D', fontWeight: 700 }}>
-                              {en.academicResult || 'Đang theo học'}
-                            </span>
-                          </td>
-                          <td style={{ padding: '10px 8px' }}>{en.status}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                <div className="dmr-card">
-                  <h3 className="dmr-card-title">Chi Tiết Điểm Từng Bài Tập &amp; Nhận Xét Của Giảng Viên</h3>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px' }}>
-                    {academicResults?.gradedSubmissions?.map((sub: any) => (
-                      <div
-                        key={sub._id}
-                        style={{
-                          padding: '12px 16px',
-                          borderRadius: '10px',
-                          backgroundColor: 'rgba(255,255,255,0.03)',
-                          border: '1px solid rgba(255,255,255,0.08)',
-                        }}
-                      >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <strong style={{ fontSize: '1rem', color: '#FFF' }}>
-                            {sub.assignment?.title}
-                          </strong>
-                          <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#57D061' }}>
-                            {sub.grade} Điểm
-                          </span>
-                        </div>
-                        <p style={{ margin: '6px 0', fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)' }}>
-                          <strong>Bài làm:</strong> {sub.content?.slice(0, 150)}...
-                        </p>
-                        {sub.feedback && (
-                          <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: '#A0EC1D' }}>
-                            💬 <strong>Nhận xét:</strong> {sub.feedback} (Chấm bởi: {sub.gradedBy?.fullName || 'Giảng viên'})
-                          </p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* ── TAB 6: REQUESTS (UC21, UC22, UC24) ──────────────────── */}
-            {activeTab === 'requests' && (
-              <div>
-                <h2 style={{ fontSize: '1.3rem', color: '#FFF', marginBottom: '16px' }}>
-                  Yêu Cầu Thay Đổi Lớp Học &amp; Lịch Học (UC21, UC22, UC24)
-                </h2>
-
-                {/* Submit form */}
-                <div className="dmr-card" style={{ marginBottom: '24px' }}>
-                  <h3 className="dmr-card-title">Gửi Yêu Cầu Mới Tới Phòng Giáo Vụ</h3>
-                  <form onSubmit={handleSubmitChangeRequest} style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '14px' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px' }}>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', marginBottom: '6px' }}>
-                          Loại yêu cầu:
-                        </label>
-                        <select
-                          value={requestType}
-                          onChange={(e) => setRequestType(e.target.value as any)}
-                          style={{
-                            width: '100%',
-                            padding: '10px',
-                            borderRadius: '8px',
-                            backgroundColor: '#0F2F2E',
-                            border: '1px solid rgba(255,255,255,0.2)',
-                            color: '#FFF',
-                          }}
-                        >
-                          <option value="CLASS_CHANGE">Chuyển sang Lớp học khác (UC21)</option>
-                          <option value="SCHEDULE_CHANGE">Thay đổi Lịch học trong tuần (UC22)</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', marginBottom: '6px' }}>
-                          Lớp học hiện tại:
-                        </label>
-                        <select
-                          value={requestCurrentClass}
-                          onChange={(e) => setRequestCurrentClass(e.target.value)}
-                          style={{
-                            width: '100%',
-                            padding: '10px',
-                            borderRadius: '8px',
-                            backgroundColor: '#0F2F2E',
-                            border: '1px solid rgba(255,255,255,0.2)',
-                            color: '#FFF',
-                          }}
-                        >
-                          {classes.map((c) => (
-                            <option key={c.classId} value={c.classId}>
-                              {c.name} ({c.classCode})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', marginBottom: '6px' }}>
-                          Khung giờ mong muốn chuyển sang:
-                        </label>
-                        <input
-                          type="text"
-                          value={requestTargetSchedule}
-                          onChange={(e) => setRequestTargetSchedule(e.target.value)}
-                          placeholder="VD: Ca tối Thứ 3-5-7 (19h00)"
-                          style={{
-                            width: '100%',
-                            padding: '10px',
-                            borderRadius: '8px',
-                            backgroundColor: '#0F2F2E',
-                            border: '1px solid rgba(255,255,255,0.2)',
-                            color: '#FFF',
-                          }}
-                        />
-                      </div>
-                    </div>
-
+                <div className="dash-subcard">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div>
-                      <label style={{ display: 'block', fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', marginBottom: '6px' }}>
-                        Lý do chuyển đổi cụ thể:
-                      </label>
-                      <textarea
-                        rows={3}
-                        value={requestReason}
-                        onChange={(e) => setRequestReason(e.target.value)}
-                        placeholder="Nêu rõ lý do (trùng lịch công tác, lịch thi học kỳ, muốn học cùng giáo viên khác...)"
-                        style={{
-                          width: '100%',
-                          padding: '10px',
-                          borderRadius: '8px',
-                          backgroundColor: '#0F2F2E',
-                          border: '1px solid rgba(255,255,255,0.2)',
-                          color: '#FFF',
-                        }}
-                      />
+                      <h3 className="dash-subcard-title">
+                        Lập trình Web Chuyên nghiệp Full-Stack (MERN)
+                      </h3>
+                      <div className="dash-subcard-meta" style={{ marginTop: '0.25rem' }}>
+                        Mã lớp: <strong>WEB-K24-A</strong> • Giảng viên: <strong>ThS. Nguyễn Văn An</strong>
+                      </div>
                     </div>
+                    <span className="badge-pill badge-blue">Phòng Lab 302</span>
+                  </div>
 
-                    <div style={{ textAlign: 'right' }}>
-                      <button
-                        type="submit"
-                        style={{
-                          backgroundColor: '#57D061',
-                          border: 'none',
-                          color: '#052F2E',
-                          padding: '10px 24px',
-                          borderRadius: '25px',
-                          fontWeight: 800,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        Gửi yêu cầu xét duyệt
-                      </button>
-                    </div>
-                  </form>
-                </div>
+                  <div className="dash-subcard-body">
+                    🎯 <strong>Nội dung buổi học:</strong> Buổi 4: Xây dựng RESTful API với Express và Mongoose Model, kết nối MongoDB Atlas.
+                  </div>
 
-                {/* Track requests list (UC24) */}
-                <div className="dmr-card">
-                  <h3 className="dmr-card-title">Lịch Sử &amp; Tiến Trình Xét Duyệt Yêu Cầu (UC24)</h3>
-                  {changeRequests.length === 0 ? (
-                    <p style={{ color: 'rgba(255,255,255,0.6)', marginTop: '10px' }}>Bạn chưa gửi yêu cầu thay đổi nào.</p>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px' }}>
-                      {changeRequests.map((req) => (
-                        <div
-                          key={req._id}
-                          style={{
-                            padding: '14px 16px',
-                            borderRadius: '10px',
-                            backgroundColor: 'rgba(255,255,255,0.03)',
-                            border: '1px solid rgba(255,255,255,0.08)',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                          }}
-                        >
-                          <div>
-                            <span style={{ fontSize: '0.75rem', color: '#FCD34D', fontWeight: 700 }}>
-                              {req.requestType === 'CLASS_CHANGE' ? 'ĐỔI LỚP HỌC' : 'ĐỔI LỊCH HỌC'}
-                            </span>
-                            <h4 style={{ margin: '4px 0', color: '#FFF' }}>{req.reason}</h4>
-                            <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)' }}>
-                              Lớp: {req.currentClass?.name || req.currentClass?.classCode} • Ngày gửi: {new Date(req.createdAt).toLocaleDateString('vi-VN')}
-                            </span>
-                            {req.reviewNote && (
-                              <p style={{ margin: '6px 0 0', fontSize: '0.85rem', color: '#A0EC1D' }}>
-                                Phản hồi từ Giáo vụ: "{req.reviewNote}"
-                              </p>
-                            )}
-                          </div>
-                          <span
-                            style={{
-                              padding: '4px 12px',
-                              borderRadius: '15px',
-                              fontSize: '0.8rem',
-                              fontWeight: 800,
-                              backgroundColor:
-                                req.status === 'APPROVED'
-                                  ? 'rgba(87,208,97,0.2)'
-                                  : req.status === 'PENDING'
-                                  ? 'rgba(245,158,11,0.2)'
-                                  : 'rgba(239,68,68,0.2)',
-                              color:
-                                req.status === 'APPROVED'
-                                  ? '#57D061'
-                                  : req.status === 'PENDING'
-                                  ? '#F59E0B'
-                                  : '#EF4444',
-                            }}
-                          >
-                            {req.status === 'APPROVED' ? 'Đã duyệt' : req.status === 'PENDING' ? 'Chờ duyệt' : 'Từ chối'}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* ── TAB 7: FEEDBACK ──────────────────────────────────────── */}
-            {activeTab === 'feedback' && (
-              <div className="dmr-card" style={{ maxWidth: '650px', margin: '0 auto' }}>
-                <h3 className="dmr-card-title">Đánh Giá Giảng Viên &amp; Khóa Học</h3>
-                <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem', marginBottom: '16px' }}>
-                  Ý kiến của bạn giúp EduCenter liên tục nâng cao chất lượng giảng dạy và trải nghiệm học thuật.
-                </p>
-
-                <form onSubmit={handleSubmitFeedback} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', marginBottom: '6px' }}>
-                      Lớp học &amp; Giảng viên:
-                    </label>
-                    <select
-                      value={feedbackClassId}
-                      onChange={(e) => {
-                        setFeedbackClassId(e.target.value);
-                        const c = classes.find((cl) => cl.classId === e.target.value);
-                        if (c?.teacher?._id) setFeedbackReceiver(c.teacher._id);
-                      }}
-                      style={{
-                        width: '100%',
-                        padding: '10px',
-                        borderRadius: '8px',
-                        backgroundColor: '#0F2F2E',
-                        border: '1px solid rgba(255,255,255,0.2)',
-                        color: '#FFF',
-                      }}
+                  <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.25rem', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      className="dash-quick-btn primary"
+                      onClick={() => alert('Mở slide bài giảng buổi 4')}
                     >
-                      {classes.map((c) => (
-                        <option key={c.classId} value={c.classId}>
-                          {c.name} - GV: {c.teacher?.fullName || 'Giảng viên'}
-                        </option>
-                      ))}
-                    </select>
+                      📥 Tải Slide Bài Giảng
+                    </button>
+                    <button
+                      type="button"
+                      className="dash-quick-btn"
+                      onClick={() => alert('Xem bài tập thực hành trên lớp')}
+                    >
+                      📝 Đề Bài Lab 4
+                    </button>
                   </div>
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', marginBottom: '6px' }}>
-                      Mức độ hài lòng:
-                    </label>
-                    <div style={{ display: 'flex', gap: '12px' }}>
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <button
-                          key={star}
-                          type="button"
-                          onClick={() => setFeedbackRating(star)}
-                          style={{
-                            fontSize: '1.6rem',
-                            background: 'none',
-                            border: 'none',
-                            cursor: 'pointer',
-                            opacity: star <= feedbackRating ? 1 : 0.3,
-                            transition: 'opacity 0.2s',
-                          }}
-                        >
-                          ⭐
-                        </button>
-                      ))}
-                      <span style={{ alignSelf: 'center', color: '#FCD34D', fontWeight: 700, marginLeft: '8px' }}>
-                        {feedbackRating} / 5 Sao
-                      </span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', marginBottom: '6px' }}>
-                      Ý kiến đóng góp &amp; nhận xét chi tiết:
-                    </label>
-                    <textarea
-                      rows={5}
-                      value={feedbackContent}
-                      onChange={(e) => setFeedbackContent(e.target.value)}
-                      placeholder="Chia sẻ về phương pháp dạy, sửa bài Writing/Speaking, tài liệu hoặc thái độ giảng viên..."
-                      style={{
-                        width: '100%',
-                        padding: '12px',
-                        borderRadius: '8px',
-                        backgroundColor: '#0F2F2E',
-                        border: '1px solid rgba(255,255,255,0.2)',
-                        color: '#FFF',
-                      }}
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    style={{
-                      backgroundColor: '#57D061',
-                      border: 'none',
-                      color: '#052F2E',
-                      padding: '12px',
-                      borderRadius: '25px',
-                      fontWeight: 800,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Gửi phản hồi đánh giá
-                  </button>
-                </form>
+                </div>
               </div>
-            )}
 
-            {/* ── TAB 8: PAYMENTS & REGISTRATIONS (UC12, UC13) ──────────── */}
-            {activeTab === 'payments' && (
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                  <h2 style={{ fontSize: '1.3rem', color: '#FFF', margin: 0 }}>
-                    Trạng Thái Đăng Ký &amp; Thanh Toán Học Phí (UC12, UC13)
+              {/* Enrolled Courses & Progress */}
+              <div className="dash-card">
+                <div className="dash-card-header">
+                  <h2 className="dash-card-title">
+                    <span>📚</span> Tiến Độ Khóa Học Của Tôi
                   </h2>
                   <button
                     type="button"
-                    onClick={() => setIsPaymentModalOpen(true)}
-                    style={{
-                      backgroundColor: '#57D061',
-                      border: 'none',
-                      color: '#052F2E',
-                      padding: '8px 18px',
-                      borderRadius: '20px',
-                      fontWeight: 800,
-                      cursor: 'pointer',
-                    }}
+                    onClick={() => handleTabChange('courses')}
+                    style={{ fontSize: '0.8rem', color: '#059669', background: 'none', border: 'none', fontWeight: 700, cursor: 'pointer' }}
                   >
-                    + Nộp học phí mới
+                    Xem chi tiết khóa học ➔
                   </button>
                 </div>
 
-                <div className="dmr-card">
-                  <h3 className="dmr-card-title">Danh Sách Khóa Học Đã Đăng Ký (UC13)</h3>
-                  {registrations.length === 0 ? (
-                    <p style={{ color: 'rgba(255,255,255,0.6)' }}>Chưa có bản ghi đăng ký nào.</p>
+                <div className="dash-subcard">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontWeight: 700 }}>Lớp WEB-K24-A (Khóa MERN Full-Stack)</span>
+                    <span style={{ fontWeight: 700, color: '#6366f1' }}>33% Hoàn thành</span>
+                  </div>
+                  <div className="dash-progress" style={{ height: '10px' }}>
+                    <div className="dash-progress-fill" style={{ width: '33%' }} />
+                  </div>
+
+                  <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
+                      <span>✅</span>
+                      <span style={{ opacity: 0.7, textDecoration: 'line-through' }}>
+                        Tuần 1-3: HTML5, CSS3, JavaScript ES6+ &amp; TypeScript
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', fontWeight: 700 }}>
+                      <span>🔄</span>
+                      <span style={{ color: '#6366f1' }}>
+                        Tuần 4-6: Backend API RESTful với Node.js, Express &amp; MongoDB (Đang học)
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', opacity: 0.65 }}>
+                      <span>⏳</span>
+                      <span>Tuần 7-9: Frontend Hiện đại với React 19 &amp; State Management</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', opacity: 0.65 }}>
+                      <span>⏳</span>
+                      <span>Tuần 10-12: Đồ án Tốt nghiệp Thực chiến &amp; Triển khai Cloud</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              {/* Assignments Due */}
+              <div className="dash-card">
+                <div className="dash-card-header">
+                  <h2 className="dash-card-title">
+                    <span>📝</span> Bài Tập Về Nhà
+                  </h2>
+                  <span className="badge-pill badge-amber">
+                    {assignments.filter((a) => a.status === 'PENDING').length} cần nộp
+                  </span>
+                </div>
+
+                <div className="dash-item-list">
+                  {assignments.map((item) => (
+                    <div key={item.id} className="dash-item">
+                      <div className="dash-item-main">
+                        <div className="dash-item-icon">
+                          {item.status === 'PENDING' ? '⏳' : '✅'}
+                        </div>
+                        <div>
+                          <div className="dash-item-title">{item.title}</div>
+                          <div className="dash-item-sub">Hạn nộp: {item.deadline}</div>
+                        </div>
+                      </div>
+
+                      <div>
+                        {item.status === 'PENDING' ? (
+                          <button
+                            type="button"
+                            onClick={() => handleSubmitAssignment(item.id)}
+                            className="dash-quick-btn primary"
+                            style={{ padding: '0.35rem 0.85rem', fontSize: '0.775rem' }}
+                          >
+                            Nộp bài
+                          </button>
+                        ) : (
+                          <span className="badge-pill badge-green">
+                            {item.score || 'Đã nộp'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Announcements */}
+              <div className="dash-card">
+                <div className="dash-card-header">
+                  <h2 className="dash-card-title">
+                    <span>📢</span> Thông Báo Từ Trung Tâm
+                  </h2>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <div className="dash-subcard" style={{ borderLeft: '4px solid #6366f1' }}>
+                    <strong className="dash-subcard-title" style={{ fontSize: '0.9rem' }}>
+                      Khai giảng các lớp chuyên đề công nghệ tháng 11
+                    </strong>
+                    <p className="dash-subcard-meta" style={{ margin: 0, lineHeight: 1.5 }}>
+                      Học viên EduCenter được ưu đãi 20% học phí khi đăng ký thêm khóa thứ 2.
+                    </p>
+                  </div>
+
+                  <div className="dash-subcard" style={{ borderLeft: '4px solid #10b981' }}>
+                    <strong className="dash-subcard-title" style={{ fontSize: '0.9rem' }}>
+                      Hướng dẫn sử dụng hệ thống Portal EduCenter
+                    </strong>
+                    <p className="dash-subcard-meta" style={{ margin: 0, lineHeight: 1.5 }}>
+                      Học viên có thể tra cứu lịch học, xem danh sách bài tập và nộp bài trực tiếp qua đây.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── CÁC PHẦN CHUYÊN BIỆT: CHỈ HIỂN THỊ NỘI DUNG CỦA PHẦN ĐÓ ── */}
+      {activeTab !== 'overview' && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+          <button
+            type="button"
+            onClick={() => handleTabChange('overview')}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '7px 16px',
+              borderRadius: '8px',
+              border: '1px solid #d7e3d9',
+              background: '#ffffff',
+              color: '#26743d',
+              fontSize: '0.82rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+            }}
+          >
+            <span>⬅</span>
+            <span>Quay lại Bảng điều khiển Tổng quan</span>
+          </button>
+        </div>
+      )}
+
+      {/* TAB: KHÓA HỌC CỦA TÔI */}
+      {activeTab === 'courses' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div>
+            <h2 style={{ margin: '0 0 0.35rem', fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>
+              📚 Khóa Học Của Tôi &amp; Lộ Trình Đào Tạo
+            </h2>
+            <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
+              Theo dõi chi tiết các giai đoạn học, tiến độ hoàn thành và tài nguyên học liệu
+            </span>
+          </div>
+
+          <div className="dash-card" style={{ padding: '1.5rem', borderRadius: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+              <div>
+                <span className="badge-pill badge-green">Đang theo học</span>
+                <h3 style={{ margin: '0.5rem 0 0.25rem', fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>
+                  Lập trình Web Chuyên nghiệp Full-Stack (MERN)
+                </h3>
+                <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                  Mã lớp: <strong style={{ color: '#0f172a' }}>WEB-K24-A</strong> • Giảng viên: <strong style={{ color: '#0f172a' }}>ThS. Nguyễn Văn An</strong> • Phòng học: <strong style={{ color: '#0f172a' }}>Lab 302</strong>
+                </div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#047857' }}>Tiến độ: 33%</span>
+                <div style={{ fontSize: '0.8rem', color: '#64748b' }}>4 / 12 tuần</div>
+              </div>
+            </div>
+
+            <div className="dash-progress" style={{ height: '12px', margin: '1.25rem 0' }}>
+              <div className="dash-progress-fill" style={{ width: '33%' }} />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', marginTop: '1.5rem' }}>
+              <div style={{ padding: '1rem', borderRadius: '12px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderTop: '4px solid #10b981' }}>
+                <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#047857' }}>✅ Giai Đoạn 1 (Tuần 1 - 3)</div>
+                <div style={{ fontWeight: 700, fontSize: '0.85rem', marginTop: '0.25rem', color: '#0f172a' }}>HTML5, CSS3, JavaScript ES6+ &amp; TS</div>
+                <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '0.35rem' }}>Đã hoàn thành xuất sắc • Điểm Quiz: 9.5/10</div>
+              </div>
+
+              <div style={{ padding: '1rem', borderRadius: '12px', backgroundColor: '#ecfdf5', border: '1px solid #a7f3d0', borderTop: '4px solid #059669' }}>
+                <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#047857' }}>🔄 Giai Đoạn 2 (Tuần 4 - 6) - Đang Học</div>
+                <div style={{ fontWeight: 700, fontSize: '0.85rem', marginTop: '0.25rem', color: '#0f172a' }}>Backend RESTful API với Node.js, Express &amp; MongoDB</div>
+                <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '0.35rem' }}>Buổi 4: RESTful API &amp; Mongoose Model (Tối nay)</div>
+              </div>
+
+              <div style={{ padding: '1rem', borderRadius: '12px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', opacity: 0.7 }}>
+                <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#64748b' }}>⏳ Giai Đoạn 3 (Tuần 7 - 9)</div>
+                <div style={{ fontWeight: 700, fontSize: '0.85rem', marginTop: '0.25rem', color: '#0f172a' }}>Frontend Hiện Đại với React 19 &amp; Vite</div>
+                <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '0.35rem' }}>Sắp diễn ra vào tháng sau</div>
+              </div>
+
+              <div style={{ padding: '1rem', borderRadius: '12px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', opacity: 0.7 }}>
+                <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#64748b' }}>⏳ Giai Đoạn 4 (Tuần 10 - 12)</div>
+                <div style={{ fontWeight: 700, fontSize: '0.85rem', marginTop: '0.25rem', color: '#0f172a' }}>Đồ Án Tốt Nghiệp &amp; Triển Khai Cloud</div>
+                <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '0.35rem' }}>Bảo vệ đồ án trước hội đồng EduCenter</div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className="dash-quick-btn primary"
+                onClick={() => alert('Đang tải toàn bộ tài liệu khóa học và slide bài giảng...')}
+              >
+                📥 Tải Tài Liệu &amp; Slide Bài Giảng
+              </button>
+              <button
+                type="button"
+                className="dash-quick-btn"
+                onClick={() => alert('Mở kho lưu trữ GitHub của lớp học')}
+              >
+                💻 Kho GitHub Lớp Học
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB: LỊCH HỌC */}
+      {activeTab === 'schedule' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div>
+            <h2 style={{ margin: '0 0 0.35rem', fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>
+              🗓️ Lịch Học &amp; Báo Cáo Chuyên Cần
+            </h2>
+            <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
+              Thời khóa biểu tuần và thông tin điểm danh các buổi học đã tham gia
+            </span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
+            <div className="dash-card" style={{ padding: '1.5rem', borderRadius: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#0f172a' }}>⏰ Buổi Học Kế Tiếp</h3>
+                <span className="badge-pill badge-green">Tối nay 18:30</span>
+              </div>
+              <div style={{ padding: '1rem', borderRadius: '12px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderLeft: '4px solid #059669' }}>
+                <div style={{ fontWeight: 800, fontSize: '1rem', color: '#0f172a' }}>Lớp WEB-K24-A (MERN Full-Stack)</div>
+                <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.35rem' }}>
+                  📍 Phòng Lab 302 • ⏰ 18:30 - 21:00
+                </div>
+                <div style={{ fontSize: '0.85rem', color: '#334155', marginTop: '0.5rem', fontWeight: 600 }}>
+                  Chủ đề: Buổi 4 - Xây dựng RESTful API với Express và Mongoose Model
+                </div>
+              </div>
+
+              <div style={{ marginTop: '1.25rem' }}>
+                <div style={{ fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.5rem' }}>Lịch học cố định hàng tuần:</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', borderRadius: '8px', backgroundColor: '#f1f5f9', fontSize: '0.85rem' }}>
+                    <span>Thứ 2 (18:30 - 21:00)</span>
+                    <strong style={{ color: '#047857' }}>Phòng Lab 302</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', borderRadius: '8px', backgroundColor: '#f1f5f9', fontSize: '0.85rem' }}>
+                    <span>Thứ 4 (18:30 - 21:00)</span>
+                    <strong style={{ color: '#047857' }}>Phòng Lab 302</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', borderRadius: '8px', backgroundColor: '#f1f5f9', fontSize: '0.85rem' }}>
+                    <span>Thứ 6 (18:30 - 21:00)</span>
+                    <strong style={{ color: '#047857' }}>Phòng Lab 302</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="dash-card" style={{ padding: '1.5rem', borderRadius: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#0f172a' }}>✅ Nhật Ký Chuyên Cần</h3>
+                <span className="badge-pill badge-green">Chuyên cần 100%</span>
+              </div>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '2px solid #e2e8f0', backgroundColor: '#f8fafc', textAlign: 'left', color: '#475569' }}>
+                      <th style={{ padding: '8px 10px' }}>Buổi</th>
+                      <th style={{ padding: '8px 10px' }}>Ngày</th>
+                      <th style={{ padding: '8px 10px' }}>Trạng Thái</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '8px 10px', fontWeight: 700 }}>Buổi 1: Tổng quan Full-Stack</td>
+                      <td style={{ padding: '8px 10px', color: '#64748b' }}>01/10/2026</td>
+                      <td style={{ padding: '8px 10px' }}><span className="badge-pill badge-green">Có mặt</span></td>
+                    </tr>
+                    <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '8px 10px', fontWeight: 700 }}>Buổi 2: HTML5 &amp; CSS3 Nâng cao</td>
+                      <td style={{ padding: '8px 10px', color: '#64748b' }}>03/10/2026</td>
+                      <td style={{ padding: '8px 10px' }}><span className="badge-pill badge-green">Có mặt</span></td>
+                    </tr>
+                    <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '8px 10px', fontWeight: 700 }}>Buổi 3: TypeScript &amp; OOP</td>
+                      <td style={{ padding: '8px 10px', color: '#64748b' }}>05/10/2026</td>
+                      <td style={{ padding: '8px 10px' }}><span className="badge-pill badge-green">Có mặt</span></td>
+                    </tr>
+                    <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '8px 10px', fontWeight: 700 }}>Buổi 4: REST API &amp; Express</td>
+                      <td style={{ padding: '8px 10px', color: '#64748b' }}>Tối nay</td>
+                      <td style={{ padding: '8px 10px' }}><span className="badge-pill badge-blue">Sắp diễn ra</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB: BÀI TẬP VỀ NHÀ */}
+      {activeTab === 'assignments' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div>
+            <h2 style={{ margin: '0 0 0.35rem', fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>
+              📝 Bài Tập Về Nhà &amp; Thực Hành
+            </h2>
+            <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
+              Xem hạn nộp, nộp link bài làm và theo dõi nhận xét chi tiết của giảng viên
+            </span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '1.25rem' }}>
+            {assignments.map((item) => (
+              <div
+                key={item.id}
+                className="dash-card"
+                style={{
+                  padding: '1.25rem',
+                  borderRadius: '16px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  gap: '1rem',
+                  borderTop: item.status === 'PENDING' ? '4px solid #ea580c' : '4px solid #059669',
+                }}
+              >
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#047857', backgroundColor: '#ecfdf5', padding: '2px 8px', borderRadius: '6px' }}>
+                      {item.course}
+                    </span>
+                    <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{item.deadline}</span>
+                  </div>
+                  <h3 style={{ margin: '0.5rem 0', fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', lineHeight: 1.35 }}>
+                    {item.title}
+                  </h3>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '0.75rem', borderTop: '1px solid #e2e8f0' }}>
+                  <div>
+                    {item.status === 'PENDING' ? (
+                      <span className="badge-pill badge-amber">Chưa nộp</span>
+                    ) : (
+                      <span className="badge-pill badge-green">Đã nộp • Điểm: {item.score}</span>
+                    )}
+                  </div>
+                  {item.status === 'PENDING' ? (
+                    <button
+                      type="button"
+                      onClick={() => handleSubmitAssignment(item.id)}
+                      className="dash-quick-btn primary"
+                      style={{ padding: '0.45rem 1rem', fontSize: '0.82rem' }}
+                    >
+                      🚀 Nộp bài ngay
+                    </button>
                   ) : (
-                    <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '12px', color: '#FFF' }}>
-                      <thead>
-                        <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', textAlign: 'left', fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)' }}>
-                          <th style={{ padding: '8px' }}>Khóa học</th>
-                          <th style={{ padding: '8px' }}>Lớp xếp</th>
-                          <th style={{ padding: '8px' }}>Học phí</th>
-                          <th style={{ padding: '8px' }}>Tình trạng đóng tiền</th>
-                          <th style={{ padding: '8px' }}>Thao tác</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {registrations.map((reg) => (
-                          <tr key={reg._id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.9rem' }}>
-                            <td style={{ padding: '10px 8px' }}>
-                              <strong>{reg.course?.title || 'Khóa học IELTS'}</strong>
-                            </td>
-                            <td style={{ padding: '10px 8px' }}>{reg.class?.name || 'Đang chờ xếp lớp'}</td>
-                            <td style={{ padding: '10px 8px', color: '#FCD34D' }}>
-                              {((reg.course?.tuitionFee) || 9200000).toLocaleString('vi-VN')} ₫
-                            </td>
-                            <td style={{ padding: '10px 8px' }}>
-                              <span style={{
-                                padding: '3px 8px',
-                                borderRadius: '10px',
-                                fontSize: '0.75rem',
-                                fontWeight: 700,
-                                backgroundColor: reg.tuitionStatus === 'PAID' ? 'rgba(87,208,97,0.2)' : 'rgba(245,158,11,0.2)',
-                                color: reg.tuitionStatus === 'PAID' ? '#57D061' : '#F59E0B',
-                              }}>
-                                {reg.tuitionStatus === 'PAID' ? 'ĐÃ HOÀN TẤT' : 'CHƯA THANH TOÁN'}
-                              </span>
-                            </td>
-                            <td style={{ padding: '10px 8px' }}>
-                              {reg.tuitionStatus !== 'PAID' && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setPaymentEnrollmentId(reg._id);
-                                    setPaymentAmount(reg.course?.tuitionFee || 9200000);
-                                    setIsPaymentModalOpen(true);
-                                  }}
-                                  style={{
-                                    backgroundColor: '#EC6E23',
-                                    border: 'none',
-                                    color: '#FFF',
-                                    padding: '4px 12px',
-                                    borderRadius: '12px',
-                                    fontSize: '0.75rem',
-                                    fontWeight: 700,
-                                    cursor: 'pointer',
-                                  }}
-                                >
-                                  Thanh toán ngay
-                                </button>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                    <button
+                      type="button"
+                      onClick={() => alert('Xem chi tiết nhận xét của giảng viên')}
+                      className="dash-quick-btn"
+                      style={{ padding: '0.45rem 0.85rem', fontSize: '0.8rem' }}
+                    >
+                      👁️ Xem nhận xét
+                    </button>
                   )}
                 </div>
               </div>
-            )}
-          </>
-        )}
+            ))}
+          </div>
+        </div>
+      )}
 
-        {/* ── PAYMENT MODAL (UC12: Make Payment) ─────────────────────── */}
-        {isPaymentModalOpen && (
-          <div
-            style={{
-              position: 'fixed',
-              inset: 0,
-              backgroundColor: 'rgba(0,0,0,0.65)',
-              backdropFilter: 'blur(5px)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              zIndex: 9999,
-              padding: '16px',
-            }}
-          >
-            <div
-              style={{
-                backgroundColor: '#0F2F2E',
-                border: '1px solid #1E4E4D',
-                borderRadius: '16px',
-                width: '100%',
-                maxWidth: '500px',
-                padding: '24px',
-                color: '#FFF',
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                <h3 style={{ margin: 0, color: '#57D061' }}>💳 Cổng Thanh Toán Học Phí (UC12)</h3>
-                <button
-                  type="button"
-                  onClick={() => setIsPaymentModalOpen(false)}
-                  style={{ background: 'none', border: 'none', color: '#FFF', cursor: 'pointer', fontSize: '1.2rem' }}
-                >
-                  ✕
-                </button>
+      {/* TAB: KẾT QUẢ HỌC TẬP */}
+      {activeTab === 'grades' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div>
+            <h2 style={{ margin: '0 0 0.35rem', fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>
+              📊 Bảng Điểm &amp; Kết Quả Học Tập
+            </h2>
+            <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
+              Tổng hợp điểm các bài tập, đánh giá chuyên cần và xếp loại học tập
+            </span>
+          </div>
+
+          <div className="dash-card" style={{ padding: '1.5rem', borderRadius: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem' }}>
+              <div>
+                <span className="badge-pill badge-green">⭐ Xếp loại: Xuất sắc</span>
+                <h3 style={{ margin: '0.4rem 0 0', fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>
+                  Điểm Trung Bình Tích Lũy (GPA): <span style={{ color: '#047857' }}>9.0 / 10</span>
+                </h3>
               </div>
+              <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                Cập nhật lần cuối: Kỳ đánh giá Đợt 4 • Năm 2026
+              </div>
+            </div>
 
-              <form onSubmit={handleMakePayment} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', marginBottom: '4px' }}>
-                    Số tiền thanh toán (VNĐ):
-                  </label>
-                  <input
-                    type="number"
-                    value={paymentAmount}
-                    onChange={(e) => setPaymentAmount(Number(e.target.value))}
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      borderRadius: '8px',
-                      backgroundColor: 'rgba(0,0,0,0.3)',
-                      border: '1px solid rgba(255,255,255,0.2)',
-                      color: '#FFF',
-                      fontSize: '1rem',
-                      fontWeight: 700,
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', marginBottom: '4px' }}>
-                    Phương thức thanh toán:
-                  </label>
-                  <select
-                    value={paymentMethod}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      borderRadius: '8px',
-                      backgroundColor: '#0F2F2E',
-                      border: '1px solid rgba(255,255,255,0.2)',
-                      color: '#FFF',
-                    }}
-                  >
-                    <option value="VNPAY">Cổng VNPAY (QR Code &amp; ATM)</option>
-                    <option value="BANK_TRANSFER">Chuyển khoản ngân hàng trực tiếp</option>
-                    <option value="CREDIT_CARD">Thẻ tín dụng / Ghi nợ quốc tế</option>
-                    <option value="CASH">Tiền mặt tại quầy Giáo vụ</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', marginBottom: '4px' }}>
-                    Nội dung chuyển khoản / Ghi chú:
-                  </label>
-                  <input
-                    type="text"
-                    value={paymentNote}
-                    onChange={(e) => setPaymentNote(e.target.value)}
-                    placeholder="VD: Nguyễn Văn A nộp học phí IELTS K26"
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      borderRadius: '8px',
-                      backgroundColor: 'rgba(0,0,0,0.3)',
-                      border: '1px solid rgba(255,255,255,0.2)',
-                      color: '#FFF',
-                    }}
-                  />
-                </div>
-
-                <div style={{ marginTop: '14px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                  <button
-                    type="button"
-                    onClick={() => setIsPaymentModalOpen(false)}
-                    style={{
-                      padding: '8px 16px',
-                      borderRadius: '20px',
-                      border: '1px solid rgba(255,255,255,0.3)',
-                      background: 'none',
-                      color: '#FFF',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Hủy
-                  </button>
-                  <button
-                    type="submit"
-                    style={{
-                      padding: '8px 24px',
-                      borderRadius: '20px',
-                      backgroundColor: '#57D061',
-                      border: 'none',
-                      color: '#052F2E',
-                      fontWeight: 800,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Xác nhận thanh toán
-                  </button>
-                </div>
-              </form>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid #e2e8f0', backgroundColor: '#f8fafc', textAlign: 'left', color: '#475569' }}>
+                    <th style={{ padding: '10px 14px' }}>Nội Dung Đánh Giá</th>
+                    <th style={{ padding: '10px 14px' }}>Trọng Số</th>
+                    <th style={{ padding: '10px 14px' }}>Điểm Đạt Được</th>
+                    <th style={{ padding: '10px 14px' }}>Trạng Thái</th>
+                    <th style={{ padding: '10px 14px' }}>Nhận Xét Của Giảng Viên</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ padding: '12px 14px', fontWeight: 700, color: '#0f172a' }}>
+                      Bài tập 1: Giao diện Responsive HTML5/CSS3
+                    </td>
+                    <td style={{ padding: '12px 14px', color: '#64748b' }}>20%</td>
+                    <td style={{ padding: '12px 14px', fontWeight: 800, color: '#047857' }}>9.0 / 10</td>
+                    <td style={{ padding: '12px 14px' }}><span className="badge-pill badge-green">Đạt xuất sắc</span></td>
+                    <td style={{ padding: '12px 14px', color: '#475569', fontSize: '0.82rem' }}>
+                      Code CSS clean, giao diện chuẩn responsive trên mọi thiết bị.
+                    </td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ padding: '12px 14px', fontWeight: 700, color: '#0f172a' }}>
+                      Điểm danh &amp; Tham gia thảo luận trên lớp
+                    </td>
+                    <td style={{ padding: '12px 14px', color: '#64748b' }}>10%</td>
+                    <td style={{ padding: '12px 14px', fontWeight: 800, color: '#047857' }}>10 / 10</td>
+                    <td style={{ padding: '12px 14px' }}><span className="badge-pill badge-green">100% Chuyên cần</span></td>
+                    <td style={{ padding: '12px 14px', color: '#475569', fontSize: '0.82rem' }}>
+                      Đi học đúng giờ, tích cực phát biểu và hỗ trợ bạn học.
+                    </td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ padding: '12px 14px', fontWeight: 700, color: '#0f172a' }}>
+                      Bài tập 2: RESTful API với Express &amp; MongoDB
+                    </td>
+                    <td style={{ padding: '12px 14px', color: '#64748b' }}>20%</td>
+                    <td style={{ padding: '12px 14px', fontWeight: 800, color: '#d97706' }}>Chờ chấm</td>
+                    <td style={{ padding: '12px 14px' }}><span className="badge-pill badge-amber">Đang chấm</span></td>
+                    <td style={{ padding: '12px 14px', color: '#64748b', fontSize: '0.82rem' }}>—</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };
 
 export default StudentDashboard;
+

@@ -1,59 +1,63 @@
 import { Router } from 'express';
+import { authenticate, authorize } from '../middlewares/auth.middleware';
 import {
   getAssignedClasses,
-  getClassStudents,
+  getClassDetail,
+  getStudentList,
+  getStudentDetail,
   getTeachingSchedule,
-  getTeacherAssignments,
+  getAssignments,
   createAssignment,
-  getSubmissions,
+  updateAssignment,
+  deleteAssignment,
+  getAssignmentSubmissions,
   gradeSubmission,
-  updateStudentGrade,
-  createTeacherScheduleRequest,
-  getTeacherChangeRequests,
-  getClassAttendance,
+  getStudentAcademicResults,
+  createOrEnterGrade,
+  updateGrade,
+  deleteGrade,
+  submitScheduleChangeRequest,
+  getScheduleChangeRequests,
+  getAttendance,
   checkAttendance,
 } from '../controllers/teacher.controller';
-import { authenticate } from '../middlewares/auth.middleware';
 
 const router = Router();
 
-// All teacher routes require authentication
-router.use(authenticate);
+// All routes require TEACHER (or DIRECTOR / TRAINING_STAFF) role
+router.use(authenticate, authorize('TEACHER', 'DIRECTOR', 'TRAINING_STAFF'));
 
-// UC25: View Assigned Classes
+// 1. Class Management
 router.get('/classes', getAssignedClasses);
+router.get('/classes/:classId', getClassDetail);
 
-// UC26: View Student List & UC28: Student Info & UC29: Student Academic Results
-router.get('/classes/:classId/students', getClassStudents);
+// 2. Student Management & Information
+router.get('/students', getStudentList);
+router.get('/students/:studentId', getStudentDetail);
 
-// UC27: View Teaching Schedule
+// 3. Teaching Schedule (Timetable)
 router.get('/schedule', getTeachingSchedule);
 
-// UC30: View Assignments
-router.get('/assignments', getTeacherAssignments);
-
-// UC35: Create Assignment & UC36: Assign Assignment
+// 4. Assignments & Grading
+router.get('/assignments', getAssignments);
 router.post('/assignments', createAssignment);
-
-// Submissions list
-router.get('/assignments/:assignmentId/submissions', getSubmissions);
-
-// UC31: Grade Assignments & UC32: Update Grades
+router.put('/assignments/:assignmentId', updateAssignment);
+router.delete('/assignments/:assignmentId', deleteAssignment);
+router.get('/assignments/:assignmentId/submissions', getAssignmentSubmissions);
 router.post('/submissions/:submissionId/grade', gradeSubmission);
 
-// UC32: Update student final/midterm grade on enrollment
-router.put('/enrollments/:enrollmentId/grade', updateStudentGrade);
+// 5. Academic Performance & Grade Updating
+router.get('/grades', getStudentAcademicResults);
+router.post('/grades', createOrEnterGrade);
+router.put('/grades/:gradeId', updateGrade);
+router.delete('/grades/:gradeId', deleteGrade);
 
-// UC33: Submit Schedule Change Request
-router.post('/schedule-change-request', createTeacherScheduleRequest);
+// 6. Schedule Change Requests & Tracking
+router.post('/schedule-requests', submitScheduleChangeRequest);
+router.get('/schedule-requests', getScheduleChangeRequests);
 
-// UC34: Track Change Requests
-router.get('/change-requests', getTeacherChangeRequests);
-
-// UC37: View Attendance
-router.get('/attendance/:classId', getClassAttendance);
-
-// UC38: Check Attendance
+// 7. Attendance (View & Check)
+router.get('/attendance', getAttendance);
 router.post('/attendance', checkAttendance);
 
 export { router as teacherRouter };
