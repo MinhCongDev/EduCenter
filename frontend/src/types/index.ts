@@ -300,3 +300,100 @@ export interface ClassFormData {
   capacity: number;
   status: ClassStatus;
 }
+
+// ── Payment Types ────────────────────────────
+export type PaymentMethod = 'VNPAY' | 'BANK_TRANSFER' | 'CASH' | 'CREDIT_CARD';
+export type PaymentStatus = 'PENDING' | 'SUCCESS' | 'FAILED' | 'REFUNDED';
+
+export interface PaymentCourseInfo {
+  _id: string;
+  title: string;
+  code: string;
+  tuitionFee: number;
+  durationWeeks?: number;
+  level?: string;
+  category?: string;
+}
+
+export interface PaymentClassInfo {
+  _id: string;
+  classCode: string;
+  room?: string;
+  scheduleDays?: string[];
+  timeSlot?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+export interface PaymentEnrollmentInfo {
+  _id: string;
+  status: string;
+  tuitionStatus: string;
+  registrationDate?: string;
+  enrollmentDate?: string;
+  class?: PaymentClassInfo;
+}
+
+export interface Payment {
+  _id: string;
+  student: string | User;
+  course?: PaymentCourseInfo;
+  enrollment?: PaymentEnrollmentInfo;
+  amount: number;
+  method: PaymentMethod;
+  transactionCode: string;
+  status: PaymentStatus;
+  paymentDate: string;
+  note?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PaymentSummary {
+  totalPaid: number;
+  successCount: number;
+  pendingCount: number;
+  pendingTuitionCount: number;
+  totalPendingTuitionAmount: number;
+}
+
+export interface PendingTuitionItem {
+  _id: string;
+  student: string;
+  course: {
+    _id: string;
+    title: string;
+    code: string;
+    description?: string;
+    tuitionFee: number;
+    originalPrice?: number;
+    durationWeeks?: number;
+    level?: string;
+    format?: string;
+  };
+  class?: {
+    _id: string;
+    classCode: string;
+    room?: string;
+    scheduleDays?: string[];
+    timeSlot?: string;
+    startDate?: string;
+    endDate?: string;
+    status?: string;
+  };
+  registrationDate: string;
+  enrollmentDate: string;
+  status: string;
+  tuitionStatus: 'PENDING' | 'PAID' | 'REFUNDED';
+}
+
+export interface PaymentReceiptData {
+  payment: Payment;
+  center: {
+    name: string;
+    hotline: string;
+    email: string;
+    address: string;
+    slogan?: string;
+  };
+}

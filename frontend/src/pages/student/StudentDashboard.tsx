@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
 const StudentDashboard: React.FC = () => {
@@ -53,13 +54,21 @@ const StudentDashboard: React.FC = () => {
 
       {/* ── Quick Action Toolbar ── */}
       <div className="dash-actions-row">
+        <Link
+          to="/student/payments"
+          className="dash-quick-btn primary"
+          style={{ textDecoration: 'none', background: 'linear-gradient(135deg, #1e40af, #3b82f6)', color: '#fff', fontWeight: 700 }}
+        >
+          <span>💳</span>
+          <span>Học Phí & Cổng Thanh Toán</span>
+        </Link>
         <button
           type="button"
-          className="dash-quick-btn primary"
+          className="dash-quick-btn"
           onClick={() => alert('Mở tài liệu và slide của buổi học tối nay')}
         >
           <span>📖</span>
-          <span>Tài Liệu Buổi Học Hôm Nay</span>
+          <span>Tài Liệu Buổi Học</span>
         </button>
         <button
           type="button"

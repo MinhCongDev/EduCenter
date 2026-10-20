@@ -18,6 +18,7 @@ const RegisterPage = lazy(() => import('./pages/public/RegisterPage'));
 
 // Dashboard pages
 const StudentDashboard = lazy(() => import('./pages/student/StudentDashboard'));
+const StudentPaymentsPage = lazy(() => import('./pages/student/StudentPaymentsPage'));
 const TeacherDashboard = lazy(() => import('./pages/teacher/TeacherDashboard'));
 const StaffDashboard = lazy(() => import('./pages/staff/StaffDashboard'));
 const CoursesManagementPage = lazy(() => import('./pages/staff/CoursesManagementPage'));
@@ -107,7 +108,16 @@ const AppRouter: React.FC = () => {
             </ProtectedRoute>
           }
         />
-        {/* Additional student routes will be added in Phase 9 */}
+        <Route
+          path="/student/payments"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <DashboardLayout>
+                <StudentPaymentsPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
 
         {/* ── Teacher Routes ───────────────────────── */}
         <Route
