@@ -82,10 +82,10 @@ const ClassFormModal: React.FC<ClassFormModalProps> = ({ classItem, options, onS
       <div className="modal-box modal-lg">
         <div className="modal-header">
           <div>
-            <h2 className="modal-title">{classItem ? '✏️ Chỉnh sửa lớp học' : '➕ Thêm lớp học mới'}</h2>
+            <h2 className="modal-title">{classItem ? 'Chỉnh sửa lớp học' : 'Thêm lớp học mới'}</h2>
             <p className="modal-subtitle">{classItem ? `Cập nhật thông tin lớp ${classItem.classCode}` : 'Nhập thông tin lớp học mới'}</p>
           </div>
-          <button type="button" className="modal-close-btn" onClick={onClose} aria-label="Đóng">✕</button>
+          <button type="button" className="modal-close-btn" onClick={onClose}>Đóng</button>
         </div>
 
         {error && <div className="form-error-banner" role="alert">⚠️ {error}</div>}
@@ -161,7 +161,7 @@ const ClassFormModal: React.FC<ClassFormModalProps> = ({ classItem, options, onS
           <div className="modal-footer">
             <button type="button" className="btn btn-outline" onClick={onClose} disabled={saving}>Hủy</button>
             <button type="submit" className="btn btn-primary" disabled={saving || options.courses.length === 0 || options.teachers.length === 0}>
-              {saving ? 'Đang lưu…' : classItem ? '💾 Cập nhật' : '✅ Tạo lớp học'}
+              {saving ? 'Đang lưu…' : classItem ? 'Cập nhật' : 'Tạo lớp học'}
             </button>
           </div>
         </form>
@@ -281,14 +281,14 @@ const ClassesManagementPage: React.FC = () => {
   return (
     <div className="courses-page">
       <nav className="staff-breadcrumb" aria-label="Breadcrumb">
-        <Link to="/staff/dashboard">🏠 Dashboard</Link>
+        <Link to="/staff/dashboard">Tổng quan</Link>
         <span className="breadcrumb-sep">›</span>
         <span>Quản lý Lớp học</span>
       </nav>
 
       <div className="courses-page-header">
         <div>
-          <h1 className="courses-page-title">🏫 Quản lý Lớp học</h1>
+          <h1 className="courses-page-title">Quản lý lớp học</h1>
           <p className="courses-page-subtitle">Tạo lớp, phân công giảng viên và sắp xếp lịch học</p>
         </div>
         <button
@@ -309,7 +309,6 @@ const ClassesManagementPage: React.FC = () => {
 
       <div className="courses-filter-bar">
         <div className="courses-search-wrap">
-          <span className="search-icon">🔍</span>
           <input className="form-input courses-search-input" placeholder="Tìm theo mã lớp…" value={search} onChange={(event) => { setLoading(true); setPage(1); setSearch(event.target.value); }} />
         </div>
         <select className="form-input courses-filter-select" value={statusFilter} onChange={(event) => { setLoading(true); setPage(1); setStatusFilter(event.target.value); }}>
@@ -321,7 +320,7 @@ const ClassesManagementPage: React.FC = () => {
 
       {error && !loading && (
         <div className="form-error-banner courses-error" role="alert">
-          ⚠️ {error}
+          {error}
           <button className="btn btn-ghost" style={{ marginLeft: '1rem' }} onClick={() => void fetchClasses()}>Thử lại</button>
         </div>
       )}
@@ -330,7 +329,7 @@ const ClassesManagementPage: React.FC = () => {
         {loading ? (
           <div className="courses-loading"><div className="loading-spinner" /><p>Đang tải danh sách lớp học…</p></div>
         ) : classes.length === 0 ? (
-          <div className="courses-empty"><span className="courses-empty-icon">📭</span><h3>Chưa có lớp học nào</h3><p>Bấm <strong>+ Thêm lớp học</strong> để bắt đầu.</p></div>
+          <div className="courses-empty"><h3>Chưa có lớp học nào</h3><p>Bấm <strong>+ Thêm lớp học</strong> để bắt đầu.</p></div>
         ) : (
           <table className="courses-table class-table" aria-label="Danh sách lớp học">
             <thead>
@@ -348,8 +347,8 @@ const ClassesManagementPage: React.FC = () => {
                   <td><span className={`course-status-badge class-status-${classItem.status.toLowerCase()}`}>{STATUS_LABELS[classItem.status]}</span></td>
                   <td>
                     <div className="courses-actions">
-                      <button className="btn btn-outline btn-sm" onClick={() => { setEditingClass(classItem); setFormError(''); setShowForm(true); }}>✏️ Sửa</button>
-                      <button className="btn btn-danger-outline btn-sm" onClick={() => setDeletingClass(classItem)}>🗑️ Xóa</button>
+                      <button className="btn btn-outline btn-sm" onClick={() => { setEditingClass(classItem); setFormError(''); setShowForm(true); }}>Sửa</button>
+                      <button className="btn btn-danger-outline btn-sm" onClick={() => setDeletingClass(classItem)}>Xóa</button>
                     </div>
                   </td>
                 </tr>
@@ -361,9 +360,9 @@ const ClassesManagementPage: React.FC = () => {
 
       {totalPages > 1 && (
         <div className="courses-pagination" role="navigation" aria-label="Phân trang">
-          <button className="btn btn-outline btn-sm" onClick={() => { setLoading(true); setPage((current) => Math.max(1, current - 1)); }} disabled={page <= 1}>← Trước</button>
+          <button className="btn btn-outline btn-sm" onClick={() => { setLoading(true); setPage((current) => Math.max(1, current - 1)); }} disabled={page <= 1}>Trước</button>
           <span className="pagination-info">Trang {page} / {totalPages}</span>
-          <button className="btn btn-outline btn-sm" onClick={() => { setLoading(true); setPage((current) => Math.min(totalPages, current + 1)); }} disabled={page >= totalPages}>Sau →</button>
+          <button className="btn btn-outline btn-sm" onClick={() => { setLoading(true); setPage((current) => Math.min(totalPages, current + 1)); }} disabled={page >= totalPages}>Sau</button>
         </div>
       )}
 

@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 
 import { useAuth } from '../../contexts/AuthContext';
@@ -14,7 +14,6 @@ interface DashboardStats {
 
 const StaffDashboard: React.FC = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats>({
     totalCourses: 0,
     activeCourses: 0,
@@ -98,35 +97,15 @@ const StaffDashboard: React.FC = () => {
   const quickActions = [
     {
       id: 'action-manage-courses',
-      icon: '📚',
-      title: 'Quản lý Khóa học',
+      title: 'Quản lý khóa học',
       description: 'Thêm, sửa, xóa các khóa học',
       path: '/staff/courses',
-      gradient: 'linear-gradient(135deg, var(--primary-500), var(--primary-700))',
     },
     {
       id: 'action-manage-classes',
-      icon: '🏫',
-      title: 'Quản lý Lớp học',
+      title: 'Quản lý lớp học',
       description: 'Tổ chức và quản lý lịch lớp',
       path: '/staff/classes',
-      gradient: 'linear-gradient(135deg, var(--accent-500), var(--accent-600))',
-    },
-    {
-      id: 'action-manage-students',
-      icon: '👩‍🎓',
-      title: 'Quản lý Học viên',
-      description: 'Danh sách và hồ sơ học viên',
-      path: '/staff/students',
-      gradient: 'linear-gradient(135deg, #10b981, #059669)',
-    },
-    {
-      id: 'action-manage-enrollments',
-      icon: '📋',
-      title: 'Đăng ký học',
-      description: 'Xử lý đơn đăng ký khóa học',
-      path: '/staff/enrollments',
-      gradient: 'linear-gradient(135deg, #f59e0b, #d97706)',
     },
   ];
 
@@ -189,14 +168,14 @@ const StaffDashboard: React.FC = () => {
       <div className="dash-banner" style={{ background: 'linear-gradient(135deg, #064e3b 0%, #065f46 50%, #047857 100%)' }}>
         <div className="dash-banner-content">
           <div className="dash-banner-badge">
-            📋 Phòng Giáo Vụ • Quản Lý Đào Tạo
+            Phòng Giáo vụ • Quản lý đào tạo
           </div>
           <h1>{greeting}, {user?.fullName || 'Cán bộ Giáo vụ'}!</h1>
           <p>Quản lý tuyển sinh, phân bổ lớp học, giảng viên và tiếp nhận học viên trung tâm.</p>
         </div>
         <div className="dash-banner-right">
           <div className="dash-date-pill">
-            <div>⚡ Trạng thái: Sẵn sàng</div>
+            <div>Trạng thái: Sẵn sàng</div>
             <div className="sub">Kỳ tuyển sinh Đợt 4 • Năm 2026</div>
           </div>
         </div>
@@ -204,38 +183,12 @@ const StaffDashboard: React.FC = () => {
 
       {/* ── Quick Action Bar ── */}
       <div className="dash-actions-row">
-        <button
-          type="button"
-          className="dash-quick-btn primary"
-          onClick={() => alert('Mở form tạo lớp học mới')}
-        >
-          <span>➕</span>
-          <span>Mở Lớp Học Mới</span>
-        </button>
-        <button
-          type="button"
-          className="dash-quick-btn"
-          onClick={() => alert('Mở form ghi danh học viên thủ công')}
-        >
-          <span>👤</span>
-          <span>Thêm Học Viên Thủ Công</span>
-        </button>
-        <button
-          type="button"
-          className="dash-quick-btn"
-          onClick={() => navigate('/staff/courses')}
-        >
-          <span>📚</span>
-          <span>Quản lý Khóa học</span>
-        </button>
-        <button
-          type="button"
-          className="dash-quick-btn"
-          onClick={() => alert('Đang xuất danh sách tổng hợp điểm danh & sĩ số')}
-        >
-          <span>📑</span>
-          <span>Xuất Báo Cáo Sĩ Số</span>
-        </button>
+        <Link to="/staff/courses" className="dash-quick-btn primary">
+          Quản lý khóa học
+        </Link>
+        <Link to="/staff/classes" className="dash-quick-btn">
+          Quản lý lớp học
+        </Link>
       </div>
 
       {/* ── Key Metrics ── */}
@@ -516,16 +469,11 @@ const StaffDashboard: React.FC = () => {
               id={action.id}
               to={action.path}
               className="staff-action-card"
-              style={{ '--action-gradient': action.gradient } as React.CSSProperties}
             >
-              <div className="staff-action-icon-wrap">
-                <span className="staff-action-icon">{action.icon}</span>
-              </div>
               <div className="staff-action-content">
                 <h3 className="staff-action-title">{action.title}</h3>
                 <p className="staff-action-desc">{action.description}</p>
               </div>
-              <span className="staff-action-arrow">→</span>
             </Link>
           ))}
         </div>
