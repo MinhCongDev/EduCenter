@@ -6,6 +6,12 @@ import path from 'path';
 import { config } from './config';
 import { healthRouter } from './routes/health.routes';
 import { authRouter } from './routes/auth.routes';
+import { centerRouter } from './routes/center.routes';
+import { courseRouter } from './routes/course.routes';
+import { announcementRouter } from './routes/announcement.routes';
+import { classRouter } from './routes/class.routes';
+import { teacherRouter } from './routes/teacher.routes';
+// Student module (datlt)
 import { studentRouter } from './routes/student.routes';
 import { publicRouter } from './routes/public.routes';
 import { errorHandler } from './middlewares/error.middleware';
@@ -44,6 +50,7 @@ app.use(
 app.use(
   cors({
     origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, or Postman)
       if (!origin) return callback(null, true);
       return callback(null, true);
     },
@@ -82,6 +89,12 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // ===========================
 app.use('/api/health', healthRouter);
 app.use('/api/auth', authRouter);
+app.use('/api/center', centerRouter);
+app.use('/api/courses', courseRouter);
+app.use('/api/announcements', announcementRouter);
+app.use('/api/classes', classRouter);
+app.use('/api/teacher', teacherRouter);
+// Student module (datlt)
 app.use('/api/public', publicRouter);
 app.use('/api/student', studentRouter);
 

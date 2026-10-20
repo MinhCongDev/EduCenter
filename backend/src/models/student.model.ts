@@ -3,10 +3,16 @@ import mongoose, { Document, Schema, Model, Types } from 'mongoose';
 export interface IStudent extends Document {
   user: Types.ObjectId;
   studentCode: string;
-  birthDate?: Date;
-  address?: string;
-  major?: string;
-  status: 'ACTIVE' | 'INACTIVE' | 'GRADUATED' | 'SUSPENDED';
+  dob?: Date;
+  currentBand?: number;
+  targetBand?: number;
+  learningGoal?: string;
+  emergencyContact?: {
+    name: string;
+    relationship: string;
+    phone: string;
+  };
+  status: 'ACTIVE' | 'GRADUATED' | 'RESERVED' | 'DROPPED';
   createdAt: Date;
   updatedAt: Date;
 }
@@ -16,24 +22,43 @@ const studentSchema = new Schema<IStudent>(
     user: {
       type: Schema.Types.ObjectId,
       ref: 'User',
-      required: [true, 'Người dùng là bắt buộc'],
+      required: [true, 'Tài khoản người dùng là bắt buộc'],
       unique: true,
     },
     studentCode: {
       type: String,
-      required: [true, 'Mã sinh viên là bắt buộc'],
+      required: [true, 'Mã học viên là bắt buộc'],
       unique: true,
       trim: true,
       uppercase: true,
     },
-    birthDate: {
+    dob: {
       type: Date,
     },
-    address: { type: String, default: '' },
-    major: { type: String, default: '' },
+    currentBand: {
+      type: Number,
+      min: 0,
+      max: 9.0,
+      default: 0,
+    },
+    targetBand: {
+      type: Number,
+      min: 0,
+      max: 9.0,
+      default: 7.0,
+    },
+    learningGoal: {
+      type: String,
+      default: 'Du học & Định cư',
+    },
+    emergencyContact: {
+      name: { type: String, default: '' },
+      relationship: { type: String, default: '' },
+      phone: { type: String, default: '' },
+    },
     status: {
       type: String,
-      enum: ['ACTIVE', 'INACTIVE', 'GRADUATED', 'SUSPENDED'],
+      enum: ['ACTIVE', 'GRADUATED', 'RESERVED', 'DROPPED'],
       default: 'ACTIVE',
     },
   },

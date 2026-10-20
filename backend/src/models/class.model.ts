@@ -4,6 +4,7 @@ export type ClassStatus = 'OPEN' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
 
 export interface IClass extends Document {
   classCode: string;
+  name?: string;
   course: Types.ObjectId;
   teacher: Types.ObjectId;
   room: string;
@@ -12,8 +13,7 @@ export interface IClass extends Document {
   startDate: Date;
   endDate: Date;
   capacity: number;
-  sessions?: number;
-  currentStudents?: number;
+  currentEnrollment: number;
   status: ClassStatus;
   createdAt: Date;
   updatedAt: Date;
@@ -27,6 +27,11 @@ const classSchema = new Schema<IClass>(
       unique: true,
       trim: true,
       uppercase: true,
+    },
+    name: {
+      type: String,
+      trim: true,
+      default: '',
     },
     course: {
       type: Schema.Types.ObjectId,
@@ -61,15 +66,10 @@ const classSchema = new Schema<IClass>(
     },
     capacity: {
       type: Number,
-      default: 30,
+      default: 25,
       min: 1,
     },
-    sessions: {
-      type: Number,
-      default: 0,
-      min: 0,
-    },
-    currentStudents: {
+    currentEnrollment: {
       type: Number,
       default: 0,
       min: 0,

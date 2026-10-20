@@ -1,19 +1,23 @@
 import mongoose, { Document, Schema, Model, Types } from 'mongoose';
 
-export type SubmissionStatus = 'SUBMITTED' | 'LATE' | 'GRADED';
+export type SubmissionStatus = 'SUBMITTED' | 'GRADED' | 'LATE' | 'PENDING';
 
 export interface ISubmission extends Document {
   assignment: Types.ObjectId;
   student: Types.ObjectId;
   content: string;
-  attachmentUrl?: string;
-  submittedAt: Date;
-  status: SubmissionStatus;
-  // Convenience: stores latest grade inline so frontend can read without extra join
-  score?: number;
+  attachments: string[];
+  submissionTime: Date;
+  grade?: number;
   feedback?: string;
-  gradedAt?: Date;
+  criteria?: {
+    taskAchievement?: number;
+    coherenceCohesion?: number;
+    lexicalResource?: number;
+    grammaticalAccuracy?: number;
+  };
   gradedBy?: Types.ObjectId;
+  status: SubmissionStatus;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -28,26 +32,21 @@ const submissionSchema = new Schema<ISubmission>(
     student: {
       type: Schema.Types.ObjectId,
       ref: 'User',
-      required: [true, 'Sinh viên là bắt buộc'],
+      required: [true, 'Học viên là bắt buộc'],
     },
     content: {
       type: String,
       default: '',
     },
-    attachmentUrl: {
-      type: String,
-      default: '',
+    attachments: {
+      type: [String],
+      default: [],
     },
-    submittedAt: {
+    submissionTime: {
       type: Date,
       default: Date.now,
     },
-    status: {
-      type: String,
-      enum: ['SUBMITTED', 'LATE', 'GRADED'],
-      default: 'SUBMITTED',
-    },
-    score: {
+    grade: {
       type: Number,
       min: 0,
     },
@@ -55,20 +54,25 @@ const submissionSchema = new Schema<ISubmission>(
       type: String,
       default: '',
     },
-    gradedAt: {
-      type: Date,
+    criteria: {
+      taskAchievement: { type: Number, min: 0, max: 9.0 },
+      coherenceCohesion: { type: Number, min: 0, max: 9.0 },
+      lexicalResource: { type: Number, min: 0, max: 9.0 },
+      grammaticalAccuracy: { type: Number, min: 0, max: 9.0 },
     },
     gradedBy: {
       type: Schema.Types.ObjectId,
       ref: 'User',
+    },
+    status: {
+      type: String,
+      enum: ['SUBMITTED', 'GRADED', 'LATE', 'PENDING'],
+      default: 'SUBMITTED',
     },
   },
   {
     timestamps: true,
   }
 );
-
-// Mỗi sinh viên chỉ nộp 1 lần cho 1 bài tập
-submissionSchema.index({ assignment: 1, student: 1 }, { unique: true });
 
 export const Submission: Model<ISubmission> = mongoose.model<ISubmission>('Submission', submissionSchema);

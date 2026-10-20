@@ -1,72 +1,46 @@
 import mongoose, { Document, Schema, Model, Types } from 'mongoose';
 
-export type NotificationType =
-  | 'GRADE_PUBLISHED'
-  | 'ASSIGNMENT_GRADED'
-  | 'REQUEST_APPROVED'
-  | 'REQUEST_REJECTED'
-  | 'PAYMENT_RECEIVED'
-  | 'CLASS_ANNOUNCEMENT'
-  | 'ATTENDANCE_MARKED'
-  | 'SYSTEM';
+export type NotificationType = 'INFO' | 'ALERT' | 'SUCCESS' | 'WARNING';
 
 export interface INotification extends Document {
-  user: Types.ObjectId;
-  type: NotificationType;
+  recipient: Types.ObjectId;
   title: string;
-  message: string;
-  link?: string;
-  read: boolean;
-  readAt?: Date;
+  content: string;
+  type: NotificationType;
+  isRead: boolean;
+  linkUrl?: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
 const notificationSchema = new Schema<INotification>(
   {
-    user: {
+    recipient: {
       type: Schema.Types.ObjectId,
       ref: 'User',
-      required: [true, 'Người nhận là bắt buộc'],
-      index: true,
-    },
-    type: {
-      type: String,
-      enum: [
-        'GRADE_PUBLISHED',
-        'ASSIGNMENT_GRADED',
-        'REQUEST_APPROVED',
-        'REQUEST_REJECTED',
-        'PAYMENT_RECEIVED',
-        'CLASS_ANNOUNCEMENT',
-        'ATTENDANCE_MARKED',
-        'SYSTEM',
-      ],
-      default: 'SYSTEM',
+      required: [true, 'Người nhận thông báo là bắt buộc'],
     },
     title: {
       type: String,
-      required: [true, 'Tiêu đề là bắt buộc'],
+      required: [true, 'Tiêu đề thông báo là bắt buộc'],
       trim: true,
-      maxlength: 200,
     },
-    message: {
+    content: {
       type: String,
-      required: [true, 'Nội dung là bắt buộc'],
-      trim: true,
-      maxlength: 1000,
+      required: [true, 'Nội dung thông báo là bắt buộc'],
     },
-    link: {
+    type: {
       type: String,
-      default: '',
+      enum: ['INFO', 'ALERT', 'SUCCESS', 'WARNING'],
+      default: 'INFO',
     },
-    read: {
+    isRead: {
       type: Boolean,
       default: false,
-      index: true,
     },
-    readAt: {
-      type: Date,
+    linkUrl: {
+      type: String,
+      default: '',
     },
   },
   {
@@ -74,28 +48,4 @@ const notificationSchema = new Schema<INotification>(
   }
 );
 
-notificationSchema.index({ user: 1, read: 1, createdAt: -1 });
-
-export const Notification: Model<INotification> = mongoose.model<INotification>(
-  'Notification',
-  notificationSchema
-);
-
-// =====================================================
-// Helper: Create a notification for a user
-// =====================================================
-export const createNotification = async (data: {
-  user: Types.ObjectId | string;
-  type?: NotificationType;
-  title: string;
-  message: string;
-  link?: string;
-}): Promise<INotification> => {
-  return Notification.create({
-    user: data.user,
-    type: data.type || 'SYSTEM',
-    title: data.title,
-    message: data.message,
-    link: data.link || '',
-  });
-};
+export const Notification: Model<INotification> = mongoose.model<INotification>('Notification', notificationSchema);

@@ -24,11 +24,11 @@ export const notify = async (data: {
 }): Promise<INotification | null> => {
   try {
     return await Notification.create({
-      user: data.user,
-      type: data.type || 'SYSTEM',
+      recipient: data.user,
+      type: data.type || 'INFO',
       title: data.title,
-      message: data.message,
-      link: data.link || '',
+      content: data.message,
+      linkUrl: data.link || '',
     });
   } catch (err) {
     // Non-fatal: a notification failure should not break the parent flow
@@ -49,11 +49,11 @@ export const notifyMany = async (
   if (!userIds.length) return 0;
   try {
     const docs = userIds.map((u) => ({
-      user: u,
-      type: payload.type || 'SYSTEM',
+      recipient: u,
+      type: payload.type || 'INFO',
       title: payload.title,
-      message: payload.message,
-      link: payload.link || '',
+      content: payload.message,
+      linkUrl: payload.link || '',
     }));
     const result = await Notification.insertMany(docs, { ordered: false });
     return result.length;

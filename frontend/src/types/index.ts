@@ -1,6 +1,7 @@
 // ===========================
 // EduCenter – Shared Types
 // (Single source of truth – aligned with backend models)
+// Merged: main (origin/main) + datlt (student module)
 // ===========================
 
 // ─── User & Auth ──────────────────────────
@@ -21,11 +22,18 @@ export interface User {
   updatedAt: string;
 }
 
+// Student profile (datlt)
 export interface StudentProfile {
   studentCode: string;
-  birthDate?: string;
-  address?: string;
-  major?: string;
+  dob?: string;
+  currentBand?: number;
+  targetBand?: number;
+  learningGoal?: string;
+  emergencyContact?: {
+    name: string;
+    relationship: string;
+    phone: string;
+  };
   status: 'ACTIVE' | 'INACTIVE' | 'GRADUATED' | 'SUSPENDED';
 }
 
@@ -46,6 +54,32 @@ export interface RegisterData {
   password: string;
   fullName: string;
   phone?: string;
+  address?: string;
+  dob?: string;
+}
+
+export interface UpdateProfileData {
+  fullName?: string;
+  phone?: string;
+  address?: string;
+  dob?: string;
+  avatarUrl?: string;
+}
+
+export interface ChangePasswordData {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword?: string;
+}
+
+export interface ForgotPasswordData {
+  email: string;
+}
+
+export interface ResetPasswordData {
+  email: string;
+  resetCode: string;
+  newPassword: string;
 }
 
 export interface AuthResponse {
@@ -55,6 +89,160 @@ export interface AuthResponse {
     user: User;
     token: string;
   };
+}
+
+// ─── Center Information types (UC01) ──────────────────────────
+export interface Branch {
+  _id?: string;
+  branchName: string;
+  address: string;
+  phone: string;
+  isHeadquarters: boolean;
+}
+
+export interface Facility {
+  _id?: string;
+  name: string;
+  description: string;
+  imageUrl?: string;
+}
+
+export interface CenterInfo {
+  _id: string;
+  name: string;
+  slogan: string;
+  introduction: string;
+  vision?: string;
+  mission?: string;
+  hotline: string;
+  email: string;
+  workingHours: string;
+  address: string;
+  branches: Branch[];
+  facilities: Facility[];
+  achievements: { label: string; value: string; icon?: string }[];
+  socialLinks: {
+    facebook?: string;
+    youtube?: string;
+    tiktok?: string;
+    website?: string;
+  };
+}
+
+// ─── Course types (UC02, UC03, UC04, UC05) ──────────────────────────
+export type CourseFormat = 'ONLINE' | 'OFFLINE' | 'BLENDED';
+export type CourseStatus = 'ACTIVE' | 'INACTIVE' | 'DRAFT';
+
+export interface ClassScheduleItem {
+  _id?: string;
+  dayOfWeek: string;
+  startTime: string;
+  endTime: string;
+  classroom: string;
+  topic?: string;
+}
+
+export interface ClassItem {
+  _id: string;
+  classCode: string;
+  name?: string;
+  room: string;
+  scheduleDays: string[];
+  timeSlot: string;
+  startDate: string;
+  endDate: string;
+  capacity: number;
+  currentEnrollment: number;
+  status: 'OPEN' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  teacher?: {
+    _id: string;
+    fullName: string;
+    email: string;
+    avatarUrl?: string;
+  };
+}
+
+// Rich Course (main canonical)
+export interface Course {
+  _id: string;
+  code: string;
+  title: string;
+  name?: string;
+  description: string;
+  category: string;
+  entryLevel: string;
+  targetLevel?: string;
+  durationWeeks: number;
+  sessions: number;
+  tuitionFee: number;
+  price?: number;
+  format: CourseFormat;
+  status: CourseStatus;
+  learningObjectives: string[];
+  syllabus: string[];
+  bannerUrl?: string;
+  featured?: boolean;
+  classes?: ClassItem[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Course CRUD form data
+export interface CourseFormData {
+  code: string;
+  title: string;
+  description: string;
+  category: string;
+  entryLevel?: string;
+  targetLevel?: string;
+  durationWeeks: number;
+  tuitionFee: number;
+  status: CourseStatus;
+  syllabus: string[];
+}
+
+export interface CourseQueryParams {
+  search?: string;
+  level?: string;
+  category?: string;
+  format?: string;
+  status?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  sortBy?: 'newest' | 'price_asc' | 'price_desc' | 'duration' | 'title';
+  page?: number;
+  limit?: number;
+}
+
+// ─── Announcement types (UC06) ──────────────────────────
+export interface Announcement {
+  _id: string;
+  title: string;
+  content: string;
+  summary?: string;
+  author: {
+    _id: string;
+    fullName: string;
+    role: UserRole;
+    avatarUrl?: string;
+  };
+  category: string;
+  targetAudience: 'ALL' | 'STUDENTS' | 'TEACHERS' | 'STAFF';
+  isPinned: boolean;
+  status: 'PUBLISHED' | 'DRAFT' | 'ARCHIVED';
+  publicationDate: string;
+  imageUrl?: string;
+  views: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AnnouncementQueryParams {
+  search?: string;
+  category?: string;
+  audience?: string;
+  page?: number;
+  limit?: number;
 }
 
 // ─── API Wrapper ──────────────────────────
@@ -86,24 +274,56 @@ export interface NavItem {
 }
 
 // ============================================
-// STUDENT MODULE TYPES (aligned with backend)
+// SHARED / STAFF MODULE TYPES (main)
 // ============================================
 
-// Course
-export interface Course {
+export type ClassStatus = 'OPEN' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+
+export interface ClassCourseOption {
   _id: string;
   code: string;
   title: string;
-  description: string;
-  category: string;
-  durationWeeks: number;
-  tuitionFee: number;
-  status: 'ACTIVE' | 'INACTIVE';
-  sessions?: number;
 }
 
-// Class
-export type ClassStatus = 'OPEN' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+export interface ClassTeacherOption {
+  _id: string;
+  fullName: string;
+  email: string;
+}
+
+export interface TrainingClass {
+  _id: string;
+  classCode: string;
+  course: ClassCourseOption;
+  teacher: ClassTeacherOption;
+  room: string;
+  scheduleDays: string[];
+  timeSlot: string;
+  startDate: string;
+  endDate: string;
+  capacity: number;
+  status: ClassStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ClassFormData {
+  classCode: string;
+  course: string;
+  teacher: string;
+  room: string;
+  scheduleDays: string[];
+  timeSlot: string;
+  startDate: string;
+  endDate: string;
+  capacity: number;
+}
+
+// ============================================
+// STUDENT MODULE TYPES (datlt – aligned with backend after merge)
+// ============================================
+
+// Student module's Class (references full Course)
 export interface Class {
   _id: string;
   classCode: string;
@@ -115,12 +335,12 @@ export interface Class {
   startDate: string;
   endDate: string;
   capacity: number;
-  currentStudents?: number;
+  currentEnrollment?: number;
   sessions?: number;
   status: ClassStatus;
 }
 
-// Class Schedule
+// Class Schedule (datlt)
 export interface ClassSchedule {
   _id: string;
   class: string;
@@ -132,7 +352,7 @@ export interface ClassSchedule {
   updatedAt?: string;
 }
 
-// Assignment
+// Assignment (datlt – aligned with main's schema)
 export type AssignmentStatus = 'ACTIVE' | 'CLOSED';
 export type AssignmentSkill =
   | 'LISTENING'
@@ -143,53 +363,50 @@ export type AssignmentSkill =
   | 'VOCABULARY'
   | 'GRAMMAR'
   | 'OTHER';
-export type SubmissionStatus = 'PENDING' | 'SUBMITTED' | 'LATE' | 'GRADED';
 
 export interface Assignment {
   _id: string;
   class: string;
   teacher?: string;
   title: string;
-  description: string;
+  description?: string;
   skill: AssignmentSkill;
   dueDate: string;
   maxScore: number;
   status: AssignmentStatus;
   attachmentUrl?: string;
   // enriched fields from backend
-  submissionStatus?: SubmissionStatus | null;
+  submissionStatus?: 'PENDING' | 'SUBMITTED' | 'LATE' | 'GRADED' | null;
   submissionId?: string;
-  submissionDate?: string;
-  score?: number;
+  submissionTime?: string;
+  grade?: number;
   feedback?: string;
 }
 
-// Submission
+// Submission (datlt – aligned with main's schema: attachments[], submissionTime, grade)
 export interface Submission {
   _id: string;
   assignment: string;
   student: string;
   content: string;
-  attachmentUrl?: string;
-  submittedAt: string;
-  status: 'SUBMITTED' | 'LATE' | 'GRADED';
-  score?: number;
+  attachments: string[];
+  submissionTime: string;
+  grade?: number;
   feedback?: string;
-  gradedAt?: string;
   gradedBy?: string;
+  status: 'SUBMITTED' | 'LATE' | 'GRADED' | 'PENDING';
+  createdAt: string;
+  updatedAt: string;
 }
 
-// Grade
+// Grade (datlt – aligned with main's schema)
 export type GradeEvaluationType =
-  | 'LISTENING'
-  | 'READING'
-  | 'WRITING'
-  | 'SPEAKING'
-  | 'OVERALL'
-  | 'QUIZ'
-  | 'MIDTERM'
-  | 'FINAL'
-  | 'OTHER';
+  | 'MOCK_TEST'
+  | 'MID_TERM'
+  | 'FINAL_TEST'
+  | 'ASSIGNMENT'
+  | 'SPEAKING_ASSESSMENT'
+  | 'WRITING_ASSESSMENT';
 export type GradeStatus = 'DRAFT' | 'PUBLISHED';
 
 export interface Grade {
@@ -200,24 +417,22 @@ export interface Grade {
   evaluationType: GradeEvaluationType;
   title: string;
   testDate: string;
-  maxScore: number;
-  score: number;
+  overallBand: number;
   listening?: number;
   reading?: number;
   writing?: number;
   speaking?: number;
-  overallBand?: number;
   feedback?: string;
   status: GradeStatus;
 }
 
-// Attendance
+// Attendance (datlt – aligned with main's schema)
 export type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED';
 export interface Attendance {
   _id: string;
   class: string;
-  student?: string;
-  schedule?: string;
+  classSchedule?: string;
+  student: string;
   sessionDate: string;
   status: AttendanceStatus;
   notes?: string;
@@ -233,22 +448,22 @@ export interface AttendanceStats {
   rate: number;
 }
 
-// Payment
-export type PaymentStatus = 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
-export type PaymentMethod = 'CASH' | 'BANK_TRANSFER' | 'VNPAY' | 'MOMO' | 'CARD';
+// Payment (datlt – aligned with main's schema: course ref, transactionCode, SUCCESS status)
+export type PaymentStatus = 'PENDING' | 'SUCCESS' | 'FAILED' | 'REFUNDED';
+export type PaymentMethod = 'VNPAY' | 'BANK_TRANSFER' | 'CASH' | 'CREDIT_CARD';
 
 export interface Payment {
   _id: string;
   student: string;
   enrollment?: string;
-  class?: Pick<Class, '_id' | 'classCode' | 'room' | 'course'>;
+  course?: Pick<Course, '_id' | 'code' | 'title'>;
   amount: number;
   method: PaymentMethod;
-  transactionId?: string;
+  transactionCode?: string;
   paymentDate?: string;
   dueDate?: string;
   status: PaymentStatus;
-  notes?: string;
+  note?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -262,43 +477,43 @@ export interface PaymentStats {
   totalPending: number;
 }
 
-// Change Request
-export type ChangeRequestType = 'CHANGE_CLASS' | 'CHANGE_SCHEDULE' | 'WITHDRAW';
+// Change Request (datlt – aligned with main's schema: requestType, reviewedBy, reviewNote)
+export type RequestType = 'CLASS_CHANGE' | 'SCHEDULE_CHANGE' | 'TEACHER_SCHEDULE_CHANGE';
 export type ChangeRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
 export interface ChangeRequest {
   _id: string;
-  student: string;
-  type: ChangeRequestType;
-  currentClass?: Pick<Class, '_id' | 'classCode'> | string;
-  targetClass?: Pick<Class, '_id' | 'classCode'> | string;
-  currentClassCode?: string;
-  targetClassCode?: string;
+  student?: string;
+  teacher?: string;
+  requesterRole: 'STUDENT' | 'TEACHER';
+  requestType: RequestType;
+  currentClass: string;
+  targetClass?: string;
   currentSchedule?: string;
   targetSchedule?: string;
+  sessionDate?: string;
+  targetDate?: string;
   reason: string;
   status: ChangeRequestStatus;
-  adminNote?: string;
-  processedBy?: string;
-  processedAt?: string;
+  reviewedBy?: string;
+  reviewNote?: string;
+  reviewedAt?: string;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface CreateChangeRequestInput {
-  type: ChangeRequestType;
+  requestType: RequestType;
   reason: string;
   currentClass?: string;
   targetClass?: string;
-  currentClassCode?: string;
-  targetClassCode?: string;
   currentSchedule?: string;
   targetSchedule?: string;
 }
 
 // Enrollment / My Class
-export type EnrollmentStatus = 'ENROLLED' | 'DROPPED' | 'COMPLETED';
-export type TuitionStatus = 'PENDING' | 'PAID';
+export type EnrollmentStatus = 'PENDING' | 'ENROLLED' | 'DROPPED' | 'COMPLETED';
+export type TuitionStatus = 'PENDING' | 'PAID' | 'REFUNDED';
 
 export interface Enrollment {
   _id: string;
@@ -325,26 +540,17 @@ export interface DashboardData {
   myClasses: Enrollment[];
 }
 
-// ─── Notifications (M4) ──────────────────────────
-export type NotificationType =
-  | 'GRADE_PUBLISHED'
-  | 'ASSIGNMENT_GRADED'
-  | 'REQUEST_APPROVED'
-  | 'REQUEST_REJECTED'
-  | 'PAYMENT_RECEIVED'
-  | 'CLASS_ANNOUNCEMENT'
-  | 'ATTENDANCE_MARKED'
-  | 'SYSTEM';
+// ─── Notifications (M4) – aligned with main's schema: recipient, isRead, content ───
+export type NotificationType = 'INFO' | 'ALERT' | 'SUCCESS' | 'WARNING';
 
 export interface NotificationItem {
   _id: string;
-  user: string;
-  type: NotificationType;
+  recipient: string;
   title: string;
-  message: string;
-  link?: string;
-  read: boolean;
-  readAt?: string;
+  content: string;
+  type: NotificationType;
+  isRead: boolean;
+  linkUrl?: string;
   createdAt: string;
   updatedAt: string;
 }

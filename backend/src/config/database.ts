@@ -1,11 +1,12 @@
 import mongoose from 'mongoose';
+import dns from 'node:dns';
 import { config } from './index';
-import dns from 'dns';
 
 // Force Node to use public DNS servers BEFORE any mongoose.connect call,
 // so MongoDB Atlas SRV lookups (_mongodb._tcp.<cluster>.mongodb.net) are not
 // blocked by the local ISP DNS resolver.
-const dnsServers = (process.env.MONGODB_DNS_SERVERS || '8.8.8.8,1.1.1.1')
+// `MONGODB_DNS_SERVERS` can override (comma separated), leave empty to skip.
+const dnsServers = (process.env.MONGODB_DNS_SERVERS ?? '8.8.8.8,1.1.1.1')
   .split(',')
   .map((s) => s.trim())
   .filter(Boolean);

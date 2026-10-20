@@ -4,8 +4,8 @@ export type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED';
 
 export interface IAttendance extends Document {
   class: Types.ObjectId;
+  classSchedule?: Types.ObjectId;
   student: Types.ObjectId;
-  schedule?: Types.ObjectId;
   sessionDate: Date;
   status: AttendanceStatus;
   notes?: string;
@@ -21,18 +21,19 @@ const attendanceSchema = new Schema<IAttendance>(
       ref: 'Class',
       required: [true, 'Lớp học là bắt buộc'],
     },
-    student: {
-      type: Schema.Types.ObjectId,
-      ref: 'User',
-      required: [true, 'Sinh viên là bắt buộc'],
-    },
-    schedule: {
+    classSchedule: {
       type: Schema.Types.ObjectId,
       ref: 'ClassSchedule',
     },
+    student: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: [true, 'Học viên là bắt buộc'],
+    },
     sessionDate: {
       type: Date,
-      required: [true, 'Ngày điểm danh là bắt buộc'],
+      required: [true, 'Ngày học là bắt buộc'],
+      default: Date.now,
     },
     status: {
       type: String,
@@ -52,7 +53,5 @@ const attendanceSchema = new Schema<IAttendance>(
     timestamps: true,
   }
 );
-
-attendanceSchema.index({ class: 1, student: 1, sessionDate: 1 });
 
 export const Attendance: Model<IAttendance> = mongoose.model<IAttendance>('Attendance', attendanceSchema);

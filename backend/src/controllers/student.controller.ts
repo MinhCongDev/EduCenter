@@ -45,7 +45,7 @@ export const enrollIntoClass = async (req: AuthRequest, res: Response): Promise<
     if (cls.status !== 'OPEN' && cls.status !== 'IN_PROGRESS') {
       throw createError(`Lớp học hiện không nhận đăng ký (trạng thái: ${cls.status})`, 400);
     }
-    const currentCount = cls.currentStudents ?? 0;
+    const currentCount = cls.currentEnrollment ?? 0;
     if (typeof cls.capacity === 'number' && currentCount >= cls.capacity) {
       throw createError('Lớp học đã đầy, không thể đăng ký', 400);
     }
@@ -75,9 +75,9 @@ export const enrollIntoClass = async (req: AuthRequest, res: Response): Promise<
       });
     }
 
-    // Bump class.currentStudents
-    cls.currentStudents = currentCount + 1;
-    if (cls.currentStudents >= cls.capacity && cls.status === 'OPEN') {
+    // Bump class.currentEnrollment
+    cls.currentEnrollment = currentCount + 1;
+    if (cls.currentEnrollment >= cls.capacity && cls.status === 'OPEN') {
       cls.status = 'IN_PROGRESS';
     }
     await cls.save();
@@ -249,7 +249,7 @@ export const getAssignments = async (req: AuthRequest, res: Response): Promise<v
       const sub = submissionMap.get(a._id.toString());
       let submissionStatus: 'PENDING' | 'SUBMITTED' | 'LATE' | 'GRADED' | null = null;
       if (sub) {
-        if (sub.score !== undefined && sub.score !== null) submissionStatus = 'GRADED';
+        if (sub.grade !== undefined && sub.grade !== null) submissionStatus = 'GRADED';
         else if (sub.status === 'LATE') submissionStatus = 'LATE';
         else submissionStatus = 'SUBMITTED';
       }
@@ -261,13 +261,12 @@ export const getAssignments = async (req: AuthRequest, res: Response): Promise<v
         description: a.description,
         skill: a.skill,
         dueDate: a.dueDate,
-        maxScore: a.maxScore,
         status: a.status,
-        attachmentUrl: a.attachmentUrl,
+        attachments: a.attachments,
         submissionStatus,
         submissionId: sub?._id,
-        submissionDate: sub?.submittedAt,
-        score: sub?.score,
+        submissionTime: sub?.submissionTime,
+        grade: sub?.grade,
         feedback: sub?.feedback,
       };
     });
@@ -464,14 +463,18 @@ export const getPayments = async (req: AuthRequest, res: Response): Promise<void
 
     const payments = await Payment.find({ student: user._id })
       .populate({
-        path: 'class',
-        select: 'classCode room',
-        populate: { path: 'course', select: 'code title' },
+        path: 'course',
+        select: 'code title',
+      })
+      .populate({
+        path: 'enrollment',
+        select: 'class',
+        populate: { path: 'class', select: 'classCode room' },
       })
       .sort({ createdAt: -1 });
 
     const totalPaid = payments
-      .filter((p) => p.status === 'PAID')
+      .filter((p) => p.status === 'SUCCESS')
       .reduce((sum, p) => sum + p.amount, 0);
     const totalPending = payments
       .filter((p) => p.status === 'PENDING')
@@ -484,7 +487,7 @@ export const getPayments = async (req: AuthRequest, res: Response): Promise<void
         payments,
         stats: {
           total: payments.length,
-          paidCount: payments.filter((p) => p.status === 'PAID').length,
+          paidCount: payments.filter((p) => p.status === 'SUCCESS').length,
           pendingCount: payments.filter((p) => p.status === 'PENDING').length,
           failedCount: payments.filter((p) => p.status === 'FAILED').length,
           totalPaid,
@@ -674,8 +677,8 @@ export const submitAssignment = async (req: AuthRequest, res: Response): Promise
     let submission;
     if (existing) {
       existing.content = content || notes || existing.content;
-      if (attachmentUrl) existing.attachmentUrl = attachmentUrl;
-      existing.submittedAt = new Date();
+      if (attachmentUrl) existing.attachments = [attachmentUrl];
+      existing.submissionTime = new Date();
       existing.status = status;
       await existing.save();
       submission = existing;
@@ -684,8 +687,8 @@ export const submitAssignment = async (req: AuthRequest, res: Response): Promise
         assignment: id,
         student: user._id,
         content: content || notes || '',
-        attachmentUrl,
-        submittedAt: new Date(),
+        attachments: attachmentUrl ? [attachmentUrl] : [],
+        submissionTime: new Date(),
         status,
       });
     }
@@ -748,7 +751,7 @@ export const getDashboard = async (req: AuthRequest, res: Response): Promise<voi
     }
 
     const tuitionPaid = payments
-      .filter((p) => p.status === 'PAID')
+      .filter((p) => p.status === 'SUCCESS')
       .reduce((sum, p) => sum + p.amount, 0);
     const tuitionPending = payments
       .filter((p) => p.status === 'PENDING')
@@ -828,9 +831,11 @@ export const getMyProfile = async (req: AuthRequest, res: Response): Promise<voi
         student: student
           ? {
               studentCode: student.studentCode,
-              birthDate: student.birthDate,
-              address: student.address,
-              major: student.major,
+              dob: student.dob,
+              currentBand: student.currentBand,
+              targetBand: student.targetBand,
+              learningGoal: student.learningGoal,
+              emergencyContact: student.emergencyContact,
               status: student.status,
             }
           : null,
@@ -856,13 +861,13 @@ export const getMyNotifications = async (req: AuthRequest, res: Response): Promi
     const user = requireUser(req);
     const limit = Math.min(parseInt((req.query.limit as string) || '50', 10), 100);
 
-    const items = await Notification.find({ user: user._id })
+    const items = await Notification.find({ recipient: user._id })
       .sort({ createdAt: -1 })
       .limit(limit);
 
     const unreadCount = await Notification.countDocuments({
-      user: user._id,
-      read: false,
+      recipient: user._id,
+      isRead: false,
     });
 
     res.json({
@@ -891,13 +896,12 @@ export const markAsRead = async (req: AuthRequest, res: Response): Promise<void>
     const { id } = req.params;
     if (!isValidId(id)) throw createError('ID thông báo không hợp lệ', 400);
 
-    const noti = await Notification.findOne({ _id: id, user: user._id });
+    const noti = await Notification.findOne({ _id: id, recipient: user._id });
     if (!noti) {
       throw createError('Không tìm thấy thông báo', 404);
     }
-    if (!noti.read) {
-      noti.read = true;
-      noti.readAt = new Date();
+    if (!noti.isRead) {
+      noti.isRead = true;
       await noti.save();
     }
     res.json({ success: true, message: 'Đã đánh dấu đã đọc' });
@@ -920,8 +924,8 @@ export const markAllAsRead = async (req: AuthRequest, res: Response): Promise<vo
   try {
     const user = requireUser(req);
     const result = await Notification.updateMany(
-      { user: user._id, read: false },
-      { $set: { read: true, readAt: new Date() } }
+      { recipient: user._id, isRead: false },
+      { $set: { isRead: true } }
     );
     res.json({
       success: true,
@@ -949,7 +953,7 @@ export const deleteNotification = async (req: AuthRequest, res: Response): Promi
     const { id } = req.params;
     if (!isValidId(id)) throw createError('ID thông báo không hợp lệ', 400);
 
-    const result = await Notification.deleteOne({ _id: id, user: user._id });
+    const result = await Notification.deleteOne({ _id: id, recipient: user._id });
     if (result.deletedCount === 0) {
       throw createError('Không tìm thấy thông báo', 404);
     }

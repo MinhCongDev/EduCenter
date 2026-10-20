@@ -1,18 +1,17 @@
 import mongoose, { Document, Schema, Model, Types } from 'mongoose';
 
-export type AssignmentStatus = 'ACTIVE' | 'CLOSED';
-export type AssignmentSkill = 'LISTENING' | 'READING' | 'WRITING' | 'SPEAKING' | 'OVERALL' | 'VOCABULARY' | 'GRAMMAR' | 'OTHER';
+export type AssignmentStatus = 'DRAFT' | 'PUBLISHED' | 'CLOSED';
 
 export interface IAssignment extends Document {
   class: Types.ObjectId;
-  teacher?: Types.ObjectId;
+  teacher: Types.ObjectId;
   title: string;
-  description?: string;
-  skill: AssignmentSkill;
+  description: string;
+  skill?: string;
   dueDate: Date;
   maxScore: number;
+  attachments: string[];
   status: AssignmentStatus;
-  attachmentUrl?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -27,6 +26,7 @@ const assignmentSchema = new Schema<IAssignment>(
     teacher: {
       type: Schema.Types.ObjectId,
       ref: 'User',
+      required: [true, 'Giảng viên là bắt buộc'],
     },
     title: {
       type: String,
@@ -39,8 +39,7 @@ const assignmentSchema = new Schema<IAssignment>(
     },
     skill: {
       type: String,
-      enum: ['LISTENING', 'READING', 'WRITING', 'SPEAKING', 'OVERALL', 'VOCABULARY', 'GRAMMAR', 'OTHER'],
-      default: 'OTHER',
+      default: 'IELTS Writing',
     },
     dueDate: {
       type: Date,
@@ -51,21 +50,19 @@ const assignmentSchema = new Schema<IAssignment>(
       default: 10,
       min: 0,
     },
+    attachments: {
+      type: [String],
+      default: [],
+    },
     status: {
       type: String,
-      enum: ['ACTIVE', 'CLOSED'],
-      default: 'ACTIVE',
-    },
-    attachmentUrl: {
-      type: String,
-      default: '',
+      enum: ['DRAFT', 'PUBLISHED', 'CLOSED'],
+      default: 'PUBLISHED',
     },
   },
   {
     timestamps: true,
   }
 );
-
-assignmentSchema.index({ class: 1, dueDate: 1 });
 
 export const Assignment: Model<IAssignment> = mongoose.model<IAssignment>('Assignment', assignmentSchema);

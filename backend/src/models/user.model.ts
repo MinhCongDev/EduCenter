@@ -6,14 +6,14 @@ export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
 
 export interface IUser extends Document {
   email: string;
-  password: string;
+  password?: string;
   fullName: string;
   phone?: string;
-  address?: string;
-  dob?: Date;
   role: UserRole;
   status: UserStatus;
   avatarUrl?: string;
+  address?: string;
+  dob?: Date;
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
   createdAt: Date;
@@ -34,7 +34,7 @@ const userSchema = new Schema<IUser>(
       type: String,
       required: [true, 'Mật khẩu là bắt buộc'],
       minlength: [6, 'Mật khẩu tối thiểu 6 ký tự'],
-      select: false,
+      select: false, // Don't return password by default
     },
     fullName: {
       type: String,
@@ -45,14 +45,6 @@ const userSchema = new Schema<IUser>(
       type: String,
       trim: true,
       default: '',
-    },
-    address: {
-      type: String,
-      default: '',
-      trim: true,
-    },
-    dob: {
-      type: Date,
     },
     role: {
       type: String,
@@ -67,6 +59,13 @@ const userSchema = new Schema<IUser>(
     avatarUrl: {
       type: String,
       default: '',
+    },
+    address: {
+      type: String,
+      default: '',
+    },
+    dob: {
+      type: Date,
     },
     resetPasswordToken: {
       type: String,
@@ -84,7 +83,7 @@ const userSchema = new Schema<IUser>(
 
 // Hash password before saving
 userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
+  if (!this.isModified('password') || !this.password) return next();
   try {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
@@ -96,6 +95,7 @@ userSchema.pre('save', async function (next) {
 
 // Method to verify password
 userSchema.methods.comparePassword = async function (candidatePassword: string): Promise<boolean> {
+  if (!this.password) return false;
   return bcrypt.compare(candidatePassword, this.password);
 };
 

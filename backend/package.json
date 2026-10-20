@@ -9,6 +9,7 @@
     "start": "node dist/server.js",
     "lint": "eslint src --ext .ts",
     "seed": "ts-node-dev --transpile-only src/scripts/seed.ts",
+    "seed:class-samples": "ts-node-dev --transpile-only src/scripts/seed-class-samples.ts",
     "test": "jest --passWithNoTests",
     "test:watch": "jest --watch"
   },

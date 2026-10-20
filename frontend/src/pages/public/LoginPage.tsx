@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { authService } from '../../services/auth.service';
 import type { UserRole } from '../../types';
+import { ForgotPasswordModal } from '../../components/ForgotPasswordModal';
 
 const DEMO_ACCOUNTS = [
   { role: 'DIRECTOR' as UserRole, label: 'Giám đốc', email: 'director@educenter.edu.vn', icon: '👔' },
@@ -12,7 +13,7 @@ const DEMO_ACCOUNTS = [
 ];
 
 const LoginPage: React.FC = () => {
-  const { login, isLoading } = useAuth();
+  const { user, isAuthenticated, login, isLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -21,8 +22,24 @@ const LoginPage: React.FC = () => {
   const successMessage = stateData?.message || null;
 
   const [formData, setFormData] = useState({ email: '', password: '' });
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
+  const [resetSuccessNotice, setResetSuccessNotice] = useState<string | null>(null);
+
+  // If already logged in, redirect automatically to the corresponding dashboard
+  useEffect(() => {
+    if (!isLoading && isAuthenticated && user) {
+      const dashboardPaths: Record<string, string> = {
+        STUDENT: '/student/dashboard',
+        TEACHER: '/teacher/dashboard',
+        TRAINING_STAFF: '/staff/dashboard',
+        DIRECTOR: '/director/dashboard',
+      };
+      navigate(dashboardPaths[user.role] || '/', { replace: true });
+    }
+  }, [isLoading, isAuthenticated, user, navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -39,7 +56,8 @@ const LoginPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!formData.email || !formData.password) {
+    const cleanEmail = formData.email.trim();
+    if (!cleanEmail || !formData.password) {
       setError('Vui lòng nhập đầy đủ email và mật khẩu.');
       return;
     }
@@ -48,7 +66,7 @@ const LoginPage: React.FC = () => {
     setError(null);
 
     try {
-      await login({ email: formData.email, password: formData.password });
+      await login({ email: cleanEmail, password: formData.password });
       
       const storedUser = authService.getStoredUser();
       if (storedUser) {
@@ -58,10 +76,22 @@ const LoginPage: React.FC = () => {
           TRAINING_STAFF: '/staff/dashboard',
           DIRECTOR: '/director/dashboard',
         };
-        const targetPath = from || dashboardPaths[storedUser.role] || '/';
+        const defaultDashboard = dashboardPaths[storedUser.role] || '/';
+        
+        let targetPath = defaultDashboard;
+        if (from && from !== '/login' && from !== '/unauthorized') {
+          // Ensure `from` isn't a dashboard belonging to another role
+          const isOtherRoleDashboard = Object.entries(dashboardPaths).some(
+            ([role, path]) => role !== storedUser.role && from.startsWith(path)
+          );
+          if (!isOtherRoleDashboard) {
+            targetPath = from;
+          }
+        }
+
         navigate(targetPath, { replace: true });
       } else {
-        navigate(from || '/', { replace: true });
+        navigate('/', { replace: true });
       }
     } catch (err: any) {
       let msg = 'Đăng nhập không thành công. Vui lòng kiểm tra lại email và mật khẩu.';
@@ -76,8 +106,16 @@ const LoginPage: React.FC = () => {
     }
   };
 
-  if (isLoading) return null;
-
+  if (isLoading) {
+    return (
+      <div className="auth-page">
+        <div className="auth-card" style={{ maxWidth: '440px', textAlign: 'center', padding: '3rem 2rem' }}>
+          <div className="loading-spinner" style={{ margin: '0 auto 1rem' }} />
+          <p style={{ color: '#64748b', fontSize: '0.9rem' }}>Đang kiểm tra phiên đăng nhập...</p>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="auth-page">
       <div className="auth-card" style={{ maxWidth: '440px' }}>
@@ -117,9 +155,24 @@ const LoginPage: React.FC = () => {
             border: '1px dashed #cbd5e1',
           }}
         >
-          <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0 0 0.5rem 0', fontWeight: 600 }}>
-            ⚡ Chọn tài khoản test nhanh:
-          </p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+            <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0, fontWeight: 600 }}>
+              ⚡ Chọn tài khoản test nhanh:
+            </p>
+            <span
+              style={{
+                fontSize: '0.72rem',
+                color: '#0369a1',
+                backgroundColor: '#e0f2fe',
+                padding: '2px 6px',
+                borderRadius: '4px',
+                fontWeight: 600,
+              }}
+              title="Mật khẩu chung cho tất cả tài khoản mẫu"
+            >
+              MK: Password123@
+            </span>
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem' }}>
             {DEMO_ACCOUNTS.map((acc) => (
               <button
@@ -187,20 +240,79 @@ const LoginPage: React.FC = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="login-password" className="form-label">Mật khẩu</label>
-            <input
-              id="login-password"
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              className="form-input"
-              placeholder="••••••••"
-              autoComplete="current-password"
-              required
-              disabled={isSubmitting}
-            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <label htmlFor="login-password" className="form-label" style={{ marginBottom: 0 }}>
+                Mật khẩu
+              </label>
+              <button
+                type="button"
+                onClick={() => setIsForgotPasswordOpen(true)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#EC6E23',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  padding: 0,
+                  textDecoration: 'underline',
+                }}
+              >
+                Quên mật khẩu? (UC11)
+              </button>
+            </div>
+            <div style={{ position: 'relative', marginTop: '0.35rem' }}>
+              <input
+                id="login-password"
+                type={showPassword ? 'text' : 'password'}
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                className="form-input"
+                placeholder="••••••••"
+                autoComplete="current-password"
+                required
+                disabled={isSubmitting}
+                style={{ paddingRight: '2.5rem' }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                title={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                style={{
+                  position: 'absolute',
+                  right: '0.75rem',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                  fontSize: '1rem',
+                  padding: '2px',
+                  lineHeight: 1,
+                }}
+              >
+                {showPassword ? '🙈' : '👁️'}
+              </button>
+            </div>
           </div>
+
+          {resetSuccessNotice && (
+            <div
+              style={{
+                padding: '0.65rem 0.85rem',
+                borderRadius: '8px',
+                backgroundColor: '#ecfdf5',
+                color: '#065f46',
+                fontSize: '0.825rem',
+                marginBottom: '0.75rem',
+                border: '1px solid #10b981',
+              }}
+            >
+              ✅ {resetSuccessNotice}
+            </div>
+          )}
 
           <button
             id="login-submit-btn"
@@ -225,6 +337,16 @@ const LoginPage: React.FC = () => {
           </p>
         </div>
       </div>
+
+      {/* UC11: Forgot Password Modal */}
+      <ForgotPasswordModal
+        isOpen={isForgotPasswordOpen}
+        onClose={() => setIsForgotPasswordOpen(false)}
+        onSuccess={(resetEmail) => {
+          setFormData((prev) => ({ ...prev, email: resetEmail, password: '' }));
+          setResetSuccessNotice('Mật khẩu đã được thay đổi! Vui lòng nhập mật khẩu mới để đăng nhập.');
+        }}
+      />
     </div>
   );
 };

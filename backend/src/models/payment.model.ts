@@ -1,19 +1,18 @@
 import mongoose, { Document, Schema, Model, Types } from 'mongoose';
 
-export type PaymentStatus = 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
-export type PaymentMethod = 'CASH' | 'BANK_TRANSFER' | 'VNPAY' | 'MOMO' | 'CARD';
+export type PaymentMethod = 'VNPAY' | 'BANK_TRANSFER' | 'CASH' | 'CREDIT_CARD';
+export type PaymentStatus = 'PENDING' | 'SUCCESS' | 'FAILED' | 'REFUNDED';
 
 export interface IPayment extends Document {
   student: Types.ObjectId;
   enrollment?: Types.ObjectId;
-  class?: Types.ObjectId;
+  course?: Types.ObjectId;
   amount: number;
   method: PaymentMethod;
-  transactionId?: string;
-  paymentDate?: Date;
-  dueDate?: Date;
+  transactionCode: string;
   status: PaymentStatus;
-  notes?: string;
+  paymentDate: Date;
+  note?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -23,43 +22,42 @@ const paymentSchema = new Schema<IPayment>(
     student: {
       type: Schema.Types.ObjectId,
       ref: 'User',
-      required: [true, 'Sinh viên là bắt buộc'],
-      index: true,
+      required: [true, 'Học viên là bắt buộc'],
     },
     enrollment: {
       type: Schema.Types.ObjectId,
       ref: 'Enrollment',
     },
-    class: {
+    course: {
       type: Schema.Types.ObjectId,
-      ref: 'Class',
+      ref: 'Course',
     },
     amount: {
       type: Number,
-      required: [true, 'Số tiền là bắt buộc'],
+      required: [true, 'Số tiền thanh toán là bắt buộc'],
       min: 0,
     },
     method: {
       type: String,
-      enum: ['CASH', 'BANK_TRANSFER', 'VNPAY', 'MOMO', 'CARD'],
-      default: 'CASH',
+      enum: ['VNPAY', 'BANK_TRANSFER', 'CASH', 'CREDIT_CARD'],
+      default: 'VNPAY',
     },
-    transactionId: {
+    transactionCode: {
       type: String,
-      default: '',
-    },
-    paymentDate: {
-      type: Date,
-    },
-    dueDate: {
-      type: Date,
+      required: [true, 'Mã giao dịch là bắt buộc'],
+      unique: true,
+      trim: true,
     },
     status: {
       type: String,
-      enum: ['PENDING', 'PAID', 'FAILED', 'REFUNDED'],
+      enum: ['PENDING', 'SUCCESS', 'FAILED', 'REFUNDED'],
       default: 'PENDING',
     },
-    notes: {
+    paymentDate: {
+      type: Date,
+      default: Date.now,
+    },
+    note: {
       type: String,
       default: '',
     },
@@ -68,7 +66,5 @@ const paymentSchema = new Schema<IPayment>(
     timestamps: true,
   }
 );
-
-paymentSchema.index({ student: 1, createdAt: -1 });
 
 export const Payment: Model<IPayment> = mongoose.model<IPayment>('Payment', paymentSchema);
