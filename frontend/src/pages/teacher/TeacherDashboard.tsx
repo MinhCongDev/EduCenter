@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { teacherService } from '../../services/teacher.service';
 import type {
@@ -17,7 +17,6 @@ export type TeacherTab = 'overview' | 'classes_students' | 'schedule_attendance'
 
 export const TeacherDashboard: React.FC = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
   // 5 Primary Functional Tabs (covering all 14 features + overview)
