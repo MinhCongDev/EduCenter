@@ -89,6 +89,14 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     navigate('/login', { replace: true });
   };
 
+  const currentItem = items.find((item) => {
+    if (!item.path) return false;
+    const currentFull = location.pathname + (location.search || '');
+    if (item.path.includes('?')) return currentFull === item.path;
+    return location.pathname === item.path && (!location.search || location.search === '');
+  });
+  const pageTitle = currentItem?.label || 'Bảng điều khiển';
+
   return (
     <div className="dashboard-shell">
       <aside className="dashboard-sidebar">
@@ -159,7 +167,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         <header className="dashboard-topbar">
           <div>
             <span className="dashboard-topbar-eyebrow">EDUCENTER</span>
-            <h1>Bảng điều khiển</h1>
+            <h1>{pageTitle === 'Tổng quan' ? 'Bảng điều khiển' : pageTitle}</h1>
           </div>
           <span className="dashboard-topbar-role">{roleLabels[role]}</span>
         </header>
