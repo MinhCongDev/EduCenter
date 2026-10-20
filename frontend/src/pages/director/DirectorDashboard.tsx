@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import {
-  directorService,
+import { directorService } from '../../services/director.service';
+import type {
   DirectorSummary,
   StaffAccount,
   AddStaffPayload,
