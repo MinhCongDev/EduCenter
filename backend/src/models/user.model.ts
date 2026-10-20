@@ -14,6 +14,9 @@ export interface IUser extends Document {
   avatarUrl?: string;
   address?: string;
   dob?: Date;
+  isVerified: boolean;
+  emailVerificationToken?: string;
+  emailVerificationExpires?: Date;
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
   createdAt: Date;
@@ -67,6 +70,20 @@ const userSchema = new Schema<IUser>(
     dob: {
       type: Date,
     },
+    isVerified: {
+      // Default true keeps legacy/seeded/admin-created accounts working.
+      // Registration explicitly sets this to false until the email is verified.
+      type: Boolean,
+      default: true,
+    },
+    emailVerificationToken: {
+      type: String,
+      select: false,
+    },
+    emailVerificationExpires: {
+      type: Date,
+      select: false,
+    },
     resetPasswordToken: {
       type: String,
       select: false,
@@ -79,6 +96,12 @@ const userSchema = new Schema<IUser>(
   {
     timestamps: true,
   }
+);
+
+// Index for verification-token lookups (not unique – the token is a SHA-256 hash)
+userSchema.index(
+  { emailVerificationToken: 1 },
+  { partialFilterExpression: { emailVerificationToken: { $type: 'string' } } }
 );
 
 // Hash password before saving
