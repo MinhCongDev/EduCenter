@@ -66,6 +66,19 @@ const getMenuItems = (role: UserRole): DashboardItem[] => {
     ];
   }
 
+  if (role === 'DIRECTOR') {
+    return [
+      { label: 'Tổng quan', path: '/director/dashboard' },
+      { label: 'Quản lý nhân sự', path: '/director/dashboard?tab=staff_accounts' },
+      { label: 'Giám sát vận hành', path: '/director/dashboard?tab=monitoring' },
+      { label: 'Báo cáo học viên', path: '/director/dashboard?tab=student_reports' },
+      { label: 'Báo cáo giảng viên', path: '/director/dashboard?tab=teacher_reports' },
+      { label: 'Báo cáo lớp & khóa học', path: '/director/dashboard?tab=class_course_reports' },
+      { label: 'Báo cáo tài chính & doanh thu', path: '/director/dashboard?tab=revenue_reports' },
+      { label: 'Cài đặt' },
+    ];
+  }
+
   return [
     { label: 'Tổng quan', path: dashboardPaths[role] },
     { label: 'Học viên' },
