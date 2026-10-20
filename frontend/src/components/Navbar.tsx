@@ -5,6 +5,7 @@ import type { UserRole } from '../types';
 import { ProfileModal } from './ProfileModal';
 import { ChangePasswordModal } from './ChangePasswordModal';
 import { NotificationModal } from './NotificationModal';
+import BrandLogo from './BrandLogo';
 
 // Role-based dashboard path mapping
 const getDashboardPath = (role: UserRole): string => {
@@ -41,17 +42,7 @@ const Navbar: React.FC = () => {
       <div className="dmr-header-container">
         {/* Brand Logo */}
         <Link to="/" className="dmr-logo-wrap" aria-label="EduCenter IELTS Trang chủ">
-          <div className="dmr-logo-badge">
-            <span style={{ fontSize: '20px' }}>🇬🇧</span>
-          </div>
-          <div className="dmr-logo-text">
-            <span className="dmr-logo-title">
-              Edu<span>Center</span>
-            </span>
-            <span className="dmr-logo-sub" style={{ color: '#FCD34D' }}>
-              IELTS ACADEMY 8.0+
-            </span>
-          </div>
+          <BrandLogo size="md" variant="light" tagline="IELTS ACADEMY 8.0+" />
         </Link>
 
         {/* Desktop Navigation Menu */}

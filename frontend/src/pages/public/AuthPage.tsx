@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { authService } from '../../services/auth.service';
-import type { UserRole } from '../../types';
 import { PASSWORD_POLICY_HINT, getPasswordError } from '../../utils/password';
 import { getMailboxUrl } from '../../utils/mailbox';
 import { getApiErrorMessage } from '../../utils/apiError';
+import BrandLogo from '../../components/BrandLogo';
 import { ForgotPasswordModal } from '../../components/ForgotPasswordModal';
 import GoogleAuthButton, { GoogleAuthProvider } from '../../components/GoogleAuthButton';
 import './AuthPage.css';
@@ -13,13 +13,6 @@ import './AuthPage.css';
 interface AuthPageProps {
   defaultMode?: 'login' | 'register';
 }
-
-const DEMO_ACCOUNTS = [
-  { role: 'DIRECTOR' as UserRole, label: 'Giám đốc', email: 'director@educenter.edu.vn', icon: '👔' },
-  { role: 'TRAINING_STAFF' as UserRole, label: 'Giáo vụ', email: 'staff@educenter.edu.vn', icon: '📋' },
-  { role: 'TEACHER' as UserRole, label: 'Giảng viên', email: 'teacher.an@educenter.edu.vn', icon: '👨‍🏫' },
-  { role: 'STUDENT' as UserRole, label: 'Học viên', email: 'student.dang@gmail.com', icon: '🎓' },
-];
 
 export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
   const { login, loginWithGoogle, register, isLoading } = useAuth();
@@ -83,14 +76,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
   const handleRegisterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setRegisterForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
     setRegisterError(null);
-  };
-
-  const handleQuickFill = (email: string) => {
-    setLoginForm({
-      email,
-      password: 'Password123@',
-    });
-    setLoginError(null);
   };
 
   const navigateAfterAuth = () => {
@@ -258,10 +243,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
         
         {/* Mobile Header with brand logo & segmented pill toggle */}
         <div className="auth-mobile-header">
-          <div className="auth-logo-badge" style={{ marginBottom: '6px' }}>
-            <span className="flag-icon">🇬🇧</span>
-            <span className="academy-name">EduCenter IELTS</span>
-          </div>
+          <BrandLogo size="sm" tagline="IELTS ACADEMY" className="auth-mobile-brand" />
           <div className="auth-mobile-toggle-pills">
             <button
               type="button"
@@ -297,26 +279,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
               onError={handleGoogleError}
               text="signin_with"
             />
-
-            {/* Quick Demo Fill Buttons */}
-            <div className="auth-demo-accounts">
-              <p className="auth-demo-title">
-                <span>⚡</span> Chọn tài khoản test nhanh:
-              </p>
-              <div className="auth-demo-grid">
-                {DEMO_ACCOUNTS.map((acc) => (
-                  <button
-                    key={acc.email}
-                    type="button"
-                    onClick={() => handleQuickFill(acc.email)}
-                    className="auth-demo-btn"
-                  >
-                    <span>{acc.icon}</span>
-                    <span>{acc.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
 
             {/* Alerts */}
             {loginSuccessNotice && (
@@ -641,14 +603,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
             
             {/* Top Brand Logo Section */}
             <div className="auth-overlay-brand">
-              <div className="auth-logo-badge">
-                <span className="flag-icon">🇬🇧</span>
-                <span className="academy-name">EduCenter IELTS</span>
-              </div>
-              <h3 className="auth-brand-title">
-                Edu<span>Center</span>
-              </h3>
-              <div className="auth-brand-sub">IELTS ACADEMY 8.0+</div>
+              <BrandLogo variant="light" size="lg" tagline="IELTS ACADEMY 8.0+" />
             </div>
 
             {/* Center Dynamic Content */}
