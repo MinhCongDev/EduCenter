@@ -72,8 +72,28 @@ export const StudentPaymentsPage: React.FC = () => {
       studentName: user?.fullName,
       classCode: payment.enrollment?.class?.classCode,
       enrollmentId: payment.enrollment?._id,
+      gateway: payment.method === 'VNPAY' ? 'VNPAY' : 'VIETQR',
     });
     setIsVietQRModalOpen(true);
+  };
+
+  // Mở Cổng thanh toán quét mã QR (VietQR / VNPay) trực tiếp từ thẻ hoặc nút Cổng thanh toán
+  const handleOpenGatewayQR = () => {
+    if (pendingTuitions.length > 0) {
+      handleOpenVietQRForTuition(pendingTuitions[0]);
+    } else if (payments.length > 0) {
+      handleOpenVietQRForPayment(payments[0]);
+    } else {
+      const studentLastName = user?.fullName ? user.fullName.trim().split(' ').pop()?.toUpperCase() : 'HV';
+      setVietQRData({
+        amount: 0,
+        description: `HP ${studentLastName} EDUCENTER`,
+        courseTitle: 'Cổng Thanh Toán Học Phí Trực Tuyến EduCenter',
+        studentName: user?.fullName,
+        gateway: 'VIETQR',
+      });
+      setIsVietQRModalOpen(true);
+    }
   };
 
   // Modal biên lai (Receipt)
@@ -200,7 +220,26 @@ export const StudentPaymentsPage: React.FC = () => {
             Học viên: <strong>{user?.fullName}</strong> ({user?.email}) • Quản lý các khoản học phí, thanh toán trực tuyến qua VNPAY, mã VietQR ngân hàng và tra cứu biên lai đóng tiền điện tử.
           </p>
         </div>
-        <div className="dash-banner-right">
+        <div className="dash-banner-right" style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            className="dash-quick-btn"
+            style={{
+              backgroundColor: '#10b981',
+              color: '#ffffff',
+              fontWeight: 800,
+              border: 'none',
+              boxShadow: '0 4px 14px rgba(16, 185, 129, 0.4)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.45rem',
+              cursor: 'pointer',
+            }}
+            onClick={handleOpenGatewayQR}
+          >
+            <span>📱</span>
+            <span>Cổng Thanh Toán QR</span>
+          </button>
           <button
             type="button"
             className="dash-quick-btn"
@@ -214,7 +253,7 @@ export const StudentPaymentsPage: React.FC = () => {
             onClick={fetchData}
           >
             <span>🔄</span>
-            <span>Làm Mới Dữ Liệu</span>
+            <span>Làm Mới</span>
           </button>
         </div>
       </div>
@@ -260,12 +299,39 @@ export const StudentPaymentsPage: React.FC = () => {
           <div className="dash-metric-icon icon-blue">📋</div>
         </div>
 
-        <div className="dash-metric-card" style={{ borderLeft: '4px solid #8b5cf6' }}>
+        <div
+          className="dash-metric-card"
+          onClick={handleOpenGatewayQR}
+          style={{
+            borderLeft: '4px solid #10b981',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            backgroundColor: '#f0fdf4',
+          }}
+          title="Bấm để quét mã QR thanh toán học phí (VietQR / VNPay)"
+        >
           <div className="dash-metric-info">
-            <span className="dash-metric-label">Cổng thanh toán hỗ trợ</span>
-            <span className="dash-metric-val" style={{ fontSize: '1.25rem' }}>VietQR / VNPAY</span>
+            <span className="dash-metric-label" style={{ color: '#047857' }}>
+              Cổng thanh toán trực tuyến
+            </span>
+            <span className="dash-metric-val" style={{ fontSize: '1.25rem', color: '#065f46' }}>
+              VietQR / VNPAY
+            </span>
+            <span
+              className="dash-metric-trend up"
+              style={{
+                color: '#059669',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.25rem',
+                fontWeight: 700,
+                fontSize: '0.78rem',
+              }}
+            >
+              <span>⚡</span> <span>Bấm để quét mã QR thanh toán ➔</span>
+            </span>
           </div>
-          <div className="dash-metric-icon icon-purple">🔒</div>
+          <div className="dash-metric-icon icon-emerald">📱</div>
         </div>
       </div>
 
@@ -366,7 +432,7 @@ export const StudentPaymentsPage: React.FC = () => {
                       onClick={() => handleOpenVietQRForTuition(item)}
                     >
                       <span>📱</span>
-                      <span>Quét mã VietQR</span>
+                      <span>Quét QR (VietQR / VNPay)</span>
                     </button>
 
                     <button
@@ -543,7 +609,19 @@ export const StudentPaymentsPage: React.FC = () => {
                       {/* Transaction Code */}
                       <td style={{ padding: '1rem', fontWeight: 700, color: '#1e293b' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                          <span>{p.transactionCode}</span>
+                          <span
+                            onClick={() => handleOpenVietQRForPayment(p)}
+                            style={{
+                              cursor: 'pointer',
+                              color: '#047857',
+                              fontWeight: 800,
+                              textDecoration: 'underline',
+                              textUnderlineOffset: '2px',
+                            }}
+                            title="Bấm để quét mã QR thanh toán cho hóa đơn này"
+                          >
+                            {p.transactionCode}
+                          </span>
                           <button
                             type="button"
                             title="Sao chép mã giao dịch"
@@ -653,7 +731,7 @@ export const StudentPaymentsPage: React.FC = () => {
                             title="Hiển thị mã QR thanh toán ngân hàng VietQR"
                           >
                             <span>📱</span>
-                            <span>VietQR</span>
+                            <span>Quét QR</span>
                           </button>
 
                           <button
@@ -966,6 +1044,42 @@ export const StudentPaymentsPage: React.FC = () => {
                         {formatCurrency(selectedTuition.course?.tuitionFee)}
                       </strong>
                     </p>
+
+                    <div style={{ marginTop: '0.75rem' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const item = selectedTuition;
+                          setSelectedTuition(null);
+                          setVietQRData({
+                            amount: item.course?.tuitionFee || 0,
+                            description: `HP ${user?.fullName?.trim().split(' ').pop()?.toUpperCase() || 'HV'} ${item.course?.code || 'IELTS'}`,
+                            courseTitle: item.course?.title,
+                            studentName: user?.fullName,
+                            classCode: item.class?.classCode,
+                            enrollmentId: item._id,
+                            gateway: 'VNPAY',
+                          });
+                          setIsVietQRModalOpen(true);
+                        }}
+                        style={{
+                          backgroundColor: '#dc2626',
+                          border: 'none',
+                          color: '#ffffff',
+                          padding: '0.45rem 1rem',
+                          borderRadius: '8px',
+                          fontSize: '0.82rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.4rem',
+                        }}
+                      >
+                        <span>🔍</span>
+                        <span>Mở toàn màn hình VNPAY-QR & Tải ảnh</span>
+                      </button>
+                    </div>
                   </div>
                 )}
 

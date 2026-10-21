@@ -9,6 +9,7 @@ export interface VietQRData {
   studentName?: string; // Tên học viên
   classCode?: string; // Mã lớp học
   enrollmentId?: string; // ID lượt đăng ký (dùng cho xác nhận thanh toán tự động)
+  gateway?: 'VIETQR' | 'VNPAY'; // Mặc định mở tab nào
 }
 
 export interface VietQRModalProps {
@@ -42,26 +43,42 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
   data,
   onPaymentSuccess,
 }) => {
+  const [activeGateway, setActiveGateway] = useState<'VIETQR' | 'VNPAY'>('VIETQR');
   const [selectedBank, setSelectedBank] = useState<BankOption>(SUPPORTED_BANKS[0]);
   const [template, setTemplate] = useState<'compact2' | 'qr_only'>('compact2');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
   const [confirmSuccess, setConfirmSuccess] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
+  const [customAmount, setCustomAmount] = useState<number>(0);
 
   // Thông tin tài khoản thụ hưởng của trung tâm
   const ACCOUNT_NO = '988866889999';
   const ACCOUNT_NAME = 'CONG TY CO PHAN GIAO DUC EDUCENTER';
 
+  // Số tiền hiệu lực
+  const effectiveAmount = data?.amount && data.amount > 0 ? data.amount : customAmount;
+
   // Lấy nội dung chuyển khoản tự động
-  const transferContent = data?.description || (data?.invoiceCode ? `EDUPAY ${data.invoiceCode}` : 'HOCPHI EDUCENTER');
+  const transferContent =
+    data?.description ||
+    (data?.invoiceCode ? `EDUPAY ${data.invoiceCode}` : 'HOCPHI EDUCENTER');
 
   // Tạo URL VietQR chuẩn
-  const qrUrl = data
-    ? `https://img.vietqr.io/image/${selectedBank.id}-${ACCOUNT_NO}-${template}.png?amount=${data.amount}&addInfo=${encodeURIComponent(
-        transferContent
-      )}&accountName=${encodeURIComponent(ACCOUNT_NAME)}`
-    : '';
+  const vietQrUrl =
+    `https://img.vietqr.io/image/${selectedBank.id}-${ACCOUNT_NO}-${template}.png?amount=${effectiveAmount}&addInfo=${encodeURIComponent(
+      transferContent
+    )}&accountName=${encodeURIComponent(ACCOUNT_NAME)}`;
+
+  // Tạo URL VNPay-QR mô phỏng chuẩn EMVCo
+  const vnpayQrUrl =
+    activeGateway === 'VNPAY'
+      ? `https://img.vietqr.io/image/MB-${ACCOUNT_NO}-compact2.png?amount=${effectiveAmount}&addInfo=${encodeURIComponent(
+          `VNPAY ${transferContent}`
+        )}&accountName=${encodeURIComponent(ACCOUNT_NAME)}`
+      : vietQrUrl;
+
+  const currentQrUrl = activeGateway === 'VNPAY' ? vnpayQrUrl : vietQrUrl;
 
   useEffect(() => {
     if (!isOpen) {
@@ -69,12 +86,21 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
       setIsConfirming(false);
       setCopiedKey(null);
       setImageLoading(true);
+    } else {
+      if (data?.gateway) {
+        setActiveGateway(data.gateway);
+      }
+      if (data?.amount && data.amount > 0) {
+        setCustomAmount(data.amount);
+      } else {
+        setCustomAmount(5000000); // Mặc định 5 triệu nếu nạp tự do
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, data]);
 
   useEffect(() => {
     setImageLoading(true);
-  }, [qrUrl]);
+  }, [currentQrUrl, activeGateway, selectedBank, template, effectiveAmount]);
 
   // Đóng modal khi bấm phím ESC
   useEffect(() => {
@@ -103,18 +129,18 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
   // Tải ảnh mã QR về máy
   const handleDownloadQR = async () => {
     try {
-      const response = await fetch(qrUrl);
+      const response = await fetch(currentQrUrl);
       const blob = await response.blob();
       const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = blobUrl;
-      link.download = `VietQR_EduCenter_${data.invoiceCode || 'Payment'}.png`;
+      link.download = `${activeGateway}_EduCenter_${data.invoiceCode || 'Payment'}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(blobUrl);
     } catch {
-      window.open(qrUrl, '_blank');
+      window.open(currentQrUrl, '_blank');
     }
   };
 
@@ -132,8 +158,8 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
       setIsConfirming(true);
       const payment = await paymentService.processPayment({
         enrollmentId: data.enrollmentId,
-        method: 'BANK_TRANSFER',
-        note: `Học viên thanh toán quét mã VietQR MBBank. Nội dung: ${transferContent}`,
+        method: activeGateway === 'VNPAY' ? 'VNPAY' : 'BANK_TRANSFER',
+        note: `Học viên quét mã ${activeGateway === 'VNPAY' ? 'VNPAY-QR' : 'VietQR'}. Nội dung: ${transferContent}`,
       });
       setConfirmSuccess(true);
       if (onPaymentSuccess) {
@@ -182,13 +208,17 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
         {/* ── Header ── */}
         <div
           style={{
-            background: 'linear-gradient(135deg, #064e3b 0%, #047857 50%, #059669 100%)',
+            background:
+              activeGateway === 'VNPAY'
+                ? 'linear-gradient(135deg, #991b1b 0%, #dc2626 50%, #005baa 100%)'
+                : 'linear-gradient(135deg, #064e3b 0%, #047857 50%, #059669 100%)',
             padding: '1.25rem 1.75rem',
             color: '#ffffff',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
             borderBottom: '1px solid rgba(255, 255, 255, 0.15)',
+            transition: 'background 0.3s ease',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
@@ -205,17 +235,19 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                 backdropFilter: 'blur(4px)',
               }}
             >
-              📱
+              {activeGateway === 'VNPAY' ? '🔴' : '📱'}
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <h2 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#ffffff' }}>
-                  Thanh Toán Chuyển Khoản VietQR
+                  {activeGateway === 'VNPAY'
+                    ? 'Cổng Thanh Toán VNPAY QR'
+                    : 'Thanh Toán Chuyển Khoản VietQR'}
                 </h2>
                 <span
                   style={{
-                    backgroundColor: '#10b981',
-                    color: '#ffffff',
+                    backgroundColor: activeGateway === 'VNPAY' ? '#ffffff' : '#10b981',
+                    color: activeGateway === 'VNPAY' ? '#dc2626' : '#ffffff',
                     fontSize: '0.7rem',
                     fontWeight: 800,
                     padding: '2px 8px',
@@ -227,7 +259,7 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                 </span>
               </div>
               <p style={{ margin: '0.2rem 0 0', fontSize: '0.82rem', color: '#d1fae5', opacity: 0.9 }}>
-                Quét mã QR bằng mọi ứng dụng ngân hàng hoặc ví điện tử (Napas 247)
+                Quét mã QR bằng ứng dụng ngân hàng hoặc ví điện tử để hoàn tất học phí
               </p>
             </div>
           </div>
@@ -267,11 +299,76 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
             gap: '1.25rem',
           }}
         >
+          {/* Tab Selector: VietQR vs VNPay */}
+          <div
+            style={{
+              display: 'flex',
+              gap: '0.5rem',
+              padding: '0.35rem',
+              backgroundColor: '#f1f5f9',
+              borderRadius: '12px',
+              border: '1px solid #e2e8f0',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setActiveGateway('VIETQR')}
+              style={{
+                flex: 1,
+                padding: '0.65rem 1rem',
+                borderRadius: '9px',
+                border: 'none',
+                fontWeight: 700,
+                fontSize: '0.875rem',
+                cursor: 'pointer',
+                backgroundColor: activeGateway === 'VIETQR' ? '#059669' : 'transparent',
+                color: activeGateway === 'VIETQR' ? '#ffffff' : '#64748b',
+                boxShadow:
+                  activeGateway === 'VIETQR' ? '0 2px 8px rgba(5, 150, 105, 0.25)' : 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <span>🏦</span>
+              <span>VietQR (Chuyển khoản Napas 24/7)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveGateway('VNPAY')}
+              style={{
+                flex: 1,
+                padding: '0.65rem 1rem',
+                borderRadius: '9px',
+                border: 'none',
+                fontWeight: 700,
+                fontSize: '0.875rem',
+                cursor: 'pointer',
+                backgroundColor: activeGateway === 'VNPAY' ? '#dc2626' : 'transparent',
+                color: activeGateway === 'VNPAY' ? '#ffffff' : '#64748b',
+                boxShadow:
+                  activeGateway === 'VNPAY' ? '0 2px 8px rgba(220, 38, 38, 0.25)' : 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <span>🔴</span>
+              <span>VNPAY QR (Cổng VNPAY)</span>
+            </button>
+          </div>
+
           {/* Thông tin gói học phí / hóa đơn thanh toán */}
           <div
             style={{
-              backgroundColor: '#ecfdf5',
-              border: '1px solid #a7f3d0',
+              backgroundColor: activeGateway === 'VNPAY' ? '#fff5f5' : '#ecfdf5',
+              border:
+                activeGateway === 'VNPAY' ? '1px solid #fecaca' : '1px solid #a7f3d0',
               borderRadius: '14px',
               padding: '1rem 1.25rem',
               display: 'flex',
@@ -282,26 +379,128 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
             }}
           >
             <div>
-              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#047857', textTransform: 'uppercase' }}>
-                Khóa học & Hóa đơn cần thanh toán
+              <div
+                style={{
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  color: activeGateway === 'VNPAY' ? '#b91c1c' : '#047857',
+                  textTransform: 'uppercase',
+                }}
+              >
+                Khóa học & Hóa đơn thanh toán
               </div>
-              <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#064e3b', marginTop: '0.2rem' }}>
-                {data.courseTitle || 'Khóa học EduCenter'}
+              <div
+                style={{
+                  fontSize: '1.05rem',
+                  fontWeight: 800,
+                  color: activeGateway === 'VNPAY' ? '#7f1d1d' : '#064e3b',
+                  marginTop: '0.2rem',
+                }}
+              >
+                {data.courseTitle || 'Học phí Trung Tâm EduCenter'}
               </div>
-              <div style={{ fontSize: '0.8rem', color: '#047857', marginTop: '0.2rem' }}>
-                {data.classCode && <span>Lớp học: <strong>{data.classCode}</strong> • </span>}
-                {data.invoiceCode && <span>Mã hóa đơn: <strong>{data.invoiceCode}</strong> • </span>}
-                <span>Học viên: <strong>{data.studentName || 'Học viên'}</strong></span>
+              <div
+                style={{
+                  fontSize: '0.8rem',
+                  color: activeGateway === 'VNPAY' ? '#991b1b' : '#047857',
+                  marginTop: '0.2rem',
+                }}
+              >
+                {data.classCode && (
+                  <span>
+                    Lớp: <strong>{data.classCode}</strong> •{' '}
+                  </span>
+                )}
+                {data.invoiceCode && (
+                  <span>
+                    Mã HĐ: <strong>{data.invoiceCode}</strong> •{' '}
+                  </span>
+                )}
+                <span>
+                  Học viên: <strong>{data.studentName || 'Học viên EduCenter'}</strong>
+                </span>
               </div>
             </div>
 
             <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '0.75rem', color: '#047857', fontWeight: 600 }}>SỐ TIỀN CẦN THANH TOÁN</div>
-              <div style={{ fontSize: '1.45rem', fontWeight: 900, color: '#059669', letterSpacing: '-0.5px' }}>
-                {formatVND(data.amount)}
+              <div
+                style={{
+                  fontSize: '0.75rem',
+                  color: activeGateway === 'VNPAY' ? '#991b1b' : '#047857',
+                  fontWeight: 600,
+                }}
+              >
+                SỐ TIỀN CẦN THANH TOÁN
+              </div>
+              <div
+                style={{
+                  fontSize: '1.45rem',
+                  fontWeight: 900,
+                  color: activeGateway === 'VNPAY' ? '#dc2626' : '#059669',
+                  letterSpacing: '-0.5px',
+                }}
+              >
+                {formatVND(effectiveAmount)}
               </div>
             </div>
           </div>
+
+          {/* Ô nhập số tiền tùy chọn nếu nạp tiền học phí tự do */}
+          {(!data.amount || data.amount <= 0) && (
+            <div
+              style={{
+                backgroundColor: '#f8fafc',
+                border: '1px solid #cbd5e1',
+                borderRadius: '12px',
+                padding: '0.85rem 1rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '1rem',
+                flexWrap: 'wrap',
+              }}
+            >
+              <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155' }}>
+                Số tiền nạp (VNĐ):
+              </label>
+              <input
+                type="number"
+                min="50000"
+                step="50000"
+                value={customAmount || ''}
+                onChange={(e) => setCustomAmount(Number(e.target.value) || 0)}
+                style={{
+                  padding: '0.45rem 0.75rem',
+                  borderRadius: '8px',
+                  border: '1px solid #94a3b8',
+                  fontSize: '0.95rem',
+                  fontWeight: 700,
+                  color: '#0f172a',
+                  width: '180px',
+                }}
+              />
+              <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+                {[1000000, 2000000, 5000000, 10000000].map((amt) => (
+                  <button
+                    key={amt}
+                    type="button"
+                    onClick={() => setCustomAmount(amt)}
+                    style={{
+                      padding: '0.3rem 0.6rem',
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      borderRadius: '6px',
+                      border: '1px solid #cbd5e1',
+                      backgroundColor: customAmount === amt ? '#059669' : '#ffffff',
+                      color: customAmount === amt ? '#ffffff' : '#475569',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {amt >= 1000000 ? `${amt / 1000000} triệu` : `${amt / 1000}k`}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Grid chính: QR Code bên trái & Thông tin bên phải */}
           <div
@@ -312,7 +511,7 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
               alignItems: 'start',
             }}
           >
-            {/* Cột Trái: Mã QR VietQR */}
+            {/* Cột Trái: Mã QR */}
             <div
               style={{
                 display: 'flex',
@@ -328,13 +527,20 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                   width: '100%',
                   minHeight: template === 'compact2' ? '320px' : '280px',
                   backgroundColor: '#ffffff',
-                  border: '2px solid #10b981',
+                  border:
+                    activeGateway === 'VNPAY'
+                      ? '2px solid #dc2626'
+                      : '2px solid #10b981',
                   borderRadius: '16px',
                   padding: '12px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: '0 10px 25px -5px rgba(16, 185, 129, 0.15)',
+                  boxShadow:
+                    activeGateway === 'VNPAY'
+                      ? '0 10px 25px -5px rgba(220, 38, 38, 0.15)'
+                      : '0 10px 25px -5px rgba(16, 185, 129, 0.15)',
+                  transition: 'border-color 0.3s ease',
                 }}
               >
                 {imageLoading && (
@@ -356,20 +562,27 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                         width: '36px',
                         height: '36px',
                         border: '3px solid #d1fae5',
-                        borderTopColor: '#059669',
+                        borderTopColor: activeGateway === 'VNPAY' ? '#dc2626' : '#059669',
                         borderRadius: '50%',
                         animation: 'spin 0.8s linear infinite',
                       }}
                     />
-                    <span style={{ fontSize: '0.8rem', color: '#047857', marginTop: '0.5rem', fontWeight: 600 }}>
-                      Đang tạo mã VietQR...
+                    <span
+                      style={{
+                        fontSize: '0.8rem',
+                        color: activeGateway === 'VNPAY' ? '#b91c1c' : '#047857',
+                        marginTop: '0.5rem',
+                        fontWeight: 600,
+                      }}
+                    >
+                      Đang tạo mã QR thanh toán...
                     </span>
                   </div>
                 )}
 
                 <img
-                  src={qrUrl}
-                  alt="Mã QR chuyển khoản học phí VietQR"
+                  src={currentQrUrl}
+                  alt={`Mã QR ${activeGateway} thanh toán học phí`}
                   onLoad={() => setImageLoading(false)}
                   onError={() => setImageLoading(false)}
                   style={{
@@ -384,18 +597,44 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
 
               {/* Tùy chọn giao diện QR & Tải ảnh */}
               <div style={{ display: 'flex', gap: '0.5rem', width: '100%' }}>
+                {activeGateway === 'VIETQR' && (
+                  <button
+                    type="button"
+                    onClick={() => setTemplate(template === 'compact2' ? 'qr_only' : 'compact2')}
+                    style={{
+                      flex: 1,
+                      padding: '0.5rem',
+                      fontSize: '0.78rem',
+                      fontWeight: 700,
+                      borderRadius: '8px',
+                      border: '1px solid #d1fae5',
+                      backgroundColor: '#f0fdf4',
+                      color: '#047857',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '4px',
+                    }}
+                  >
+                    <span>🔄</span>
+                    <span>{template === 'compact2' ? 'Dạng Đơn giản' : 'Dạng Chi tiết'}</span>
+                  </button>
+                )}
+
                 <button
                   type="button"
-                  onClick={() => setTemplate(template === 'compact2' ? 'qr_only' : 'compact2')}
+                  onClick={handleDownloadQR}
                   style={{
-                    flex: 1,
-                    padding: '0.5rem',
+                    flex: activeGateway === 'VNPAY' ? 1 : 'unset',
+                    padding: '0.5rem 0.85rem',
                     fontSize: '0.78rem',
                     fontWeight: 700,
                     borderRadius: '8px',
-                    border: '1px solid #d1fae5',
-                    backgroundColor: '#f0fdf4',
-                    color: '#047857',
+                    border:
+                      activeGateway === 'VNPAY' ? '1px solid #dc2626' : '1px solid #059669',
+                    backgroundColor: activeGateway === 'VNPAY' ? '#dc2626' : '#059669',
+                    color: '#ffffff',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
@@ -403,70 +642,97 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                     gap: '4px',
                   }}
                 >
-                  <span>🔄</span>
-                  <span>{template === 'compact2' ? 'Dạng QR Đơn giản' : 'Dạng Thẻ Ngân hàng'}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleDownloadQR}
-                  style={{
-                    padding: '0.5rem 0.85rem',
-                    fontSize: '0.78rem',
-                    fontWeight: 700,
-                    borderRadius: '8px',
-                    border: '1px solid #059669',
-                    backgroundColor: '#059669',
-                    color: '#ffffff',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                  }}
-                >
                   <span>📥</span>
-                  <span>Tải mã QR</span>
+                  <span>Tải ảnh mã QR</span>
                 </button>
               </div>
 
               <div style={{ fontSize: '0.75rem', color: '#64748b', textAlign: 'center' }}>
-                💡 Hỗ trợ hơn 40+ ứng dụng ngân hàng và ví Momo, ZaloPay, ViettelMoney
+                {activeGateway === 'VNPAY'
+                  ? '🔴 Quét bằng ứng dụng Ví VNPAY hoặc hơn 40 Mobile Banking hỗ trợ VNPAY-QR'
+                  : '💡 Quét bằng mọi app Mobile Banking, MoMo, ZaloPay, ViettelMoney'}
               </div>
             </div>
 
             {/* Cột Phải: Thông tin chuyển khoản chi tiết */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-              {/* Chọn ngân hàng nhận */}
-              <div>
-                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
-                  Ngân hàng thụ hưởng:
-                </label>
-                <select
-                  value={selectedBank.id}
-                  onChange={(e) => {
-                    const b = SUPPORTED_BANKS.find((x) => x.id === e.target.value);
-                    if (b) setSelectedBank(b);
-                  }}
+              {activeGateway === 'VIETQR' && (
+                <div>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: '0.78rem',
+                      fontWeight: 700,
+                      color: '#334155',
+                      marginBottom: '0.35rem',
+                    }}
+                  >
+                    Ngân hàng thụ hưởng:
+                  </label>
+                  <select
+                    value={selectedBank.id}
+                    onChange={(e) => {
+                      const b = SUPPORTED_BANKS.find((x) => x.id === e.target.value);
+                      if (b) setSelectedBank(b);
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '0.55rem 0.75rem',
+                      fontSize: '0.875rem',
+                      fontWeight: 600,
+                      borderRadius: '10px',
+                      border: '1px solid #cbd5e1',
+                      backgroundColor: '#ffffff',
+                      color: '#0f172a',
+                      outline: 'none',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {SUPPORTED_BANKS.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.shortName} — {b.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {activeGateway === 'VNPAY' && (
+                <div
                   style={{
-                    width: '100%',
-                    padding: '0.55rem 0.75rem',
-                    fontSize: '0.875rem',
-                    fontWeight: 600,
-                    borderRadius: '10px',
-                    border: '1px solid #cbd5e1',
-                    backgroundColor: '#ffffff',
-                    color: '#0f172a',
-                    outline: 'none',
-                    cursor: 'pointer',
+                    backgroundColor: '#eff6ff',
+                    border: '1px solid #bfdbfe',
+                    borderRadius: '12px',
+                    padding: '0.85rem 1rem',
                   }}
                 >
-                  {SUPPORTED_BANKS.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.shortName} — {b.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                  <div
+                    style={{
+                      fontSize: '0.82rem',
+                      fontWeight: 700,
+                      color: '#1d4ed8',
+                      marginBottom: '0.35rem',
+                    }}
+                  >
+                    🚀 Hướng dẫn thanh toán qua VNPAY-QR:
+                  </div>
+                  <ol
+                    style={{
+                      margin: 0,
+                      paddingLeft: '1.2rem',
+                      fontSize: '0.78rem',
+                      color: '#334155',
+                      lineHeight: '1.5',
+                    }}
+                  >
+                    <li>Mở App Mobile Banking hoặc ứng dụng Ví điện tử VNPAY.</li>
+                    <li>
+                      Chọn tính năng <strong>Quét mã QR</strong> hoặc <strong>VNPAY-QR</strong>.
+                    </li>
+                    <li>Quét mã QR bên cạnh và xác nhận số tiền cùng nội dung chuyển khoản.</li>
+                  </ol>
+                </div>
+              )}
 
               {/* Các trường thông tin có nút Copy */}
               <div
@@ -481,10 +747,18 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                 }}
               >
                 {/* Số tài khoản */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    borderBottom: '1px dashed #cbd5e1',
+                    paddingBottom: '0.5rem',
+                  }}
+                >
                   <div>
-                    <div style={{ fontSize: '0.725rem', color: '#64748b', fontWeight: 600 }}>SỐ TÀI KHOẢN</div>
-                    <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#047857', letterSpacing: '0.5px' }}>
+                    <div style={{ fontSize: '0.72rem', color: '#64748b' }}>SỐ TÀI KHOẢN NHẬN</div>
+                    <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#047857' }}>
                       {ACCOUNT_NO}
                     </div>
                   </div>
@@ -492,210 +766,154 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                     type="button"
                     onClick={() => handleCopy(ACCOUNT_NO, 'acc')}
                     style={{
-                      padding: '0.4rem 0.85rem',
-                      borderRadius: '8px',
-                      border: '1px solid #d1fae5',
-                      backgroundColor: copiedKey === 'acc' ? '#10b981' : '#ffffff',
-                      color: copiedKey === 'acc' ? '#ffffff' : '#047857',
-                      fontSize: '0.78rem',
+                      padding: '0.35rem 0.75rem',
+                      fontSize: '0.75rem',
                       fontWeight: 700,
+                      borderRadius: '6px',
+                      border: '1px solid #cbd5e1',
+                      backgroundColor: copiedKey === 'acc' ? '#dcfce7' : '#ffffff',
+                      color: copiedKey === 'acc' ? '#15803d' : '#334155',
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '4px',
-                      transition: 'all 0.2s',
                     }}
                   >
-                    <span>{copiedKey === 'acc' ? '✓' : '📋'}</span>
-                    <span>{copiedKey === 'acc' ? 'Đã sao chép' : 'Sao chép'}</span>
+                    {copiedKey === 'acc' ? '✅ Đã chép' : '📋 Sao chép'}
                   </button>
                 </div>
 
                 {/* Tên chủ tài khoản */}
-                <div style={{ borderTop: '1px dashed #e2e8f0', paddingTop: '0.6rem' }}>
-                  <div style={{ fontSize: '0.725rem', color: '#64748b', fontWeight: 600 }}>TÊN NGƯỜI THỤ HƯỞNG</div>
-                  <div style={{ fontSize: '0.875rem', fontWeight: 800, color: '#0f172a' }}>{ACCOUNT_NAME}</div>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    borderBottom: '1px dashed #cbd5e1',
+                    paddingBottom: '0.5rem',
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: '0.72rem', color: '#64748b' }}>TÊN THỤ HƯỞNG</div>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0f172a' }}>
+                      {ACCOUNT_NAME}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleCopy(ACCOUNT_NAME, 'name')}
+                    style={{
+                      padding: '0.35rem 0.75rem',
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      borderRadius: '6px',
+                      border: '1px solid #cbd5e1',
+                      backgroundColor: copiedKey === 'name' ? '#dcfce7' : '#ffffff',
+                      color: copiedKey === 'name' ? '#15803d' : '#334155',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {copiedKey === 'name' ? '✅ Đã chép' : '📋 Sao chép'}
+                  </button>
                 </div>
 
                 {/* Số tiền */}
                 <div
                   style={{
-                    borderTop: '1px dashed #e2e8f0',
-                    paddingTop: '0.6rem',
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
+                    borderBottom: '1px dashed #cbd5e1',
+                    paddingBottom: '0.5rem',
                   }}
                 >
                   <div>
-                    <div style={{ fontSize: '0.725rem', color: '#64748b', fontWeight: 600 }}>SỐ TIỀN CHUYỂN KHOẢN</div>
-                    <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#059669' }}>
-                      {formatVND(data.amount)}
+                    <div style={{ fontSize: '0.72rem', color: '#64748b' }}>SỐ TIỀN CHÍNH XÁC</div>
+                    <div
+                      style={{
+                        fontSize: '1.15rem',
+                        fontWeight: 900,
+                        color: activeGateway === 'VNPAY' ? '#dc2626' : '#059669',
+                      }}
+                    >
+                      {formatVND(effectiveAmount)}
                     </div>
                   </div>
                   <button
                     type="button"
-                    onClick={() => handleCopy(data.amount.toString(), 'amount')}
+                    onClick={() => handleCopy(effectiveAmount.toString(), 'amt')}
                     style={{
-                      padding: '0.4rem 0.85rem',
-                      borderRadius: '8px',
-                      border: '1px solid #d1fae5',
-                      backgroundColor: copiedKey === 'amount' ? '#10b981' : '#ffffff',
-                      color: copiedKey === 'amount' ? '#ffffff' : '#047857',
-                      fontSize: '0.78rem',
+                      padding: '0.35rem 0.75rem',
+                      fontSize: '0.75rem',
                       fontWeight: 700,
+                      borderRadius: '6px',
+                      border: '1px solid #cbd5e1',
+                      backgroundColor: copiedKey === 'amt' ? '#dcfce7' : '#ffffff',
+                      color: copiedKey === 'amt' ? '#15803d' : '#334155',
                       cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      transition: 'all 0.2s',
                     }}
                   >
-                    <span>{copiedKey === 'amount' ? '✓' : '📋'}</span>
-                    <span>{copiedKey === 'amount' ? 'Đã sao chép' : 'Sao chép'}</span>
+                    {copiedKey === 'amt' ? '✅ Đã chép' : '📋 Sao chép'}
                   </button>
                 </div>
 
-                {/* Nội dung chuyển khoản tự động */}
+                {/* Nội dung chuyển khoản */}
                 <div
                   style={{
-                    borderTop: '1px dashed #e2e8f0',
-                    paddingTop: '0.6rem',
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    backgroundColor: '#fffbeb',
-                    margin: '-0.25rem -0.5rem -0.5rem',
-                    padding: '0.75rem',
-                    borderRadius: '10px',
-                    border: '1px solid #fde68a',
                   }}
                 >
-                  <div>
-                    <div style={{ fontSize: '0.725rem', color: '#b45309', fontWeight: 700 }}>
+                  <div style={{ maxWidth: '240px' }}>
+                    <div style={{ fontSize: '0.72rem', color: '#b45309', fontWeight: 700 }}>
                       NỘI DUNG CHUYỂN KHOẢN (BẮT BUỘC)
                     </div>
-                    <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#b91c1c', letterSpacing: '0.3px' }}>
+                    <div
+                      style={{
+                        fontSize: '0.95rem',
+                        fontWeight: 800,
+                        color: '#b91c1c',
+                        letterSpacing: '0.5px',
+                        wordBreak: 'break-all',
+                      }}
+                    >
                       {transferContent}
                     </div>
                   </div>
                   <button
                     type="button"
-                    onClick={() => handleCopy(transferContent, 'content')}
+                    onClick={() => handleCopy(transferContent, 'syntax')}
                     style={{
-                      padding: '0.4rem 0.85rem',
-                      borderRadius: '8px',
-                      border: '1px solid #f59e0b',
-                      backgroundColor: copiedKey === 'content' ? '#d97706' : '#ffffff',
-                      color: copiedKey === 'content' ? '#ffffff' : '#b45309',
-                      fontSize: '0.78rem',
+                      padding: '0.35rem 0.75rem',
+                      fontSize: '0.75rem',
                       fontWeight: 700,
+                      borderRadius: '6px',
+                      border: '1px solid #fca5a5',
+                      backgroundColor: copiedKey === 'syntax' ? '#fee2e2' : '#ffffff',
+                      color: copiedKey === 'syntax' ? '#dc2626' : '#b91c1c',
                       cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      transition: 'all 0.2s',
                     }}
                   >
-                    <span>{copiedKey === 'content' ? '✓' : '📋'}</span>
-                    <span>{copiedKey === 'content' ? 'Đã sao chép' : 'Sao chép'}</span>
+                    {copiedKey === 'syntax' ? '✅ Đã chép' : '📋 Sao chép'}
                   </button>
                 </div>
               </div>
 
-              {/* Lưu ý chuyển khoản */}
+              {/* Hộp lưu ý quan trọng */}
               <div
                 style={{
-                  fontSize: '0.775rem',
-                  color: '#475569',
-                  backgroundColor: '#f1f5f9',
-                  padding: '0.65rem 0.85rem',
+                  backgroundColor: '#fffbeb',
+                  border: '1px solid #fde68a',
                   borderRadius: '10px',
-                  lineHeight: 1.45,
-                }}
-              >
-                ⚠️ <strong>Lưu ý:</strong> Quý học viên vui lòng giữ <strong>chính xác nội dung chuyển khoản</strong>{' '}
-                để hệ thống EduCenter tự động đối soát và kích hoạt khóa học trong vòng 1-3 phút.
-              </div>
-            </div>
-          </div>
-
-          {/* 3 Bước hướng dẫn nhanh */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3, 1fr)',
-              gap: '0.75rem',
-              paddingTop: '0.5rem',
-              borderTop: '1px solid #e2e8f0',
-            }}
-          >
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
-              <div
-                style={{
-                  width: '24px',
-                  height: '24px',
-                  borderRadius: '50%',
-                  backgroundColor: '#ecfdf5',
-                  color: '#059669',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 800,
+                  padding: '0.65rem 0.85rem',
                   fontSize: '0.75rem',
-                  flexShrink: 0,
+                  color: '#92400e',
+                  lineHeight: '1.45',
                 }}
               >
-                1
-              </div>
-              <div style={{ fontSize: '0.775rem', color: '#475569' }}>
-                Mở ứng dụng <strong>Ngân hàng</strong> hoặc ví điện tử bất kỳ.
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
-              <div
-                style={{
-                  width: '24px',
-                  height: '24px',
-                  borderRadius: '50%',
-                  backgroundColor: '#ecfdf5',
-                  color: '#059669',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 800,
-                  fontSize: '0.75rem',
-                  flexShrink: 0,
-                }}
-              >
-                2
-              </div>
-              <div style={{ fontSize: '0.775rem', color: '#475569' }}>
-                Chọn <strong>Quét mã QR</strong> và quét mã hiển thị trên màn hình.
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
-              <div
-                style={{
-                  width: '24px',
-                  height: '24px',
-                  borderRadius: '50%',
-                  backgroundColor: '#ecfdf5',
-                  color: '#059669',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 800,
-                  fontSize: '0.75rem',
-                  flexShrink: 0,
-                }}
-              >
-                3
-              </div>
-              <div style={{ fontSize: '0.775rem', color: '#475569' }}>
-                Kiểm tra đúng số tiền và bấm <strong>Xác nhận chuyển</strong>.
+                ⚠️ <strong>Lưu ý:</strong> Vui lòng giữ nguyên nội dung chuyển khoản để hệ thống tự
+                động gạch nợ hóa đơn và kích hoạt lớp học trong vòng 1-3 phút.
               </div>
             </div>
           </div>
@@ -710,33 +928,32 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
+            gap: '1rem',
             flexWrap: 'wrap',
-            gap: '0.75rem',
           }}
         >
           <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
             {confirmSuccess ? (
               <span style={{ color: '#059669', fontWeight: 700 }}>
-                ✅ Xác nhận thanh toán thành công! Đang đóng...
+                🎉 Xác nhận thanh toán thành công! Hệ thống đang cập nhật...
               </span>
             ) : (
-              <span>Cần hỗ trợ thanh toán? Hotline: <strong>1900 6868</strong></span>
+              <span>Sau khi chuyển tiền, nhấn nút bên phải để xác nhận giao dịch.</span>
             )}
           </div>
 
-          <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
             <button
               type="button"
               onClick={onClose}
-              disabled={isConfirming}
               style={{
-                padding: '0.6rem 1.25rem',
-                fontSize: '0.875rem',
-                fontWeight: 700,
+                padding: '0.6rem 1.15rem',
                 borderRadius: '10px',
                 border: '1px solid #cbd5e1',
                 backgroundColor: '#ffffff',
                 color: '#475569',
+                fontSize: '0.85rem',
+                fontWeight: 600,
                 cursor: 'pointer',
               }}
             >
@@ -745,51 +962,32 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
 
             <button
               type="button"
-              onClick={handleConfirmTransfer}
               disabled={isConfirming || confirmSuccess}
+              onClick={handleConfirmTransfer}
               style={{
-                padding: '0.6rem 1.5rem',
-                fontSize: '0.875rem',
-                fontWeight: 800,
+                padding: '0.6rem 1.35rem',
                 borderRadius: '10px',
                 border: 'none',
-                background: confirmSuccess
-                  ? '#059669'
-                  : 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+                backgroundColor: confirmSuccess ? '#10b981' : '#059669',
                 color: '#ffffff',
+                fontSize: '0.875rem',
+                fontWeight: 700,
                 cursor: isConfirming || confirmSuccess ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.5rem',
-                boxShadow: '0 4px 14px rgba(5, 150, 105, 0.35)',
-                transition: 'all 0.2s',
+                boxShadow: '0 4px 12px rgba(5, 150, 105, 0.25)',
+                opacity: isConfirming ? 0.75 : 1,
               }}
             >
-              {isConfirming ? (
-                <>
-                  <div
-                    style={{
-                      width: '16px',
-                      height: '16px',
-                      border: '2px solid rgba(255,255,255,0.4)',
-                      borderTopColor: '#fff',
-                      borderRadius: '50%',
-                      animation: 'spin 0.6s linear infinite',
-                    }}
-                  />
-                  <span>Đang ghi nhận...</span>
-                </>
-              ) : confirmSuccess ? (
-                <>
-                  <span>✓</span>
-                  <span>Đã ghi nhận thanh toán</span>
-                </>
-              ) : (
-                <>
-                  <span>✅</span>
-                  <span>Tôi đã chuyển khoản thành công</span>
-                </>
-              )}
+              <span>{confirmSuccess ? '✅' : isConfirming ? '⏳' : '🚀'}</span>
+              <span>
+                {confirmSuccess
+                  ? 'Đã Thanh Toán Thành Công'
+                  : isConfirming
+                  ? 'Đang xử lý...'
+                  : 'Tôi Đã Chuyển Khoản'}
+              </span>
             </button>
           </div>
         </div>
@@ -797,5 +995,4 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
     </div>
   );
 };
-
 export default VietQRModal;

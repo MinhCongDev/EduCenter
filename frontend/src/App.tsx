@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
 import GuestLayout from './layouts/GuestLayout';
@@ -29,7 +29,6 @@ const AttendancePage = lazy(() => import('./pages/student/AttendancePage'));
 const GradesPage = lazy(() => import('./pages/student/GradesPage'));
 const SchedulePage = lazy(() => import('./pages/student/SchedulePage'));
 const PaymentsPage = lazy(() => import('./pages/student/PaymentsPage'));
-const TuitionPage = lazy(() => import('./pages/student/TuitionPage'));
 const RequestsPage = lazy(() => import('./pages/student/RequestsPage'));
 const ProfilePage = lazy(() => import('./pages/student/ProfilePage'));
 const CombinedSchedulePage = lazy(() => import('./pages/student/CombinedSchedulePage'));
@@ -220,13 +219,7 @@ const AppRouter: React.FC = () => {
         />
         <Route
           path="/student/tuition"
-          element={
-            <ProtectedRoute allowedRoles={['STUDENT']}>
-              <DashboardLayout>
-                <TuitionPage />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
+          element={<Navigate to="/student/payments" replace />}
         />
         <Route
           path="/student/requests"

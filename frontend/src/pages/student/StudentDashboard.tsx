@@ -231,13 +231,6 @@ const StudentDashboard: React.FC = () => {
             >
               📊 Kết quả học tập
             </button>
-            <button
-              type="button"
-              className="dash-quick-btn"
-              onClick={() => navigate('/student/tuition')}
-            >
-              💳 Thanh toán khóa học
-            </button>
           </div>
 
           {/* Key Metrics */}
@@ -297,7 +290,7 @@ const StudentDashboard: React.FC = () => {
 
             <div
               className="dash-metric-card"
-              onClick={() => navigate('/student/tuition')}
+              onClick={() => navigate('/student/payments')}
               style={{ cursor: 'pointer' }}
             >
               <div className="dash-metric-info">
@@ -992,55 +985,6 @@ const StudentDashboard: React.FC = () => {
             )}
           </div>
 
-          {/* ── Thanh toán khóa học (đặt dưới phần Kết quả học tập) ── */}
-          <div
-            className="dash-card"
-            style={{
-              padding: '1.25rem 1.5rem',
-              borderRadius: '16px',
-              background: 'linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%)',
-              border: '1px solid #dbeafe',
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                gap: '1rem',
-                flexWrap: 'wrap',
-              }}
-            >
-              <div>
-                <h3
-                  style={{
-                    margin: 0,
-                    fontSize: '1.05rem',
-                    fontWeight: 800,
-                    color: '#0f172a',
-                  }}
-                >
-                  💳 Thanh Toán Khóa Học
-                </h3>
-                <p
-                  style={{
-                    margin: '0.35rem 0 0',
-                    fontSize: '0.85rem',
-                    color: '#64748b',
-                  }}
-                >
-                  Xem các khóa học đã thanh toán và chưa thanh toán, bấm để xem chi tiết.
-                </p>
-              </div>
-              <button
-                type="button"
-                className="dash-quick-btn primary"
-                onClick={() => navigate('/student/tuition')}
-              >
-                💳 Xem Thanh Toán
-              </button>
-            </div>
-          </div>
         </div>
       )}
     </div>
