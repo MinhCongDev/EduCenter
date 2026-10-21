@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import GuestLayout from './layouts/GuestLayout';
 import DashboardLayout from './layouts/DashboardLayout';
 import ProtectedRoute from './routes/ProtectedRoute';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // ===========================
 // Lazy-loaded pages
@@ -13,8 +14,9 @@ import ProtectedRoute from './routes/ProtectedRoute';
 const HomePage = lazy(() => import('./pages/public/HomePage'));
 const CoursesPage = lazy(() => import('./pages/public/CoursesPage'));
 const AnnouncementsPage = lazy(() => import('./pages/public/AnnouncementsPage'));
-const LoginPage = lazy(() => import('./pages/public/LoginPage'));
-const RegisterPage = lazy(() => import('./pages/public/RegisterPage'));
+const AuthPage = lazy(() => import('./pages/public/AuthPage'));
+const VerifyEmailPage = lazy(() => import('./pages/public/VerifyEmailPage'));
+const ResendVerificationPage = lazy(() => import('./pages/public/ResendVerificationPage'));
 
 // Dashboard pages
 const StudentDashboard = lazy(() => import('./pages/student/StudentDashboard'));
@@ -84,7 +86,7 @@ const AppRouter: React.FC = () => {
           path="/login"
           element={
             <GuestLayout>
-              <LoginPage />
+              <AuthPage defaultMode="login" />
             </GuestLayout>
           }
         />
@@ -92,7 +94,23 @@ const AppRouter: React.FC = () => {
           path="/register"
           element={
             <GuestLayout>
-              <RegisterPage />
+              <AuthPage defaultMode="register" />
+            </GuestLayout>
+          }
+        />
+        <Route
+          path="/verify-email"
+          element={
+            <GuestLayout>
+              <VerifyEmailPage />
+            </GuestLayout>
+          }
+        />
+        <Route
+          path="/resend-verification"
+          element={
+            <GuestLayout>
+              <ResendVerificationPage />
             </GuestLayout>
           }
         />
@@ -202,11 +220,13 @@ const AppRouter: React.FC = () => {
 // ===========================
 const App: React.FC = () => {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <AppRouter />
-      </AuthProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <AuthProvider>
+          <AppRouter />
+        </AuthProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 };
 

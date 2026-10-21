@@ -108,7 +108,6 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <span style={{ fontSize: '1.4rem' }}>🔐</span>
             <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700 }}>
               Đổi Mật Khẩu (UC10)
             </h3>
@@ -119,9 +118,10 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen
               background: 'rgba(255, 255, 255, 0.2)',
               border: 'none',
               color: '#FFFFFF',
-              width: '32px',
+              minWidth: '60px',
+              padding: '0 8px',
               height: '32px',
-              borderRadius: '50%',
+              borderRadius: '8px',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -129,7 +129,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen
               fontWeight: 'bold',
             }}
           >
-            ✕
+            Đóng
           </button>
         </div>
 
@@ -251,7 +251,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen
                 padding: '0.55rem 1.25rem',
                 borderRadius: '8px',
                 border: 'none',
-                backgroundColor: '#EC6E23',
+                backgroundColor: '#26743d',
                 color: '#FFFFFF',
                 fontWeight: 700,
                 fontSize: '0.875rem',

@@ -11,6 +11,7 @@ import { announcementRouter } from './routes/announcement.routes';
 import { classRouter } from './routes/class.routes';
 import { teacherRouter } from './routes/teacher.routes';
 import { paymentRouter } from './routes/payment.routes';
+import { directorRouter } from './routes/director.routes';
 import { errorHandler } from './middlewares/error.middleware';
 import { notFound } from './middlewares/notFound.middleware';
 
@@ -58,6 +59,7 @@ app.use('/api/announcements', announcementRouter);
 app.use('/api/classes', classRouter);
 app.use('/api/teacher', teacherRouter);
 app.use('/api/payments', paymentRouter);
+app.use('/api/director', directorRouter);
 
 // ===========================
 // 404 Handler

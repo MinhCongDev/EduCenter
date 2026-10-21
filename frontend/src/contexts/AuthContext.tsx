@@ -1,5 +1,11 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
-import type { AuthState, User, LoginCredentials, RegisterData } from '../types';
+import type {
+  AuthState,
+  User,
+  LoginCredentials,
+  RegisterData,
+  RegisterResponse,
+} from '../types';
 import { authService } from '../services/auth.service';
 
 // ===========================
@@ -49,7 +55,8 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
 
 interface AuthContextValue extends AuthState {
   login: (credentials: LoginCredentials) => Promise<void>;
-  register: (data: RegisterData) => Promise<void>;
+  loginWithGoogle: (idToken: string) => Promise<void>;
+  register: (data: RegisterData) => Promise<RegisterResponse>;
   logout: () => void;
   updateUser: (user: User) => void;
 }
@@ -107,15 +114,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           token: response.data.token,
         },
       });
-    } finally {
+    } catch (err) {
       dispatch({ type: 'SET_LOADING', payload: false });
+      throw err;
     }
   }, []);
 
-  const register = useCallback(async (data: RegisterData): Promise<void> => {
+  const loginWithGoogle = useCallback(async (idToken: string): Promise<void> => {
     dispatch({ type: 'SET_LOADING', payload: true });
     try {
-      const response = await authService.register(data);
+      const response = await authService.googleLogin(idToken);
       dispatch({
         type: 'LOGIN_SUCCESS',
         payload: {
@@ -123,9 +131,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           token: response.data.token,
         },
       });
-    } finally {
+    } catch (err) {
       dispatch({ type: 'SET_LOADING', payload: false });
+      throw err;
     }
+  }, []);
+
+  const register = useCallback(async (data: RegisterData): Promise<RegisterResponse> => {
+    // Registration no longer logs the user in – the email must be verified first.
+    return authService.register(data);
   }, []);
 
   const logout = useCallback((): void => {
@@ -140,6 +154,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const value: AuthContextValue = {
     ...state,
     login,
+    loginWithGoogle,
     register,
     logout,
     updateUser,

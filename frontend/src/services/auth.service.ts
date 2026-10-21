@@ -3,6 +3,7 @@ import type {
   AuthResponse,
   LoginCredentials,
   RegisterData,
+  RegisterResponse,
   User,
   UpdateProfileData,
   ChangePasswordData,
@@ -32,10 +33,42 @@ export const authService = {
   },
 
   /**
-   * UC08: Register a new account (Guest -> Student)
+   * UC08: Register a new account (Guest -> Student).
+   * The account must verify its email before it can log in, so no token is stored.
    */
-  register: async (data: RegisterData): Promise<AuthResponse> => {
-    const response = await api.post<AuthResponse>('/auth/register', data);
+  register: async (data: RegisterData): Promise<RegisterResponse> => {
+    const response = await api.post<RegisterResponse>('/auth/register', data);
+    return response.data;
+  },
+
+  /**
+   * Verify an email address using the token from the registration email.
+   */
+  verifyEmail: async (token: string): Promise<ApiResponse<{ email: string }>> => {
+    const response = await api.get<ApiResponse<{ email: string }>>('/auth/verify-email', {
+      params: { token },
+    });
+    return response.data;
+  },
+
+  /**
+   * Resend the registration verification email.
+   */
+  resendVerificationEmail: async (
+    email: string
+  ): Promise<ApiResponse<{ email: string }>> => {
+    const response = await api.post<ApiResponse<{ email: string }>>(
+      '/auth/resend-email-verify',
+      { email }
+    );
+    return response.data;
+  },
+
+  /**
+   * Sign in / sign up with a Google ID token.
+   */
+  googleLogin: async (idToken: string): Promise<AuthResponse> => {
+    const response = await api.post<AuthResponse>('/auth/google', { idToken });
     if (response.data.success && response.data.data?.token) {
       localStorage.setItem(TOKEN_KEY, response.data.data.token);
       localStorage.setItem(USER_KEY, JSON.stringify(response.data.data.user));
@@ -74,10 +107,15 @@ export const authService = {
   },
 
   /**
-   * UC11: Forgot Password - Request code/token
+   * UC11: Forgot Password - request a code sent to the registered email
    */
-  forgotPassword: async (data: ForgotPasswordData): Promise<ApiResponse<{ email: string; resetCode: string }>> => {
-    const response = await api.post<ApiResponse<{ email: string; resetCode: string }>>('/auth/forgot-password', data);
+  forgotPassword: async (
+    data: ForgotPasswordData
+  ): Promise<ApiResponse<{ email: string; expiresInMinutes: number }>> => {
+    const response = await api.post<ApiResponse<{ email: string; expiresInMinutes: number }>>(
+      '/auth/forgot-password',
+      data
+    );
     return response.data;
   },
 

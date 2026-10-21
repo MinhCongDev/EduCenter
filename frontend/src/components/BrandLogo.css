@@ -1,0 +1,108 @@
+/* ==========================================================================
+   BRAND LOGO - EduCenter wordmark
+   ========================================================================== */
+
+.brand-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  line-height: 1;
+}
+
+.brand-logo__mark {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  background: linear-gradient(135deg, #308560 0%, #57d061 100%);
+  box-shadow: 0 4px 12px rgba(48, 133, 96, 0.26);
+}
+
+.brand-logo__text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.brand-logo__name {
+  font-family: var(--font-beanbag, 'Montserrat', sans-serif);
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  color: #07403f;
+  white-space: nowrap;
+}
+
+.brand-logo__name span {
+  color: #308560;
+}
+
+.brand-logo__tagline {
+  margin-top: 3px;
+  font-family: var(--font-averta, 'Quicksand', sans-serif);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+/* ── Sizes ── */
+.brand-logo--sm .brand-logo__mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+}
+.brand-logo--sm .brand-logo__mark svg {
+  width: 21px;
+  height: 21px;
+}
+.brand-logo--sm .brand-logo__name {
+  font-size: 1.05rem;
+}
+
+.brand-logo--md .brand-logo__mark {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+}
+.brand-logo--md .brand-logo__mark svg {
+  width: 26px;
+  height: 26px;
+}
+.brand-logo--md .brand-logo__name {
+  font-size: 1.3rem;
+}
+
+.brand-logo--lg .brand-logo__mark {
+  width: 54px;
+  height: 54px;
+  border-radius: 15px;
+}
+.brand-logo--lg .brand-logo__mark svg {
+  width: 33px;
+  height: 33px;
+}
+.brand-logo--lg .brand-logo__name {
+  font-size: 1.65rem;
+}
+
+/* ── On green / dark backgrounds ── */
+.brand-logo--light .brand-logo__mark {
+  background: #ffffff;
+  color: #308560;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+}
+.brand-logo--light .brand-logo__mark svg path[stroke] {
+  stroke: #ffffff;
+}
+.brand-logo--light .brand-logo__name {
+  color: #ffffff;
+}
+.brand-logo--light .brand-logo__name span {
+  color: #a0ec1d;
+}
+.brand-logo--light .brand-logo__tagline {
+  color: rgba(255, 255, 255, 0.72);
+}

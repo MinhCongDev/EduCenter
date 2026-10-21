@@ -127,10 +127,10 @@ const CourseFormModal: React.FC<CourseFormModalProps> = ({ course, onSave, onClo
         {/* Header */}
         <div className="modal-header">
           <div>
-            <h2 className="modal-title">{isEditing ? '✏️ Chỉnh sửa khóa học' : '➕ Thêm khóa học mới'}</h2>
+            <h2 className="modal-title">{isEditing ? 'Chỉnh sửa khóa học' : 'Thêm khóa học mới'}</h2>
             <p className="modal-subtitle">{isEditing ? `Cập nhật thông tin cho ${course?.code}` : 'Điền thông tin khóa học bên dưới'}</p>
           </div>
-          <button id="btn-close-modal" className="modal-close-btn" onClick={onClose} aria-label="Đóng">✕</button>
+          <button id="btn-close-modal" className="modal-close-btn" onClick={onClose}>Đóng</button>
         </div>
 
         {/* Error banner */}
@@ -270,7 +270,7 @@ const CourseFormModal: React.FC<CourseFormModalProps> = ({ course, onSave, onClo
                       onClick={() => removeSyllabusItem(item)}
                       aria-label={`Xóa ${item}`}
                     >
-                      ✕
+                      Xóa
                     </button>
                   </li>
                 ))}
@@ -283,7 +283,7 @@ const CourseFormModal: React.FC<CourseFormModalProps> = ({ course, onSave, onClo
               Hủy
             </button>
             <button id="btn-save-course" type="submit" className="btn btn-primary" disabled={saving}>
-              {saving ? <><span className="spinner-sm" /> Đang lưu…</> : isEditing ? '💾 Cập nhật' : '✅ Tạo khóa học'}
+              {saving ? <><span className="spinner-sm" /> Đang lưu…</> : isEditing ? 'Cập nhật' : 'Tạo khóa học'}
             </button>
           </div>
         </form>
@@ -396,7 +396,7 @@ const CoursesManagementPage: React.FC = () => {
     <div className="courses-page">
       {/* ── Breadcrumb ── */}
       <nav className="staff-breadcrumb" aria-label="Breadcrumb">
-        <Link to="/staff/dashboard" id="breadcrumb-dashboard">🏠 Dashboard</Link>
+        <Link to="/staff/dashboard" id="breadcrumb-dashboard">Tổng quan</Link>
         <span className="breadcrumb-sep">›</span>
         <span>Quản lý Khóa học</span>
       </nav>
@@ -404,7 +404,7 @@ const CoursesManagementPage: React.FC = () => {
       {/* ── Page Header ── */}
       <div className="courses-page-header">
         <div>
-          <h1 className="courses-page-title">📚 Quản lý Khóa học</h1>
+          <h1 className="courses-page-title">Quản lý khóa học</h1>
           <p className="courses-page-subtitle">Thêm, sửa, xóa các khóa học của trung tâm</p>
         </div>
         <button id="btn-add-course" className="btn btn-primary btn-lg" onClick={openCreate}>
@@ -415,7 +415,6 @@ const CoursesManagementPage: React.FC = () => {
       {/* ── Filters ── */}
       <div className="courses-filter-bar">
         <div className="courses-search-wrap">
-          <span className="search-icon">🔍</span>
           <input
             id="course-search-input"
             className="form-input courses-search-input"
@@ -451,7 +450,7 @@ const CoursesManagementPage: React.FC = () => {
       {/* ── Error State ── */}
       {error && !loading && (
         <div className="form-error-banner courses-error" role="alert">
-          ⚠️ {error}
+          {error}
           <button className="btn btn-ghost" style={{ marginLeft: '1rem' }} onClick={fetchCourses}>Thử lại</button>
         </div>
       )}
@@ -465,7 +464,6 @@ const CoursesManagementPage: React.FC = () => {
           </div>
         ) : courses.length === 0 ? (
           <div className="courses-empty">
-            <span className="courses-empty-icon">📭</span>
             <h3>Chưa có khóa học nào</h3>
             <p>Bấm <strong>+ Thêm khóa học</strong> để bắt đầu.</p>
           </div>
@@ -512,7 +510,7 @@ const CoursesManagementPage: React.FC = () => {
                         onClick={() => openEdit(course)}
                         aria-label={`Chỉnh sửa ${course.title}`}
                       >
-                        ✏️ Sửa
+                        Sửa
                       </button>
                       <button
                         id={`btn-delete-${course._id}`}
@@ -520,7 +518,7 @@ const CoursesManagementPage: React.FC = () => {
                         onClick={() => setDeletingCourse(course)}
                         aria-label={`Xóa ${course.title}`}
                       >
-                        🗑️ Xóa
+                        Xóa
                       </button>
                     </div>
                   </td>
@@ -540,7 +538,7 @@ const CoursesManagementPage: React.FC = () => {
             disabled={page <= 1}
             onClick={() => setPage((p) => p - 1)}
           >
-            ← Trước
+            Trước
           </button>
           <span className="pagination-info">Trang {page} / {totalPages}</span>
           <button
@@ -549,7 +547,7 @@ const CoursesManagementPage: React.FC = () => {
             disabled={page >= totalPages}
             onClick={() => setPage((p) => p + 1)}
           >
-            Sau →
+            Sau
           </button>
         </div>
       )}

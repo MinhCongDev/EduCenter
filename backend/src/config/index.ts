@@ -33,6 +33,29 @@ export const config = {
   // CORS
   corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:5173',
 
+  // Frontend / email verification
+  frontendUrl: process.env.FRONTEND_URL || process.env.CORS_ORIGIN || 'http://localhost:5173',
+  verifyEmailUrl:
+    process.env.VERIFY_EMAIL_URL ||
+    `${process.env.FRONTEND_URL || process.env.CORS_ORIGIN || 'http://localhost:5173'}/verify-email`,
+
+  // SMTP (optional in development – email content is logged when unset)
+  smtp: {
+    host: process.env.SMTP_HOST || '',
+    port: parseInt(process.env.SMTP_PORT || '587', 10),
+    secure: process.env.SMTP_SECURE === 'true',
+    user: process.env.SMTP_USER || '',
+    pass: process.env.SMTP_PASS || '',
+    from: process.env.SMTP_FROM || '"EduCenter" <no-reply@educenter.edu.vn>',
+  },
+  isSmtpConfigured: Boolean(process.env.SMTP_HOST && process.env.SMTP_FROM),
+
+  // Google OAuth (Sign in with Google)
+  google: {
+    clientId: process.env.GOOGLE_CLIENT_ID || '',
+  },
+  isGoogleConfigured: Boolean(process.env.GOOGLE_CLIENT_ID),
+
   // Rate Limiting
   rateLimit: {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10),
