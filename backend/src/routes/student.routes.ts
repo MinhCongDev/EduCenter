@@ -13,6 +13,8 @@ import {
   getSchedule,
   getCombinedSchedule,
   getPayments,
+  getTuition,
+  payTuition,
   getChangeRequests,
   createChangeRequest,
   cancelChangeRequest,
@@ -45,6 +47,10 @@ router.get('/classes/:id/schedule', getSchedule);
 
 // Payments
 router.get('/payments', getPayments);
+
+// Tuition (học phí theo lớp) — M8
+router.get('/tuition', getTuition);
+router.post('/tuition/:enrollmentId/pay', payTuition);
 
 // Combined schedule across all classes (M6) — declare BEFORE :id routes
 router.get('/schedule/all', getCombinedSchedule);

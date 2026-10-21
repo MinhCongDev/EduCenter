@@ -354,6 +354,8 @@ export interface Class {
   endDate: string;
   capacity: number;
   currentEnrollment?: number;
+  /** Field tương thích ngược (một số endpoint cũ trả `currentStudents`). */
+  currentStudents?: number;
   sessions?: number;
   status: ClassStatus;
 }
@@ -495,6 +497,7 @@ export interface PaymentStats {
   paidCount: number;
   pendingCount: number;
   failedCount: number;
+  refundedCount?: number;
   totalPaid: number;
   totalPending: number;
 }
@@ -545,6 +548,59 @@ export interface Enrollment {
   enrollmentStatus: EnrollmentStatus;
   tuitionStatus: TuitionStatus;
   enrollmentDate: string;
+}
+
+// ─── Tuition (M8) — học phí theo từng lớp đã ghi danh ───
+export interface TuitionPayment {
+  _id: string;
+  amount: number;
+  method: PaymentMethod;
+  transactionCode: string;
+  status: PaymentStatus;
+  paymentDate: string;
+  createdAt: string;
+}
+
+export interface TuitionItem {
+  enrollmentId: string;
+  classId: string;
+  classCode: string;
+  room: string;
+  scheduleDays: string[];
+  timeSlot: string;
+  startDate: string;
+  endDate: string;
+  course: {
+    _id: string;
+    code: string;
+    title: string;
+    description?: string;
+    durationWeeks?: number;
+    sessions?: number;
+    tuitionFee: number;
+  } | null;
+  teacher: {
+    _id: string;
+    fullName: string;
+    email: string;
+    phone?: string;
+    avatarUrl?: string;
+  } | null;
+  tuitionFee: number;
+  tuitionStatus: TuitionStatus;
+  enrollmentStatus: EnrollmentStatus;
+  enrollmentDate: string;
+  payments: TuitionPayment[];
+}
+
+export interface TuitionStats {
+  total: number;
+  paidCount: number;
+  pendingCount: number;
+  refundedCount: number;
+  totalPaid: number;
+  totalPending: number;
+  totalRefunded: number;
 }
 
 export interface DashboardStats {

@@ -177,7 +177,10 @@ const ClassDetailsPage: React.FC = () => {
             <Field label="Phòng học" value={c.room} />
             <Field label="Lịch học" value={c.scheduleDays?.join(', ')} />
             <Field label="Ca học" value={c.timeSlot} />
-            <Field label="Sĩ số" value={`${c.currentStudents || '—'}/${c.capacity || '—'}`} />
+            <Field
+              label="Sĩ số"
+              value={`${c.currentEnrollment ?? c.currentStudents ?? 0}/${c.capacity ?? '—'}`}
+            />
             <Field label="Ngày đăng ký" value={formatDate(cls.enrollmentDate)} />
           </div>
         </div>

@@ -78,6 +78,7 @@ const PaymentsPage: React.FC = () => {
     { key: 'SUCCESS', label: '✅ Đã thanh toán', count: payments.filter((p) => p.status === 'SUCCESS').length },
     { key: 'PENDING', label: '⏳ Chờ thanh toán', count: payments.filter((p) => p.status === 'PENDING').length },
     { key: 'FAILED', label: '❌ Thất bại', count: payments.filter((p) => p.status === 'FAILED').length },
+    { key: 'REFUNDED', label: '💸 Đã hoàn tiền', count: payments.filter((p) => p.status === 'REFUNDED').length },
   ];
 
   return (

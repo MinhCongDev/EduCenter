@@ -15,6 +15,37 @@ const DAY_COLORS: Record<string, string> = {
   'Chủ nhật': '#ef4444',
 };
 
+/** Thứ tự chuẩn các ngày trong tuần (dùng chữ thường để so khớp không phân biệt hoa/thường). */
+const WEEK_ORDER = [
+  'thứ 2',
+  'thứ 3',
+  'thứ 4',
+  'thứ 5',
+  'thứ 6',
+  'thứ 7',
+  'chủ nhật',
+];
+
+/** Chuẩn hoá chuỗi ngày: bỏ khoảng trắng thừa, ép NFC (chuẩn Unicode), chuyển chữ thường. */
+const normalizeDay = (day?: string | null): string =>
+  (day || '').trim().normalize('NFC').toLowerCase();
+
+/** Tra màu theo ngày, không phân biệt hoa/thường ('Chủ Nhật' vs 'Chủ nhật'). */
+const dayColor = (day: string): string => {
+  const found = Object.keys(DAY_COLORS).find(
+    (k) => normalizeDay(k) === normalizeDay(day)
+  );
+  return (found && DAY_COLORS[found]) || '#64748b';
+};
+
+/** Tìm nhãn chuẩn (đúng hoa/thường) cho một ngày trong tuần. */
+const canonicalDay = (day: string): string => {
+  const found = Object.keys(DAY_COLORS).find(
+    (k) => normalizeDay(k) === normalizeDay(day)
+  );
+  return found || day;
+};
+
 const SchedulePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const toast = useToast();
@@ -42,15 +73,25 @@ const SchedulePage: React.FC = () => {
   const grouped = useMemo(() => {
     const map: Record<string, ClassSchedule[]> = {};
     schedules.forEach((s) => {
-      if (!map[s.dayOfWeek]) map[s.dayOfWeek] = [];
-      map[s.dayOfWeek].push(s);
+      // Gom theo ngày đã chuẩn hoá để 'Chủ Nhật' và 'Chủ nhật' là một nhóm.
+      const key = canonicalDay(s.dayOfWeek);
+      if (!map[key]) map[key] = [];
+      map[key].push(s);
     });
     return map;
   }, [schedules]);
 
   const orderedDays = useMemo(() => {
-    const order = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
-    return order.filter((d) => grouped[d]);
+    // Sắp xếp theo thứ tự trong tuần, không phụ thuộc hoa/thường.
+    // Ngày lạ (không nằm trong danh sách) đưa xuống cuối.
+    return Object.keys(grouped).sort((a, b) => {
+      const ia = WEEK_ORDER.indexOf(normalizeDay(a));
+      const ib = WEEK_ORDER.indexOf(normalizeDay(b));
+      if (ia === -1 && ib === -1) return a.localeCompare(b);
+      if (ia === -1) return 1;
+      if (ib === -1) return -1;
+      return ia - ib;
+    });
   }, [grouped]);
 
   if (isLoading) return <SkeletonPage message="Đang tải lịch học..." />;
@@ -141,7 +182,7 @@ const SchedulePage: React.FC = () => {
             <div
               key={day}
               className="dash-card"
-              style={{ borderLeft: `4px solid ${DAY_COLORS[day] || '#64748b'}` }}
+              style={{ borderLeft: `4px solid ${dayColor(day)}` }}
             >
               <div className="dash-card-header">
                 <h2 className="dash-card-title">
@@ -158,7 +199,7 @@ const SchedulePage: React.FC = () => {
                       background: 'var(--dash-card-subtle)',
                       borderRadius: '10px',
                       padding: '0.75rem 1rem',
-                      borderLeft: `3px solid ${DAY_COLORS[day] || '#64748b'}`,
+                        borderLeft: `3px solid ${dayColor(day)}`,
                     }}
                   >
                     <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '0.25rem' }}>

@@ -194,14 +194,28 @@ export const getClassDetails = async (req: AuthRequest, res: Response): Promise<
       throw createError('Bạn chưa đăng ký lớp học này', 404);
     }
 
+    const classDoc: any = (enrollment as any).class;
+    // Sĩ số: ưu tiên counter `currentEnrollment` (được cập nhật khi ghi danh),
+    // fallback `currentStudents` cho dữ liệu seed cũ.
+    const enrollmentCount =
+      classDoc?.currentEnrollment ?? classDoc?.currentStudents ?? 0;
+    // Phải dùng toObject() — spread trực tiếp trên document Mongoose sẽ chỉ
+    // lấy các thuộc tính nội bộ ($__, _doc, ...) chứ không lấy field dữ liệu.
+    const classPlain =
+      typeof classDoc?.toObject === 'function' ? classDoc.toObject() : { ...classDoc };
+
     res.json({
       success: true,
       message: 'Lấy chi tiết lớp học thành công',
       data: {
         class: {
-          _id: (enrollment as any).class._id,
+          _id: classPlain._id,
           enrollmentId: enrollment._id,
-          class: (enrollment as any).class,
+          class: {
+            ...classPlain,
+            currentStudents: enrollmentCount,
+            currentEnrollment: enrollmentCount,
+          },
           status: enrollment.status,
           enrollmentStatus: enrollment.status,
           tuitionStatus: enrollment.tuitionStatus,
@@ -233,7 +247,12 @@ export const getAssignments = async (req: AuthRequest, res: Response): Promise<v
     const enrolled = await Enrollment.exists({ student: user._id, class: id, status: 'ENROLLED' });
     if (!enrolled) throw createError('Bạn chưa đăng ký lớp học này', 403);
 
-    const assignments = await Assignment.find({ class: id }).sort({ dueDate: 1 });
+    // Chỉ hiển thị bài tập đã công bố. Chấp nhận cả 'ACTIVE' vì dữ liệu
+    // seed cũ dùng giá trị này thay cho 'PUBLISHED'.
+    const assignments = await Assignment.find({
+      class: id,
+      status: { $in: ['PUBLISHED', 'ACTIVE'] },
+    }).sort({ dueDate: 1 });
 
     const submissions = await Submission.find({
       student: user._id,
@@ -428,9 +447,13 @@ export const getCombinedSchedule = async (req: AuthRequest, res: Response): Prom
           const days: string[] = e.class?.scheduleDays || [];
           if (!days.length) return [];
           const { startTime, endTime } = timeParts(e.class?.timeSlot);
+          const clsPlain =
+            typeof e.class?.toObject === 'function'
+              ? e.class.toObject()
+              : { ...e.class };
           return days.map((day: string) => ({
             _id: `${e.class._id}-${day}`,
-            class: e.class,
+            class: clsPlain,
             dayOfWeek: day,
             startTime,
             endTime,
@@ -480,9 +503,13 @@ export const getSchedule = async (req: AuthRequest, res: Response): Promise<void
     let scheduleList: any[] = schedule;
     if (!scheduleList.length && classDoc?.scheduleDays?.length) {
       const [s, e] = (classDoc.timeSlot || '').split('-').map((x) => x.trim());
+      const clsPlain =
+        typeof classDoc.toObject === 'function'
+          ? classDoc.toObject()
+          : { ...classDoc };
       scheduleList = (classDoc.scheduleDays as string[]).map((day: string) => ({
         _id: `${id}-${day}`,
-        class: classDoc,
+        class: clsPlain,
         dayOfWeek: day,
         startTime: s || '',
         endTime: e || '',
@@ -517,10 +544,15 @@ export const getPayments = async (req: AuthRequest, res: Response): Promise<void
     const user = requireUser(req);
 
     const payments = await Payment.find({ student: user._id })
+      // Model Payment không có field `class` — lớp học nằm ở enrollment.class
       .populate({
-        path: 'class',
-        select: 'classCode room',
-        populate: { path: 'course', select: 'code title' },
+        path: 'enrollment',
+        select: 'class',
+        populate: {
+          path: 'class',
+          select: 'classCode room',
+          populate: { path: 'course', select: 'code title' },
+        },
       })
       .populate({
         path: 'course',
@@ -535,16 +567,33 @@ export const getPayments = async (req: AuthRequest, res: Response): Promise<void
       .filter((p) => p.status === 'PENDING')
       .reduce((sum, p) => sum + p.amount, 0);
 
+    // Chuẩn hoá output: expose `class` (từ enrollment.class) để frontend
+    // hiển thị mã lớp + tên khóa học một cách nhất quán.
+    // Dùng toObject() vì spread trực tiếp trên document Mongoose sẽ chỉ lấy
+    // thuộc tính nội bộ chứ không lấy field dữ liệu.
+    const normalizedPayments = payments.map((p: any) => {
+      const plain =
+        typeof p.toObject === 'function' ? p.toObject() : { ...p };
+      const enrollment = plain.enrollment;
+      delete plain.enrollment;
+      return {
+        ...plain,
+        class: enrollment?.class ?? null,
+        enrollmentId: enrollment?._id ?? null,
+      };
+    });
+
     res.json({
       success: true,
       message: 'Lấy lịch sử thanh toán thành công',
       data: {
-        payments,
+        payments: normalizedPayments,
         stats: {
-          total: payments.length,
-          paidCount: payments.filter((p) => p.status === 'SUCCESS').length,
-          pendingCount: payments.filter((p) => p.status === 'PENDING').length,
-          failedCount: payments.filter((p) => p.status === 'FAILED').length,
+          total: normalizedPayments.length,
+          paidCount: normalizedPayments.filter((p: any) => p.status === 'SUCCESS').length,
+          pendingCount: normalizedPayments.filter((p: any) => p.status === 'PENDING').length,
+          failedCount: normalizedPayments.filter((p: any) => p.status === 'FAILED').length,
+          refundedCount: normalizedPayments.filter((p: any) => p.status === 'REFUNDED').length,
           totalPaid,
           totalPending,
         },
@@ -558,6 +607,265 @@ export const getPayments = async (req: AuthRequest, res: Response): Promise<void
     res.status(500).json({
       success: false,
       message: error.message || 'Lỗi server khi lấy lịch sử thanh toán',
+    });
+  }
+};
+
+// =====================================================
+//  GET /api/student/tuition
+//  Danh sách học phí theo từng lớp đã ghi danh.
+//  Nguồn trạng thái: Enrollment.tuitionStatus (PAID / PENDING / REFUNDED).
+// =====================================================
+export const getTuition = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const user = requireUser(req);
+
+    const enrollments = await Enrollment.find({
+      student: user._id,
+      status: { $ne: 'DROPPED' },
+    })
+      .populate({
+        path: 'class',
+        populate: [
+          { path: 'course', select: 'code title description durationWeeks sessions tuitionFee' },
+          { path: 'teacher', select: 'fullName email phone avatarUrl' },
+        ],
+      })
+      .sort({ createdAt: -1 });
+
+    const items = enrollments
+      .filter((e: any) => e.class)
+      .map((e: any) => {
+        const cls = e.class;
+        const course = cls.course;
+        const tuitionFee = course?.tuitionFee ?? 0;
+        const tuitionStatus = e.tuitionStatus ?? 'PENDING';
+
+        // Giao dịch thanh toán gần nhất (nếu có) để hiển thị mã giao dịch / ngày.
+        return {
+          enrollmentId: e._id.toString(),
+          classId: cls._id.toString(),
+          classCode: cls.classCode,
+          room: cls.room,
+          scheduleDays: cls.scheduleDays,
+          timeSlot: cls.timeSlot,
+          startDate: cls.startDate,
+          endDate: cls.endDate,
+          course: course
+            ? {
+                _id: course._id,
+                code: course.code,
+                title: course.title,
+                description: course.description,
+                durationWeeks: course.durationWeeks,
+                sessions: course.sessions,
+                tuitionFee: course.tuitionFee,
+              }
+            : null,
+          teacher: cls.teacher
+            ? {
+                _id: cls.teacher._id,
+                fullName: cls.teacher.fullName,
+                email: cls.teacher.email,
+                phone: cls.teacher.phone,
+                avatarUrl: cls.teacher.avatarUrl,
+              }
+            : null,
+          tuitionFee,
+          tuitionStatus,
+          enrollmentStatus: e.status,
+          enrollmentDate: e.enrollmentDate,
+        };
+      });
+
+    // Gắn giao dịch thanh toán tương ứng cho từng khoản học phí.
+    const payments = await Payment.find({
+      student: user._id,
+      enrollment: { $in: items.map((i: any) => i.enrollmentId) },
+    }).sort({ createdAt: -1 });
+
+    const withPayments = items.map((item: any) => {
+      const related = payments
+        .filter((p: any) => p.enrollment?.toString() === item.enrollmentId)
+        .map((p: any) => ({
+          _id: p._id,
+          amount: p.amount,
+          method: p.method,
+          transactionCode: p.transactionCode,
+          status: p.status,
+          paymentDate: p.paymentDate,
+          createdAt: p.createdAt,
+        }));
+      return { ...item, payments: related };
+    });
+
+    const paidItems = withPayments.filter((i: any) => i.tuitionStatus === 'PAID');
+    const pendingItems = withPayments.filter((i: any) => i.tuitionStatus === 'PENDING');
+    const refundedItems = withPayments.filter((i: any) => i.tuitionStatus === 'REFUNDED');
+
+    res.json({
+      success: true,
+      message: 'Lấy danh sách học phí thành công',
+      data: {
+        items: withPayments,
+        stats: {
+          total: withPayments.length,
+          paidCount: paidItems.length,
+          pendingCount: pendingItems.length,
+          refundedCount: refundedItems.length,
+          totalPaid: paidItems.reduce((s: number, i: any) => s + (i.tuitionFee || 0), 0),
+          totalPending: pendingItems.reduce((s: number, i: any) => s + (i.tuitionFee || 0), 0),
+          totalRefunded: refundedItems.reduce((s: number, i: any) => s + (i.tuitionFee || 0), 0),
+        },
+      },
+    });
+  } catch (error: any) {
+    if (error.statusCode) {
+      res.status(error.statusCode).json({ success: false, message: error.message });
+      return;
+    }
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Lỗi server khi lấy danh sách học phí',
+    });
+  }
+};
+
+// =====================================================
+//  POST /api/student/tuition/:enrollmentId/pay
+//  Thanh toán học phí (mô phỏng): tạo giao dịch Payment SUCCESS
+//  và cập nhật Enrollment.tuitionStatus = 'PAID'.
+// =====================================================
+export const payTuition = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const user = requireUser(req);
+    const { enrollmentId } = req.params;
+    if (!enrollmentId || !isValidId(enrollmentId)) {
+      throw createError('ID ghi danh không hợp lệ', 400);
+    }
+
+    const enrollment = await Enrollment.findOne({
+      _id: enrollmentId,
+      student: user._id,
+      status: { $ne: 'DROPPED' },
+    }).populate({
+      path: 'class',
+      populate: { path: 'course', select: 'code title tuitionFee' },
+    });
+
+    if (!enrollment) {
+      throw createError('Không tìm thấy lớp học đã ghi danh', 404);
+    }
+
+    const cls: any = (enrollment as any).class;
+    const course = cls?.course;
+    const amount = course?.tuitionFee ?? 0;
+    if (amount <= 0) {
+      throw createError('Lớp học này không có học phí để thanh toán', 400);
+    }
+
+    const method = (req.body?.method as string) || 'VNPAY';
+    const VALID_METHODS = ['VNPAY', 'BANK_TRANSFER', 'CASH', 'CREDIT_CARD'];
+    if (!VALID_METHODS.includes(method)) {
+      throw createError('Phương thức thanh toán không hợp lệ', 400);
+    }
+
+    // ── Bước 1: Claim quyền thanh toán bằng ATOMIC update có điều kiện ──
+    // Chỉ request nào thực sự chuyển được trạng thái sang PAID mới được tiếp tục.
+    // Nếu 2 request chạy đồng thời, chỉ 1 request có modifiedCount = 1, request
+    // còn lại bị chặn 409 → không tạo giao dịch trùng.
+    const claimed = await Enrollment.updateOne(
+      {
+        _id: enrollment._id,
+        student: user._id,
+        status: { $ne: 'DROPPED' },
+        tuitionStatus: { $ne: 'PAID' },
+      },
+      { $set: { tuitionStatus: 'PAID' } }
+    );
+
+    if (claimed.modifiedCount === 0) {
+      throw createError('Bạn đã thanh toán học phí lớp học này rồi', 409);
+    }
+
+    // Tạo mã giao dịch duy nhất.
+    const transactionCode = `EDU-${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2, 8)
+      .toUpperCase()}`;
+
+    let payment;
+    try {
+      // Nếu enrollment đã có hóa đơn PENDING (hóa đơn tạo sẵn khi ghi danh),
+      // thì thanh toán chính hóa đơn đó thay vì tạo hóa đơn mới — tránh
+      // trùng lặp và giữ đúng mô hình "1 hóa đơn / 1 khoản học phí".
+      const existingInvoice = await Payment.findOne({
+        enrollment: enrollment._id,
+        status: { $ne: 'SUCCESS' },
+      }).sort({ createdAt: 1 });
+
+      if (existingInvoice) {
+        existingInvoice.status = 'SUCCESS';
+        existingInvoice.amount = amount;
+        existingInvoice.method = method as any;
+        existingInvoice.transactionCode = transactionCode;
+        existingInvoice.paymentDate = new Date();
+        existingInvoice.note = 'Thanh toán học phí trực tuyến';
+        await existingInvoice.save();
+        payment = existingInvoice;
+      } else {
+        payment = await Payment.create({
+          student: user._id,
+          enrollment: enrollment._id,
+          course: course?._id,
+          amount,
+          method,
+          transactionCode,
+          status: 'SUCCESS',
+          paymentDate: new Date(),
+          note: 'Thanh toán học phí trực tuyến',
+        });
+      }
+    } catch (createErr: any) {
+      // Tạo giao dịch thất bại → hoàn tác trạng thái để không "mất tiền".
+      await Enrollment.updateOne(
+        { _id: enrollment._id, tuitionStatus: 'PAID' },
+        { $set: { tuitionStatus: enrollment.tuitionStatus || 'PENDING' } }
+      );
+      throw createErr;
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Thanh toán học phí thành công',
+      data: {
+        payment: {
+          _id: payment._id,
+          amount: payment.amount,
+          method: payment.method,
+          transactionCode: payment.transactionCode,
+          status: payment.status,
+          paymentDate: payment.paymentDate,
+        },
+        enrollmentId: enrollment._id.toString(),
+        tuitionStatus: 'PAID',
+      },
+    });
+  } catch (error: any) {
+    if (error.statusCode) {
+      res.status(error.statusCode).json({ success: false, message: error.message });
+      return;
+    }
+    if (error.code === 11000) {
+      res.status(409).json({
+        success: false,
+        message: 'Mã giao dịch đã tồn tại, vui lòng thử lại',
+      });
+      return;
+    }
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Lỗi server khi thanh toán học phí',
     });
   }
 };
@@ -734,6 +1042,10 @@ export const submitAssignment = async (req: AuthRequest, res: Response): Promise
     if (assignment.status === 'CLOSED') {
       throw createError('Bài tập đã đóng, không thể nộp', 400);
     }
+    // Bài nháp chưa công bố — học viên không được nộp.
+    if (assignment.status === 'DRAFT') {
+      throw createError('Bài tập chưa được công bố, không thể nộp', 400);
+    }
 
     const enrolled = await Enrollment.exists({
       student: user._id,
@@ -833,7 +1145,8 @@ export const getDashboard = async (req: AuthRequest, res: Response): Promise<voi
     if (classIds.length > 0) {
       const aList = await Assignment.find({
         class: { $in: classIds },
-        status: { $ne: 'DRAFT' },
+        // Không tính bài nháp; 'ACTIVE' là giá trị của dữ liệu seed cũ
+        status: { $in: ['PUBLISHED', 'ACTIVE'] },
       });
       totalAssignments = aList.length;
       const submitted = await Submission.find({

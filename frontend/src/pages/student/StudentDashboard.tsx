@@ -5,8 +5,15 @@ import { useToast } from '../../contexts/ToastContext';
 import { studentService } from '../../services/student.service';
 import { SkeletonPage } from '../../components/Skeleton';
 import { EmptyState } from '../../components/Skeleton';
-import { formatDate, bandColor, bandLabel } from '../../utils/format';
-import type { DashboardData, Assignment, Enrollment, Grade, ClassSchedule } from '../../types';
+import { formatDate, formatVND, bandColor, bandLabel } from '../../utils/format';
+import type {
+  DashboardData,
+  Assignment,
+  Enrollment,
+  Grade,
+  ClassSchedule,
+  TuitionStats,
+} from '../../types';
 
 export type StudentTab = 'overview' | 'courses' | 'schedule' | 'assignments' | 'grades';
 
@@ -32,6 +39,7 @@ const StudentDashboard: React.FC = () => {
   const [assignments, setAssignments] = useState<DashAssignment[]>([]);
   const [grades, setGrades] = useState<Grade[]>([]);
   const [schedule, setSchedule] = useState<ClassSchedule[]>([]);
+  const [tuitionStats, setTuitionStats] = useState<TuitionStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -118,6 +126,10 @@ const StudentDashboard: React.FC = () => {
       // Lịch học tổng hợp
       const schedRes = await studentService.getCombinedSchedule().catch(() => null);
       if (schedRes?.data?.schedule) setSchedule(schedRes.data.schedule);
+
+      // Thống kê học phí (đã/chưa thanh toán)
+      const tuitionRes = await studentService.getTuition().catch(() => null);
+      if (tuitionRes?.data?.stats) setTuitionStats(tuitionRes.data.stats);
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Không thể tải dữ liệu dashboard');
     } finally {
@@ -211,6 +223,13 @@ const StudentDashboard: React.FC = () => {
             >
               📊 Kết quả học tập
             </button>
+            <button
+              type="button"
+              className="dash-quick-btn"
+              onClick={() => navigate('/student/tuition')}
+            >
+              💳 Thanh toán khóa học
+            </button>
           </div>
 
           {/* Key Metrics */}
@@ -266,6 +285,28 @@ const StudentDashboard: React.FC = () => {
                 </span>
               </div>
               <div className="dash-metric-icon icon-purple">⏰</div>
+            </div>
+
+            <div
+              className="dash-metric-card"
+              onClick={() => navigate('/student/tuition')}
+              style={{ cursor: 'pointer' }}
+            >
+              <div className="dash-metric-info">
+                <span className="dash-metric-label">Học phí chờ thanh toán</span>
+                <span
+                  className="dash-metric-val"
+                  style={{ color: tuitionStats?.pendingCount ? '#f59e0b' : '#10b981' }}
+                >
+                  {tuitionStats?.pendingCount || 0} khoản
+                </span>
+                <span className="dash-metric-trend neutral">
+                  {tuitionStats?.pendingCount
+                    ? `Cần thanh toán ${formatVND(tuitionStats.totalPending)} ➔`
+                    : 'Đã thanh toán đủ ➔'}
+                </span>
+              </div>
+              <div className="dash-metric-icon icon-blue">💳</div>
             </div>
           </div>
 
@@ -941,6 +982,56 @@ const StudentDashboard: React.FC = () => {
                 </table>
               </div>
             )}
+          </div>
+
+          {/* ── Thanh toán khóa học (đặt dưới phần Kết quả học tập) ── */}
+          <div
+            className="dash-card"
+            style={{
+              padding: '1.25rem 1.5rem',
+              borderRadius: '16px',
+              background: 'linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%)',
+              border: '1px solid #dbeafe',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: '1rem',
+                flexWrap: 'wrap',
+              }}
+            >
+              <div>
+                <h3
+                  style={{
+                    margin: 0,
+                    fontSize: '1.05rem',
+                    fontWeight: 800,
+                    color: '#0f172a',
+                  }}
+                >
+                  💳 Thanh Toán Khóa Học
+                </h3>
+                <p
+                  style={{
+                    margin: '0.35rem 0 0',
+                    fontSize: '0.85rem',
+                    color: '#64748b',
+                  }}
+                >
+                  Xem các khóa học đã thanh toán và chưa thanh toán, bấm để xem chi tiết.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="dash-quick-btn primary"
+                onClick={() => navigate('/student/tuition')}
+              >
+                💳 Xem Thanh Toán
+              </button>
+            </div>
           </div>
         </div>
       )}

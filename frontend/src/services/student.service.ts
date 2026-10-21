@@ -10,9 +10,14 @@ import type {
   Enrollment,
   Grade,
   Payment,
+  PaymentMethod,
   PaymentStats,
+  PaymentStatus,
   StudentProfile,
   Submission,
+  TuitionItem,
+  TuitionStats,
+  TuitionStatus,
   User,
   ClassSchedule,
 } from '../types';
@@ -109,6 +114,52 @@ export const studentService = {
     const res = await api.get<ApiResponse<{ payments: Payment[]; stats: PaymentStats }>>(
       '/student/payments'
     );
+    return res.data;
+  },
+
+  // ---------------- Tuition (M8) ----------------
+  /** GET /api/student/tuition — học phí theo từng lớp đã ghi danh */
+  getTuition: async (): Promise<
+    ApiResponse<{ items: TuitionItem[]; stats: TuitionStats }>
+  > => {
+    const res = await api.get<
+      ApiResponse<{ items: TuitionItem[]; stats: TuitionStats }>
+    >('/student/tuition');
+    return res.data;
+  },
+
+  /** POST /api/student/tuition/:enrollmentId/pay — thanh toán học phí */
+  payTuition: async (
+    enrollmentId: string,
+    method: PaymentMethod = 'VNPAY'
+  ): Promise<
+    ApiResponse<{
+      payment: {
+        _id: string;
+        amount: number;
+        method: PaymentMethod;
+        transactionCode: string;
+        status: PaymentStatus;
+        paymentDate: string;
+      };
+      enrollmentId: string;
+      tuitionStatus: TuitionStatus;
+    }>
+  > => {
+    const res = await api.post<
+      ApiResponse<{
+        payment: {
+          _id: string;
+          amount: number;
+          method: PaymentMethod;
+          transactionCode: string;
+          status: PaymentStatus;
+          paymentDate: string;
+        };
+        enrollmentId: string;
+        tuitionStatus: TuitionStatus;
+      }>
+    >(`/student/tuition/${enrollmentId}/pay`, { method });
     return res.data;
   },
 
