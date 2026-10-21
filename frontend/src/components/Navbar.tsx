@@ -20,7 +20,6 @@ const getDashboardPath = (role: UserRole): string => {
 const Navbar: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
-  const [avatarHover, setAvatarHover] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [targetScore, setTargetScore] = useState(7.5);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -208,7 +207,7 @@ const Navbar: React.FC = () => {
 
         {/* Right Action Widgets */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
-          {/* Target Score Widget */}
+          {/* Target Score Widget: Only display for guest or students to avoid header crowding */}
           {(!isAuthenticated || user?.role === 'STUDENT') && (
             <div
               className="dmr-leaf-points"
@@ -220,7 +219,7 @@ const Navbar: React.FC = () => {
             </div>
           )}
 
-          {/* Cart Icon */}
+          {/* Cart Icon: Only display for guest or students */}
           {(!isAuthenticated || user?.role === 'STUDENT') && (
             <Link to="/courses" className="dmr-store-btn" title="Cửa hàng khóa học IELTS">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
@@ -234,11 +233,11 @@ const Navbar: React.FC = () => {
           {/* Auth Section */}
           {isAuthenticated && user ? (
             <div style={{ position: 'relative' }}>
-              {/* Notification bell for students */}
+              {/* Notification bell — chỉ dành cho học viên */}
               {user.role === 'STUDENT' && <NotificationBell />}
 
-              {/* User pill with profile avatar + logout */}
               <div
+                className="dmr-user-pill"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -249,37 +248,37 @@ const Navbar: React.FC = () => {
                   border: '1px solid rgba(255, 255, 255, 0.22)',
                 }}
               >
-                {/* Clickable user avatar that opens dropdown */}
+                {/* Clickable user profile trigger */}
                 <div
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
                   title="Nhấp để mở menu tài khoản"
                 >
-                  <div
-                    className="dmr-user-avatar"
-                    onMouseEnter={() => setAvatarHover(true)}
-                    onMouseLeave={() => setAvatarHover(false)}
-                    style={{
-                      transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-                      transform: avatarHover ? 'scale(1.08)' : 'scale(1)',
-                      boxShadow: avatarHover ? '0 0 0 3px rgba(59,130,246,0.4)' : 'none',
-                    }}
-                  >
-                    {user.avatarUrl ? (
-                      <img src={user.avatarUrl} alt={user.fullName} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
-                    ) : (
-                      user.fullName.charAt(0).toUpperCase()
-                    )}
+                  <div className="dmr-user-avatar">
+                    {user.fullName.charAt(0).toUpperCase()}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 700, lineHeight: 1.1, maxWidth: '120px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={user.fullName}>
+                    <span
+                      style={{
+                        fontSize: '0.85rem',
+                        fontWeight: 700,
+                        lineHeight: 1.1,
+                        maxWidth: '120px',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                      title={user.fullName}
+                    >
                       {user.fullName}
                     </span>
-                    <span style={{ fontSize: '0.68rem', color: '#A0EC1D' }}>{user.role} ▾</span>
+                    <span style={{ fontSize: '0.68rem', color: '#A0EC1D' }}>
+                      {user.role} ▾
+                    </span>
                   </div>
                 </div>
 
-                {/* Logout button */}
+                {/* Prominent, guaranteed-visible Logout button */}
                 <button
                   id="navbar-logout-btn"
                   type="button"
@@ -300,12 +299,12 @@ const Navbar: React.FC = () => {
                     transition: 'all 0.15s ease',
                   }}
                   onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#ef4444';
-                    (e.currentTarget as HTMLButtonElement).style.color = '#ffffff';
+                    e.currentTarget.style.backgroundColor = '#ef4444';
+                    e.currentTarget.style.color = '#ffffff';
                   }}
                   onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'rgba(239, 68, 68, 0.25)';
-                    (e.currentTarget as HTMLButtonElement).style.color = '#FFB4A2';
+                    e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.25)';
+                    e.currentTarget.style.color = '#FFB4A2';
                   }}
                   title="Đăng xuất khỏi hệ thống"
                 >
@@ -317,7 +316,10 @@ const Navbar: React.FC = () => {
               {/* User Dropdown Menu */}
               {isUserMenuOpen && (
                 <>
-                  <div style={{ position: 'fixed', inset: 0, zIndex: 1050 }} onClick={() => setIsUserMenuOpen(false)} />
+                  <div
+                    style={{ position: 'fixed', inset: 0, zIndex: 1050 }}
+                    onClick={() => setIsUserMenuOpen(false)}
+                  />
                   <div
                     style={{
                       position: 'absolute',
@@ -334,42 +336,114 @@ const Navbar: React.FC = () => {
                     }}
                   >
                     <div style={{ padding: '8px 10px', borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                      <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#ffffff' }}>{user.fullName}</div>
-                      <div style={{ fontSize: '0.75rem', color: '#9AE6B4' }}>{user.email}</div>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#ffffff' }}>
+                        {user.fullName}
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: '#9AE6B4' }}>
+                        {user.email}
+                      </div>
                       <div style={{ marginTop: '4px' }}>
-                        <span className="dmr-badge-gold" style={{ fontSize: '0.7rem' }}>{user.role}</span>
+                        <span className="dmr-badge-gold" style={{ fontSize: '0.7rem' }}>
+                          {user.role}
+                        </span>
                       </div>
                     </div>
+
                     <div style={{ padding: '6px 0', display: 'flex', flexDirection: 'column', gap: '2px' }}>
                       <Link
                         to={getDashboardPath(user.role)}
                         onClick={() => setIsUserMenuOpen(false)}
-                        style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', borderRadius: '8px', color: '#ffffff', fontSize: '0.82rem', fontWeight: 600, textDecoration: 'none' }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '8px 10px',
+                          borderRadius: '8px',
+                          color: '#ffffff',
+                          fontSize: '0.82rem',
+                          fontWeight: 600,
+                          textDecoration: 'none',
+                        }}
                       >
-                        <span>📊</span><span>Dashboard của tôi</span>
+                        <span>📊</span>
+                        <span>Dashboard của tôi</span>
                       </Link>
+
                       <button
                         type="button"
-                        onClick={() => { setIsUserMenuOpen(false); setIsProfileOpen(true); }}
-                        style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', borderRadius: '8px', color: '#ffffff', fontSize: '0.82rem', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}
+                        onClick={() => {
+                          setIsUserMenuOpen(false);
+                          setIsProfileOpen(true);
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '8px 10px',
+                          borderRadius: '8px',
+                          color: '#ffffff',
+                          fontSize: '0.82rem',
+                          fontWeight: 600,
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          width: '100%',
+                          textAlign: 'left',
+                        }}
                       >
-                        <span>👤</span><span>Hồ sơ cá nhân</span>
+                        <span>👤</span>
+                        <span>Hồ sơ cá nhân</span>
                       </button>
+
                       <button
                         type="button"
-                        onClick={() => { setIsUserMenuOpen(false); setIsChangePasswordOpen(true); }}
-                        style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', borderRadius: '8px', color: '#ffffff', fontSize: '0.82rem', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}
+                        onClick={() => {
+                          setIsUserMenuOpen(false);
+                          setIsChangePasswordOpen(true);
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '8px 10px',
+                          borderRadius: '8px',
+                          color: '#ffffff',
+                          fontSize: '0.82rem',
+                          fontWeight: 600,
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          width: '100%',
+                          textAlign: 'left',
+                        }}
                       >
-                        <span>🔐</span><span>Đổi mật khẩu</span>
+                        <span>🔐</span>
+                        <span>Đổi mật khẩu</span>
                       </button>
                     </div>
+
                     <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.1)', paddingTop: '6px' }}>
                       <button
                         type="button"
                         onClick={handleLogout}
-                        style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', borderRadius: '8px', color: '#ff8585', fontSize: '0.82rem', fontWeight: 700, background: 'rgba(239, 68, 68, 0.15)', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '8px 10px',
+                          borderRadius: '8px',
+                          color: '#ff8585',
+                          fontSize: '0.82rem',
+                          fontWeight: 700,
+                          background: 'rgba(239, 68, 68, 0.15)',
+                          border: 'none',
+                          cursor: 'pointer',
+                          width: '100%',
+                          textAlign: 'left',
+                        }}
                       >
-                        <span>🚪</span><span>Đăng xuất (Thoát)</span>
+                        <span>🚪</span>
+                        <span>Đăng xuất (Thoát)</span>
                       </button>
                     </div>
                   </div>
@@ -378,9 +452,13 @@ const Navbar: React.FC = () => {
             </div>
           ) : (
             <div className="dmr-auth-pill">
-              <Link to="/login" className="dmr-auth-link">Đăng nhập</Link>
+              <Link to="/login" className="dmr-auth-link">
+                Đăng nhập
+              </Link>
               <span style={{ opacity: 0.7 }}>/</span>
-              <Link to="/register" className="dmr-auth-link">Đăng ký</Link>
+              <Link to="/register" className="dmr-auth-link">
+                Đăng ký
+              </Link>
             </div>
           )}
 
@@ -400,50 +478,158 @@ const Navbar: React.FC = () => {
       {mobileMenuOpen && (
         <div
           style={{
-            position: 'absolute', top: '76px', left: 0, right: 0,
-            backgroundColor: '#052F2E', padding: '20px',
+            position: 'absolute',
+            top: '76px',
+            left: 0,
+            right: 0,
+            backgroundColor: '#052F2E',
+            padding: '20px',
             borderBottom: '3px solid #57D061',
-            display: 'flex', flexDirection: 'column', gap: '12px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
             boxShadow: '0 10px 20px rgba(0,0,0,0.3)',
           }}
         >
-          <Link to="/courses" onClick={() => setMobileMenuOpen(false)} style={{ color: '#FFF', fontWeight: 700, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>🎯 Khóa học IELTS theo Band (4.5 - 8.0+)</Link>
-          <Link to="/courses" onClick={() => setMobileMenuOpen(false)} style={{ color: '#FFF', fontWeight: 700, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>🎙️ Luyện Speaking &amp; Writing Coaching 1:1</Link>
-          <Link to="/courses" onClick={() => setMobileMenuOpen(false)} style={{ color: '#FFF', fontWeight: 700, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>💻 Thi thử IELTS Mock Test (Computer) Miễn phí</Link>
-          <Link to="/#books" onClick={() => setMobileMenuOpen(false)} style={{ color: '#FFF', fontWeight: 700, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>📚 Bộ đề Cambridge IELTS &amp; Forecast Speaking</Link>
-          <Link to="/announcements" onClick={() => setMobileMenuOpen(false)} style={{ color: '#FFF', fontWeight: 700, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>🔥 Workshop Chiến thuật Đạt 8.0+ IELTS</Link>
-          <Link to="/#teachers" onClick={() => setMobileMenuOpen(false)} style={{ color: '#FFF', fontWeight: 700, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>👨‍🏫 Đội ngũ Giảng viên 8.5+ - 9.0 IELTS</Link>
+          <Link
+            to="/courses"
+            onClick={() => setMobileMenuOpen(false)}
+            style={{ color: '#FFF', fontWeight: 700, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}
+          >
+            🎯 Khóa học IELTS theo Band (4.5 - 8.0+)
+          </Link>
+          <Link
+            to="/courses"
+            onClick={() => setMobileMenuOpen(false)}
+            style={{ color: '#FFF', fontWeight: 700, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}
+          >
+            🎙️ Luyện Speaking &amp; Writing Coaching 1:1
+          </Link>
+          <Link
+            to="/courses"
+            onClick={() => setMobileMenuOpen(false)}
+            style={{ color: '#FFF', fontWeight: 700, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}
+          >
+            💻 Thi thử IELTS Mock Test (Computer) Miễn phí
+          </Link>
+          <Link
+            to="/#books"
+            onClick={() => setMobileMenuOpen(false)}
+            style={{ color: '#FFF', fontWeight: 700, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}
+          >
+            📚 Bộ đề Cambridge IELTS &amp; Forecast Speaking
+          </Link>
+          <Link
+            to="/announcements"
+            onClick={() => setMobileMenuOpen(false)}
+            style={{ color: '#FFF', fontWeight: 700, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}
+          >
+            🔥 Workshop Chiến thuật Đạt 8.0+ IELTS
+          </Link>
+          <Link
+            to="/#teachers"
+            onClick={() => setMobileMenuOpen(false)}
+            style={{ color: '#FFF', fontWeight: 700, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}
+          >
+            👨‍🏫 Đội ngũ Giảng viên 8.5+ - 9.0 IELTS
+          </Link>
           {isAuthenticated && user ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                <div className="dmr-user-avatar">{user.fullName.charAt(0).toUpperCase()}</div>
+                <div className="dmr-user-avatar">
+                  {user.fullName.charAt(0).toUpperCase()}
+                </div>
                 <div>
                   <div style={{ color: '#FFFFFF', fontWeight: 700, fontSize: '0.9rem' }}>{user.fullName}</div>
                   <div style={{ color: '#A0EC1D', fontSize: '0.75rem' }}>{user.role}</div>
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
-                <Link to={getDashboardPath(user.role)} onClick={() => setMobileMenuOpen(false)} style={{ flex: 1, textAlign: 'center', backgroundColor: 'rgba(255,255,255,0.15)', color: '#FFF', padding: '9px', borderRadius: '20px', fontWeight: 700, fontSize: '0.85rem', textDecoration: 'none' }}>📊 Dashboard</Link>
-                <button type="button" onClick={() => { setMobileMenuOpen(false); handleLogout(); }} style={{ flex: 1, textAlign: 'center', backgroundColor: '#ef4444', color: '#FFF', padding: '9px', borderRadius: '20px', fontWeight: 700, fontSize: '0.85rem', border: 'none', cursor: 'pointer' }}>🚪 Đăng xuất</button>
+                <Link
+                  to={getDashboardPath(user.role)}
+                  onClick={() => setMobileMenuOpen(false)}
+                  style={{
+                    flex: 1,
+                    textAlign: 'center',
+                    backgroundColor: 'rgba(255,255,255,0.15)',
+                    color: '#FFF',
+                    padding: '9px',
+                    borderRadius: '20px',
+                    fontWeight: 700,
+                    fontSize: '0.85rem',
+                    textDecoration: 'none',
+                  }}
+                >
+                  📊 Dashboard
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    handleLogout();
+                  }}
+                  style={{
+                    flex: 1,
+                    textAlign: 'center',
+                    backgroundColor: '#ef4444',
+                    color: '#FFF',
+                    padding: '9px',
+                    borderRadius: '20px',
+                    fontWeight: 700,
+                    fontSize: '0.85rem',
+                    border: 'none',
+                    cursor: 'pointer',
+                  }}
+                >
+                  🚪 Đăng xuất
+                </button>
               </div>
             </div>
           ) : (
             <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-              <Link to="/login" onClick={() => setMobileMenuOpen(false)} style={{ flex: 1, textAlign: 'center', backgroundColor: '#EC6E23', color: '#FFF', padding: '10px', borderRadius: '25px', fontWeight: 700 }}>Đăng nhập</Link>
-              <Link to="/register" onClick={() => setMobileMenuOpen(false)} style={{ flex: 1, textAlign: 'center', backgroundColor: '#57D061', color: '#07403F', padding: '10px', borderRadius: '25px', fontWeight: 800 }}>Đăng ký</Link>
+              <Link
+                to="/login"
+                onClick={() => setMobileMenuOpen(false)}
+                style={{
+                  flex: 1,
+                  textAlign: 'center',
+                  backgroundColor: '#EC6E23',
+                  color: '#FFF',
+                  padding: '10px',
+                  borderRadius: '25px',
+                  fontWeight: 700,
+                }}
+              >
+                Đăng nhập
+              </Link>
+              <Link
+                to="/register"
+                onClick={() => setMobileMenuOpen(false)}
+                style={{
+                  flex: 1,
+                  textAlign: 'center',
+                  backgroundColor: '#57D061',
+                  color: '#07403F',
+                  padding: '10px',
+                  borderRadius: '25px',
+                  fontWeight: 800,
+                }}
+              >
+                Đăng ký
+              </Link>
             </div>
           )}
         </div>
       )}
 
-      {/* Profile Modal (UC07) */}
+      {/* UC07: Update Personal Information Modal */}
       <ProfileModal
         isOpen={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}
         onOpenChangePassword={() => setIsChangePasswordOpen(true)}
       />
 
-      {/* Change Password Modal (UC10) */}
+      {/* UC10: Change Password Modal */}
       <ChangePasswordModal
         isOpen={isChangePasswordOpen}
         onClose={() => setIsChangePasswordOpen(false)}

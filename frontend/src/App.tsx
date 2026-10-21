@@ -28,6 +28,7 @@ const AttendancePage = lazy(() => import('./pages/student/AttendancePage'));
 const GradesPage = lazy(() => import('./pages/student/GradesPage'));
 const SchedulePage = lazy(() => import('./pages/student/SchedulePage'));
 const PaymentsPage = lazy(() => import('./pages/student/PaymentsPage'));
+const TuitionPage = lazy(() => import('./pages/student/TuitionPage'));
 const RequestsPage = lazy(() => import('./pages/student/RequestsPage'));
 const ProfilePage = lazy(() => import('./pages/student/ProfilePage'));
 const CombinedSchedulePage = lazy(() => import('./pages/student/CombinedSchedulePage'));
@@ -202,6 +203,16 @@ const AppRouter: React.FC = () => {
             <ProtectedRoute allowedRoles={['STUDENT']}>
               <DashboardLayout>
                 <PaymentsPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/tuition"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <DashboardLayout>
+                <TuitionPage />
               </DashboardLayout>
             </ProtectedRoute>
           }

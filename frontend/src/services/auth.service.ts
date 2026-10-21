@@ -1,6 +1,5 @@
 import api from './api';
 import type {
-  ApiResponse,
   AuthResponse,
   LoginCredentials,
   RegisterData,
@@ -10,10 +9,15 @@ import type {
   ChangePasswordData,
   ForgotPasswordData,
   ResetPasswordData,
+  ApiResponse,
 } from '../types';
 
 const TOKEN_KEY = 'educenter_token';
 const USER_KEY = 'educenter_user';
+
+// ===========================
+// Auth Service
+// ===========================
 
 export const authService = {
   /**
@@ -105,7 +109,7 @@ export const authService = {
   /**
    * UC11: Forgot Password - request a code sent to the registered email
    */
-forgotPassword: async (
+  forgotPassword: async (
     data: ForgotPasswordData
   ): Promise<ApiResponse<{ email: string; expiresInMinutes: number }>> => {
     const response = await api.post<ApiResponse<{ email: string; expiresInMinutes: number }>>(

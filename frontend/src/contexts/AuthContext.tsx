@@ -147,7 +147,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     dispatch({ type: 'LOGOUT' });
   }, []);
 
-const updateUser = useCallback((updatedUser: User): void => {
+  const updateUser = useCallback((updatedUser: User): void => {
     dispatch({ type: 'UPDATE_USER', payload: updatedUser });
   }, []);
 
