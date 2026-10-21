@@ -3,7 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { authService } from '../../services/auth.service';
 import { studentService } from '../../services/student.service';
-import type { StudentProfile, User } from '../../types';
+import type { StudentProfile } from '../../types';
 import { Button } from '../../components/Button';
 import { SkeletonPage } from '../../components/Skeleton';
 import { formatDate } from '../../utils/format';

@@ -11,7 +11,6 @@ import type {
   Grade,
   Payment,
   PaymentStats,
-  Schedule as _Schedule,
   StudentProfile,
   Submission,
   User,
