@@ -1,13 +1,38 @@
-import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
+import { studentService } from '../../services/student.service';
+import { SkeletonPage } from '../../components/Skeleton';
+import { EmptyState } from '../../components/Skeleton';
+import { formatDate, bandColor, bandLabel } from '../../utils/format';
+import type { DashboardData, Assignment, Enrollment, Grade, ClassSchedule } from '../../types';
 
 export type StudentTab = 'overview' | 'courses' | 'schedule' | 'assignments' | 'grades';
 
+interface DashAssignment {
+  id: string;
+  title: string;
+  course: string;
+  deadline: string;
+  status: 'PENDING' | 'SUBMITTED' | 'GRADED' | 'LATE';
+  score?: string;
+  classId: string;
+}
+
 const StudentDashboard: React.FC = () => {
   const { user } = useAuth();
+  const toast = useToast();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<StudentTab>('overview');
+
+  // ── Dữ liệu thật từ API ──
+  const [dashboard, setDashboard] = useState<DashboardData | null>(null);
+  const [assignments, setAssignments] = useState<DashAssignment[]>([]);
+  const [grades, setGrades] = useState<Grade[]>([]);
+  const [schedule, setSchedule] = useState<ClassSchedule[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const tabParam = searchParams.get('tab') as StudentTab | null;
@@ -27,33 +52,102 @@ const StudentDashboard: React.FC = () => {
     }
   };
 
-  const [assignments, setAssignments] = useState([
-    {
-      id: 'ASM-1',
-      title: 'Bài tập 2: Xây dựng RESTful API với Express và MongoDB',
-      course: 'Lập trình Web Full-Stack MERN',
-      deadline: '23:59 - 10/10/2026',
-      status: 'PENDING',
-    },
-    {
-      id: 'ASM-2',
-      title: 'Bài tập 1: Xây dựng giao diện responsive với HTML5/CSS3',
-      course: 'Lập trình Web Full-Stack MERN',
-      deadline: '02/10/2026',
-      status: 'SUBMITTED',
-      score: '9.0 / 10',
-    },
-  ]);
+  // ── Load dashboard + dữ liệu theo từng lớp ──
+  const fetchAll = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const dashRes = await studentService.getDashboard();
+      if (!dashRes.success || !dashRes.data) {
+        toast.error(dashRes.message || 'Không thể tải dữ liệu dashboard');
+        return;
+      }
+      setDashboard(dashRes.data);
 
-  const handleSubmitAssignment = (id: string) => {
-    const link = prompt('Dán link GitHub repo hoặc bài nộp của bạn:', 'https://github.com/my-student-repo');
-    if (link) {
-      setAssignments((prev) =>
-        prev.map((a) => (a.id === id ? { ...a, status: 'SUBMITTED', score: 'Chờ chấm' } : a))
+      const myClasses: Enrollment[] = dashRes.data.myClasses || [];
+
+      // Bài tập trên tất cả lớp đang theo học
+      const assignmentLists = await Promise.all(
+        myClasses.map((e) =>
+          studentService.getAssignments((e.class as any)?._id).catch(() => null)
+        )
       );
-      alert('Đã nộp bài tập thành công! Giảng viên sẽ chấm điểm sớm.');
+      const flat: DashAssignment[] = [];
+      assignmentLists.forEach((res, idx) => {
+        const cls = myClasses[idx]?.class as any;
+        const courseName = cls?.course?.title || cls?.course?.code || 'Khóa học';
+        (res?.data?.assignments || []).forEach((a: Assignment) => {
+          flat.push({
+            id: a._id,
+            title: a.title,
+            course: courseName,
+            deadline: formatDate(a.dueDate, true),
+            status:
+              a.submissionStatus === 'GRADED'
+                ? 'GRADED'
+                : a.submissionStatus === 'LATE'
+                ? 'LATE'
+                : a.submissionStatus
+                ? 'SUBMITTED'
+                : 'PENDING',
+            score:
+              a.submissionStatus === 'GRADED' && a.grade !== undefined
+                ? `${a.grade} / ${a.maxScore ?? '—'}`
+                : undefined,
+            classId: cls?._id || '',
+          });
+        });
+      });
+      flat.sort((a, b) => {
+        if ((a.status === 'PENDING') !== (b.status === 'PENDING')) {
+          return a.status === 'PENDING' ? -1 : 1;
+        }
+        return 0;
+      });
+      setAssignments(flat);
+
+      // Điểm trên tất cả lớp
+      const gradeLists = await Promise.all(
+        myClasses.map((e) => studentService.getGrades((e.class as any)?._id).catch(() => null))
+      );
+      const allGrades: Grade[] = [];
+      gradeLists.forEach((res) => {
+        if (res?.data?.grades) allGrades.push(...res.data.grades);
+      });
+      setGrades(allGrades);
+
+      // Lịch học tổng hợp
+      const schedRes = await studentService.getCombinedSchedule().catch(() => null);
+      if (schedRes?.data?.schedule) setSchedule(schedRes.data.schedule);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Không thể tải dữ liệu dashboard');
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    fetchAll();
+  }, [fetchAll]);
+
+  const stats = dashboard?.stats;
+  const currentClass = dashboard?.currentClass;
+  const currentClassData = currentClass?.class as any;
+  const myClasses = dashboard?.myClasses || [];
+
+  const graded = grades.filter((g) => g.overallBand !== undefined && g.overallBand !== null);
+  const avgBand = graded.length
+    ? (graded.reduce((s, g) => s + (g.overallBand || 0), 0) / graded.length).toFixed(1)
+    : null;
+
+  const nextSession = schedule.length
+    ? [...schedule].sort((a: any, b: any) =>
+        (a.startTime || '').localeCompare(b.startTime || '')
+      )[0]
+    : null;
+
+  const pendingAssignments = assignments.filter((a) => a.status === 'PENDING');
+
+  if (isLoading) return <SkeletonPage message="Đang tải bảng điều khiển..." />;
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Chào buổi sáng' : hour < 18 ? 'Chào buổi chiều' : 'Chào buổi tối';
@@ -70,12 +164,19 @@ const StudentDashboard: React.FC = () => {
                 Cổng Học Viên • EduCenter Portal
               </div>
               <h1>{greeting}, {user?.fullName || 'Học viên'}!</h1>
-              <p>Chúc bạn một tuần học tập hiệu quả. Bạn có 1 buổi học diễn ra vào tối nay!</p>
+              <p>
+                Chúc bạn một tuần học tập hiệu quả.
+                {nextSession
+                  ? ` Buổi học gần nhất: ${(nextSession as any).dayOfWeek} lúc ${(nextSession as any).startTime}.`
+                  : ' Bạn chưa có lịch học nào được xếp.'}
+              </p>
             </div>
             <div className="dash-banner-right">
               <div className="dash-date-pill">
                 <div>Trạng thái: Đang theo học</div>
-                <div className="sub">Kỳ tuyển sinh Đợt 4 • Năm 2026</div>
+                <div className="sub">
+                  {stats?.totalClasses || 0} lớp • {stats?.pendingAssignments || 0} bài chưa nộp
+                </div>
               </div>
             </div>
           </div>
@@ -116,38 +217,53 @@ const StudentDashboard: React.FC = () => {
           <div className="dash-metrics-grid">
             <div className="dash-metric-card" onClick={() => handleTabChange('courses')} style={{ cursor: 'pointer' }}>
               <div className="dash-metric-info">
-                <span className="dash-metric-label">Khóa học đang học</span>
-                <span className="dash-metric-val">1 Khóa</span>
-                <span className="dash-metric-trend up">Web Full-Stack MERN ➔</span>
+                <span className="dash-metric-label">Lớp học đang theo</span>
+                <span className="dash-metric-val">{stats?.totalClasses || 0} lớp</span>
+                <span className="dash-metric-trend up">
+                  {myClasses[0]?.class?.course?.code || '—'} ➔
+                </span>
               </div>
               <div className="dash-metric-icon icon-blue">📚</div>
             </div>
 
             <div className="dash-metric-card" onClick={() => handleTabChange('schedule')} style={{ cursor: 'pointer' }}>
               <div className="dash-metric-info">
-                <span className="dash-metric-label">Tỷ lệ chuyên cần</span>
-                <span className="dash-metric-val">100%</span>
-                <span className="dash-metric-trend up">Đã tham gia 4/4 buổi ➔</span>
+                <span className="dash-metric-label">Buổi học / tuần</span>
+                <span className="dash-metric-val">{schedule.length} buổi</span>
+                <span className="dash-metric-trend up">
+                  {nextSession
+                    ? `Gần nhất: ${(nextSession as any).dayOfWeek} ${(nextSession as any).startTime}`
+                    : 'Chưa có lịch'}
+                </span>
               </div>
               <div className="dash-metric-icon icon-emerald">✅</div>
             </div>
 
             <div className="dash-metric-card" onClick={() => handleTabChange('grades')} style={{ cursor: 'pointer' }}>
               <div className="dash-metric-info">
-                <span className="dash-metric-label">Điểm trung bình (GPA)</span>
-                <span className="dash-metric-val">9.0 / 10</span>
-                <span className="dash-metric-trend up">⭐ Xếp loại: Xuất sắc ➔</span>
+                <span className="dash-metric-label">Band trung bình</span>
+                <span
+                  className="dash-metric-val"
+                  style={{ color: avgBand ? bandColor(parseFloat(avgBand)) : undefined }}
+                >
+                  {avgBand || '—'}
+                </span>
+                <span className="dash-metric-trend up">
+                  {avgBand ? `⭐ ${bandLabel(parseFloat(avgBand))}` : 'Chưa có điểm'} ➔
+                </span>
               </div>
               <div className="dash-metric-icon icon-amber">🏆</div>
             </div>
 
             <div className="dash-metric-card" onClick={() => handleTabChange('assignments')} style={{ cursor: 'pointer' }}>
               <div className="dash-metric-info">
-                <span className="dash-metric-label">Bài tập sắp đến hạn</span>
-                <span className="dash-metric-val">
-                  {assignments.filter((a) => a.status === 'PENDING').length} bài
+                <span className="dash-metric-label">Bài tập chưa nộp</span>
+                <span className="dash-metric-val">{pendingAssignments.length} bài</span>
+                <span className="dash-metric-trend neutral">
+                  {pendingAssignments[0]
+                    ? `Hạn: ${pendingAssignments[0].deadline} ➔`
+                    : 'Đã nộp đủ'}
                 </span>
-                <span className="dash-metric-trend neutral">Hạn: 23:59 ngày 10/10 ➔</span>
               </div>
               <div className="dash-metric-icon icon-purple">⏰</div>
             </div>
@@ -163,50 +279,75 @@ const StudentDashboard: React.FC = () => {
                   <h2 className="dash-card-title">
                     <span>⏰</span> Buổi Học Kế Tiếp
                   </h2>
-                  <span className="badge-pill badge-green">Tối nay lúc 18:30</span>
+                  {nextSession && (
+                    <span className="badge-pill badge-green">
+                      {(nextSession as any).dayOfWeek} lúc {(nextSession as any).startTime}
+                    </span>
+                  )}
                 </div>
 
                 <div className="dash-subcard">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div>
-                      <h3 className="dash-subcard-title">
-                        Lập trình Web Chuyên nghiệp Full-Stack (MERN)
-                      </h3>
-                      <div className="dash-subcard-meta" style={{ marginTop: '0.25rem' }}>
-                        Mã lớp: <strong>WEB-K24-A</strong> • Giảng viên: <strong>ThS. Nguyễn Văn An</strong>
+                  {nextSession ? (
+                    <>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div>
+                          <h3 className="dash-subcard-title">
+                            {(nextSession as any).class?.course?.title ||
+                              (nextSession as any).class?.course?.code ||
+                              'Lớp học'}
+                          </h3>
+                          <div className="dash-subcard-meta" style={{ marginTop: '0.25rem' }}>
+                            Mã lớp: <strong>{(nextSession as any).class?.classCode || '—'}</strong>
+                            {currentClassData?.teacher?.fullName && (
+                              <>
+                                {' '}• Giảng viên: <strong>{currentClassData.teacher.fullName}</strong>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        <span className="badge-pill badge-blue">
+                          {(nextSession as any).room || (nextSession as any).classroom || '—'}
+                        </span>
                       </div>
+
+                      {(nextSession as any).topic && (
+                        <div className="dash-subcard-body">
+                          🎯 <strong>Nội dung buổi học:</strong> {(nextSession as any).topic}
+                        </div>
+                      )}
+
+                      <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.25rem', flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          className="dash-quick-btn primary"
+                          onClick={() => navigate('/student/schedule')}
+                        >
+                          🗓️ Xem lịch học đầy đủ
+                        </button>
+                        {(nextSession as any).class?._id && (
+                          <button
+                            type="button"
+                            className="dash-quick-btn"
+                            onClick={() => navigate(`/student/classes/${(nextSession as any).class._id}/assignments`)}
+                          >
+                            📝 Bài tập lớp này
+                          </button>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="dash-subcard-body">
+                      Chưa có buổi học nào được xếp. Vui lòng liên hệ phòng giáo vụ.
                     </div>
-                    <span className="badge-pill badge-blue">Phòng Lab 302</span>
-                  </div>
-
-                  <div className="dash-subcard-body">
-                    🎯 <strong>Nội dung buổi học:</strong> Buổi 4: Xây dựng RESTful API với Express và Mongoose Model, kết nối MongoDB Atlas.
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.25rem', flexWrap: 'wrap' }}>
-                    <button
-                      type="button"
-                      className="dash-quick-btn primary"
-                      onClick={() => alert('Mở slide bài giảng buổi 4')}
-                    >
-                      📥 Tải Slide Bài Giảng
-                    </button>
-                    <button
-                      type="button"
-                      className="dash-quick-btn"
-                      onClick={() => alert('Xem bài tập thực hành trên lớp')}
-                    >
-                      📝 Đề Bài Lab 4
-                    </button>
-                  </div>
+                  )}
                 </div>
               </div>
 
-              {/* Enrolled Courses & Progress */}
+              {/* Enrolled Classes & Progress */}
               <div className="dash-card">
                 <div className="dash-card-header">
                   <h2 className="dash-card-title">
-                    <span>📚</span> Tiến Độ Khóa Học Của Tôi
+                    <span>📚</span> Tiến Độ Lớp Học Của Tôi
                   </h2>
                   <button
                     type="button"
@@ -218,36 +359,44 @@ const StudentDashboard: React.FC = () => {
                 </div>
 
                 <div className="dash-subcard">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontWeight: 700 }}>Lớp WEB-K24-A (Khóa MERN Full-Stack)</span>
-                    <span style={{ fontWeight: 700, color: '#6366f1' }}>33% Hoàn thành</span>
-                  </div>
-                  <div className="dash-progress" style={{ height: '10px' }}>
-                    <div className="dash-progress-fill" style={{ width: '33%' }} />
-                  </div>
-
-                  <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
-                      <span>✅</span>
-                      <span style={{ opacity: 0.7, textDecoration: 'line-through' }}>
-                        Tuần 1-3: HTML5, CSS3, JavaScript ES6+ &amp; TypeScript
-                      </span>
+                  {myClasses.length === 0 ? (
+                    <div className="dash-subcard-body">Bạn chưa đăng ký lớp học nào.</div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                      {myClasses.map((e) => {
+                        const cls = e.class as any;
+                        const total = assignments.filter((a) => a.classId === cls?._id).length;
+                        const done = assignments.filter(
+                          (a) => a.classId === cls?._id && a.status !== 'PENDING'
+                        ).length;
+                        const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+                        return (
+                          <div key={e._id}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span style={{ fontWeight: 700 }}>
+                                Lớp {cls?.classCode} ({cls?.course?.title || '—'})
+                              </span>
+                              <span style={{ fontWeight: 700, color: '#6366f1' }}>
+                                {pct}% đã nộp
+                              </span>
+                            </div>
+                            <div className="dash-progress" style={{ height: '10px' }}>
+                              <div className="dash-progress-fill" style={{ width: `${pct}%` }} />
+                            </div>
+                            <div
+                              style={{
+                                marginTop: '0.25rem',
+                                fontSize: '0.78rem',
+                                color: '#64748b',
+                              }}
+                            >
+                              {done}/{total} bài tập • {cls?.scheduleDays?.join(', ')} • {cls?.timeSlot}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', fontWeight: 700 }}>
-                      <span>🔄</span>
-                      <span style={{ color: '#6366f1' }}>
-                        Tuần 4-6: Backend API RESTful với Node.js, Express &amp; MongoDB (Đang học)
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', opacity: 0.65 }}>
-                      <span>⏳</span>
-                      <span>Tuần 7-9: Frontend Hiện đại với React 19 &amp; State Management</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', opacity: 0.65 }}>
-                      <span>⏳</span>
-                      <span>Tuần 10-12: Đồ án Tốt nghiệp Thực chiến &amp; Triển khai Cloud</span>
-                    </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -266,36 +415,54 @@ const StudentDashboard: React.FC = () => {
                 </div>
 
                 <div className="dash-item-list">
-                  {assignments.map((item) => (
-                    <div key={item.id} className="dash-item">
-                      <div className="dash-item-main">
-                        <div className="dash-item-icon">
-                          {item.status === 'PENDING' ? '⏳' : '✅'}
+                  {assignments.length === 0 ? (
+                    <div className="dash-subcard-body">Chưa có bài tập nào được giao.</div>
+                  ) : (
+                    assignments.slice(0, 6).map((item) => (
+                      <div key={item.id} className="dash-item">
+                        <div className="dash-item-main">
+                          <div className="dash-item-icon">
+                            {item.status === 'PENDING'
+                              ? '⏳'
+                              : item.status === 'GRADED'
+                              ? '🏆'
+                              : item.status === 'LATE'
+                              ? '⏰'
+                              : '✅'}
+                          </div>
+                          <div>
+                            <div className="dash-item-title">{item.title}</div>
+                            <div className="dash-item-sub">
+                              {item.course} • Hạn nộp: {item.deadline}
+                            </div>
+                          </div>
                         </div>
-                        <div>
-                          <div className="dash-item-title">{item.title}</div>
-                          <div className="dash-item-sub">Hạn nộp: {item.deadline}</div>
-                        </div>
-                      </div>
 
-                      <div>
-                        {item.status === 'PENDING' ? (
-                          <button
-                            type="button"
-                            onClick={() => handleSubmitAssignment(item.id)}
-                            className="dash-quick-btn primary"
-                            style={{ padding: '0.35rem 0.85rem', fontSize: '0.775rem' }}
-                          >
-                            Nộp bài
-                          </button>
-                        ) : (
-                          <span className="badge-pill badge-green">
-                            {item.score || 'Đã nộp'}
-                          </span>
-                        )}
+                        <div>
+                          {item.status === 'PENDING' ? (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                navigate(`/student/classes/${item.classId}/assignments`)
+                              }
+                              className="dash-quick-btn primary"
+                              style={{ padding: '0.35rem 0.85rem', fontSize: '0.775rem' }}
+                            >
+                              Nộp bài
+                            </button>
+                          ) : (
+                            <span
+                              className={`badge-pill ${
+                                item.status === 'GRADED' ? 'badge-blue' : 'badge-green'
+                              }`}
+                            >
+                              {item.score || 'Đã nộp'}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
 
@@ -363,77 +530,159 @@ const StudentDashboard: React.FC = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div>
             <h2 style={{ margin: '0 0 0.35rem', fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>
-              📚 Khóa Học Của Tôi &amp; Lộ Trình Đào Tạo
+              📚 Lớp Học Của Tôi
             </h2>
             <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
-              Theo dõi chi tiết các giai đoạn học, tiến độ hoàn thành và tài nguyên học liệu
+              Theo dõi tiến độ nộp bài, học phí và thông tin giảng viên của từng lớp
             </span>
           </div>
 
-          <div className="dash-card" style={{ padding: '1.5rem', borderRadius: '16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
-              <div>
-                <span className="badge-pill badge-green">Đang theo học</span>
-                <h3 style={{ margin: '0.5rem 0 0.25rem', fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>
-                  Lập trình Web Chuyên nghiệp Full-Stack (MERN)
-                </h3>
-                <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
-                  Mã lớp: <strong style={{ color: '#0f172a' }}>WEB-K24-A</strong> • Giảng viên: <strong style={{ color: '#0f172a' }}>ThS. Nguyễn Văn An</strong> • Phòng học: <strong style={{ color: '#0f172a' }}>Lab 302</strong>
-                </div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#047857' }}>Tiến độ: 33%</span>
-                <div style={{ fontSize: '0.8rem', color: '#64748b' }}>4 / 12 tuần</div>
-              </div>
+          {myClasses.length === 0 ? (
+            <EmptyState
+              icon="📭"
+              title="Chưa có lớp học nào"
+              description="Bạn chưa đăng ký lớp học nào. Hãy đến trang Khóa học để ghi danh."
+              action={
+                <button
+                  type="button"
+                  className="dash-quick-btn primary"
+                  onClick={() => navigate('/courses')}
+                >
+                  📖 Xem các khóa học
+                </button>
+              }
+            />
+          ) : (
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+                gap: '1.25rem',
+              }}
+            >
+              {myClasses.map((e) => {
+                const cls = e.class as any;
+                const total = assignments.filter((a) => a.classId === cls?._id).length;
+                const done = assignments.filter(
+                  (a) => a.classId === cls?._id && a.status !== 'PENDING'
+                ).length;
+                const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+                return (
+                  <div
+                    key={e._id}
+                    className="dash-card"
+                    style={{ padding: '1.5rem', borderRadius: '16px' }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-start',
+                        flexWrap: 'wrap',
+                        gap: '1rem',
+                      }}
+                    >
+                      <div>
+                        <span
+                          className={`badge-pill ${
+                            e.tuitionStatus === 'PAID' ? 'badge-green' : 'badge-amber'
+                          }`}
+                        >
+                          {e.tuitionStatus === 'PAID' ? '✅ Đã thanh toán' : '⏳ Chưa thanh toán'}
+                        </span>
+                        <h3
+                          style={{
+                            margin: '0.5rem 0 0.25rem',
+                            fontSize: '1.15rem',
+                            fontWeight: 800,
+                            color: '#0f172a',
+                          }}
+                        >
+                          {cls?.course?.title || cls?.course?.code || 'Lớp học'}
+                        </h3>
+                        <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                          Mã lớp:{' '}
+                          <strong style={{ color: '#0f172a' }}>{cls?.classCode || '—'}</strong> •
+                          Giảng viên:{' '}
+                          <strong style={{ color: '#0f172a' }}>
+                            {cls?.teacher?.fullName || '—'}
+                          </strong>{' '}
+                          • Phòng: <strong style={{ color: '#0f172a' }}>{cls?.room || '—'}</strong>
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#047857' }}>
+                          Tiến độ: {pct}%
+                        </span>
+                        <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                          {done} / {total} bài tập
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="dash-progress" style={{ height: '12px', margin: '1.25rem 0' }}>
+                      <div className="dash-progress-fill" style={{ width: `${pct}%` }} />
+                    </div>
+
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+                        gap: '0.75rem',
+                        marginBottom: '1.25rem',
+                        fontSize: '0.85rem',
+                      }}
+                    >
+                      <div>
+                        <div style={{ color: '#94a3b8', fontSize: '0.7rem' }}>Lịch học</div>
+                        <strong>{cls?.scheduleDays?.join(', ') || '—'}</strong>
+                      </div>
+                      <div>
+                        <div style={{ color: '#94a3b8', fontSize: '0.7rem' }}>Ca học</div>
+                        <strong>{cls?.timeSlot || '—'}</strong>
+                      </div>
+                      <div>
+                        <div style={{ color: '#94a3b8', fontSize: '0.7rem' }}>Thời gian</div>
+                        <strong>
+                          {formatDate(cls?.startDate)} — {formatDate(cls?.endDate)}
+                        </strong>
+                      </div>
+                      <div>
+                        <div style={{ color: '#94a3b8', fontSize: '0.7rem' }}>Học phí</div>
+                        <strong style={{ color: '#3b82f6' }}>
+                          {cls?.course?.tuitionFee?.toLocaleString('vi-VN')} đ
+                        </strong>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        className="dash-quick-btn primary"
+                        onClick={() => navigate(`/student/classes/${cls?._id}`)}
+                      >
+                        ℹ️ Chi Tiết
+                      </button>
+                      <button
+                        type="button"
+                        className="dash-quick-btn"
+                        onClick={() => navigate(`/student/classes/${cls?._id}/assignments`)}
+                      >
+                        📝 Bài Tập
+                      </button>
+                      <button
+                        type="button"
+                        className="dash-quick-btn"
+                        onClick={() => navigate(`/student/classes/${cls?._id}/grades`)}
+                      >
+                        📊 Điểm
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-
-            <div className="dash-progress" style={{ height: '12px', margin: '1.25rem 0' }}>
-              <div className="dash-progress-fill" style={{ width: '33%' }} />
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', marginTop: '1.5rem' }}>
-              <div style={{ padding: '1rem', borderRadius: '12px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderTop: '4px solid #10b981' }}>
-                <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#047857' }}>✅ Giai Đoạn 1 (Tuần 1 - 3)</div>
-                <div style={{ fontWeight: 700, fontSize: '0.85rem', marginTop: '0.25rem', color: '#0f172a' }}>HTML5, CSS3, JavaScript ES6+ &amp; TS</div>
-                <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '0.35rem' }}>Đã hoàn thành xuất sắc • Điểm Quiz: 9.5/10</div>
-              </div>
-
-              <div style={{ padding: '1rem', borderRadius: '12px', backgroundColor: '#ecfdf5', border: '1px solid #a7f3d0', borderTop: '4px solid #059669' }}>
-                <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#047857' }}>🔄 Giai Đoạn 2 (Tuần 4 - 6) - Đang Học</div>
-                <div style={{ fontWeight: 700, fontSize: '0.85rem', marginTop: '0.25rem', color: '#0f172a' }}>Backend RESTful API với Node.js, Express &amp; MongoDB</div>
-                <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '0.35rem' }}>Buổi 4: RESTful API &amp; Mongoose Model (Tối nay)</div>
-              </div>
-
-              <div style={{ padding: '1rem', borderRadius: '12px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', opacity: 0.7 }}>
-                <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#64748b' }}>⏳ Giai Đoạn 3 (Tuần 7 - 9)</div>
-                <div style={{ fontWeight: 700, fontSize: '0.85rem', marginTop: '0.25rem', color: '#0f172a' }}>Frontend Hiện Đại với React 19 &amp; Vite</div>
-                <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '0.35rem' }}>Sắp diễn ra vào tháng sau</div>
-              </div>
-
-              <div style={{ padding: '1rem', borderRadius: '12px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', opacity: 0.7 }}>
-                <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#64748b' }}>⏳ Giai Đoạn 4 (Tuần 10 - 12)</div>
-                <div style={{ fontWeight: 700, fontSize: '0.85rem', marginTop: '0.25rem', color: '#0f172a' }}>Đồ Án Tốt Nghiệp &amp; Triển Khai Cloud</div>
-                <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '0.35rem' }}>Bảo vệ đồ án trước hội đồng EduCenter</div>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem', flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                className="dash-quick-btn primary"
-                onClick={() => alert('Đang tải toàn bộ tài liệu khóa học và slide bài giảng...')}
-              >
-                📥 Tải Tài Liệu &amp; Slide Bài Giảng
-              </button>
-              <button
-                type="button"
-                className="dash-quick-btn"
-                onClick={() => alert('Mở kho lưu trữ GitHub của lớp học')}
-              >
-                💻 Kho GitHub Lớp Học
-              </button>
-            </div>
-          </div>
+          )}
         </div>
       )}
 
@@ -442,91 +691,85 @@ const StudentDashboard: React.FC = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div>
             <h2 style={{ margin: '0 0 0.35rem', fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>
-              🗓️ Lịch Học &amp; Báo Cáo Chuyên Cần
+              🗓️ Lịch Học Tổng Hợp
             </h2>
             <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
-              Thời khóa biểu tuần và thông tin điểm danh các buổi học đã tham gia
+              Thời khóa biểu tuần của tất cả lớp bạn đang theo học
             </span>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
-            <div className="dash-card" style={{ padding: '1.5rem', borderRadius: '16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#0f172a' }}>⏰ Buổi Học Kế Tiếp</h3>
-                <span className="badge-pill badge-green">Tối nay 18:30</span>
-              </div>
-              <div style={{ padding: '1rem', borderRadius: '12px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderLeft: '4px solid #059669' }}>
-                <div style={{ fontWeight: 800, fontSize: '1rem', color: '#0f172a' }}>Lớp WEB-K24-A (MERN Full-Stack)</div>
-                <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.35rem' }}>
-                  📍 Phòng Lab 302 • ⏰ 18:30 - 21:00
-                </div>
-                <div style={{ fontSize: '0.85rem', color: '#334155', marginTop: '0.5rem', fontWeight: 600 }}>
-                  Chủ đề: Buổi 4 - Xây dựng RESTful API với Express và Mongoose Model
-                </div>
-              </div>
-
-              <div style={{ marginTop: '1.25rem' }}>
-                <div style={{ fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.5rem' }}>Lịch học cố định hàng tuần:</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', borderRadius: '8px', backgroundColor: '#f1f5f9', fontSize: '0.85rem' }}>
-                    <span>Thứ 2 (18:30 - 21:00)</span>
-                    <strong style={{ color: '#047857' }}>Phòng Lab 302</strong>
+          {schedule.length === 0 ? (
+            <EmptyState
+              icon="📅"
+              title="Chưa có lịch học"
+              description="Các lớp của bạn chưa được xếp lịch cố định. Vui lòng liên hệ trung tâm."
+            />
+          ) : (
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                gap: '1.25rem',
+              }}
+            >
+              {schedule.map((s: any) => (
+                <div
+                  key={s._id}
+                  className="dash-card"
+                  style={{ padding: '1.25rem', borderRadius: '16px' }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '0.5rem',
+                    }}
+                  >
+                    <strong style={{ fontSize: '0.95rem', color: '#0f172a' }}>
+                      {s.dayOfWeek}
+                    </strong>
+                    <span className="badge-pill badge-blue">{s.startTime} – {s.endTime}</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', borderRadius: '8px', backgroundColor: '#f1f5f9', fontSize: '0.85rem' }}>
-                    <span>Thứ 4 (18:30 - 21:00)</span>
-                    <strong style={{ color: '#047857' }}>Phòng Lab 302</strong>
+                  <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                    📍 Phòng: {s.room || s.classroom || '—'}
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', borderRadius: '8px', backgroundColor: '#f1f5f9', fontSize: '0.85rem' }}>
-                    <span>Thứ 6 (18:30 - 21:00)</span>
-                    <strong style={{ color: '#047857' }}>Phòng Lab 302</strong>
+                  <div style={{ fontSize: '0.85rem', color: '#334155', marginTop: '0.35rem', fontWeight: 600 }}>
+                    {s.class?.course?.title || s.class?.course?.code || s.class?.classCode || '—'}
+                  </div>
+                  {s.topic && (
+                    <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.35rem' }}>
+                      🎯 {s.topic}
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
+                    {s.class?._id && (
+                      <>
+                        <button
+                          type="button"
+                          className="dash-quick-btn"
+                          onClick={() => navigate(`/student/classes/${s.class._id}`)}
+                          style={{ padding: '0.3rem 0.75rem', fontSize: '0.75rem' }}
+                        >
+                          Chi tiết lớp
+                        </button>
+                        <button
+                          type="button"
+                          className="dash-quick-btn"
+                          onClick={() => navigate(`/student/classes/${s.class._id}/attendance`)}
+                          style={{ padding: '0.3rem 0.75rem', fontSize: '0.75rem' }}
+                        >
+                          Điểm danh
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
-              </div>
+              ))}
             </div>
-
-            <div className="dash-card" style={{ padding: '1.5rem', borderRadius: '16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#0f172a' }}>✅ Nhật Ký Chuyên Cần</h3>
-                <span className="badge-pill badge-green">Chuyên cần 100%</span>
-              </div>
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '2px solid #e2e8f0', backgroundColor: '#f8fafc', textAlign: 'left', color: '#475569' }}>
-                      <th style={{ padding: '8px 10px' }}>Buổi</th>
-                      <th style={{ padding: '8px 10px' }}>Ngày</th>
-                      <th style={{ padding: '8px 10px' }}>Trạng Thái</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={{ padding: '8px 10px', fontWeight: 700 }}>Buổi 1: Tổng quan Full-Stack</td>
-                      <td style={{ padding: '8px 10px', color: '#64748b' }}>01/10/2026</td>
-                      <td style={{ padding: '8px 10px' }}><span className="badge-pill badge-green">Có mặt</span></td>
-                    </tr>
-                    <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={{ padding: '8px 10px', fontWeight: 700 }}>Buổi 2: HTML5 &amp; CSS3 Nâng cao</td>
-                      <td style={{ padding: '8px 10px', color: '#64748b' }}>03/10/2026</td>
-                      <td style={{ padding: '8px 10px' }}><span className="badge-pill badge-green">Có mặt</span></td>
-                    </tr>
-                    <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={{ padding: '8px 10px', fontWeight: 700 }}>Buổi 3: TypeScript &amp; OOP</td>
-                      <td style={{ padding: '8px 10px', color: '#64748b' }}>05/10/2026</td>
-                      <td style={{ padding: '8px 10px' }}><span className="badge-pill badge-green">Có mặt</span></td>
-                    </tr>
-                    <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={{ padding: '8px 10px', fontWeight: 700 }}>Buổi 4: REST API &amp; Express</td>
-                      <td style={{ padding: '8px 10px', color: '#64748b' }}>Tối nay</td>
-                      <td style={{ padding: '8px 10px' }}><span className="badge-pill badge-blue">Sắp diễn ra</span></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       )}
-
       {/* TAB: BÀI TẬP VỀ NHÀ */}
       {activeTab === 'assignments' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -571,13 +814,25 @@ const StudentDashboard: React.FC = () => {
                     {item.status === 'PENDING' ? (
                       <span className="badge-pill badge-amber">Chưa nộp</span>
                     ) : (
-                      <span className="badge-pill badge-green">Đã nộp • Điểm: {item.score}</span>
+                      <span
+                        className={`badge-pill ${
+                          item.status === 'GRADED' ? 'badge-blue' : 'badge-green'
+                        }`}
+                      >
+                        {item.status === 'GRADED'
+                          ? `Đã chấm • ${item.score || ''}`
+                          : item.status === 'LATE'
+                          ? 'Đã nộp (trễ hạn)'
+                          : 'Đã nộp • Chờ chấm'}
+                      </span>
                     )}
                   </div>
                   {item.status === 'PENDING' ? (
                     <button
                       type="button"
-                      onClick={() => handleSubmitAssignment(item.id)}
+                      onClick={() =>
+                        navigate(`/student/classes/${item.classId}/assignments`)
+                      }
                       className="dash-quick-btn primary"
                       style={{ padding: '0.45rem 1rem', fontSize: '0.82rem' }}
                     >
@@ -586,7 +841,9 @@ const StudentDashboard: React.FC = () => {
                   ) : (
                     <button
                       type="button"
-                      onClick={() => alert('Xem chi tiết nhận xét của giảng viên')}
+                      onClick={() =>
+                        navigate(`/student/classes/${item.classId}/assignments`)
+                      }
                       className="dash-quick-btn"
                       style={{ padding: '0.45rem 0.85rem', fontSize: '0.8rem' }}
                     >
@@ -615,62 +872,75 @@ const StudentDashboard: React.FC = () => {
           <div className="dash-card" style={{ padding: '1.5rem', borderRadius: '16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem' }}>
               <div>
-                <span className="badge-pill badge-green">⭐ Xếp loại: Xuất sắc</span>
+                <span className="badge-pill badge-green">
+                  {avgBand ? `⭐ ${bandLabel(parseFloat(avgBand))}` : '⭐ Chưa có điểm'}
+                </span>
                 <h3 style={{ margin: '0.4rem 0 0', fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>
-                  Điểm Trung Bình Tích Lũy (GPA): <span style={{ color: '#047857' }}>9.0 / 10</span>
+                  Band Trung Bình:{' '}
+                  <span style={{ color: avgBand ? bandColor(parseFloat(avgBand)) : '#64748b' }}>
+                    {avgBand || '—'}
+                  </span>
                 </h3>
               </div>
               <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
-                Cập nhật lần cuối: Kỳ đánh giá Đợt 4 • Năm 2026
+                {grades.length} bài đánh giá • {graded.length} bài có band
               </div>
             </div>
 
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
-                <thead>
-                  <tr style={{ borderBottom: '2px solid #e2e8f0', backgroundColor: '#f8fafc', textAlign: 'left', color: '#475569' }}>
-                    <th style={{ padding: '10px 14px' }}>Nội Dung Đánh Giá</th>
-                    <th style={{ padding: '10px 14px' }}>Trọng Số</th>
-                    <th style={{ padding: '10px 14px' }}>Điểm Đạt Được</th>
-                    <th style={{ padding: '10px 14px' }}>Trạng Thái</th>
-                    <th style={{ padding: '10px 14px' }}>Nhận Xét Của Giảng Viên</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '12px 14px', fontWeight: 700, color: '#0f172a' }}>
-                      Bài tập 1: Giao diện Responsive HTML5/CSS3
-                    </td>
-                    <td style={{ padding: '12px 14px', color: '#64748b' }}>20%</td>
-                    <td style={{ padding: '12px 14px', fontWeight: 800, color: '#047857' }}>9.0 / 10</td>
-                    <td style={{ padding: '12px 14px' }}><span className="badge-pill badge-green">Đạt xuất sắc</span></td>
-                    <td style={{ padding: '12px 14px', color: '#475569', fontSize: '0.82rem' }}>
-                      Code CSS clean, giao diện chuẩn responsive trên mọi thiết bị.
-                    </td>
-                  </tr>
-                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '12px 14px', fontWeight: 700, color: '#0f172a' }}>
-                      Điểm danh &amp; Tham gia thảo luận trên lớp
-                    </td>
-                    <td style={{ padding: '12px 14px', color: '#64748b' }}>10%</td>
-                    <td style={{ padding: '12px 14px', fontWeight: 800, color: '#047857' }}>10 / 10</td>
-                    <td style={{ padding: '12px 14px' }}><span className="badge-pill badge-green">100% Chuyên cần</span></td>
-                    <td style={{ padding: '12px 14px', color: '#475569', fontSize: '0.82rem' }}>
-                      Đi học đúng giờ, tích cực phát biểu và hỗ trợ bạn học.
-                    </td>
-                  </tr>
-                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '12px 14px', fontWeight: 700, color: '#0f172a' }}>
-                      Bài tập 2: RESTful API với Express &amp; MongoDB
-                    </td>
-                    <td style={{ padding: '12px 14px', color: '#64748b' }}>20%</td>
-                    <td style={{ padding: '12px 14px', fontWeight: 800, color: '#d97706' }}>Chờ chấm</td>
-                    <td style={{ padding: '12px 14px' }}><span className="badge-pill badge-amber">Đang chấm</span></td>
-                    <td style={{ padding: '12px 14px', color: '#64748b', fontSize: '0.82rem' }}>—</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            {grades.length === 0 ? (
+              <EmptyState
+                icon="📭"
+                title="Chưa có kết quả đánh giá"
+                description="Kết quả học tập sẽ được cập nhật sau mỗi bài kiểm tra."
+              />
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '2px solid #e2e8f0', backgroundColor: '#f8fafc', textAlign: 'left', color: '#475569' }}>
+                      <th style={{ padding: '10px 14px' }}>Nội Dung Đánh Giá</th>
+                      <th style={{ padding: '10px 14px' }}>Ngày</th>
+                      <th style={{ padding: '10px 14px' }}>Band</th>
+                      <th style={{ padding: '10px 14px' }}>Trạng Thái</th>
+                      <th style={{ padding: '10px 14px' }}>Nhận Xét Của Giảng Viên</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {grades.map((g) => (
+                      <tr key={g._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <td style={{ padding: '12px 14px', fontWeight: 700, color: '#0f172a' }}>
+                          {g.title}
+                        </td>
+                        <td style={{ padding: '12px 14px', color: '#64748b' }}>
+                          {formatDate(g.testDate)}
+                        </td>
+                        <td
+                          style={{
+                            padding: '12px 14px',
+                            fontWeight: 800,
+                            color: bandColor(g.overallBand),
+                          }}
+                        >
+                          {g.overallBand?.toFixed(1)}
+                        </td>
+                        <td style={{ padding: '12px 14px' }}>
+                          <span
+                            className={`badge-pill ${
+                              g.status === 'PUBLISHED' ? 'badge-green' : 'badge-amber'
+                            }`}
+                          >
+                            {g.status === 'PUBLISHED' ? 'Đã công bố' : 'Nháp'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px 14px', color: '#475569', fontSize: '0.82rem' }}>
+                          {g.feedback || '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       )}

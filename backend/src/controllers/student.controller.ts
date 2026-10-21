@@ -10,6 +10,7 @@ import { Grade } from '../models/grade.model';
 import { Payment } from '../models/payment.model';
 import { ChangeRequest } from '../models/changeRequest.model';
 import { ClassSchedule } from '../models/classSchedule.model';
+import { Class } from '../models/class.model';
 import { Notification } from '../models/notification.model';
 
 // =====================================================
@@ -61,6 +62,8 @@ export const enrollIntoClass = async (req: AuthRequest, res: Response): Promise<
 
     let enrollment;
     if (existing) {
+      // Re-enroll một enrollment cũ đã DROPPED: sĩ số chưa bị trừ khi drop,
+      // nên không được tăng thêm lần nữa.
       existing.status = 'ENROLLED';
       existing.enrollmentDate = new Date();
       await existing.save();
@@ -73,14 +76,10 @@ export const enrollIntoClass = async (req: AuthRequest, res: Response): Promise<
         enrollmentDate: new Date(),
         tuitionStatus: 'PENDING',
       });
+      // Chỉ tăng sĩ số khi tạo enrollment mới.
+      cls.currentEnrollment = currentCount + 1;
+      await cls.save();
     }
-
-    // Bump class.currentEnrollment
-    cls.currentEnrollment = currentCount + 1;
-    if (cls.currentEnrollment >= cls.capacity && cls.status === 'OPEN') {
-      cls.status = 'IN_PROGRESS';
-    }
-    await cls.save();
 
     res.status(201).json({
       success: true,
@@ -138,7 +137,8 @@ export const getMyClasses = async (req: AuthRequest, res: Response): Promise<voi
           startDate: e.class.startDate,
           endDate: e.class.endDate,
           capacity: e.class.capacity,
-          currentStudents: e.class.currentStudents,
+          currentStudents: e.class.currentEnrollment ?? e.class.currentStudents ?? 0,
+          currentEnrollment: e.class.currentEnrollment ?? e.class.currentStudents ?? 0,
           sessions: e.class.sessions,
           status: e.class.status,
           course: e.class.course,
@@ -262,6 +262,7 @@ export const getAssignments = async (req: AuthRequest, res: Response): Promise<v
         skill: a.skill,
         dueDate: a.dueDate,
         status: a.status,
+        maxScore: a.maxScore,
         attachments: a.attachments,
         submissionStatus,
         submissionId: sub?._id,
@@ -348,6 +349,8 @@ export const getGrades = async (req: AuthRequest, res: Response): Promise<void> 
     const grades = await Grade.find({
       class: id,
       student: user._id,
+      // Chỉ hiển thị điểm đã công bố, không lộ điểm nháp của giáo viên
+      status: 'PUBLISHED',
     })
       .populate('teacher', 'fullName email')
       .sort({ testDate: -1 });
@@ -398,7 +401,11 @@ export const getCombinedSchedule = async (req: AuthRequest, res: Response): Prom
       .map((e: any) => e.class?._id)
       .filter(Boolean);
 
-    const schedule = await ClassSchedule.find({ class: { $in: classIds } })
+    const schedule = await ClassSchedule.find({
+      class: { $in: classIds },
+      // Chỉ lấy lịch đang hoạt động
+      status: 'ACTIVE',
+    })
       .populate({
         path: 'class',
         select: 'classCode room',
@@ -406,10 +413,38 @@ export const getCombinedSchedule = async (req: AuthRequest, res: Response): Prom
       })
       .sort({ dayOfWeek: 1, startTime: 1 });
 
+    // Fallback: nếu bảng ClassSchedule chưa có dữ liệu, dựng lịch từ
+    // class.scheduleDays + class.timeSlot (dữ liệu lớp học hiện có trong seed).
+    let scheduleList: any[] = schedule;
+    if (!scheduleList.length) {
+      const timeParts = (slot?: string) => {
+        const [s, e] = (slot || '').split('-').map((x) => x.trim());
+        return { startTime: s || '', endTime: e || '' };
+      };
+
+      scheduleList = enrollments
+        .filter((e: any) => e.class?.status !== 'CANCELLED')
+        .flatMap((e: any) => {
+          const days: string[] = e.class?.scheduleDays || [];
+          if (!days.length) return [];
+          const { startTime, endTime } = timeParts(e.class?.timeSlot);
+          return days.map((day: string) => ({
+            _id: `${e.class._id}-${day}`,
+            class: e.class,
+            dayOfWeek: day,
+            startTime,
+            endTime,
+            classroom: e.class?.room || '',
+            room: e.class?.room || '',
+            status: 'ACTIVE',
+          }));
+        });
+    }
+
     res.json({
       success: true,
       message: 'Lấy lịch học tổng hợp thành công',
-      data: { schedule, classCount: classIds.length },
+      data: { schedule: scheduleList, classCount: classIds.length },
     });
   } catch (error: any) {
     if (error.statusCode) {
@@ -435,12 +470,32 @@ export const getSchedule = async (req: AuthRequest, res: Response): Promise<void
     const enrolled = await Enrollment.exists({ student: user._id, class: id, status: 'ENROLLED' });
     if (!enrolled) throw createError('Bạn chưa đăng ký lớp học này', 403);
 
-    const schedule = await ClassSchedule.find({ class: id }).sort({ dayOfWeek: 1, startTime: 1 });
+    const classDoc = await Class.findById(id).select('scheduleDays timeSlot room classCode status');
+    const schedule = await ClassSchedule.find({ class: id, status: 'ACTIVE' }).sort({
+      dayOfWeek: 1,
+      startTime: 1,
+    });
+
+    // Fallback khi bảng ClassSchedule chưa có dữ liệu cho lớp này
+    let scheduleList: any[] = schedule;
+    if (!scheduleList.length && classDoc?.scheduleDays?.length) {
+      const [s, e] = (classDoc.timeSlot || '').split('-').map((x) => x.trim());
+      scheduleList = (classDoc.scheduleDays as string[]).map((day: string) => ({
+        _id: `${id}-${day}`,
+        class: classDoc,
+        dayOfWeek: day,
+        startTime: s || '',
+        endTime: e || '',
+        classroom: classDoc.room || '',
+        room: classDoc.room || '',
+        status: 'ACTIVE',
+      }));
+    }
 
     res.json({
       success: true,
       message: 'Lấy lịch học thành công',
-      data: { schedule },
+      data: { schedule: scheduleList },
     });
   } catch (error: any) {
     if (error.statusCode) {
@@ -705,6 +760,12 @@ export const submitAssignment = async (req: AuthRequest, res: Response): Promise
       if (attachmentUrl) existing.attachments = [attachmentUrl];
       existing.submissionTime = new Date();
       existing.status = status;
+      // Học viên nộp lại bài đã được chấm → bài cũ bị thay thế,
+      // phải xoá điểm/nhận xét cũ để không hiển thị sai kết quả.
+      existing.grade = undefined;
+      existing.feedback = '';
+      existing.criteria = undefined;
+      existing.gradedBy = undefined;
       await existing.save();
       submission = existing;
     } else {
@@ -762,10 +823,18 @@ export const getDashboard = async (req: AuthRequest, res: Response): Promise<voi
 
     const currentClass = enrollments.find((e: any) => e.class) || null;
 
+    // Bài tập phải được tính trên TẤT CẢ lớp học viên đang theo học.
+    const classIds = enrollments
+      .map((e: any) => e.class?._id)
+      .filter(Boolean);
+
     let pendingAssignments = 0;
     let totalAssignments = 0;
-    if (currentClass) {
-      const aList = await Assignment.find({ class: (currentClass as any).class._id });
+    if (classIds.length > 0) {
+      const aList = await Assignment.find({
+        class: { $in: classIds },
+        status: { $ne: 'DRAFT' },
+      });
       totalAssignments = aList.length;
       const submitted = await Submission.find({
         student: user._id,

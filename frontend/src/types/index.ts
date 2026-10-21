@@ -334,6 +334,7 @@ export interface ClassFormData {
   startDate: string;
   endDate: string;
   capacity: number;
+  status: ClassStatus;
 }
 
 // ============================================
@@ -387,6 +388,8 @@ export interface Assignment {
   submissionStatus?: 'PENDING' | 'SUBMITTED' | 'LATE' | 'GRADED' | null;
   submissionId?: string;
   submissionTime?: string;
+  /** Điểm chấm (lấy từ Submission.grade khi đã được chấm) */
+  grade?: number;
   feedback?: string;
 }
 

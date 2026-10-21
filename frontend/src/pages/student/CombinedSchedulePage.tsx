@@ -17,7 +17,10 @@ const DAYS = [
 
 // Allow English or Vietnamese day names
 const normDay = (d: string): string => {
-  const x = (d || '').toUpperCase();
+  const x = (d || '')
+    .toUpperCase()
+    .replace(/\s+/g, ' ')
+    .trim();
   const map: Record<string, string> = {
     MONDAY: 'MONDAY', TUE: 'TUESDAY', TUESDAY: 'TUESDAY',
     WED: 'WEDNESDAY', WEDNESDAY: 'WEDNESDAY',
@@ -25,6 +28,14 @@ const normDay = (d: string): string => {
     FRI: 'FRIDAY', FRIDAY: 'FRIDAY',
     SAT: 'SATURDAY', SATURDAY: 'SATURDAY',
     SUN: 'SUNDAY', SUNDAY: 'SUNDAY',
+    // Tên tiếng Việt lưu trong DB (ClassSchedule.dayOfWeek)
+    'THỨ 2': 'MONDAY', 'THỨ 3': 'TUESDAY', 'THỨ 4': 'WEDNESDAY',
+    'THỨ 5': 'THURSDAY', 'THỨ 6': 'FRIDAY', 'THỨ 7': 'SATURDAY',
+    'CHỦ NHẬT': 'SUNDAY', 'CHỦ NHAT': 'SUNDAY',
+    // Tên không dấu (phòng khi seed dữ liệu cũ)
+    'THU 2': 'MONDAY', 'THU 3': 'TUESDAY', 'THU 4': 'WEDNESDAY',
+    'THU 5': 'THURSDAY', 'THU 6': 'FRIDAY', 'THU 7': 'SATURDAY',
+    'CHU NHAT': 'SUNDAY', 'CHU NHẬT': 'SUNDAY',
   };
   return map[x] || x;
 };
