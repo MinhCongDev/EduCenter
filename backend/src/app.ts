@@ -2,6 +2,7 @@ import express, { Application, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import path from 'path';
 import { config } from './config';
 import { healthRouter } from './routes/health.routes';
 import { authRouter } from './routes/auth.routes';
@@ -10,16 +11,42 @@ import { courseRouter } from './routes/course.routes';
 import { announcementRouter } from './routes/announcement.routes';
 import { classRouter } from './routes/class.routes';
 import { teacherRouter } from './routes/teacher.routes';
+// Student module (datlt)
+import { studentRouter } from './routes/student.routes';
+import { publicRouter } from './routes/public.routes';
 import { directorRouter } from './routes/director.routes';
 import { errorHandler } from './middlewares/error.middleware';
 import { notFound } from './middlewares/notFound.middleware';
+
+// ===========================
+// Register all Mongoose models
+// (Required for populate() to work)
+// ===========================
+import './models/user.model';
+import './models/course.model';
+import './models/class.model';
+import './models/enrollment.model';
+import './models/student.model';
+import './models/assignment.model';
+import './models/submission.model';
+import './models/grade.model';
+import './models/attendance.model';
+import './models/payment.model';
+import './models/classSchedule.model';
+import './models/changeRequest.model';
+import './models/announcement.model';
+import './models/notification.model';
 
 const app: Application = express();
 
 // ===========================
 // Security Middlewares
 // ===========================
-app.use(helmet());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+);
 
 app.use(
   cors({
@@ -42,6 +69,17 @@ if (!config.isTest) {
 }
 
 // ===========================
+// Static files (uploaded submissions)
+// ===========================
+app.use(
+  '/uploads',
+  express.static(path.join(process.cwd(), 'uploads'), {
+    maxAge: '1d',
+    etag: true,
+  })
+);
+
+// ===========================
 // Body Parsing Middlewares
 // ===========================
 app.use(express.json({ limit: '10mb' }));
@@ -57,6 +95,9 @@ app.use('/api/courses', courseRouter);
 app.use('/api/announcements', announcementRouter);
 app.use('/api/classes', classRouter);
 app.use('/api/teacher', teacherRouter);
+// Student module (datlt)
+app.use('/api/public', publicRouter);
+app.use('/api/student', studentRouter);
 app.use('/api/director', directorRouter);
 
 // ===========================

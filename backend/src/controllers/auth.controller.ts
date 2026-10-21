@@ -1,11 +1,15 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
 import { OAuth2Client, TokenPayload } from 'google-auth-library';
 import { User, IUser } from '../models/user.model';
 import { Student } from '../models/student.model';
+import { Enrollment } from '../models/enrollment.model';
 import { config } from '../config';
 import { AuthRequest } from '../middlewares/auth.middleware';
+import { buildAvatarUrl } from '../middlewares/upload.middleware';
 import { sendPasswordResetEmail, sendVerificationEmail } from '../services/email.service';
 import {
   PASSWORD_POLICY_MESSAGE,
@@ -233,7 +237,25 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     const token = generateToken(user._id.toString(), user.role);
 
-    const userResponse = toUserResponse(user);
+// Get current enrolled class for students
+    let currentClass = null;
+    if (user.role === 'STUDENT') {
+      const enrollment = await Enrollment.findOne({
+        student: user._id,
+        status: 'ENROLLED',
+      }).populate('class', 'name').sort({ enrollmentDate: -1 });
+      if (enrollment?.class) {
+        currentClass = {
+          _id: (enrollment.class as any)._id.toString(),
+          name: (enrollment.class as any).name,
+        };
+      }
+    }
+
+    const userResponse = {
+      ...toUserResponse(user),
+      currentClass,
+    };
 
     res.status(200).json({
       success: true,
@@ -542,16 +564,96 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
       return;
     }
 
+    // Get current enrolled class for students
+    let currentClass = null;
+    if (req.user.role === 'STUDENT') {
+      const enrollment = await Enrollment.findOne({
+        student: req.user._id,
+        status: 'ENROLLED',
+      }).populate('class', 'name').sort({ enrollmentDate: -1 });
+      if (enrollment?.class) {
+        currentClass = {
+          _id: (enrollment.class as any)._id.toString(),
+          name: (enrollment.class as any).name,
+        };
+      }
+    }
+
     res.status(200).json({
       success: true,
       data: {
-        user: req.user,
+        user: { ...req.user.toObject(), currentClass },
       },
     });
   } catch (error: any) {
     res.status(500).json({
       success: false,
       message: error.message || 'Lỗi server khi lấy thông tin tài khoản',
+    });
+  }
+};
+
+/**
+ * UC07: Upload Avatar (multipart)
+ * POST /api/auth/avatar
+ * FormData: avatar=<file>
+ */
+export const uploadAvatar = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Vui lòng đăng nhập' });
+      return;
+    }
+    const file = (req as any).file;
+    if (!file) {
+      res.status(400).json({ success: false, message: 'Vui lòng chọn file ảnh' });
+      return;
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      res.status(404).json({ success: false, message: 'Không tìm thấy tài khoản' });
+      return;
+    }
+
+    // Delete old avatar file (if it was an uploaded one)
+    if (user.avatarUrl && user.avatarUrl.includes('/uploads/avatars/')) {
+      try {
+        const oldFilename = user.avatarUrl.split('/uploads/avatars/')[1];
+        const oldPath = path.join(process.cwd(), 'uploads', 'avatars', oldFilename);
+        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      } catch (_) {
+        // Non-fatal
+      }
+    }
+
+    const url = buildAvatarUrl(req, file.filename);
+    user.avatarUrl = url;
+    await user.save();
+
+    const userResponse = {
+      _id: user._id,
+      email: user.email,
+      fullName: user.fullName,
+      phone: user.phone,
+      address: user.address,
+      dob: user.dob,
+      role: user.role,
+      status: user.status,
+      avatarUrl: user.avatarUrl,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
+
+    res.status(200).json({
+      success: true,
+      message: 'Cập nhật ảnh đại diện thành công',
+      data: { user: userResponse },
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Lỗi server khi upload ảnh đại diện',
     });
   }
 };

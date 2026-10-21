@@ -128,6 +128,24 @@ export const authService = {
   },
 
   /**
+   * Upload avatar (multipart/form-data)
+   * Returns the updated user
+   */
+  uploadAvatar: async (file: File): Promise<ApiResponse<{ user: User }>> => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    const response = await api.post<ApiResponse<{ user: User }>>(
+      '/auth/avatar',
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    );
+    if (response.data.success && response.data.data?.user) {
+      localStorage.setItem(USER_KEY, JSON.stringify(response.data.data.user));
+    }
+    return response.data;
+  },
+
+  /**
    * Logout – clear local storage
    */
   logout: (): void => {

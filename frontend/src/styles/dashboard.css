@@ -360,6 +360,33 @@
   padding: 0.75rem 1rem;
 }
 
+.dash-subcard-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--dash-text-muted) !important;
+  margin: 0 0 0.2rem 0;
+  line-height: 1.3;
+}
+
+.dash-subcard-value {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--dash-text-title) !important;
+  line-height: 1.45;
+  /* Avoid long text (emails, IDs, urls) from breaking the grid layout */
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+/* When used inside a CSS grid, every cell must allow its content to shrink */
+.dash-subcard > [style*="grid"] > *,
+[class*="dash-subcard"] [style*="grid"] > * {
+  min-width: 0;
+}
+
 /* ── Table Styling ── */
 .dash-table-wrapper {
   overflow-x: auto;
