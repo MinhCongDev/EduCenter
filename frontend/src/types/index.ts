@@ -369,17 +369,8 @@ export interface ClassSchedule {
   updatedAt?: string;
 }
 
-// Assignment (datlt – aligned with main's schema)
-export type AssignmentStatus = 'ACTIVE' | 'CLOSED';
-export type AssignmentSkill =
-  | 'LISTENING'
-  | 'READING'
-  | 'WRITING'
-  | 'SPEAKING'
-  | 'OVERALL'
-  | 'VOCABULARY'
-  | 'GRAMMAR'
-  | 'OTHER';
+// Assignment (aligned with backend IAssignment + enriched from Submission)
+export type AssignmentStatus = 'DRAFT' | 'PUBLISHED' | 'CLOSED';
 
 export interface Assignment {
   _id: string;
@@ -387,20 +378,21 @@ export interface Assignment {
   teacher?: string;
   title: string;
   description?: string;
-  skill: AssignmentSkill;
+  skill?: string;
   dueDate: string;
   maxScore: number;
   status: AssignmentStatus;
-  attachmentUrl?: string;
-  // enriched fields from backend
+  attachments: string[];
+  // Fields enriched from Submission (populated by getAssignments controller)
   submissionStatus?: 'PENDING' | 'SUBMITTED' | 'LATE' | 'GRADED' | null;
   submissionId?: string;
   submissionTime?: string;
-  grade?: number;
   feedback?: string;
 }
 
 // Submission (datlt – aligned with main's schema: attachments[], submissionTime, grade)
+export type SubmissionStatus = 'PENDING' | 'SUBMITTED' | 'LATE' | 'GRADED';
+
 export interface Submission {
   _id: string;
   assignment: string;
@@ -416,7 +408,7 @@ export interface Submission {
   updatedAt: string;
 }
 
-// Grade (datlt – aligned with main's schema)
+// Grade (IELTS band scores, plus optional raw score for numeric grading)
 export type GradeEvaluationType =
   | 'MOCK_TEST'
   | 'MID_TERM'
@@ -434,7 +426,9 @@ export interface Grade {
   evaluationType: GradeEvaluationType;
   title: string;
   testDate: string;
-  overallBand: number;
+  score?: number;       // Raw score (backend may return it)
+  maxScore?: number;    // Max possible score
+  overallBand: number; // IELTS band score (0-9)
   listening?: number;
   reading?: number;
   writing?: number;

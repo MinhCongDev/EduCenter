@@ -4,7 +4,7 @@ import { studentService } from '../../services/student.service';
 import { useToast } from '../../contexts/ToastContext';
 import type { Grade, GradeEvaluationType } from '../../types';
 import { EmptyState, SkeletonPage } from '../../components/Skeleton';
-import { formatDate, bandColor, bandLabel, formatVND } from '../../utils/format';
+import { formatDate, bandColor, bandLabel } from '../../utils/format';
 
 const typeCfg = (t: GradeEvaluationType) => {
   const map: Record<GradeEvaluationType, { label: string; color: string; icon: string }> = {
@@ -143,7 +143,8 @@ const GradesPage: React.FC = () => {
           {grades.map((g) => {
             const type = typeCfg(g.evaluationType);
             const isPublished = g.status === 'PUBLISHED';
-            const percent = g.maxScore > 0 ? (g.score / g.maxScore) * 100 : 0;
+            const hasScore = g.score !== undefined && g.maxScore !== undefined && g.maxScore > 0;
+            const percent = hasScore ? ((g.score as number) / (g.maxScore as number)) * 100 : 0;
             return (
               <div key={g._id} className="dash-card">
                 <div className="dash-card-header">
@@ -155,9 +156,15 @@ const GradesPage: React.FC = () => {
                     <span className={`badge-pill ${isPublished ? 'badge-green' : 'badge-amber'}`}>
                       {isPublished ? '✅ Đã công bố' : '📝 Nháp'}
                     </span>
-                    <span className="badge-pill badge-blue">
-                      {g.score}/{g.maxScore} ({percent.toFixed(0)}%)
-                    </span>
+                    {hasScore ? (
+                      <span className="badge-pill badge-blue">
+                        {g.score}/{g.maxScore} ({percent.toFixed(0)}%)
+                      </span>
+                    ) : (
+                      <span className="badge-pill badge-purple">
+                        Band {g.overallBand.toFixed(1)}
+                      </span>
+                    )}
                   </div>
                 </div>
 

@@ -6,17 +6,6 @@ import type { UserRole } from '../types';
 import { ProfileModal } from './ProfileModal';
 import { ChangePasswordModal } from './ChangePasswordModal';
 
-// Role-based profile path mapping
-const getProfilePath = (role: UserRole): string => {
-  const paths: Record<UserRole, string> = {
-    STUDENT: '/student/profile',
-    TEACHER: '/teacher/dashboard',
-    TRAINING_STAFF: '/staff/dashboard',
-    DIRECTOR: '/director/dashboard',
-  };
-  return paths[role] || '/';
-};
-
 // Role-based dashboard path mapping
 const getDashboardPath = (role: UserRole): string => {
   const paths: Record<UserRole, string> = {
