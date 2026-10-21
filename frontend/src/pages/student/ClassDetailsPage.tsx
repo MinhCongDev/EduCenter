@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { studentService } from '../../services/student.service';
 import { useToast } from '../../contexts/ToastContext';
 import type { Assignment, Enrollment } from '../../types';
+import { Button } from '../../components/Button';
 import { EmptyState, SkeletonPage } from '../../components/Skeleton';
 import { formatDate, formatVND } from '../../utils/format';
 
@@ -230,7 +231,7 @@ const ClassDetailsPage: React.FC = () => {
                         a.submissionStatus === 'GRADED' ? 'badge-blue' : 'badge-green'
                       }`}
                     >
-                      {a.submissionStatus === 'GRADED' ? 'Đã chấm ✓' : 'Đã nộp'}
+                      {a.submissionStatus === 'GRADED' ? `Đã chấm: ${a.score ?? '?'}` : 'Đã nộp'}
                     </span>
                   )}
                 </div>

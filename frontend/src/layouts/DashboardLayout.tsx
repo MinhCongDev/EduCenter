@@ -192,7 +192,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
               fontSize: '0.8rem',
               fontWeight: 600,
             }}>
-              {user?.currentClass?.name || ''}
+              {user?.currentClass?.name || user?.enrolledClass?.name || ''}
             </span>
           </div>
         </header>

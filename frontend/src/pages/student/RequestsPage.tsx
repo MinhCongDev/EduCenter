@@ -5,9 +5,8 @@ import { useToast } from '../../contexts/ToastContext';
 import type {
   ChangeRequest,
   ChangeRequestStatus,
-  RequestType,
+  ChangeRequestType,
   CreateChangeRequestInput,
-  Enrollment,
 } from '../../types';
 import { Button } from '../../components/Button';
 import { EmptyState, SkeletonPage } from '../../components/Skeleton';
@@ -24,19 +23,18 @@ const statusCfg = (s: ChangeRequestStatus) => {
   return map[s];
 };
 
-const typeCfg = (t: RequestType) => {
-  const map: Record<RequestType, { label: string; icon: string }> = {
-    CLASS_CHANGE: { label: 'Đổi lớp', icon: '🔄' },
-    SCHEDULE_CHANGE: { label: 'Đổi lịch học', icon: '🗓️' },
-    TEACHER_SCHEDULE_CHANGE: { label: 'Đổi lịch giảng viên', icon: '👨‍🏫' },
+const typeCfg = (t: ChangeRequestType) => {
+  const map: Record<ChangeRequestType, { label: string; icon: string }> = {
+    CHANGE_CLASS: { label: 'Đổi lớp', icon: '🔄' },
+    CHANGE_SCHEDULE: { label: 'Đổi lịch học', icon: '🗓️' },
+    WITHDRAW: { label: 'Rút khỏi lớp', icon: '🚪' },
   };
-  return map[t] || { label: t, icon: '📄' };
+  return map[t];
 };
 
 const RequestsPage: React.FC = () => {
   const toast = useToast();
   const [requests, setRequests] = useState<ChangeRequest[]>([]);
-  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<FilterKey>('ALL');
   const [showForm, setShowForm] = useState(false);
@@ -45,8 +43,8 @@ const RequestsPage: React.FC = () => {
   const [form, setForm] = useState<CreateChangeRequestInput>({
     requestType: 'CLASS_CHANGE',
     reason: '',
-    currentClass: '',
-    targetClass: '',
+    currentClassCode: '',
+    targetClassCode: '',
     currentSchedule: '',
     targetSchedule: '',
   });
@@ -55,12 +53,6 @@ const RequestsPage: React.FC = () => {
 
   useEffect(() => {
     fetchRequests();
-    studentService
-      .getMyClasses()
-      .then((res) => {
-        if (res.success && res.data) setEnrollments(res.data.classes || []);
-      })
-      .catch(() => {});
   }, []);
 
   const fetchRequests = async () => {
@@ -80,8 +72,8 @@ const RequestsPage: React.FC = () => {
     setForm({
       requestType: 'CLASS_CHANGE',
       reason: '',
-      currentClass: '',
-      targetClass: '',
+      currentClassCode: '',
+      targetClassCode: '',
       currentSchedule: '',
       targetSchedule: '',
     });
@@ -94,12 +86,8 @@ const RequestsPage: React.FC = () => {
       setFormError('Lý do phải có ít nhất 5 ký tự');
       return;
     }
-    if (!form.currentClass) {
-      setFormError('Vui lòng chọn lớp học hiện tại');
-      return;
-    }
-    if (form.requestType === 'SCHEDULE_CHANGE' && !form.targetSchedule?.trim()) {
-      setFormError('Vui lòng nhập lịch học mong muốn');
+    if ((form.requestType === 'CHANGE_CLASS' || form.requestType === 'CHANGE_SCHEDULE') && !form.currentClassCode?.trim()) {
+      setFormError('Vui lòng nhập mã lớp hiện tại');
       return;
     }
     try {
@@ -152,8 +140,8 @@ const RequestsPage: React.FC = () => {
     { key: 'REJECTED', label: '❌ Từ chối', count: requests.filter((r) => r.status === 'REJECTED').length },
   ];
 
-  const showScheduleFields = form.requestType === 'SCHEDULE_CHANGE';
-  const showTargetClass = form.requestType === 'CLASS_CHANGE';
+  const showScheduleFields = form.requestType === 'CHANGE_SCHEDULE';
+  const showTargetClass = form.requestType === 'CHANGE_CLASS';
 
   return (
     <div className="dash-container">
@@ -283,85 +271,68 @@ const RequestsPage: React.FC = () => {
                   marginBottom: '1rem',
                 }}
               >
-<div>
-                    <label className="dash-subcard-label">Loại yêu cầu *</label>
-                    <select
-                      value={form.requestType}
-                      onChange={(e) =>
-                        setForm({ ...form, requestType: e.target.value as RequestType })
-                      }
-                      style={inputStyle}
-                    >
-                      <option value="CLASS_CHANGE">🔄 Đổi lớp</option>
-                      <option value="SCHEDULE_CHANGE">🗓️ Đổi lịch học</option>
-                    </select>
-                  </div>
+                <div>
+                  <label className="dash-subcard-label">Loại yêu cầu *</label>
+                  <select
+                    value={form.requestType}
+                    onChange={(e) =>
+                      setForm({ ...form, requestType: e.target.value as ChangeRequestType })
+                    }
+                    style={inputStyle}
+                  >
+                    <option value="CHANGE_CLASS">🔄 Đổi lớp</option>
+                    <option value="CHANGE_SCHEDULE">🗓️ Đổi lịch học</option>
+                    <option value="WITHDRAW">🚪 Rút khỏi lớp</option>
+                  </select>
+                </div>
+                {form.requestType !== 'WITHDRAW' && (
                   <div>
-                    <label className="dash-subcard-label">Lớp học hiện tại *</label>
-                    <select
-                      value={form.currentClass || ''}
-                      onChange={(e) => {
-                        const clsId = e.target.value;
-                        const enrolled = enrollments.find((e2) => e2.class?._id === clsId);
-                        setForm({
-                          ...form,
-                          currentClass: clsId,
-                          currentSchedule: enrolled?.class?.timeSlot || '',
-                        });
-                      }}
+                    <label className="dash-subcard-label">Mã lớp hiện tại *</label>
+                    <input
+                      type="text"
+                      value={form.currentClassCode || ''}
+                      onChange={(e) => setForm({ ...form, currentClassCode: e.target.value })}
+                      placeholder="VD: IELTS-PRE-01"
                       style={inputStyle}
-                    >
-                      <option value="">-- Chọn lớp --</option>
-                      {enrollments.map((e2) => (
-                        <option key={e2.class?._id} value={e2.class?._id}>
-                          {e2.class?.classCode} - {e2.class?.course?.code}
-                        </option>
-                      ))}
-                    </select>
+                    />
                   </div>
-                  {showTargetClass && (
+                )}
+                {showTargetClass && (
+                  <div>
+                    <label className="dash-subcard-label">Mã lớp mong muốn</label>
+                    <input
+                      type="text"
+                      value={form.targetClassCode || ''}
+                      onChange={(e) => setForm({ ...form, targetClassCode: e.target.value })}
+                      placeholder="VD: IELTS-FOUND-02"
+                      style={inputStyle}
+                    />
+                  </div>
+                )}
+                {showScheduleFields && (
+                  <>
                     <div>
-                      <label className="dash-subcard-label">Lớp mong muốn</label>
-                      <select
-                        value={form.targetClass || ''}
-                        onChange={(e) => setForm({ ...form, targetClass: e.target.value })}
+                      <label className="dash-subcard-label">Lịch học hiện tại</label>
+                      <input
+                        type="text"
+                        value={form.currentSchedule || ''}
+                        onChange={(e) => setForm({ ...form, currentSchedule: e.target.value })}
+                        placeholder="VD: Thứ 2,4,6 - 18:30-20:30"
                         style={inputStyle}
-                      >
-                        <option value="">-- Chọn lớp (không bắt buộc) --</option>
-                        {enrollments
-                          .filter((e2) => e2.class?._id !== form.currentClass)
-                          .map((e2) => (
-                            <option key={e2.class?._id} value={e2.class?._id}>
-                              {e2.class?.classCode} - {e2.class?.course?.code}
-                            </option>
-                          ))}
-                      </select>
+                      />
                     </div>
-                  )}
-                  {showScheduleFields && (
-                    <>
-                      <div>
-                        <label className="dash-subcard-label">Lịch học hiện tại</label>
-                        <input
-                          type="text"
-                          value={form.currentSchedule || ''}
-                          onChange={(e) => setForm({ ...form, currentSchedule: e.target.value })}
-                          placeholder="VD: Thứ 2,4,6 - 18:30-20:30"
-                          style={inputStyle}
-                        />
-                      </div>
-                      <div>
-                        <label className="dash-subcard-label">Lịch học mong muốn *</label>
-                        <input
-                          type="text"
-                          value={form.targetSchedule || ''}
-                          onChange={(e) => setForm({ ...form, targetSchedule: e.target.value })}
-                          placeholder="VD: Thứ 3,5,7 - 19:00-21:00"
-                          style={inputStyle}
-                        />
-                      </div>
-                    </>
-                  )}
+                    <div>
+                      <label className="dash-subcard-label">Lịch học mong muốn</label>
+                      <input
+                        type="text"
+                        value={form.targetSchedule || ''}
+                        onChange={(e) => setForm({ ...form, targetSchedule: e.target.value })}
+                        placeholder="VD: Thứ 3,5,7 - 19:00-21:00"
+                        style={inputStyle}
+                      />
+                    </div>
+                  </>
+                )}
               </div>
               <div style={{ marginBottom: '1rem' }}>
                 <label className="dash-subcard-label">Lý do * (tối thiểu 5 ký tự)</label>
@@ -443,8 +414,8 @@ const RequestsPage: React.FC = () => {
                     {r.currentSchedule && <Field label="Lịch hiện tại" value={r.currentSchedule} />}
                     {r.targetSchedule && <Field label="Lịch mong muốn" value={r.targetSchedule} />}
                     <Field label="Ngày gửi" value={formatDate(r.createdAt, true)} />
-                    {r.reviewedAt && (
-                      <Field label="Ngày xử lý" value={formatDate(r.reviewedAt, true)} />
+                    {r.processedAt && (
+                      <Field label="Ngày xử lý" value={formatDate(r.processedAt, true)} />
                     )}
                   </div>
 
@@ -461,7 +432,7 @@ const RequestsPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {r.reviewNote && (
+                  {r.adminNote && (
                     <div
                       style={{
                         background: 'rgba(245,158,11,0.08)',
@@ -472,7 +443,7 @@ const RequestsPage: React.FC = () => {
                     >
                       <div className="dash-subcard-label">💬 Phản hồi từ nhân viên</div>
                       <div style={{ marginTop: '0.25rem', fontSize: '0.9rem', color: '#475569' }}>
-                        {r.reviewNote}
+                        {r.adminNote}
                       </div>
                     </div>
                   )}

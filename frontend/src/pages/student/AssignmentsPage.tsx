@@ -315,18 +315,18 @@ const AssignmentsPage: React.FC = () => {
                       }
                     />
                     <Field label="Điểm tối đa" value={a.maxScore} />
-                    {a.submissionStatus === 'GRADED' && a.feedback && (
+                    {a.submissionStatus === 'GRADED' && a.score !== undefined && (
                       <Field
-                        label="Nhận xét"
+                        label="Điểm của bạn"
                         value={
                           <span style={{ color: '#3b82f6', fontWeight: 700 }}>
-                            Đã chấm ✓
+                            {a.score} / {a.maxScore}
                           </span>
                         }
                       />
                     )}
-                    {a.submissionTime && (
-                      <Field label="Ngày nộp" value={formatDate(a.submissionTime, true)} />
+                    {a.submissionDate && (
+                      <Field label="Ngày nộp" value={formatDate(a.submissionDate, true)} />
                     )}
                   </div>
 
@@ -354,7 +354,7 @@ const AssignmentsPage: React.FC = () => {
                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
                       <span className={`badge-pill ${status.cls}`}>
                         {status.icon} {status.label}
-                        {a.submissionStatus === 'GRADED' && ` — Đã chấm điểm`}
+                        {a.submissionStatus === 'GRADED' && a.score !== undefined && ` — ${a.score} điểm`}
                       </span>
                       {a.submissionStatus !== 'GRADED' && !past && (
                         <Button

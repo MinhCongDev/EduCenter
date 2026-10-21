@@ -543,62 +543,37 @@ export const createChangeRequest = async (req: AuthRequest, res: Response): Prom
   try {
     const user = requireUser(req);
     const {
-      requestType,
       type,
       currentClass,
       targetClass,
+      currentClassCode,
+      targetClassCode,
       currentSchedule,
       targetSchedule,
       reason,
     } = req.body;
 
-    // Frontend gửi `requestType`; giữ fallback `type` cho tương thích ngược.
-    const resolvedType = requestType || type;
-    const VALID_TYPES = ['CLASS_CHANGE', 'SCHEDULE_CHANGE', 'TEACHER_SCHEDULE_CHANGE'];
-    if (!resolvedType || !VALID_TYPES.includes(resolvedType)) {
+    if (!type || !['CHANGE_CLASS', 'CHANGE_SCHEDULE', 'WITHDRAW'].includes(type)) {
       throw createError('Loại yêu cầu không hợp lệ', 400);
     }
     if (!reason || reason.trim().length < 5) {
       throw createError('Lý do phải có ít nhất 5 ký tự', 400);
     }
-    if (!currentClass || !isValidId(currentClass)) {
-      throw createError('Vui lòng chọn lớp học hiện tại', 400);
-    }
-
-    // Lớp hiện tại phải là lớp học viên thực sự đang theo học.
-    const enrolled = await Enrollment.exists({
-      student: user._id,
-      class: currentClass,
-      status: 'ENROLLED',
-    });
-    if (!enrolled) {
-      throw createError('Bạn không đang theo học lớp này', 403);
+    if ((type === 'CHANGE_CLASS' || type === 'CHANGE_SCHEDULE') && !currentClass && !currentClassCode) {
+      throw createError('Vui lòng cung cấp lớp hiện tại', 400);
     }
 
     const payload: any = {
       student: user._id,
-      requesterRole: 'STUDENT',
-      requestType: resolvedType,
-      currentClass,
+      type,
       reason: reason.trim(),
       status: 'PENDING',
     };
 
-    if (targetClass && isValidId(targetClass)) {
-      const targetEnrolled = await Enrollment.exists({
-        student: user._id,
-        class: targetClass,
-        status: 'ENROLLED',
-      });
-      // Cho phép chuyển sang lớp chưa đăng ký (staff sẽ xử lý đăng ký sau).
-      if (!targetEnrolled && resolvedType !== 'CLASS_CHANGE') {
-        throw createError('Lớp mong muốn không hợp lệ', 400);
-      }
-      payload.targetClass = targetClass;
-    }
-    if (resolvedType === 'SCHEDULE_CHANGE' && !targetSchedule) {
-      throw createError('Vui lòng nhập lịch học mong muốn', 400);
-    }
+    if (currentClass && isValidId(currentClass)) payload.currentClass = currentClass;
+    if (targetClass && isValidId(targetClass)) payload.targetClass = targetClass;
+    if (currentClassCode) payload.currentClassCode = currentClassCode.trim();
+    if (targetClassCode) payload.targetClassCode = targetClassCode.trim();
     if (currentSchedule) payload.currentSchedule = currentSchedule.trim();
     if (targetSchedule) payload.targetSchedule = targetSchedule.trim();
 
