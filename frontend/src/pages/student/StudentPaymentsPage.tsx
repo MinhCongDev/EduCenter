@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useId } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { paymentService } from '../../services/payment.service';
+import { VietQRModal, type VietQRData } from '../../components/VietQRModal';
 import type {
   Payment,
   PaymentSummary,
@@ -35,6 +36,45 @@ export const StudentPaymentsPage: React.FC = () => {
   const [note, setNote] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [paymentSuccess, setPaymentSuccess] = useState<Payment | null>(null);
+
+  // Modal VietQR
+  const [vietQRData, setVietQRData] = useState<VietQRData | null>(null);
+  const [isVietQRModalOpen, setIsVietQRModalOpen] = useState<boolean>(false);
+
+  // Mở modal VietQR cho gói học phí cần đóng
+  const handleOpenVietQRForTuition = (tuition: PendingTuitionItem) => {
+    const studentLastName = user?.fullName ? user.fullName.trim().split(' ').pop()?.toUpperCase() : 'HV';
+    const courseCode = tuition.course?.code || 'IELTS';
+    const transferCode = `HP ${studentLastName} ${courseCode}`;
+    const invoiceCode = tuition.class?.classCode
+      ? `${tuition.class.classCode}-${tuition._id.slice(-4).toUpperCase()}`
+      : `HP-${tuition._id.slice(-6).toUpperCase()}`;
+
+    setVietQRData({
+      amount: tuition.course?.tuitionFee || 0,
+      description: transferCode,
+      invoiceCode,
+      courseTitle: tuition.course?.title,
+      studentName: user?.fullName,
+      classCode: tuition.class?.classCode,
+      enrollmentId: tuition._id,
+    });
+    setIsVietQRModalOpen(true);
+  };
+
+  // Mở modal VietQR cho hóa đơn trong lịch sử
+  const handleOpenVietQRForPayment = (payment: Payment) => {
+    setVietQRData({
+      amount: payment.amount,
+      description: `EDUPAY ${payment.transactionCode || payment._id}`,
+      invoiceCode: payment.transactionCode,
+      courseTitle: payment.course?.title,
+      studentName: user?.fullName,
+      classCode: payment.enrollment?.class?.classCode,
+      enrollmentId: payment.enrollment?._id,
+    });
+    setIsVietQRModalOpen(true);
+  };
 
   // Modal biên lai (Receipt)
   const [selectedReceipt, setSelectedReceipt] = useState<PaymentReceiptData | null>(null);
@@ -224,7 +264,6 @@ export const StudentPaymentsPage: React.FC = () => {
           <div className="dash-metric-info">
             <span className="dash-metric-label">Cổng thanh toán hỗ trợ</span>
             <span className="dash-metric-val" style={{ fontSize: '1.25rem' }}>VietQR / VNPAY</span>
-            <span className="dash-metric-trend up">Bảo mật mã hóa 256-bit</span>
           </div>
           <div className="dash-metric-icon icon-purple">🔒</div>
         </div>
@@ -306,30 +345,55 @@ export const StudentPaymentsPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    className="dash-quick-btn primary"
-                    style={{
-                      backgroundColor: '#dc2626',
-                      borderColor: '#dc2626',
-                      padding: '0.65rem 1.4rem',
-                      fontSize: '0.95rem',
-                      fontWeight: 700,
-                      borderRadius: '8px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                      boxShadow: '0 4px 12px rgba(220, 38, 38, 0.25)',
-                    }}
-                    onClick={() => {
-                      setSelectedTuition(item);
-                      setPaymentSuccess(null);
-                      setNote('');
-                    }}
-                  >
-                    <span>💳</span>
-                    <span>Thanh Toán Ngay</span>
-                  </button>
+                  <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      className="dash-quick-btn"
+                      style={{
+                        backgroundColor: '#059669',
+                        borderColor: '#059669',
+                        color: '#ffffff',
+                        padding: '0.65rem 1.25rem',
+                        fontSize: '0.925rem',
+                        fontWeight: 700,
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.45rem',
+                        boxShadow: '0 4px 12px rgba(5, 150, 105, 0.25)',
+                        cursor: 'pointer',
+                      }}
+                      onClick={() => handleOpenVietQRForTuition(item)}
+                    >
+                      <span>📱</span>
+                      <span>Quét mã VietQR</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="dash-quick-btn primary"
+                      style={{
+                        backgroundColor: '#dc2626',
+                        borderColor: '#dc2626',
+                        padding: '0.65rem 1.25rem',
+                        fontSize: '0.925rem',
+                        fontWeight: 700,
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.45rem',
+                        boxShadow: '0 4px 12px rgba(220, 38, 38, 0.25)',
+                      }}
+                      onClick={() => {
+                        setSelectedTuition(item);
+                        setPaymentSuccess(null);
+                        setNote('');
+                      }}
+                    >
+                      <span>💳</span>
+                      <span>Thanh Toán Ngay</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -569,24 +633,48 @@ export const StudentPaymentsPage: React.FC = () => {
 
                       {/* Actions */}
                       <td style={{ padding: '1rem', textAlign: 'center' }}>
-                        <button
-                          type="button"
-                          className="dash-quick-btn"
-                          disabled={loadingReceipt}
-                          style={{
-                            padding: '0.35rem 0.85rem',
-                            fontSize: '0.775rem',
-                            fontWeight: 600,
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '0.35rem',
-                            opacity: loadingReceipt ? 0.7 : 1,
-                          }}
-                          onClick={() => handleViewReceipt(p._id)}
-                        >
-                          <span>📄</span>
-                          <span>Biên Lai</span>
-                        </button>
+                        <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'center', alignItems: 'center' }}>
+                          <button
+                            type="button"
+                            className="dash-quick-btn"
+                            style={{
+                              padding: '0.35rem 0.75rem',
+                              fontSize: '0.775rem',
+                              fontWeight: 700,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.35rem',
+                              color: '#047857',
+                              borderColor: '#a7f3d0',
+                              backgroundColor: '#ecfdf5',
+                              cursor: 'pointer',
+                            }}
+                            onClick={() => handleOpenVietQRForPayment(p)}
+                            title="Hiển thị mã QR thanh toán ngân hàng VietQR"
+                          >
+                            <span>📱</span>
+                            <span>VietQR</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            className="dash-quick-btn"
+                            disabled={loadingReceipt}
+                            style={{
+                              padding: '0.35rem 0.75rem',
+                              fontSize: '0.775rem',
+                              fontWeight: 600,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.35rem',
+                              opacity: loadingReceipt ? 0.7 : 1,
+                            }}
+                            onClick={() => handleViewReceipt(p._id)}
+                          >
+                            <span>📄</span>
+                            <span>Biên Lai</span>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -884,62 +972,142 @@ export const StudentPaymentsPage: React.FC = () => {
                 {paymentMethod === 'BANK_TRANSFER' && (
                   <div
                     style={{
-                      border: '1px solid #bfdbfe',
-                      backgroundColor: '#f0f9ff',
-                      borderRadius: '12px',
-                      padding: '1rem',
+                      border: '2px solid #a7f3d0',
+                      backgroundColor: '#f0fdf4',
+                      borderRadius: '14px',
+                      padding: '1.25rem',
                       marginBottom: '1.25rem',
-                      fontSize: '0.875rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.85rem',
                     }}
                   >
-                    <div style={{ fontWeight: 700, color: '#1e3a8a', marginBottom: '0.5rem' }}>
-                      THÔNG TIN CHUYỂN KHOẢN NGÂN HÀNG:
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ fontWeight: 800, color: '#064e3b', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <span>⚡</span>
+                        <span>QUÉT MÃ VIETQR CHUYỂN KHOẢN NGÂN HÀNG</span>
+                      </div>
+                      <span className="badge-pill badge-green" style={{ fontSize: '0.75rem', fontWeight: 800 }}>
+                        TỰ ĐỘNG KHỚP 24/7
+                      </span>
                     </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.35rem 0', borderBottom: '1px dashed #cbd5e1' }}>
-                      <span style={{ color: '#64748b' }}>Ngân hàng:</span>
-                      <strong>MBBank (Ngân hàng Quân Đội)</strong>
-                    </div>
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: '1.25rem',
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                        justifyContent: 'center',
+                        backgroundColor: '#ffffff',
+                        padding: '1rem',
+                        borderRadius: '12px',
+                        border: '1px solid #d1fae5',
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: '180px',
+                          height: '180px',
+                          borderRadius: '10px',
+                          border: '2px solid #10b981',
+                          overflow: 'hidden',
+                          boxShadow: '0 4px 12px rgba(16, 185, 129, 0.15)',
+                          flexShrink: 0,
+                          backgroundColor: '#ffffff',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <img
+                          src={`https://img.vietqr.io/image/MB-988866889999-compact2.png?amount=${selectedTuition.course?.tuitionFee || 0}&addInfo=${encodeURIComponent(
+                            `HP ${user?.fullName?.trim().split(' ').pop()?.toUpperCase() || 'HV'} ${selectedTuition.course?.code || 'IELTS'}`
+                          )}&accountName=CONG%20TY%20CP%20GIAO%20DUC%20EDUCENTER`}
+                          alt="VietQR MBBank"
+                          style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                        />
+                      </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.35rem 0', borderBottom: '1px dashed #cbd5e1' }}>
-                      <span style={{ color: '#64748b' }}>Số tài khoản:</span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                        <strong style={{ color: '#1e40af', fontSize: '1rem' }}>9888 6688 9999</strong>
-                        <button
-                          type="button"
-                          onClick={() => handleCopy('988866889999', 'acc')}
-                          style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '0.75rem' }}
-                        >
-                          {copiedText === 'acc' ? '✅' : '📋'}
-                        </button>
+                      <div style={{ flex: 1, minWidth: '220px', display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.85rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #cbd5e1', paddingBottom: '0.35rem' }}>
+                          <span style={{ color: '#64748b' }}>Ngân hàng:</span>
+                          <strong style={{ color: '#0f172a' }}>MBBank (Quân Đội)</strong>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #cbd5e1', paddingBottom: '0.35rem' }}>
+                          <span style={{ color: '#64748b' }}>Số tài khoản:</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                            <strong style={{ color: '#047857', fontSize: '1rem' }}>9888 6688 9999</strong>
+                            <button
+                              type="button"
+                              onClick={() => handleCopy('988866889999', 'acc')}
+                              style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '0.85rem' }}
+                            >
+                              {copiedText === 'acc' ? '✅' : '📋'}
+                            </button>
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #cbd5e1', paddingBottom: '0.35rem' }}>
+                          <span style={{ color: '#64748b' }}>Chủ tài khoản:</span>
+                          <strong style={{ color: '#0f172a', fontSize: '0.8rem' }}>CONG TY CP GIAO DUC EDUCENTER</strong>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #cbd5e1', paddingBottom: '0.35rem' }}>
+                          <span style={{ color: '#64748b' }}>Số tiền:</span>
+                          <strong style={{ color: '#059669', fontSize: '1.05rem', fontWeight: 800 }}>
+                            {formatCurrency(selectedTuition.course?.tuitionFee)}
+                          </strong>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: '#b45309', fontWeight: 700 }}>Nội dung CK:</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                            <strong style={{ color: '#dc2626' }}>
+                              HP {user?.fullName?.trim().split(' ').pop()?.toUpperCase() || 'HV'} {selectedTuition.course?.code}
+                            </strong>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleCopy(
+                                  `HP ${user?.fullName?.trim().split(' ').pop()?.toUpperCase() || 'HV'} ${selectedTuition.course?.code}`,
+                                  'syntax'
+                                )
+                              }
+                              style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '0.85rem' }}
+                            >
+                              {copiedText === 'syntax' ? '✅' : '📋'}
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.35rem 0', borderBottom: '1px dashed #cbd5e1' }}>
-                      <span style={{ color: '#64748b' }}>Chủ tài khoản:</span>
-                      <strong>CONG TY CO PHAN GIAO DUC EDUCENTER</strong>
-                    </div>
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.35rem 0' }}>
-                      <span style={{ color: '#64748b' }}>Nội dung CK:</span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                        <strong style={{ color: '#dc2626' }}>
-                          HP {user?.fullName?.split(' ').pop()?.toUpperCase()} {selectedTuition.course?.code}
-                        </strong>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleCopy(`HP ${user?.fullName?.split(' ').pop()?.toUpperCase()} ${selectedTuition.course?.code}`, 'syntax')
-                          }
-                          style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '0.75rem' }}
-                        >
-                          {copiedText === 'syntax' ? '✅' : '📋'}
-                        </button>
-                      </div>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const item = selectedTuition;
+                          setSelectedTuition(null);
+                          handleOpenVietQRForTuition(item);
+                        }}
+                        style={{
+                          backgroundColor: '#059669',
+                          border: 'none',
+                          color: '#ffffff',
+                          padding: '0.45rem 1rem',
+                          borderRadius: '8px',
+                          fontSize: '0.82rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.4rem',
+                        }}
+                      >
+                        <span>🔍</span>
+                        <span>Mở toàn màn hình VietQR & Tải ảnh</span>
+                      </button>
                     </div>
                   </div>
                 )}
-
                 {paymentMethod === 'CREDIT_CARD' && (
                   <div
                     style={{
@@ -1322,6 +1490,15 @@ export const StudentPaymentsPage: React.FC = () => {
           </div>
         </div>
       )}
+      {/* ── Modal VietQR Chuyển Khoản Tự Động ── */}
+      <VietQRModal
+        isOpen={isVietQRModalOpen}
+        onClose={() => setIsVietQRModalOpen(false)}
+        data={vietQRData}
+        onPaymentSuccess={() => {
+          fetchData();
+        }}
+      />
     </div>
   );
 };
