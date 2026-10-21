@@ -5,6 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import { User } from '../models/user.model';
 import { Student } from '../models/student.model';
+import { Enrollment } from '../models/enrollment.model';
 import { config } from '../config';
 import { AuthRequest } from '../middlewares/auth.middleware';
 import { buildAvatarUrl } from '../middlewares/upload.middleware';
@@ -158,6 +159,21 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     const token = generateToken(user._id.toString(), user.role);
 
+    // Get current enrolled class for students
+    let currentClass = null;
+    if (user.role === 'STUDENT') {
+      const enrollment = await Enrollment.findOne({
+        student: user._id,
+        status: 'ENROLLED',
+      }).populate('class', 'name').sort({ enrollmentDate: -1 });
+      if (enrollment?.class) {
+        currentClass = {
+          _id: (enrollment.class as any)._id.toString(),
+          name: (enrollment.class as any).name,
+        };
+      }
+    }
+
     const userResponse = {
       _id: user._id,
       email: user.email,
@@ -170,6 +186,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       avatarUrl: user.avatarUrl,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
+      currentClass,
     };
 
     res.status(200).json({
@@ -202,10 +219,25 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
       return;
     }
 
+    // Get current enrolled class for students
+    let currentClass = null;
+    if (req.user.role === 'STUDENT') {
+      const enrollment = await Enrollment.findOne({
+        student: req.user._id,
+        status: 'ENROLLED',
+      }).populate('class', 'name').sort({ enrollmentDate: -1 });
+      if (enrollment?.class) {
+        currentClass = {
+          _id: (enrollment.class as any)._id.toString(),
+          name: (enrollment.class as any).name,
+        };
+      }
+    }
+
     res.status(200).json({
       success: true,
       data: {
-        user: req.user,
+        user: { ...req.user.toObject(), currentClass },
       },
     });
   } catch (error: any) {

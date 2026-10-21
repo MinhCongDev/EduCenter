@@ -138,7 +138,19 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
             <span className="dashboard-topbar-eyebrow">EDUCENTER</span>
             <h1>Bảng điều khiển</h1>
           </div>
-          <span className="dashboard-topbar-role">{roleLabels[role]}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <span className="dashboard-topbar-role">{roleLabels[role]}</span>
+            <span style={{
+              background: '#dbeafe',
+              color: '#1d4ed8',
+              padding: '0.35rem 0.85rem',
+              borderRadius: '20px',
+              fontSize: '0.8rem',
+              fontWeight: 600,
+            }}>
+              {user?.currentClass?.name || user?.enrolledClass?.name || ''}
+            </span>
+          </div>
         </header>
         <main className="dashboard-main-content">
           <div className="dashboard-content-inner">{children}</div>

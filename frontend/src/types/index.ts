@@ -20,6 +20,10 @@ export interface User {
   avatarUrl?: string;
   createdAt: string;
   updatedAt: string;
+  currentClass?: {
+    _id: string;
+    name: string;
+  };
 }
 
 // Student profile (datlt)
