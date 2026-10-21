@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { teacherService } from '../../services/teacher.service';
 import type {
@@ -13,12 +13,33 @@ import type {
   AttendanceRecord,
 } from '../../services/teacher.service';
 
-export const TeacherDashboard: React.FC = () => {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
+export type TeacherTab = 'overview' | 'classes_students' | 'schedule_attendance' | 'assignments_grading' | 'academic_grades';
 
-  // 4 Primary Functional Tabs (covering all 14 features)
-  const [activeTab, setActiveTab] = useState<'schedule_attendance' | 'assignments_grading' | 'classes_students' | 'academic_grades'>('schedule_attendance');
+export const TeacherDashboard: React.FC = () => {
+  const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // 5 Primary Functional Tabs (covering all 14 features + overview)
+  const [activeTab, setActiveTab] = useState<TeacherTab>('overview');
+
+  // Synchronize activeTab with URL ?tab=...
+  useEffect(() => {
+    const tabParam = searchParams.get('tab') as TeacherTab | null;
+    if (tabParam && ['overview', 'schedule_attendance', 'assignments_grading', 'classes_students', 'academic_grades'].includes(tabParam)) {
+      setActiveTab(tabParam);
+    } else {
+      setActiveTab('overview');
+    }
+  }, [searchParams]);
+
+  const handleTabChange = (newTab: TeacherTab) => {
+    setActiveTab(newTab);
+    if (newTab === 'overview') {
+      setSearchParams({});
+    } else {
+      setSearchParams({ tab: newTab });
+    }
+  };
 
   // Loading & Toast State
   const [loading, setLoading] = useState<boolean>(true);
@@ -382,8 +403,11 @@ export const TeacherDashboard: React.FC = () => {
   const totalStudentsCount = students.length;
   const totalClassesCount = classes.length;
 
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Chào buổi sáng' : hour < 18 ? 'Chào buổi chiều' : 'Chào buổi tối';
+
   return (
-    <div className="dash-container" style={{ gap: '1.25rem', paddingBottom: '3rem' }}>
+    <div className="dash-container">
       {/* Toast Notification */}
       {toastMessage && (
         <div className="dmr-toast" role="status" style={{ zIndex: 9999 }}>
@@ -399,313 +423,382 @@ export const TeacherDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* ── 1. Header Banner Giảng Viên ── */}
-      <div
-        style={{
-          background: 'linear-gradient(135deg, #064e3b 0%, #065f46 50%, #047857 100%)',
-          borderRadius: '16px',
-          padding: '1.4rem 1.85rem',
-          color: '#ffffff',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          boxShadow: '0 8px 24px rgba(6, 78, 59, 0.18)',
-          border: '1px solid rgba(255, 255, 255, 0.15)',
-          flexWrap: 'wrap',
-          gap: '1rem',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <div
-            style={{
-              width: '52px',
-              height: '52px',
-              borderRadius: '14px',
-              background: 'rgba(255, 255, 255, 0.2)',
-              border: '1px solid rgba(255, 255, 255, 0.35)',
-              color: '#ffffff',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '1.4rem',
-              fontWeight: 800,
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-            }}
-          >
-            {user?.fullName ? user.fullName.charAt(0).toUpperCase() : 'T'}
+      {/* ── TỔNG QUAN: CHỈ HIỂN THỊ NỘI DUNG TỔNG QUAN ── */}
+      {activeTab === 'overview' && (
+        <>
+          {/* Welcome Banner */}
+          <div className="dash-banner" style={{ background: 'linear-gradient(135deg, #064e3b 0%, #065f46 50%, #047857 100%)' }}>
+            <div className="dash-banner-content">
+              <div className="dash-banner-badge">
+                Khoa Đào tạo • Quản lý giảng dạy
+              </div>
+              <h1>{greeting}, {user?.fullName || 'ThS. Nguyễn Hoàng Nam (Giảng viên)'}!</h1>
+              <p>Tổng quan lớp học phụ trách, tình hình nộp bài tập, điểm danh ca dạy và theo dõi kết quả học tập của học viên.</p>
+            </div>
+            <div className="dash-banner-right">
+              <div className="dash-date-pill">
+                <div>Trạng thái: Sẵn sàng</div>
+                <div className="sub">Kỳ tuyển sinh Đợt 4 • Năm 2026</div>
+              </div>
+            </div>
           </div>
-          <div>
-            <h1 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, lineHeight: 1.2, color: '#ffffff' }}>
-              Chào {user?.fullName || 'Thầy Alex Nguyễn'} 👋
-            </h1>
-            <p style={{ margin: '0.25rem 0 0', fontSize: '0.84rem', color: '#a7f3d0' }}>
-              Giảng viên IELTS Academic • Quản trị đào tạo &amp; Chấm thi học thuật
-            </p>
-          </div>
-        </div>
 
-        {/* Action button cluster */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+          {/* Quick Action Bar (Shortcuts) */}
+          <div className="dash-actions-row">
+            <button
+              type="button"
+              className="dash-quick-btn"
+              onClick={() => handleTabChange('classes_students')}
+            >
+              🏫 Quản lý lớp học ({totalClassesCount})
+            </button>
+            <button
+              type="button"
+              className="dash-quick-btn"
+              onClick={() => handleTabChange('schedule_attendance')}
+            >
+              🗓️ Lịch dạy &amp; Điểm danh
+            </button>
+            <button
+              type="button"
+              className="dash-quick-btn"
+              onClick={() => handleTabChange('assignments_grading')}
+            >
+              ✍️ Bài tập &amp; Chấm bài ({pendingAssignmentsCount})
+            </button>
+            <button
+              type="button"
+              className="dash-quick-btn"
+              onClick={() => handleTabChange('academic_grades')}
+            >
+              📊 Bảng điểm ({grades.length})
+            </button>
+            <button
+              type="button"
+              className="dash-quick-btn"
+              onClick={() => {
+                setIsScheduleRequestOpen(true);
+                setRequestTab('submit');
+              }}
+            >
+              🔄 Xin đổi lịch dạy
+            </button>
+          </div>
+
+          {/* Key Metrics Grid */}
+          <div className="dash-metrics-grid">
+            <div className="dash-metric-card" onClick={() => handleTabChange('classes_students')} style={{ cursor: 'pointer' }}>
+              <div className="dash-metric-info">
+                <span className="dash-metric-label">Lớp đang phụ trách</span>
+                <span className="dash-metric-val">{totalClassesCount} lớp</span>
+                <span className="dash-metric-trend up">Xem danh sách lớp ➔</span>
+              </div>
+              <div className="dash-metric-icon icon-blue">🏫</div>
+            </div>
+
+            <div className="dash-metric-card" onClick={() => handleTabChange('assignments_grading')} style={{ cursor: 'pointer' }}>
+              <div className="dash-metric-info">
+                <span className="dash-metric-label">Bài nộp chờ chấm</span>
+                <span className="dash-metric-val">{pendingAssignmentsCount} bài</span>
+                <span className="dash-metric-trend up">Writing &amp; Speaking ➔</span>
+              </div>
+              <div className="dash-metric-icon icon-amber">📋</div>
+            </div>
+
+            <div className="dash-metric-card" onClick={() => handleTabChange('classes_students')} style={{ cursor: 'pointer' }}>
+              <div className="dash-metric-info">
+                <span className="dash-metric-label">Tổng học viên quản lý</span>
+                <span className="dash-metric-val">{totalStudentsCount} học viên</span>
+                <span className="dash-metric-trend up">Theo dõi hồ sơ ➔</span>
+              </div>
+              <div className="dash-metric-icon icon-emerald">👩‍🎓</div>
+            </div>
+
+            <div className="dash-metric-card" onClick={() => handleTabChange('schedule_attendance')} style={{ cursor: 'pointer' }}>
+              <div className="dash-metric-info">
+                <span className="dash-metric-label">Ca dạy trong tuần</span>
+                <span className="dash-metric-val">{schedules.length} ca</span>
+                <span className="dash-metric-trend neutral">Điểm danh ca dạy ➔</span>
+              </div>
+              <div className="dash-metric-icon icon-purple">💳</div>
+            </div>
+          </div>
+
+          {/* Overview Two Column Grid */}
+          <div className="dash-two-col">
+            {/* Left Column: Overview Summary Cards */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', minWidth: 0 }}>
+              {/* Overview Widget 1: Assigned Classes Summary */}
+              <div className="dash-card">
+                <div className="dash-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h2 className="dash-card-title">
+                    <span>🏫</span> Lớp Học Đang Phụ Trách ({classes.length} Lớp)
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange('classes_students')}
+                    style={{ fontSize: '0.8rem', color: '#059669', background: 'none', border: 'none', fontWeight: 700, cursor: 'pointer' }}
+                  >
+                    Xem chi tiết danh sách lớp ➔
+                  </button>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.85rem', marginTop: '0.5rem' }}>
+                  {classes.map((cls) => (
+                    <div
+                      key={cls._id}
+                      onClick={() => handleTabChange('classes_students')}
+                      style={{
+                        padding: '1rem',
+                        borderRadius: '12px',
+                        backgroundColor: '#f8fafc',
+                        border: '1px solid #e2e8f0',
+                        borderLeft: '4px solid #059669',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f1f5f9')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#f8fafc')}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontWeight: 800, color: '#047857', fontSize: '0.95rem' }}>{cls.classCode}</span>
+                        <span style={{ backgroundColor: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', padding: '2px 7px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 700 }}>
+                          {cls.status}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f172a', marginTop: '0.3rem' }}>{cls.name}</div>
+                      <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '0.35rem', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        <div>📍 Phòng: <strong style={{ color: '#0f172a' }}>{cls.room}</strong></div>
+                        <div>⏰ {cls.scheduleDays.join(' - ')} ({cls.timeSlot})</div>
+                        <div>👥 Sĩ số: <strong style={{ color: '#0f172a' }}>{cls.currentEnrollment} / {cls.capacity}</strong> học viên</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Overview Widget 2: Pending Assignments & Grading */}
+              <div className="dash-card">
+                <div className="dash-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h2 className="dash-card-title">
+                    <span>✍️</span> Bài Tập Cần Chấm &amp; Đang Mở
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange('assignments_grading')}
+                    style={{ fontSize: '0.8rem', color: '#059669', background: 'none', border: 'none', fontWeight: 700, cursor: 'pointer' }}
+                  >
+                    Xem tất cả bài tập ➔
+                  </button>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem' }}>
+                  {assignments.slice(0, 3).map((ass) => (
+                    <div
+                      key={ass._id}
+                      style={{
+                        padding: '0.85rem 1rem',
+                        borderRadius: '10px',
+                        backgroundColor: '#ffffff',
+                        border: '1px solid #e2e8f0',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        gap: '1rem',
+                      }}
+                    >
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ backgroundColor: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', padding: '1px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700 }}>
+                            {ass.skill}
+                          </span>
+                          <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                            Hạn: {new Date(ass.dueDate).toLocaleDateString('vi-VN')}
+                          </span>
+                        </div>
+                        <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0f172a', marginTop: '0.2rem' }}>
+                          {ass.title}
+                        </div>
+                        <div style={{ fontSize: '0.76rem', color: '#64748b' }}>
+                          Lớp {ass.class?.classCode} • Đã nộp: <strong style={{ color: '#059669' }}>{ass.stats?.submittedCount || 0}</strong> bài
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenGradingList(ass)}
+                        style={{
+                          backgroundColor: '#059669',
+                          color: '#ffffff',
+                          border: 'none',
+                          padding: '0.45rem 0.85rem',
+                          borderRadius: '8px',
+                          fontSize: '0.78rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        📝 Chấm ({ass.stats?.pendingCount || 0} chờ)
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Overview Widget 3: Academic Results Summary */}
+              <div className="dash-card">
+                <div className="dash-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h2 className="dash-card-title">
+                    <span>📊</span> Kết Quả Học Tập Gần Đây
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange('academic_grades')}
+                    style={{ fontSize: '0.8rem', color: '#059669', background: 'none', border: 'none', fontWeight: 700, cursor: 'pointer' }}
+                  >
+                    Xem bảng điểm đầy đủ ➔
+                  </button>
+                </div>
+                <div style={{ overflowX: 'auto', marginTop: '0.5rem' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: '#f8fafc', textAlign: 'left', color: '#475569' }}>
+                        <th style={{ padding: '8px 10px' }}>Học Viên</th>
+                        <th style={{ padding: '8px 10px' }}>Bài Đánh Giá</th>
+                        <th style={{ padding: '8px 10px' }}>Overall Band</th>
+                        <th style={{ padding: '8px 10px' }}>L / R / W / S</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {grades.slice(0, 4).map((g) => (
+                        <tr key={g._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                          <td style={{ padding: '8px 10px', fontWeight: 700, color: '#0f172a' }}>{g.student?.fullName}</td>
+                          <td style={{ padding: '8px 10px', color: '#475569' }}>{g.title}</td>
+                          <td style={{ padding: '8px 10px' }}>
+                            <span style={{ backgroundColor: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '6px', fontWeight: 800 }}>
+                              Band {g.overallBand.toFixed(1)}
+                            </span>
+                          </td>
+                          <td style={{ padding: '8px 10px', color: '#64748b' }}>
+                            {g.listening ?? '—'} / {g.reading ?? '—'} / {g.writing ?? '—'} / {g.speaking ?? '—'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column: Sidebar Widgets */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              {/* Lịch Phòng Máy / Ca Dạy Hôm Nay */}
+              <div className="dash-card">
+                <div className="dash-card-header">
+                  <h2 className="dash-card-title">
+                    <span>🏢</span> Lịch Phòng Máy Hôm Nay
+                  </h2>
+                </div>
+                <div className="dash-item-list">
+                  {schedules.length > 0 ? (
+                    schedules.slice(0, 3).map((s, idx) => (
+                      <div key={s._id || idx} className="dash-item">
+                        <div className="dash-item-main">
+                          <div className="dash-item-icon">🖥️</div>
+                          <div>
+                            <div className="dash-item-title">{s.classroom || s.class?.room || 'Phòng Lab 302'}</div>
+                            <div className="dash-item-sub">
+                              {s.startTime && s.endTime ? `${s.startTime} - ${s.endTime}` : s.class?.timeSlot || '18:30 - 21:00'} • Lớp {s.class?.classCode || 'WEB-K24-A'}
+                            </div>
+                          </div>
+                        </div>
+                        <span className="badge-pill badge-green">Đang dùng</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="dash-item">
+                      <div className="dash-item-main">
+                        <div className="dash-item-icon">🖥️</div>
+                        <div>
+                          <div className="dash-item-title">Phòng Lab 302</div>
+                          <div className="dash-item-sub">18:30 - 21:00 • Lớp WEB-K24-A</div>
+                        </div>
+                      </div>
+                      <span className="badge-pill badge-green">Đang dùng</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Tác Vụ Cần Xử Lý */}
+              <div className="dash-card">
+                <div className="dash-card-header">
+                  <h2 className="dash-card-title">
+                    <span>⚡</span> Tác Vụ Cần Xử Lý
+                  </h2>
+                </div>
+                <div className="dash-item-list">
+                  <div className="dash-item" onClick={() => handleTabChange('assignments_grading')} style={{ cursor: 'pointer' }}>
+                    <div className="dash-item-main">
+                      <div className="dash-item-icon">✍️</div>
+                      <div>
+                        <div className="dash-item-title">{pendingAssignmentsCount} bài nộp chờ chấm</div>
+                        <div className="dash-item-sub">Cần kiểm tra bài nộp</div>
+                      </div>
+                    </div>
+                    <span className="badge-pill badge-amber">Cần chấm</span>
+                  </div>
+                  <div className="dash-item" onClick={() => handleTabChange('schedule_attendance')} style={{ cursor: 'pointer' }}>
+                    <div className="dash-item-main">
+                      <div className="dash-item-icon">📝</div>
+                      <div>
+                        <div className="dash-item-title">Điểm danh ca dạy</div>
+                        <div className="dash-item-sub">Hôm nay ({attendanceDate})</div>
+                      </div>
+                    </div>
+                    <span className="badge-pill badge-blue">Điểm danh</span>
+                  </div>
+                  <div className="dash-item" onClick={() => { setIsScheduleRequestOpen(true); setRequestTab('history'); }} style={{ cursor: 'pointer' }}>
+                    <div className="dash-item-main">
+                      <div className="dash-item-icon">🔄</div>
+                      <div>
+                        <div className="dash-item-title">{scheduleRequests.length} đơn đổi lịch dạy</div>
+                        <div className="dash-item-sub">Theo dõi trạng thái duyệt</div>
+                      </div>
+                    </div>
+                    <span className="badge-pill badge-purple">Theo dõi</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── CÁC PHẦN CHUYÊN BIỆT: CHỈ HIỂN THỊ NỘI DUNG CỦA PHẦN ĐÓ ── */}
+      {activeTab !== 'overview' && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
           <button
             type="button"
-            onClick={() => {
-              setIsScheduleRequestOpen(true);
-              setRequestTab('submit');
-            }}
+            onClick={() => handleTabChange('overview')}
             style={{
-              background: 'rgba(255, 255, 255, 0.18)',
-              border: '1px solid rgba(255, 255, 255, 0.35)',
-              color: '#ffffff',
-              borderRadius: '10px',
-              padding: '0.55rem 0.95rem',
-              fontSize: '0.82rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              display: 'flex',
+              display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
-              transition: 'all 0.15s ease',
-            }}
-            title="Gửi đơn xin đổi ca dạy hoặc xem kết quả phê duyệt"
-          >
-            <span>🔄</span>
-            <span>Xin đổi lịch dạy ({scheduleRequests.length})</span>
-          </button>
-
-          <button
-            type="button"
-            id="teacher-dashboard-logout-btn"
-            onClick={() => {
-              logout();
-              navigate('/login', { replace: true });
-            }}
-            style={{
-              backgroundColor: 'rgba(239, 68, 68, 0.25)',
-              color: '#fee2e2',
-              border: '1px solid rgba(239, 68, 68, 0.5)',
-              padding: '0.55rem 0.95rem',
-              borderRadius: '10px',
+              padding: '7px 16px',
+              borderRadius: '8px',
+              border: '1px solid #d7e3d9',
+              background: '#ffffff',
+              color: '#26743d',
               fontSize: '0.82rem',
               fontWeight: 700,
               cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              transition: 'all 0.15s ease',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#ef4444';
-              e.currentTarget.style.color = '#ffffff';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.25)';
-              e.currentTarget.style.color = '#fee2e2';
-            }}
-            title="Đăng xuất khỏi tài khoản Giảng viên"
           >
-            <span>🚪</span>
-            <span>Đăng xuất</span>
+            <span>⬅</span>
+            <span>Quay lại Bảng điều khiển Tổng quan</span>
           </button>
         </div>
-      </div>
-
-      {/* ── 2. Thẻ Thống Kê Tổng Quan ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
-        <div
-          className="dash-card"
-          style={{
-            padding: '1.15rem 1.35rem',
-            borderRadius: '14px',
-            backgroundColor: '#ffffff',
-            border: '1px solid #e2e8f0',
-            borderLeft: '4px solid #059669',
-            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.04)',
-            cursor: 'pointer',
-          }}
-          onClick={() => setActiveTab('classes_students')}
-        >
-          <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            Lớp Đang Phụ Trách
-          </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a', marginTop: '0.2rem', lineHeight: 1.2 }}>
-            {totalClassesCount} Lớp
-          </div>
-          <div style={{ fontSize: '0.78rem', color: '#059669', fontWeight: 600, marginTop: '0.35rem' }}>
-            🏫 Xem danh sách lớp học
-          </div>
-        </div>
-
-        <div
-          className="dash-card"
-          style={{
-            padding: '1.15rem 1.35rem',
-            borderRadius: '14px',
-            backgroundColor: '#ffffff',
-            border: '1px solid #e2e8f0',
-            borderLeft: '4px solid #2563eb',
-            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.04)',
-            cursor: 'pointer',
-          }}
-          onClick={() => setActiveTab('classes_students')}
-        >
-          <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            Tổng Số Học Viên
-          </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a', marginTop: '0.2rem', lineHeight: 1.2 }}>
-            {totalStudentsCount} Học viên
-          </div>
-          <div style={{ fontSize: '0.78rem', color: '#2563eb', fontWeight: 600, marginTop: '0.35rem' }}>
-            👥 Theo dõi hồ sơ &amp; chuyên cần
-          </div>
-        </div>
-
-        <div
-          className="dash-card"
-          style={{
-            padding: '1.15rem 1.35rem',
-            borderRadius: '14px',
-            backgroundColor: '#ffffff',
-            border: '1px solid #e2e8f0',
-            borderLeft: '4px solid #ea580c',
-            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.04)',
-            cursor: 'pointer',
-          }}
-          onClick={() => setActiveTab('assignments_grading')}
-        >
-          <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            Bài Nộp Chờ Chấm
-          </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#ea580c', marginTop: '0.2rem', lineHeight: 1.2 }}>
-            {pendingAssignmentsCount} Bài
-          </div>
-          <div style={{ fontSize: '0.78rem', color: '#ea580c', fontWeight: 600, marginTop: '0.35rem' }}>
-            ✍️ Writing &amp; Speaking Mock
-          </div>
-        </div>
-
-        <div
-          className="dash-card"
-          style={{
-            padding: '1.15rem 1.35rem',
-            borderRadius: '14px',
-            backgroundColor: '#ffffff',
-            border: '1px solid #e2e8f0',
-            borderLeft: '4px solid #7c3aed',
-            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.04)',
-            cursor: 'pointer',
-          }}
-          onClick={() => setActiveTab('academic_grades')}
-        >
-          <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            Kết Quả Học Tập
-          </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#7c3aed', marginTop: '0.2rem', lineHeight: 1.2 }}>
-            {grades.length} Bài thi
-          </div>
-          <div style={{ fontSize: '0.78rem', color: '#7c3aed', fontWeight: 600, marginTop: '0.35rem' }}>
-            📊 Quản lý điểm &amp; Nhập điểm
-          </div>
-        </div>
-      </div>
-
-      {/* ── 3. Tab Bar Điều Hướng 4 Nhóm Tính Năng Trọng Tâm ── */}
-      <div
-        style={{
-          display: 'flex',
-          gap: '0.4rem',
-          backgroundColor: '#f1f5f9',
-          padding: '0.35rem',
-          borderRadius: '12px',
-          border: '1px solid #e2e8f0',
-          overflowX: 'auto',
-        }}
-      >
-        <button
-          type="button"
-          onClick={() => setActiveTab('schedule_attendance')}
-          style={{
-            flex: 1,
-            padding: '0.65rem 1rem',
-            borderRadius: '8px',
-            border: activeTab === 'schedule_attendance' ? '1px solid #cbd5e1' : '1px solid transparent',
-            fontSize: '0.85rem',
-            fontWeight: activeTab === 'schedule_attendance' ? 800 : 600,
-            cursor: 'pointer',
-            transition: 'all 0.15s ease',
-            whiteSpace: 'nowrap',
-            backgroundColor: activeTab === 'schedule_attendance' ? '#ffffff' : 'transparent',
-            color: activeTab === 'schedule_attendance' ? '#064e3b' : '#475569',
-            boxShadow: activeTab === 'schedule_attendance' ? '0 2px 4px rgba(0, 0, 0, 0.05)' : 'none',
-          }}
-        >
-          📅 Lịch Dạy &amp; Điểm Danh
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('assignments_grading')}
-          style={{
-            flex: 1,
-            padding: '0.65rem 1rem',
-            borderRadius: '8px',
-            border: activeTab === 'assignments_grading' ? '1px solid #cbd5e1' : '1px solid transparent',
-            fontSize: '0.85rem',
-            fontWeight: activeTab === 'assignments_grading' ? 800 : 600,
-            cursor: 'pointer',
-            transition: 'all 0.15s ease',
-            whiteSpace: 'nowrap',
-            backgroundColor: activeTab === 'assignments_grading' ? '#ffffff' : 'transparent',
-            color: activeTab === 'assignments_grading' ? '#064e3b' : '#475569',
-            boxShadow: activeTab === 'assignments_grading' ? '0 2px 4px rgba(0, 0, 0, 0.05)' : 'none',
-          }}
-        >
-          ✍️ Quản Lý Bài Tập &amp; Chấm Bài {pendingAssignmentsCount > 0 && <span style={{ backgroundColor: '#ea580c', color: '#FFF', padding: '1px 7px', borderRadius: '10px', fontSize: '0.72rem', marginLeft: '6px', fontWeight: 800 }}>{pendingAssignmentsCount}</span>}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('classes_students')}
-          style={{
-            flex: 1,
-            padding: '0.65rem 1rem',
-            borderRadius: '8px',
-            border: activeTab === 'classes_students' ? '1px solid #cbd5e1' : '1px solid transparent',
-            fontSize: '0.85rem',
-            fontWeight: activeTab === 'classes_students' ? 800 : 600,
-            cursor: 'pointer',
-            transition: 'all 0.15s ease',
-            whiteSpace: 'nowrap',
-            backgroundColor: activeTab === 'classes_students' ? '#ffffff' : 'transparent',
-            color: activeTab === 'classes_students' ? '#064e3b' : '#475569',
-            boxShadow: activeTab === 'classes_students' ? '0 2px 4px rgba(0, 0, 0, 0.05)' : 'none',
-          }}
-        >
-          🎓 Lớp Học &amp; Học Viên ({totalClassesCount} Lớp)
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('academic_grades')}
-          style={{
-            flex: 1,
-            padding: '0.65rem 1rem',
-            borderRadius: '8px',
-            border: activeTab === 'academic_grades' ? '1px solid #cbd5e1' : '1px solid transparent',
-            fontSize: '0.85rem',
-            fontWeight: activeTab === 'academic_grades' ? 800 : 600,
-            cursor: 'pointer',
-            transition: 'all 0.15s ease',
-            whiteSpace: 'nowrap',
-            backgroundColor: activeTab === 'academic_grades' ? '#ffffff' : 'transparent',
-            color: activeTab === 'academic_grades' ? '#064e3b' : '#475569',
-            boxShadow: activeTab === 'academic_grades' ? '0 2px 4px rgba(0, 0, 0, 0.05)' : 'none',
-          }}
-        >
-          📊 Bảng Điểm &amp; Kết Quả Học Tập
-        </button>
-      </div>
-
-      {/* ── 4. NỘI DUNG TỪNG TAB ── */}
+      )}
 
       {/* TAB 1: LỊCH DẠY & ĐIỂM DANH */}
       {activeTab === 'schedule_attendance' && (

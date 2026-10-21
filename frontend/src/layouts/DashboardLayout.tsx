@@ -42,15 +42,49 @@ const getMenuItems = (role: UserRole): DashboardItem[] => {
     ];
   }
 
-  const roleTasks: Record<Exclude<UserRole, 'TRAINING_STAFF'>, string[]> = {
-    STUDENT: ['Khóa học của tôi', 'Lịch học', 'Kết quả học tập', 'Thông báo'],
-    TEACHER: ['Lớp đang dạy', 'Lịch giảng dạy', 'Bài tập', 'Báo cáo'],
-    DIRECTOR: ['Học viên', 'Nhân sự', 'Báo cáo', 'Cài đặt'],
-  };
+  if (role === 'TEACHER') {
+    return [
+      { label: 'Tổng quan', path: '/teacher/dashboard' },
+      { label: 'Quản lý lớp học', path: '/teacher/dashboard?tab=classes_students' },
+      { label: 'Lịch dạy & Điểm danh', path: '/teacher/dashboard?tab=schedule_attendance' },
+      { label: 'Bài tập & Chấm bài', path: '/teacher/dashboard?tab=assignments_grading' },
+      { label: 'Kết quả học tập', path: '/teacher/dashboard?tab=academic_grades' },
+      { label: 'Báo cáo' },
+      { label: 'Cài đặt' },
+    ];
+  }
+
+  if (role === 'STUDENT') {
+    return [
+      { label: 'Tổng quan', path: '/student/dashboard' },
+      { label: 'Khóa học của tôi', path: '/student/dashboard?tab=courses' },
+      { label: 'Lịch học', path: '/student/dashboard?tab=schedule' },
+      { label: 'Bài tập về nhà', path: '/student/dashboard?tab=assignments' },
+      { label: 'Kết quả học tập', path: '/student/dashboard?tab=grades' },
+      { label: 'Thông báo' },
+      { label: 'Cài đặt' },
+    ];
+  }
+
+  if (role === 'DIRECTOR') {
+    return [
+      { label: 'Tổng quan', path: '/director/dashboard' },
+      { label: 'Quản lý nhân sự', path: '/director/dashboard?tab=staff_accounts' },
+      { label: 'Giám sát vận hành', path: '/director/dashboard?tab=monitoring' },
+      { label: 'Báo cáo học viên', path: '/director/dashboard?tab=student_reports' },
+      { label: 'Báo cáo giảng viên', path: '/director/dashboard?tab=teacher_reports' },
+      { label: 'Báo cáo lớp & khóa học', path: '/director/dashboard?tab=class_course_reports' },
+      { label: 'Báo cáo tài chính & doanh thu', path: '/director/dashboard?tab=revenue_reports' },
+      { label: 'Cài đặt' },
+    ];
+  }
 
   return [
     { label: 'Tổng quan', path: dashboardPaths[role] },
-    ...roleTasks[role].map((label) => ({ label })),
+    { label: 'Học viên' },
+    { label: 'Nhân sự' },
+    { label: 'Báo cáo' },
+    { label: 'Cài đặt' },
   ];
 };
 
@@ -68,6 +102,14 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     navigate('/login', { replace: true });
   };
 
+  const currentItem = items.find((item) => {
+    if (!item.path) return false;
+    const currentFull = location.pathname + (location.search || '');
+    if (item.path.includes('?')) return currentFull === item.path;
+    return location.pathname === item.path && (!location.search || location.search === '');
+  });
+  const pageTitle = currentItem?.label || 'Bảng điều khiển';
+
   return (
     <div className="dashboard-shell">
       <aside className="dashboard-sidebar">
@@ -79,16 +121,18 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         <div className="dashboard-nav-label">KHÔNG GIAN LÀM VIỆC</div>
         <nav className="dashboard-nav" aria-label="Điều hướng tác vụ">
           {items.map((item) => {
-            const isCurrent = item.path === location.pathname;
+            const currentFull = location.pathname + (location.search || '');
+            const isCurrent = item.path
+              ? item.path.includes('?')
+                ? currentFull === item.path
+                : location.pathname === item.path && (!location.search || location.search === '')
+              : false;
 
             return item.path ? (
               <NavLink
                 key={item.label}
                 to={item.path}
-                end
-                className={({ isActive }) =>
-                  `dashboard-nav-item${isActive ? ' is-active' : ''}`
-                }
+                className={`dashboard-nav-item${isCurrent ? ' is-active' : ''}`}
                 aria-current={isCurrent ? 'page' : undefined}
               >
                 {item.label}
@@ -136,7 +180,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         <header className="dashboard-topbar">
           <div>
             <span className="dashboard-topbar-eyebrow">EDUCENTER</span>
-            <h1>Bảng điều khiển</h1>
+            <h1>{pageTitle === 'Tổng quan' ? 'Bảng điều khiển' : pageTitle}</h1>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <span className="dashboard-topbar-role">{roleLabels[role]}</span>

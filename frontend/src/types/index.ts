@@ -17,6 +17,7 @@ export interface User {
   dob?: string;
   role: UserRole;
   status: UserStatus;
+  isVerified?: boolean;
   avatarUrl?: string;
   createdAt: string;
   updatedAt: string;
@@ -95,7 +96,18 @@ export interface AuthResponse {
   };
 }
 
-// ─── Center Information types (UC01) ──────────────────────────
+export interface RegisterResult {
+  email: string;
+  verificationRequired: boolean;
+}
+
+export interface RegisterResponse {
+  success: boolean;
+  message: string;
+  data: RegisterResult;
+}
+
+// Center Information types (UC01)
 export interface Branch {
   _id?: string;
   branchName: string;
@@ -253,6 +265,7 @@ export interface AnnouncementQueryParams {
 export interface ApiResponse<T = unknown> {
   success: boolean;
   message: string;
+  code?: string;
   data?: T;
   errors?: unknown;
 }

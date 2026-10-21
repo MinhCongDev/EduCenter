@@ -14,6 +14,7 @@ import { teacherRouter } from './routes/teacher.routes';
 // Student module (datlt)
 import { studentRouter } from './routes/student.routes';
 import { publicRouter } from './routes/public.routes';
+import { directorRouter } from './routes/director.routes';
 import { errorHandler } from './middlewares/error.middleware';
 import { notFound } from './middlewares/notFound.middleware';
 
@@ -97,6 +98,7 @@ app.use('/api/teacher', teacherRouter);
 // Student module (datlt)
 app.use('/api/public', publicRouter);
 app.use('/api/student', studentRouter);
+app.use('/api/director', directorRouter);
 
 // ===========================
 // 404 Handler

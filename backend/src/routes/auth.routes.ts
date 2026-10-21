@@ -7,7 +7,10 @@ import {
   changePassword,
   forgotPassword,
   resetPassword,
-  uploadAvatar,
+uploadAvatar,
+  verifyEmail,
+  resendVerificationEmail,
+  googleLogin,
 } from '../controllers/auth.controller';
 import { authenticate } from '../middlewares/auth.middleware';
 import { uploadAvatar as uploadAvatarMiddleware, handleUploadError } from '../middlewares/upload.middleware';
@@ -19,6 +22,13 @@ router.post('/register', register);
 
 // UC09: Log In
 router.post('/login', login);
+
+// Sign in / sign up with Google
+router.post('/google', googleLogin);
+
+// Email verification (registration)
+router.get('/verify-email', verifyEmail);
+router.post('/resend-email-verify', resendVerificationEmail);
 
 // Get authenticated user
 router.get('/me', authenticate, getMe);

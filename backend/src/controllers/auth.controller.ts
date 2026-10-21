@@ -3,12 +3,26 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
-import { User } from '../models/user.model';
+import { OAuth2Client, TokenPayload } from 'google-auth-library';
+import { User, IUser } from '../models/user.model';
 import { Student } from '../models/student.model';
 import { Enrollment } from '../models/enrollment.model';
 import { config } from '../config';
 import { AuthRequest } from '../middlewares/auth.middleware';
 import { buildAvatarUrl } from '../middlewares/upload.middleware';
+import { sendPasswordResetEmail, sendVerificationEmail } from '../services/email.service';
+import {
+  PASSWORD_POLICY_MESSAGE,
+  isValidEmail,
+  isValidPassword,
+} from '../utils/validation';
+import {
+  VERIFICATION_TOKEN_TTL_MS,
+  canSendVerificationEmail,
+  generateVerificationToken,
+  hashVerificationToken,
+  recordVerificationEmailSent,
+} from '../utils/emailVerification';
 
 const generateToken = (userId: string, role: string): string => {
   return jwt.sign({ id: userId, role }, config.jwt.secret, {
@@ -16,15 +30,40 @@ const generateToken = (userId: string, role: string): string => {
   });
 };
 
+let googleClient: OAuth2Client | null = null;
+
+const getGoogleClient = (): OAuth2Client => {
+  if (!googleClient) {
+    googleClient = new OAuth2Client(config.google.clientId);
+  }
+  return googleClient;
+};
+
+const toUserResponse = (user: IUser) => ({
+  _id: user._id,
+  email: user.email,
+  fullName: user.fullName,
+  phone: user.phone,
+  address: user.address,
+  dob: user.dob,
+  role: user.role,
+  status: user.status,
+  isVerified: user.isVerified,
+  avatarUrl: user.avatarUrl,
+  createdAt: user.createdAt,
+  updatedAt: user.updatedAt,
+});
+
 /**
  * UC08: Register Account
  * POST /api/auth/register
  */
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email, password, fullName, phone, address, dob } = req.body;
+    const { email, password, fullName, phone, address, dob } = req.body || {};
+    const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
 
-    if (!email || !password || !fullName) {
+    if (!normalizedEmail || !password || !fullName || !String(fullName).trim()) {
       res.status(400).json({
         success: false,
         message: 'Vui lòng cung cấp đầy đủ email, mật khẩu và họ tên',
@@ -32,16 +71,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    if (password.length < 6) {
-      res.status(400).json({
-        success: false,
-        message: 'Mật khẩu phải có độ dài tối thiểu 6 ký tự',
-      });
-      return;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!isValidEmail(normalizedEmail)) {
       res.status(400).json({
         success: false,
         message: 'Địa chỉ email không đúng định dạng',
@@ -49,7 +79,30 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (!isValidPassword(password)) {
+      res.status(400).json({
+        success: false,
+        message: PASSWORD_POLICY_MESSAGE,
+      });
+      return;
+    }
+
+    const rateLimit = canSendVerificationEmail(normalizedEmail);
+    if (!rateLimit.allowed) {
+      const retryAfter = rateLimit.retryAfterSeconds ?? 0;
+      res.setHeader('Retry-After', String(retryAfter));
+      res.status(429).json({
+        success: false,
+        code: 'VALIDATION_RATE_LIMIT_EXCEEDED',
+        message: `Bạn đã yêu cầu gửi email xác thực quá nhiều lần. Vui lòng thử lại sau ${Math.max(
+          1,
+          Math.ceil(retryAfter / 60)
+        )} phút.`,
+      });
+      return;
+    }
+
+    const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
       res.status(400).json({
         success: false,
@@ -58,15 +111,20 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    const verificationToken = generateVerificationToken();
+
     const user = await User.create({
-      email: email.toLowerCase(),
+      email: normalizedEmail,
       password,
-      fullName: fullName.trim(),
-      phone: phone?.trim() || '',
-      address: address?.trim() || '',
+      fullName: String(fullName).trim(),
+      phone: typeof phone === 'string' ? phone.trim() : '',
+      address: typeof address === 'string' ? address.trim() : '',
       dob: dob ? new Date(dob) : undefined,
       role: 'STUDENT',
       status: 'ACTIVE',
+      isVerified: false,
+      emailVerificationToken: hashVerificationToken(verificationToken),
+      emailVerificationExpires: new Date(Date.now() + VERIFICATION_TOKEN_TTL_MS),
     });
 
     // Create student profile record automatically
@@ -82,31 +140,31 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       // Non-fatal if student profile creation fails
     }
 
-    const token = generateToken(user._id.toString(), user.role);
-
-    const userResponse = {
-      _id: user._id,
-      email: user.email,
+    await sendVerificationEmail({
+      to: user.email,
       fullName: user.fullName,
-      phone: user.phone,
-      address: user.address,
-      dob: user.dob,
-      role: user.role,
-      status: user.status,
-      avatarUrl: user.avatarUrl,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    };
+      token: verificationToken,
+    });
+    recordVerificationEmailSent(normalizedEmail);
 
     res.status(201).json({
       success: true,
-      message: 'Đăng ký tài khoản thành công',
+      message:
+        'Đăng ký tài khoản thành công! Vui lòng kiểm tra email để xác thực tài khoản trước khi đăng nhập.',
       data: {
-        user: userResponse,
-        token,
+        email: user.email,
+        verificationRequired: true,
       },
     });
   } catch (error: any) {
+    if (error?.code === 11000) {
+      res.status(400).json({
+        success: false,
+        message: 'Email này đã được đăng ký trong hệ thống',
+      });
+      return;
+    }
+
     res.status(500).json({
       success: false,
       message: error.message || 'Lỗi server khi đăng ký',
@@ -121,8 +179,9 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 export const login = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password } = req.body;
+    const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
 
-    if (!email || !password) {
+    if (!normalizedEmail || !password) {
       res.status(400).json({
         success: false,
         message: 'Vui lòng nhập email và mật khẩu',
@@ -130,8 +189,15 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const cleanEmail = email ? email.toString().trim().toLowerCase() : '';
-    const user = await User.findOne({ email: cleanEmail }).select('+password');
+    if (!isValidEmail(normalizedEmail)) {
+      res.status(400).json({
+        success: false,
+        message: 'Địa chỉ email không đúng định dạng',
+      });
+      return;
+    }
+
+    const user = await User.findOne({ email: normalizedEmail }).select('+password');
     if (!user) {
       res.status(401).json({
         success: false,
@@ -157,9 +223,21 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    // Checked only after the password is verified to avoid disclosing
+    // verification status to unauthenticated attackers.
+    if (!user.isVerified) {
+      res.status(403).json({
+        success: false,
+        code: 'AUTH_ACCOUNT_NOT_VERIFIED',
+        message:
+          'Tài khoản chưa được xác thực email. Vui lòng kiểm tra hộp thư hoặc gửi lại email xác thực.',
+      });
+      return;
+    }
+
     const token = generateToken(user._id.toString(), user.role);
 
-    // Get current enrolled class for students
+// Get current enrolled class for students
     let currentClass = null;
     if (user.role === 'STUDENT') {
       const enrollment = await Enrollment.findOne({
@@ -175,17 +253,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     }
 
     const userResponse = {
-      _id: user._id,
-      email: user.email,
-      fullName: user.fullName,
-      phone: user.phone,
-      address: user.address,
-      dob: user.dob,
-      role: user.role,
-      status: user.status,
-      avatarUrl: user.avatarUrl,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
+      ...toUserResponse(user),
       currentClass,
     };
 
@@ -201,6 +269,283 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     res.status(500).json({
       success: false,
       message: error.message || 'Lỗi server khi đăng nhập',
+    });
+  }
+};
+
+/**
+ * Log in or sign up with a Google ID token.
+ * POST /api/auth/google
+ */
+export const googleLogin = async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!config.isGoogleConfigured) {
+      res.status(503).json({
+        success: false,
+        message: 'Đăng nhập Google chưa được cấu hình trên server (thiếu GOOGLE_CLIENT_ID).',
+      });
+      return;
+    }
+
+    const { idToken } = req.body || {};
+    if (!idToken || typeof idToken !== 'string') {
+      res.status(400).json({
+        success: false,
+        message: 'Thiếu Google ID token',
+      });
+      return;
+    }
+
+    let payload: TokenPayload | undefined;
+    try {
+      const ticket = await getGoogleClient().verifyIdToken({
+        idToken,
+        audience: config.google.clientId,
+      });
+      payload = ticket.getPayload();
+    } catch {
+      res.status(401).json({
+        success: false,
+        message: 'Token Google không hợp lệ hoặc đã hết hạn',
+      });
+      return;
+    }
+
+    if (!payload?.email || !payload.email_verified) {
+      res.status(401).json({
+        success: false,
+        message: 'Không thể xác thực email từ tài khoản Google',
+      });
+      return;
+    }
+
+    const email = payload.email.trim().toLowerCase();
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      // Google users have no local password. Generate a random one so the
+      // required field is satisfied and password login is impossible until reset.
+      const randomPassword = crypto.randomBytes(32).toString('hex');
+
+      try {
+        user = await User.create({
+          email,
+          password: randomPassword,
+          fullName: payload.name?.trim() || email.split('@')[0],
+          avatarUrl: payload.picture || '',
+          role: 'STUDENT',
+          status: 'ACTIVE',
+          isVerified: true,
+        });
+      } catch (error: any) {
+        if (error?.code === 11000) {
+          // Created concurrently by another request – reuse it.
+          user = await User.findOne({ email });
+        } else {
+          throw error;
+        }
+      }
+
+      if (user) {
+        try {
+          const studentCode = `STU${Date.now().toString().slice(-6)}`;
+          await Student.create({
+            user: user._id,
+            studentCode,
+            status: 'ACTIVE',
+          });
+        } catch {
+          // Non-fatal if student profile creation fails
+        }
+      }
+    } else {
+      if (user.status !== 'ACTIVE') {
+        res.status(403).json({
+          success: false,
+          message: 'Tài khoản của bạn đã bị khóa hoặc ngừng hoạt động',
+        });
+        return;
+      }
+
+      let changed = false;
+      if (!user.isVerified) {
+        user.isVerified = true;
+        changed = true;
+        await User.updateOne(
+          { _id: user._id },
+          { $unset: { emailVerificationToken: 1, emailVerificationExpires: 1 } }
+        );
+      }
+      if (!user.avatarUrl && payload.picture) {
+        user.avatarUrl = payload.picture;
+        changed = true;
+      }
+      if (changed) {
+        await user.save();
+      }
+    }
+
+    if (!user) {
+      res.status(500).json({
+        success: false,
+        message: 'Không thể tạo tài khoản từ Google',
+      });
+      return;
+    }
+
+    const token = generateToken(user._id.toString(), user.role);
+
+    res.status(200).json({
+      success: true,
+      message: 'Đăng nhập bằng Google thành công',
+      data: {
+        user: toUserResponse(user),
+        token,
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Lỗi server khi đăng nhập bằng Google',
+    });
+  }
+};
+
+/**
+ * Verify the email address using the token from the registration email.
+ * GET /api/auth/verify-email?token=...
+ */
+export const verifyEmail = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { token } = req.query;
+
+    if (typeof token !== 'string' || !token.trim()) {
+      res.status(400).json({
+        success: false,
+        code: 'VALIDATION_INVALID_TOKEN',
+        message: 'Liên kết xác thực không hợp lệ hoặc đã hết hạn',
+      });
+      return;
+    }
+
+    const hashedToken = hashVerificationToken(token.trim());
+
+    // Atomic + single-use: the same link cannot verify twice.
+    const user = await User.findOneAndUpdate(
+      {
+        emailVerificationToken: hashedToken,
+        emailVerificationExpires: { $gt: new Date() },
+      },
+      {
+        $set: { isVerified: true },
+        $unset: { emailVerificationToken: 1, emailVerificationExpires: 1 },
+      },
+      { new: true }
+    );
+
+    if (!user) {
+      res.status(400).json({
+        success: false,
+        code: 'VALIDATION_INVALID_TOKEN',
+        message:
+          'Liên kết xác thực không hợp lệ hoặc đã hết hạn. Vui lòng yêu cầu gửi lại email xác thực.',
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Xác thực email thành công! Bạn có thể đăng nhập ngay bây giờ.',
+      data: { email: user.email },
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Lỗi server khi xác thực email',
+    });
+  }
+};
+
+/**
+ * Resend the registration verification email.
+ * POST /api/auth/resend-email-verify
+ */
+export const resendVerificationEmail = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email } = req.body || {};
+    const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+
+    if (!normalizedEmail) {
+      res.status(400).json({
+        success: false,
+        message: 'Vui lòng nhập địa chỉ email',
+      });
+      return;
+    }
+
+    if (!isValidEmail(normalizedEmail)) {
+      res.status(400).json({
+        success: false,
+        message: 'Địa chỉ email không đúng định dạng',
+      });
+      return;
+    }
+
+    const rateLimit = canSendVerificationEmail(normalizedEmail);
+    if (!rateLimit.allowed) {
+      const retryAfter = rateLimit.retryAfterSeconds ?? 0;
+      res.setHeader('Retry-After', String(retryAfter));
+      res.status(429).json({
+        success: false,
+        code: 'VALIDATION_RATE_LIMIT_EXCEEDED',
+        message: `Bạn đã yêu cầu gửi email xác thực quá nhiều lần. Vui lòng thử lại sau ${Math.max(
+          1,
+          Math.ceil(retryAfter / 60)
+        )} phút.`,
+      });
+      return;
+    }
+
+    const user = await User.findOne({ email: normalizedEmail });
+    if (!user) {
+      res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy tài khoản nào gắn với email này',
+      });
+      return;
+    }
+
+    if (user.isVerified) {
+      res.status(400).json({
+        success: false,
+        message: 'Email này đã được xác thực. Bạn có thể đăng nhập.',
+      });
+      return;
+    }
+
+    const verificationToken = generateVerificationToken();
+    user.emailVerificationToken = hashVerificationToken(verificationToken);
+    user.emailVerificationExpires = new Date(Date.now() + VERIFICATION_TOKEN_TTL_MS);
+    await user.save();
+
+    await sendVerificationEmail({
+      to: user.email,
+      fullName: user.fullName,
+      token: verificationToken,
+    });
+    recordVerificationEmailSent(normalizedEmail);
+
+    res.status(200).json({
+      success: true,
+      message: 'Email xác thực đã được gửi lại. Vui lòng kiểm tra hộp thư của bạn.',
+      data: {
+        email: user.email,
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Lỗi server khi gửi lại email xác thực',
     });
   }
 };
@@ -351,19 +696,7 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
       await Student.updateOne({ user: user._id }, { dob: new Date(dob) });
     }
 
-    const userResponse = {
-      _id: user._id,
-      email: user.email,
-      fullName: user.fullName,
-      phone: user.phone,
-      address: user.address,
-      dob: user.dob,
-      role: user.role,
-      status: user.status,
-      avatarUrl: user.avatarUrl,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    };
+    const userResponse = toUserResponse(user);
 
     res.status(200).json({
       success: true,
@@ -460,8 +793,9 @@ export const changePassword = async (req: AuthRequest, res: Response): Promise<v
 export const forgotPassword = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email } = req.body;
+    const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
 
-    if (!email) {
+    if (!normalizedEmail) {
       res.status(400).json({
         success: false,
         message: 'Vui lòng nhập địa chỉ email đã đăng ký',
@@ -469,10 +803,16 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    const cleanEmail = email ? email.toString().trim().toLowerCase() : '';
-    const user = await User.findOne({ email: cleanEmail });
+    if (!isValidEmail(normalizedEmail)) {
+      res.status(400).json({
+        success: false,
+        message: 'Địa chỉ email không đúng định dạng',
+      });
+      return;
+    }
+
+    const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
-      // Don't disclose if user doesn't exist for security, but return generic success or standard notice
       res.status(404).json({
         success: false,
         message: 'Không tìm thấy tài khoản nào gắn với email này',
@@ -480,7 +820,22 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    // Generate 6-digit verification code or token
+    const rateLimit = canSendVerificationEmail(normalizedEmail);
+    if (!rateLimit.allowed) {
+      const retryAfter = rateLimit.retryAfterSeconds ?? 0;
+      res.setHeader('Retry-After', String(retryAfter));
+      res.status(429).json({
+        success: false,
+        code: 'VALIDATION_RATE_LIMIT_EXCEEDED',
+        message: `Bạn đã yêu cầu gửi email quá nhiều lần. Vui lòng thử lại sau ${Math.max(
+          1,
+          Math.ceil(retryAfter / 60)
+        )} phút.`,
+      });
+      return;
+    }
+
+    // Generate a 6-digit code, store only its hash in the database.
     const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
     const hashedCode = crypto.createHash('sha256').update(resetCode).digest('hex');
 
@@ -488,14 +843,22 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
     user.resetPasswordExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes expiry
     await user.save();
 
-    // In production, an email would be sent. For this system/demo, we return the reset code in the response
-    // so user can easily test and complete the verification immediately without external mail SMTP dependencies.
+    const { delivered } = await sendPasswordResetEmail({
+      to: user.email,
+      fullName: user.fullName,
+      code: resetCode,
+    });
+    recordVerificationEmailSent(normalizedEmail);
+
     res.status(200).json({
       success: true,
-      message: 'Mã xác nhận đặt lại mật khẩu đã được tạo (hiệu lực trong 15 phút).',
+      message: delivered
+        ? 'Mã xác nhận đặt lại mật khẩu đã được gửi tới email của bạn (hiệu lực trong 15 phút).'
+        : config.isDevelopment
+          ? 'Chưa cấu hình SMTP. Mã xác nhận đã được in ở console của server (chỉ môi trường development).'
+          : 'Yêu cầu đặt lại mật khẩu đã được ghi nhận. Vui lòng kiểm tra email của bạn.',
       data: {
         email: user.email,
-        resetCode, // Provided for instant demo verification
         expiresInMinutes: 15,
       },
     });

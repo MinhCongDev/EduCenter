@@ -1,0 +1,313 @@
+/* ==========================================================================
+   EMAIL VERIFICATION PAGES (verify-email / resend-verification)
+   Matches the dark-green EduCenter auth theme.
+   ========================================================================== */
+
+.verify-wrapper {
+  min-height: calc(100vh - 120px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1.25rem;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(87, 208, 97, 0.15) 0%, transparent 45%),
+    radial-gradient(circle at 85% 80%, rgba(236, 110, 35, 0.15) 0%, transparent 45%),
+    linear-gradient(180deg, #07403f 0%, #052f2e 60%, #063937 100%);
+  font-family: var(--font-averta, 'Quicksand', 'Inter', sans-serif);
+}
+
+.verify-card {
+  width: 100%;
+  max-width: 460px;
+  padding: 2.35rem 2.15rem 2.1rem;
+  border-radius: 24px;
+  background: #063231;
+  border: 1.5px solid rgba(87, 208, 97, 0.22);
+  box-shadow:
+    0 24px 60px -10px rgba(0, 0, 0, 0.55),
+    0 0 40px rgba(48, 133, 96, 0.2);
+  text-align: center;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+  box-sizing: border-box;
+}
+
+.verify-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.65rem;
+}
+
+.verify-brand-mark {
+  font-size: 1.55rem;
+  line-height: 1;
+}
+
+.verify-brand-name {
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #57d061;
+}
+
+.verify-title {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1.35;
+  color: #ffffff;
+}
+
+.verify-text {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.verify-note {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.56);
+}
+
+.verify-email {
+  color: #a0ec1d;
+  word-break: break-all;
+}
+
+.verify-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.9rem;
+  font-weight: 800;
+  margin: 0.25rem 0 0.4rem;
+}
+
+.verify-icon-success {
+  color: #07403f;
+  background: #57d061;
+  box-shadow: 0 8px 24px rgba(87, 208, 97, 0.4);
+}
+
+.verify-icon-error {
+  color: #ffffff;
+  background: rgba(239, 68, 68, 0.85);
+  box-shadow: 0 8px 24px rgba(239, 68, 68, 0.35);
+}
+
+.verify-spinner {
+  width: 52px;
+  height: 52px;
+  margin: 0.5rem 0 0.75rem;
+  border-radius: 50%;
+  border: 4px solid rgba(87, 208, 97, 0.2);
+  border-top-color: #57d061;
+  animation: verify-spin 0.85s linear infinite;
+}
+
+@keyframes verify-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Actions ─────────────────────────────────────────────────────────── */
+.verify-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: 100%;
+  margin-top: 0.85rem;
+}
+
+.verify-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0.8rem 1.2rem;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #ec6e23 0%, #ff6531 100%);
+  color: #ffffff;
+  font-size: 0.94rem;
+  font-weight: 700;
+  font-family: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(236, 110, 35, 0.4);
+  transition: all 0.22s ease;
+  margin-top: 0.8rem;
+}
+
+.verify-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(236, 110, 35, 0.55);
+}
+
+.verify-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.verify-btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.88);
+  box-shadow: none;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  margin-top: 0;
+}
+
+.verify-btn-secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: none;
+}
+
+.verify-actions .verify-btn {
+  margin-top: 0;
+}
+
+/* ── Form ────────────────────────────────────────────────────────────── */
+.verify-form {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  text-align: left;
+  gap: 0.45rem;
+  margin-top: 0.9rem;
+}
+
+.verify-label {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.verify-input {
+  width: 100%;
+  padding: 0.65rem 0.95rem;
+  border: 1.5px solid rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+  font-size: 0.92rem;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  box-sizing: border-box;
+  outline: none;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.verify-input:focus {
+  border-color: #57d061;
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 0 3px rgba(87, 208, 97, 0.25);
+}
+
+.verify-input::placeholder {
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.verify-alert {
+  width: 100%;
+  padding: 0.65rem 0.9rem;
+  border-radius: 10px;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  text-align: left;
+  box-sizing: border-box;
+  animation: verify-fade-in 0.3s ease;
+}
+
+.verify-dev-link {
+  display: inline-block;
+  width: 100%;
+  margin-top: 0.6rem;
+  padding: 0.55rem 0.85rem;
+  border-radius: 8px;
+  border: 1px dashed rgba(160, 236, 29, 0.55);
+  color: #a0ec1d;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: none;
+  word-break: break-all;
+  background: rgba(160, 236, 29, 0.08);
+  box-sizing: border-box;
+}
+
+.verify-dev-link:hover {
+  background: rgba(160, 236, 29, 0.16);
+}
+
+.verify-back-link {
+  margin-top: 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.66);
+  text-decoration: none;
+}
+
+.verify-back-link:hover {
+  color: #57d061;
+}
+
+@keyframes verify-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 520px) {
+  .verify-card {
+    padding: 1.9rem 1.35rem 1.7rem;
+    border-radius: 20px;
+  }
+
+  .verify-title {
+    font-size: 1.2rem;
+  }
+}
+
+/* ── Open webmail inbox button ────────────────────────────────────────── */
+.verify-mailbox-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  width: 100%;
+  padding: 0.78rem 1.2rem;
+  margin-top: 0.65rem;
+  border-radius: 12px;
+  border: 1.5px solid rgba(87, 208, 97, 0.6);
+  background: rgba(87, 208, 97, 0.12);
+  color: #a0ec1d;
+  font-size: 0.94rem;
+  font-weight: 700;
+  text-decoration: none;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.verify-mailbox-btn:hover {
+  background: rgba(87, 208, 97, 0.22);
+  border-color: #57d061;
+  transform: translateY(-1px);
+}
