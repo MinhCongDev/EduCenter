@@ -70,3 +70,10 @@ tmp/
 temp/
 **/tmp/
 **/temp/
+
+# User-uploaded runtime files (submissions, avatars)
+# NOTE: ảnh avatar đã được commit trong lịch sử — giữ nguyên, chỉ chặn file mới.
+backend/uploads/submissions/
+backend/uploads/**
+!backend/uploads/avatars/
+!backend/uploads/avatars/**

@@ -1,11 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { courseService } from '../../services/course.service';
+import { studentService } from '../../services/student.service';
+import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 import type { Course, CourseQueryParams } from '../../types';
 
 export const CoursesPage: React.FC = () => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const { isAuthenticated, user } = useAuth();
+  const toast = useToast();
+  const navigate = useNavigate();
+  const [enrollingClassId, setEnrollingClassId] = useState<string | null>(null);
 
   // Search & Filter state (UC04, UC05)
   const [search, setSearch] = useState<string>('');
@@ -92,6 +100,37 @@ export const CoursesPage: React.FC = () => {
     setSelectedFormat('ALL');
     setPriceRange('ALL');
     setSortBy('newest');
+  };
+
+  // M7: Ghi danh trực tiếp vào một lớp học (Student actor)
+  const handleEnroll = async (classId: string, classCode: string) => {
+    if (!isAuthenticated) {
+      toast.warning('Vui lòng đăng nhập để ghi danh');
+      navigate('/login');
+      return;
+    }
+    if (user?.role !== 'STUDENT') {
+      toast.error('Chỉ học viên mới có thể ghi danh');
+      return;
+    }
+    if (!window.confirm(`Bạn có chắc muốn ghi danh vào lớp ${classCode}?`)) return;
+    try {
+      setEnrollingClassId(classId);
+      const res = await studentService.enrollIntoClass(classId);
+      if (res.success) {
+        toast.success(res.message || `Ghi danh lớp ${classCode} thành công!`);
+        setRegistrationNotice(`Đã ghi danh thành công vào lớp ${classCode}.`);
+        // Refresh course để cập nhật sĩ số
+        await fetchCourses();
+        setTimeout(() => navigate('/student/classes'), 1200);
+      } else {
+        toast.error(res.message || 'Ghi danh thất bại');
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Ghi danh thất bại');
+    } finally {
+      setEnrollingClassId(null);
+    }
   };
 
   const formatVND = (amount: number) => {
@@ -706,6 +745,25 @@ export const CoursesPage: React.FC = () => {
                         <div style={{ fontSize: '0.8rem', color: '#15803D', fontWeight: 700 }}>
                           Sĩ số: {cls.currentEnrollment}/{cls.capacity} học viên
                         </div>
+                        {cls.status === 'OPEN' && (
+                          <button
+                            type="button"
+                            onClick={() => handleEnroll(cls._id, cls.classCode)}
+                            disabled={enrollingClassId === cls._id}
+                            style={{
+                              padding: '0.45rem 0.9rem',
+                              borderRadius: '8px',
+                              border: 'none',
+                              backgroundColor: enrollingClassId === cls._id ? '#94A3B8' : '#EC6E23',
+                              color: '#FFFFFF',
+                              fontWeight: 700,
+                              fontSize: '0.8rem',
+                              cursor: enrollingClassId === cls._id ? 'default' : 'pointer',
+                            }}
+                          >
+                            {enrollingClassId === cls._id ? 'Đang ghi danh...' : '✍️ Ghi danh lớp này'}
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>

@@ -67,4 +67,21 @@ const paymentSchema = new Schema<IPayment>(
   }
 );
 
+// Mỗi enrollment chỉ được có tối đa 1 giao dịch thanh toán THÀNH CÔNG.
+// Partial unique index: chỉ áp dụng cho bản ghi status = 'SUCCESS' có `enrollment`.
+// - Hóa đơn PENDING (chưa thanh toán) không bị tính vào ràng buộc, nên vẫn có
+//   thể tạo giao dịch SUCCESS cho cùng enrollment sau đó.
+// - Đây là chốt chặn cuối cùng ở tầng DB, bảo vệ khỏi race condition khi
+//   2 request thanh toán chạy đồng thời.
+paymentSchema.index(
+  { enrollment: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      enrollment: { $type: 'objectId' },
+      status: 'SUCCESS',
+    },
+  }
+);
+
 export const Payment: Model<IPayment> = mongoose.model<IPayment>('Payment', paymentSchema);

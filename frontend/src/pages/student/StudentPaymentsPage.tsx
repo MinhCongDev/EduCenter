@@ -483,7 +483,7 @@ export const StudentPaymentsPage: React.FC = () => {
                           <button
                             type="button"
                             title="Sao chép mã giao dịch"
-                            onClick={() => handleCopy(p.transactionCode, p._id)}
+                            onClick={() => handleCopy(p.transactionCode || '', p._id)}
                             style={{
                               border: 'none',
                               background: 'transparent',

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import NotificationBell from './NotificationBell';
 import type { UserRole } from '../types';
 import { ProfileModal } from './ProfileModal';
 import { ChangePasswordModal } from './ChangePasswordModal';
@@ -232,6 +233,9 @@ const Navbar: React.FC = () => {
           {/* Auth Section */}
           {isAuthenticated && user ? (
             <div style={{ position: 'relative' }}>
+              {/* Notification bell — chỉ dành cho học viên */}
+              {user.role === 'STUDENT' && <NotificationBell />}
+
               <div
                 className="dmr-user-pill"
                 style={{

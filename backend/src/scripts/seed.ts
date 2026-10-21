@@ -1119,6 +1119,19 @@ const seedDatabase = async () => {
       },
     ]);
 
+    // Đồng bộ sĩ số lớp học với số lượt ghi danh thực tế.
+    // (Nếu không, Class.currentEnrollment sẽ lệch với dữ liệu Enrollment
+    //  và học viên sẽ thấy số liệu "0/25" dù đang có người học.)
+    for (const cls of await Class.find({})) {
+      const real = await Enrollment.countDocuments({
+        class: cls._id,
+        status: 'ENROLLED',
+      });
+      if (cls.currentEnrollment !== real) {
+        await Class.updateOne({ _id: cls._id }, { $set: { currentEnrollment: real } });
+      }
+    }
+
     // ==========================================
     // 12. TẠO HÓA ĐƠN & GIAO DỊCH THANH TOÁN (PAYMENTS)
     // ==========================================

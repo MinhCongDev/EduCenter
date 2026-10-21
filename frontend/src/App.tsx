@@ -1,6 +1,7 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ToastProvider } from './contexts/ToastContext';
 import GuestLayout from './layouts/GuestLayout';
 import DashboardLayout from './layouts/DashboardLayout';
 import ProtectedRoute from './routes/ProtectedRoute';
@@ -21,6 +22,17 @@ const ResendVerificationPage = lazy(() => import('./pages/public/ResendVerificat
 // Dashboard pages
 const StudentDashboard = lazy(() => import('./pages/student/StudentDashboard'));
 const StudentPaymentsPage = lazy(() => import('./pages/student/StudentPaymentsPage'));
+const MyClassesPage = lazy(() => import('./pages/student/MyClassesPage'));
+const ClassDetailsPage = lazy(() => import('./pages/student/ClassDetailsPage'));
+const AssignmentsPage = lazy(() => import('./pages/student/AssignmentsPage'));
+const AttendancePage = lazy(() => import('./pages/student/AttendancePage'));
+const GradesPage = lazy(() => import('./pages/student/GradesPage'));
+const SchedulePage = lazy(() => import('./pages/student/SchedulePage'));
+const PaymentsPage = lazy(() => import('./pages/student/PaymentsPage'));
+const TuitionPage = lazy(() => import('./pages/student/TuitionPage'));
+const RequestsPage = lazy(() => import('./pages/student/RequestsPage'));
+const ProfilePage = lazy(() => import('./pages/student/ProfilePage'));
+const CombinedSchedulePage = lazy(() => import('./pages/student/CombinedSchedulePage'));
 const TeacherDashboard = lazy(() => import('./pages/teacher/TeacherDashboard'));
 const StaffDashboard = lazy(() => import('./pages/staff/StaffDashboard'));
 const CoursesManagementPage = lazy(() => import('./pages/staff/CoursesManagementPage'));
@@ -127,6 +139,66 @@ const AppRouter: React.FC = () => {
           }
         />
         <Route
+          path="/student/classes"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <DashboardLayout>
+                <MyClassesPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/classes/:id"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <DashboardLayout>
+                <ClassDetailsPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/classes/:id/assignments"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <DashboardLayout>
+                <AssignmentsPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/classes/:id/attendance"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <DashboardLayout>
+                <AttendancePage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/classes/:id/grades"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <DashboardLayout>
+                <GradesPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/classes/:id/schedule"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <DashboardLayout>
+                <SchedulePage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/student/payments"
           element={
             <ProtectedRoute allowedRoles={['STUDENT']}>
@@ -136,7 +208,56 @@ const AppRouter: React.FC = () => {
             </ProtectedRoute>
           }
         />
-
+        <Route
+          path="/student/payment-history"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <DashboardLayout>
+                <PaymentsPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/tuition"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <DashboardLayout>
+                <TuitionPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/requests"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <DashboardLayout>
+                <RequestsPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/profile"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <DashboardLayout>
+                <ProfilePage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/schedule"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <DashboardLayout>
+                <CombinedSchedulePage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
         {/* ── Teacher Routes ───────────────────────── */}
         <Route
           path="/teacher/dashboard"
@@ -220,11 +341,13 @@ const AppRouter: React.FC = () => {
 // ===========================
 const App: React.FC = () => {
   return (
-    <ErrorBoundary>
+<ErrorBoundary>
       <BrowserRouter>
-        <AuthProvider>
-          <AppRouter />
-        </AuthProvider>
+        <ToastProvider>
+          <AuthProvider>
+            <AppRouter />
+          </AuthProvider>
+        </ToastProvider>
       </BrowserRouter>
     </ErrorBoundary>
   );
