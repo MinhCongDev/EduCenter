@@ -57,11 +57,11 @@ const getMenuItems = (role: UserRole): DashboardItem[] => {
   if (role === 'STUDENT') {
     return [
       { label: 'Tổng quan', path: '/student/dashboard' },
+      { label: 'Học phí & Thanh toán', path: '/student/payments' },
       { label: 'Khóa học của tôi', path: '/student/dashboard?tab=courses' },
       { label: 'Lịch học', path: '/student/dashboard?tab=schedule' },
       { label: 'Bài tập về nhà', path: '/student/dashboard?tab=assignments' },
       { label: 'Kết quả học tập', path: '/student/dashboard?tab=grades' },
-      { label: 'Thanh toán khóa học', path: '/student/tuition' },
       { label: 'Thông báo' },
       { label: 'Cài đặt' },
     ];

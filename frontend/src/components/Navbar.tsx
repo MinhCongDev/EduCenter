@@ -369,6 +369,27 @@ const Navbar: React.FC = () => {
                         <span>Dashboard của tôi</span>
                       </Link>
 
+                      {user.role === 'STUDENT' && (
+                        <Link
+                          to="/student/payments"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '8px 10px',
+                            borderRadius: '8px',
+                            color: '#FCD34D',
+                            fontSize: '0.82rem',
+                            fontWeight: 700,
+                            textDecoration: 'none',
+                          }}
+                        >
+                          <span>💳</span>
+                          <span>Học phí & Thanh toán</span>
+                        </Link>
+                      )}
+
                       <button
                         type="button"
                         onClick={() => {

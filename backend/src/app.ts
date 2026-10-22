@@ -11,6 +11,7 @@ import { courseRouter } from './routes/course.routes';
 import { announcementRouter } from './routes/announcement.routes';
 import { classRouter } from './routes/class.routes';
 import { teacherRouter } from './routes/teacher.routes';
+import { paymentRouter } from './routes/payment.routes';
 // Student module (datlt)
 import { studentRouter } from './routes/student.routes';
 import { publicRouter } from './routes/public.routes';
@@ -96,6 +97,7 @@ app.use('/api/courses', courseRouter);
 app.use('/api/announcements', announcementRouter);
 app.use('/api/classes', classRouter);
 app.use('/api/teacher', teacherRouter);
+app.use('/api/payments', paymentRouter);
 // Student module (datlt)
 app.use('/api/public', publicRouter);
 app.use('/api/student', studentRouter);

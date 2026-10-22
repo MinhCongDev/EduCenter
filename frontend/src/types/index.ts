@@ -358,6 +358,105 @@ export interface ClassFormData {
   status: ClassStatus;
 }
 
+// ── Payment Types ────────────────────────────
+export type PaymentMethod = 'VNPAY' | 'BANK_TRANSFER' | 'CASH' | 'CREDIT_CARD';
+export type PaymentStatus = 'PENDING' | 'SUCCESS' | 'FAILED' | 'REFUNDED';
+
+export interface PaymentCourseInfo {
+  _id: string;
+  title: string;
+  code: string;
+  tuitionFee: number;
+  durationWeeks?: number;
+  level?: string;
+  category?: string;
+}
+
+export interface PaymentClassInfo {
+  _id: string;
+  classCode: string;
+  room?: string;
+  scheduleDays?: string[];
+  timeSlot?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+export interface PaymentEnrollmentInfo {
+  _id: string;
+  status: string;
+  tuitionStatus: string;
+  registrationDate?: string;
+  enrollmentDate?: string;
+  class?: PaymentClassInfo;
+}
+
+export interface Payment {
+  _id: string;
+  student: string | User;
+  enrollment?: PaymentEnrollmentInfo;
+  class?: PaymentClassInfo | any;
+  course?: PaymentCourseInfo;
+  amount: number;
+  method: PaymentMethod;
+  transactionCode?: string;
+  paymentDate?: string;
+  dueDate?: string;
+  status: PaymentStatus;
+  note?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PaymentSummary {
+  totalPaid: number;
+  successCount: number;
+  pendingCount: number;
+  pendingTuitionCount: number;
+  totalPendingTuitionAmount: number;
+}
+
+export interface PendingTuitionItem {
+  _id: string;
+  student: string;
+  course: {
+    _id: string;
+    title: string;
+    code: string;
+    description?: string;
+    tuitionFee: number;
+    originalPrice?: number;
+    durationWeeks?: number;
+    level?: string;
+    format?: string;
+  };
+  class?: {
+    _id: string;
+    classCode: string;
+    room?: string;
+    scheduleDays?: string[];
+    timeSlot?: string;
+    startDate?: string;
+    endDate?: string;
+    status?: string;
+  };
+  registrationDate: string;
+  enrollmentDate: string;
+  status: string;
+  tuitionStatus: 'PENDING' | 'PAID' | 'REFUNDED';
+}
+
+export interface PaymentReceiptData {
+  payment: Payment;
+  center: {
+    name: string;
+    hotline: string;
+    email: string;
+    address: string;
+    slogan?: string;
+  };
+}
+
 // ============================================
 // STUDENT MODULE TYPES (datlt – aligned with backend after merge)
 // ============================================
@@ -483,34 +582,6 @@ export interface AttendanceStats {
   late: number;
   excused: number;
   rate: number;
-}
-
-// Payment (datlt – aligned with main's schema: course ref, transactionCode, SUCCESS status)
-export type PaymentStatus = 'PENDING' | 'SUCCESS' | 'FAILED' | 'REFUNDED';
-export type PaymentMethod = 'VNPAY' | 'BANK_TRANSFER' | 'CASH' | 'CREDIT_CARD';
-
-export interface Payment {
-  _id: string;
-  student: string;
-  enrollment?: string;
-  // class may be populated: { classCode, room, course: { code, title } }
-  // or just an ObjectId string
-  class?: string | {
-    classCode: string;
-    room?: string;
-    course?: { code: string; title: string };
-  };
-  // course may be populated: { code, title } or just an ObjectId string
-  course?: string | { code: string; title: string };
-  amount: number;
-  method: PaymentMethod;
-  transactionCode?: string;
-  paymentDate?: string;
-  dueDate?: string;
-  status: PaymentStatus;
-  note?: string;
-  createdAt: string;
-  updatedAt: string;
 }
 
 export interface PaymentStats {
@@ -640,11 +711,9 @@ export interface DashboardData {
 }
 
 // ─── Notifications (M4) – aligned with main's schema: recipient, isRead, content ───
-// Supports both main's generic types (INFO/ALERT/SUCCESS/WARNING) and
-// student-specific semantic types for rich rendering in the bell UI.
 export type NotificationType =
-  | 'INFO' | 'ALERT' | 'SUCCESS' | 'WARNING'  // main schema
-  | 'GRADE_PUBLISHED' | 'ASSIGNMENT_GRADED'   // student-specific
+  | 'INFO' | 'ALERT' | 'SUCCESS' | 'WARNING'
+  | 'GRADE_PUBLISHED' | 'ASSIGNMENT_GRADED'
   | 'REQUEST_APPROVED' | 'REQUEST_REJECTED'
   | 'PAYMENT_RECEIVED' | 'CLASS_ANNOUNCEMENT'
   | 'ATTENDANCE_MARKED';
@@ -653,15 +722,14 @@ export interface NotificationItem {
   _id: string;
   recipient: string;
   title: string;
-  content: string;   // main uses 'content' (not 'message')
+  content: string;
   type: NotificationType;
-  isRead: boolean;  // main uses 'isRead' (not 'read')
-  linkUrl?: string; // main uses 'linkUrl' (not 'link')
+  isRead: boolean;
+  linkUrl?: string;
   createdAt: string;
   updatedAt: string;
 }
 
-// Notification type metadata for NotificationBell rendering
 export const NOTIFICATION_META: Record<NotificationType, { icon: string; color: string; label: string }> = {
   INFO:               { icon: 'ℹ️',  color: '#3b82f6', label: 'Thông tin' },
   ALERT:              { icon: '🚨',  color: '#f59e0b', label: 'Cảnh báo' },

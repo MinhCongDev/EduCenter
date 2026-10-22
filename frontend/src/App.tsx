@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
 import GuestLayout from './layouts/GuestLayout';
@@ -21,6 +21,7 @@ const ResendVerificationPage = lazy(() => import('./pages/public/ResendVerificat
 
 // Dashboard pages
 const StudentDashboard = lazy(() => import('./pages/student/StudentDashboard'));
+const StudentPaymentsPage = lazy(() => import('./pages/student/StudentPaymentsPage'));
 const MyClassesPage = lazy(() => import('./pages/student/MyClassesPage'));
 const ClassDetailsPage = lazy(() => import('./pages/student/ClassDetailsPage'));
 const AssignmentsPage = lazy(() => import('./pages/student/AssignmentsPage'));
@@ -28,7 +29,6 @@ const AttendancePage = lazy(() => import('./pages/student/AttendancePage'));
 const GradesPage = lazy(() => import('./pages/student/GradesPage'));
 const SchedulePage = lazy(() => import('./pages/student/SchedulePage'));
 const PaymentsPage = lazy(() => import('./pages/student/PaymentsPage'));
-const TuitionPage = lazy(() => import('./pages/student/TuitionPage'));
 const RequestsPage = lazy(() => import('./pages/student/RequestsPage'));
 const ProfilePage = lazy(() => import('./pages/student/ProfilePage'));
 const CombinedSchedulePage = lazy(() => import('./pages/student/CombinedSchedulePage'));
@@ -202,6 +202,16 @@ const AppRouter: React.FC = () => {
           element={
             <ProtectedRoute allowedRoles={['STUDENT']}>
               <DashboardLayout>
+                <StudentPaymentsPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/payment-history"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <DashboardLayout>
                 <PaymentsPage />
               </DashboardLayout>
             </ProtectedRoute>
@@ -209,13 +219,7 @@ const AppRouter: React.FC = () => {
         />
         <Route
           path="/student/tuition"
-          element={
-            <ProtectedRoute allowedRoles={['STUDENT']}>
-              <DashboardLayout>
-                <TuitionPage />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
+          element={<Navigate to="/student/payments" replace />}
         />
         <Route
           path="/student/requests"
@@ -247,7 +251,6 @@ const AppRouter: React.FC = () => {
             </ProtectedRoute>
           }
         />
-
         {/* ── Teacher Routes ───────────────────────── */}
         <Route
           path="/teacher/dashboard"
