@@ -920,7 +920,7 @@ const HomePage: React.FC = () => {
                 BẢN TIN KHẢO THÍ &amp; SỰ KIỆN MỚI NHẤT
               </div>
               <h2 className="dmr-main-title" style={{ margin: 0 }}>
-                Thông Báo &amp; Sự Kiện Từ EduCenter (UC06)
+                Thông Báo &amp; Sự Kiện Từ EduCenter
               </h2>
             </div>
             <Link
@@ -1002,7 +1002,7 @@ const HomePage: React.FC = () => {
               GIỚI THIỆU TỔ CHỨC ĐÀO TẠO
             </div>
             <h2 className="dmr-main-title" style={{ justifyContent: 'center' }}>
-              Thông Tin Trung Tâm EduCenter (UC01)
+              Thông Tin Trung Tâm EduCenter
             </h2>
             <p style={{ color: '#64748B', fontSize: '1.05rem', maxWidth: '750px', margin: '8px auto 0' }}>
               {centerInfo?.slogan || 'Học viện Luyện thi IELTS 8.0+ Chuẩn Khảo thí Quốc tế'}

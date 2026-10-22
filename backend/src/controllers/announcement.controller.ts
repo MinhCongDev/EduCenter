@@ -133,3 +133,77 @@ export const createAnnouncement = async (req: AuthRequest, res: Response): Promi
     });
   }
 };
+
+/**
+ * Update Announcement (Staff/Director)
+ * PUT /api/announcements/:id
+ */
+export const updateAnnouncement = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { title, content, summary, category, targetAudience, isPinned, imageUrl, status } = req.body;
+
+    const announcement = await Announcement.findByIdAndUpdate(
+      id,
+      {
+        ...(title && { title }),
+        ...(content && { content }),
+        ...(summary !== undefined && { summary }),
+        ...(category && { category }),
+        ...(targetAudience && { targetAudience }),
+        ...(isPinned !== undefined && { isPinned }),
+        ...(imageUrl !== undefined && { imageUrl }),
+        ...(status && { status }),
+      },
+      { new: true }
+    );
+
+    if (!announcement) {
+      res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy thông báo',
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Cập nhật thông báo thành công',
+      data: announcement,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Lỗi server khi cập nhật thông báo',
+    });
+  }
+};
+
+/**
+ * Delete Announcement (Staff/Director)
+ * DELETE /api/announcements/:id
+ */
+export const deleteAnnouncement = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const announcement = await Announcement.findByIdAndDelete(id);
+
+    if (!announcement) {
+      res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy thông báo để xóa',
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Xóa thông báo thành công',
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Lỗi server khi xóa thông báo',
+    });
+  }
+};

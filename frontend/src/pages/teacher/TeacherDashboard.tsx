@@ -219,16 +219,21 @@ export const TeacherDashboard: React.FC = () => {
 
   const handleSubmitScheduleRequest = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!reqClassId || !reqReason.trim()) {
+    const classIdToUse = reqClassId || (classes.length > 0 ? classes[0]._id : '');
+    if (!classIdToUse || !reqReason.trim()) {
       setMessage({ type: 'error', text: 'Vui lòng chọn lớp học và nêu lý do' });
+      return;
+    }
+    if (!reqTargetSchedule.trim()) {
+      setMessage({ type: 'error', text: 'Vui lòng nhập lịch dạy mong muốn dời sang' });
       return;
     }
 
     try {
       await teacherService.createScheduleChangeRequest({
-        currentClass: reqClassId,
-        targetSchedule: reqTargetSchedule,
-        reason: reqReason,
+        currentClass: classIdToUse,
+        targetSchedule: reqTargetSchedule.trim(),
+        reason: reqReason.trim(),
       });
       setMessage({ type: 'success', text: 'Đã gửi yêu cầu đổi lịch dạy tới phòng Giáo vụ!' });
       setReqReason('');
@@ -304,13 +309,13 @@ export const TeacherDashboard: React.FC = () => {
         <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '24px', paddingBottom: '4px' }}>
           {[
             { id: 'overview', label: '📊 Tổng quan' },
-            { id: 'classes', label: '🏫 Lớp phân công (UC25)' },
-            { id: 'students', label: '👥 DS Học viên (UC26, UC28, UC29, UC32)' },
-            { id: 'schedule', label: '📅 Lịch giảng dạy (UC27)' },
-            { id: 'assignments', label: '📝 Bài tập & Giao bài (UC30, UC35, UC36)' },
-            { id: 'grading', label: '✍️ Chấm điểm bài nộp (UC31, UC32)' },
-            { id: 'attendance', label: '✅ Điểm danh (UC37, UC38)' },
-            { id: 'requests', label: '🔄 Đổi lịch dạy (UC33, UC34)' },
+            { id: 'classes', label: '🏫 Lớp phân công' },
+            { id: 'students', label: '👥 DS Học viên' },
+            { id: 'schedule', label: '📅 Lịch giảng dạy' },
+            { id: 'assignments', label: '📝 Bài tập & Đề thi' },
+            { id: 'grading', label: '✍️ Chấm điểm bài nộp' },
+            { id: 'attendance', label: '✅ Điểm danh học viên' },
+            { id: 'requests', label: '🔄 Đổi lịch dạy' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -496,11 +501,11 @@ export const TeacherDashboard: React.FC = () => {
               </div>
             )}
 
-            {/* ── TAB 2: ASSIGNED CLASSES (UC25) ───────────────────────── */}
+            {/* ── TAB 2: ASSIGNED CLASSES ───────────────────────────────── */}
             {activeTab === 'classes' && (
               <div>
                 <h2 style={{ fontSize: '1.3rem', color: '#FFF', marginBottom: '16px' }}>
-                  Danh Sách Lớp Học Được Phân Công Giảng Dạy (UC25)
+                  Danh Sách Lớp Học Được Phân Công Giảng Dạy
                 </h2>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '20px' }}>
                   {classes.map((cls) => (
@@ -581,12 +586,12 @@ export const TeacherDashboard: React.FC = () => {
               </div>
             )}
 
-            {/* ── TAB 3: STUDENT LIST & ACADEMIC RESULTS (UC26, UC28, UC29, UC32) ── */}
+            {/* ── TAB 3: STUDENT LIST & ACADEMIC RESULTS ────────────────── */}
             {activeTab === 'students' && (
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                   <h2 style={{ fontSize: '1.3rem', color: '#FFF', margin: 0 }}>
-                    Danh Sách Học Viên &amp; Kết Quả Học Tập (UC26, UC28, UC29, UC32)
+                    Danh Sách Học Viên &amp; Kết Quả Học Tập
                   </h2>
                   <select
                     value={selectedClassId}
@@ -613,7 +618,7 @@ export const TeacherDashboard: React.FC = () => {
                   <div className="dmr-card" style={{ marginBottom: '20px', borderColor: '#57D061' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                       <h3 style={{ margin: 0, color: '#57D061' }}>
-                        Cập Nhật Điểm Tổng Kết: {updatingEnrollment.user?.fullName} (UC32)
+                        Cập Nhật Điểm Tổng Kết: {updatingEnrollment.user?.fullName}
                       </h3>
                       <button
                         type="button"
@@ -749,7 +754,7 @@ export const TeacherDashboard: React.FC = () => {
                                   cursor: 'pointer',
                                 }}
                               >
-                                Vào điểm (UC32)
+                                Vào điểm
                               </button>
                             </td>
                           </tr>
@@ -761,11 +766,11 @@ export const TeacherDashboard: React.FC = () => {
               </div>
             )}
 
-            {/* ── TAB 4: TEACHING SCHEDULE (UC27) ──────────────────────── */}
+            {/* ── TAB 4: TEACHING SCHEDULE ──────────────────────────────── */}
             {activeTab === 'schedule' && (
               <div>
                 <h2 style={{ fontSize: '1.3rem', color: '#FFF', marginBottom: '16px' }}>
-                  Thời Khóa Biểu Giảng Dạy Tuần (UC27)
+                  Thời Khóa Biểu Giảng Dạy Tuần
                 </h2>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
                   {schedule.map((sc) => (
@@ -789,12 +794,12 @@ export const TeacherDashboard: React.FC = () => {
               </div>
             )}
 
-            {/* ── TAB 5: ASSIGNMENTS & CREATE (UC30, UC35, UC36) ───────── */}
+            {/* ── TAB 5: ASSIGNMENTS & CREATE ───────────────────────────── */}
             {activeTab === 'assignments' && (
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                   <h2 style={{ fontSize: '1.3rem', color: '#FFF', margin: 0 }}>
-                    Quản Lý &amp; Giao Bài Tập Cho Lớp (UC30, UC35, UC36)
+                    Quản Lý &amp; Giao Bài Tập Cho Lớp
                   </h2>
                   <button
                     type="button"
@@ -813,10 +818,10 @@ export const TeacherDashboard: React.FC = () => {
                   </button>
                 </div>
 
-                {/* Create Assignment Form (UC35, UC36) */}
+                {/* Create Assignment Form */}
                 {isCreateAssignmentOpen && (
                   <div className="dmr-card" style={{ marginBottom: '24px', borderColor: '#57D061' }}>
-                    <h3 className="dmr-card-title">Tạo &amp; Phân Phối Bài Tập Mới (UC35, UC36)</h3>
+                    <h3 className="dmr-card-title">Tạo &amp; Phân Phối Bài Tập Mới</h3>
                     <form onSubmit={handleCreateAssignment} style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '14px' }}>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px' }}>
                         <div>
@@ -1027,12 +1032,12 @@ export const TeacherDashboard: React.FC = () => {
               </div>
             )}
 
-            {/* ── TAB 6: GRADING SUBMISSIONS (UC31, UC32) ──────────────── */}
+            {/* ── TAB 6: GRADING SUBMISSIONS ────────────────────────────── */}
             {activeTab === 'grading' && (
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                   <h2 style={{ fontSize: '1.3rem', color: '#FFF', margin: 0 }}>
-                    Chấm Điểm &amp; Nhận Xét Bài Nộp Của Học Viên (UC31, UC32)
+                    Chấm Điểm &amp; Nhận Xét Bài Nộp Của Học Viên
                   </h2>
                   <select
                     value={selectedAssignmentId}
@@ -1220,12 +1225,12 @@ export const TeacherDashboard: React.FC = () => {
               </div>
             )}
 
-            {/* ── TAB 7: ATTENDANCE (UC37, UC38) ───────────────────────── */}
+            {/* ── TAB 7: ATTENDANCE ─────────────────────────────────────── */}
             {activeTab === 'attendance' && (
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                   <h2 style={{ fontSize: '1.3rem', color: '#FFF', margin: 0 }}>
-                    Theo Dõi &amp; Thực Hiện Điểm Danh Học Viên (UC37, UC38)
+                    Theo Dõi &amp; Thực Hiện Điểm Danh Học Viên
                   </h2>
                   <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                     <select
@@ -1363,9 +1368,9 @@ export const TeacherDashboard: React.FC = () => {
                   )}
                 </div>
 
-                {/* Lịch sử điểm danh đã lưu (UC37) */}
+                {/* Lịch sử điểm danh đã lưu */}
                 <div className="dmr-card" style={{ marginTop: '20px' }}>
-                  <h3 className="dmr-card-title">Lịch Sử Điểm Danh Lớp (UC37 - View Attendance)</h3>
+                  <h3 className="dmr-card-title">Lịch Sử Điểm Danh Lớp</h3>
                   {classAttendance.length === 0 ? (
                     <p style={{ color: 'rgba(255,255,255,0.6)' }}>Chưa có hồ sơ điểm danh nào được lưu trong hệ thống.</p>
                   ) : (
@@ -1405,15 +1410,15 @@ export const TeacherDashboard: React.FC = () => {
               </div>
             )}
 
-            {/* ── TAB 8: SCHEDULE CHANGE REQUESTS (UC33, UC34) ─────────── */}
+            {/* ── TAB 8: SCHEDULE CHANGE REQUESTS ───────────────────────── */}
             {activeTab === 'requests' && (
               <div>
                 <h2 style={{ fontSize: '1.3rem', color: '#FFF', marginBottom: '16px' }}>
-                  Yêu Cầu Thay Đổi Lịch Dạy Của Giảng Viên (UC33, UC34)
+                  Yêu Cầu Thay Đổi Lịch Dạy Của Giảng Viên
                 </h2>
 
                 <div className="dmr-card" style={{ marginBottom: '24px' }}>
-                  <h3 className="dmr-card-title">Gửi Đơn Xin Đổi Lịch Dạy (UC33)</h3>
+                  <h3 className="dmr-card-title">Gửi Đơn Xin Đổi Lịch Dạy</h3>
                   <form onSubmit={handleSubmitScheduleRequest} style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '14px' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                       <div>
@@ -1421,7 +1426,7 @@ export const TeacherDashboard: React.FC = () => {
                           Lớp học cần điều chỉnh:
                         </label>
                         <select
-                          value={reqClassId}
+                          value={reqClassId || (classes.length > 0 ? classes[0]._id : '')}
                           onChange={(e) => setReqClassId(e.target.value)}
                           style={{
                             width: '100%',
@@ -1501,7 +1506,7 @@ export const TeacherDashboard: React.FC = () => {
                 </div>
 
                 <div className="dmr-card">
-                  <h3 className="dmr-card-title">Tiến Trình &amp; Lịch Sử Xét Duyệt Yêu Cầu (UC34)</h3>
+                  <h3 className="dmr-card-title">Tiến Trình &amp; Lịch Sử Xét Duyệt Yêu Cầu</h3>
                   {changeRequests.length === 0 ? (
                     <p style={{ color: 'rgba(255,255,255,0.6)', marginTop: '10px' }}>Chưa có yêu cầu nào được gửi.</p>
                   ) : (
@@ -1522,7 +1527,13 @@ export const TeacherDashboard: React.FC = () => {
                           <div>
                             <strong style={{ color: '#FFF' }}>{cr.reason}</strong>
                             <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)' }}>
-                              Lớp: {cr.currentClass?.name || cr.currentClass?.classCode} • Ngày gửi: {new Date(cr.createdAt).toLocaleDateString('vi-VN')}
+                              Lớp: {cr.currentClass?.name || cr.currentClass?.classCode}
+                              {cr.targetSchedule && (
+                                <span style={{ color: '#57D061', marginLeft: '6px' }}>
+                                  ➔ Đề xuất dời sang: {cr.targetSchedule}
+                                </span>
+                              )}
+                              {' • Ngày gửi: ' + new Date(cr.createdAt).toLocaleDateString('vi-VN')}
                             </p>
                             {cr.reviewNote && (
                               <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: '#A0EC1D' }}>

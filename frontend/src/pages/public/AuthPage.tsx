@@ -306,7 +306,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
                     onClick={() => setIsForgotPasswordOpen(true)}
                     className="auth-forgot-link"
                   >
-                    Quên mật khẩu? (UC11)
+                    Quên mật khẩu?
                   </button>
                 </div>
                 <input

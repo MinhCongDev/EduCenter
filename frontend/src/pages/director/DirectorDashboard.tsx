@@ -1,15 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import directorService from '../../services/director.service';
+import { announcementService } from '../../services/announcement.service';
 import '../dashboard/Dashboard.css';
 
 export const DirectorDashboard: React.FC = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'overview' | 'operations' | 'staff' | 'studentActs' | 'teacherActs' | 'studentRpt' | 'teacherRpt' | 'classRpt' | 'courseRpt' | 'revenueRpt'>('overview');
+  const [activeTab, setActiveTab] = useState<
+    | 'overview'
+    | 'announcements'
+    | 'operations'
+    | 'staff'
+    | 'studentActs'
+    | 'teacherActs'
+    | 'studentRpt'
+    | 'teacherRpt'
+    | 'classRpt'
+    | 'courseRpt'
+    | 'revenueRpt'
+  >('overview');
 
   // Database Data States
   const [operationsData, setOperationsData] = useState<any>(null);
   const [staffList, setStaffList] = useState<any[]>([]);
+  const [announcements, setAnnouncements] = useState<any[]>([]);
   const [studentActivities, setStudentActivities] = useState<any>(null);
   const [teacherActivities, setTeacherActivities] = useState<any[]>([]);
   const [studentReports, setStudentReports] = useState<any>(null);
@@ -19,7 +33,7 @@ export const DirectorDashboard: React.FC = () => {
   const [revenueData, setRevenueData] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // Add Staff Account Modal (UC53)
+  // Add Staff Account Modal
   const [isAddStaffOpen, setIsAddStaffOpen] = useState<boolean>(false);
   const [staffName, setStaffName] = useState<string>('');
   const [staffEmail, setStaffEmail] = useState<string>('');
@@ -28,12 +42,21 @@ export const DirectorDashboard: React.FC = () => {
   const [staffDepartment, setStaffDepartment] = useState<string>('Phòng Giáo Vụ & Đào Tạo');
   const [staffPosition, setStaffPosition] = useState<string>('Chuyên viên Giáo vụ');
 
+  // Create Announcement Modal
+  const [isAnnouncementModalOpen, setIsAnnouncementModalOpen] = useState<boolean>(false);
+  const [annTitle, setAnnTitle] = useState<string>('');
+  const [annContent, setAnnContent] = useState<string>('');
+  const [annSummary, setAnnSummary] = useState<string>('');
+  const [annCategory, setAnnCategory] = useState<string>('Khảo thí IELTS');
+  const [annTargetAudience, setAnnTargetAudience] = useState<'ALL' | 'STUDENTS' | 'TEACHERS' | 'STAFF'>('ALL');
+  const [annIsPinned, setAnnIsPinned] = useState<boolean>(false);
+
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const fetchAllData = async () => {
     try {
       setLoading(true);
-      const [ops, stf, stdAct, tchAct, stdRpt, tchRpt, clsRpt, crsRpt, rev] = await Promise.all([
+      const [ops, stf, stdAct, tchAct, stdRpt, tchRpt, clsRpt, crsRpt, rev, annRes] = await Promise.all([
         directorService.getOperations(),
         directorService.getStaffList(),
         directorService.getStudentActivities(),
@@ -43,6 +66,7 @@ export const DirectorDashboard: React.FC = () => {
         directorService.getClassReports(),
         directorService.getCourseReports(),
         directorService.getRevenueReports(),
+        announcementService.getAnnouncements({ limit: 50 }),
       ]);
 
       setOperationsData(ops || null);
@@ -54,6 +78,7 @@ export const DirectorDashboard: React.FC = () => {
       setClassReports(clsRpt || null);
       setCourseReports(crsRpt || []);
       setRevenueData(rev || null);
+      setAnnouncements(annRes?.data || []);
     } catch (err: any) {
       console.error('Lỗi khi nạp dữ liệu Ban Giám Đốc:', err);
     } finally {
@@ -93,6 +118,49 @@ export const DirectorDashboard: React.FC = () => {
     }
   };
 
+  const handleCreateAnnouncement = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!annTitle.trim() || !annContent.trim()) {
+      setMessage({ type: 'error', text: 'Vui lòng nhập tiêu đề và nội dung thông báo' });
+      return;
+    }
+
+    try {
+      await announcementService.createAnnouncement({
+        title: annTitle.trim(),
+        content: annContent.trim(),
+        summary: annSummary.trim() || undefined,
+        category: annCategory,
+        targetAudience: annTargetAudience,
+        isPinned: annIsPinned,
+      });
+
+      setMessage({ type: 'success', text: 'Đăng thông báo mới thành công! Đã cập nhật lên cổng thông tin.' });
+      setIsAnnouncementModalOpen(false);
+      setAnnTitle('');
+      setAnnContent('');
+      setAnnSummary('');
+      setAnnIsPinned(false);
+
+      const res = await announcementService.getAnnouncements({ limit: 50 });
+      setAnnouncements(res?.data || []);
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err.response?.data?.message || 'Lỗi khi đăng thông báo' });
+    }
+  };
+
+  const handleDeleteAnnouncement = async (id: string) => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa thông báo này không?')) return;
+    try {
+      await announcementService.deleteAnnouncement(id);
+      setMessage({ type: 'success', text: 'Đã xóa thông báo thành công!' });
+      const res = await announcementService.getAnnouncements({ limit: 50 });
+      setAnnouncements(res?.data || []);
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err.response?.data?.message || 'Lỗi khi xóa thông báo' });
+    }
+  };
+
   const counts = operationsData?.counts;
   const revSummary = revenueData?.summary;
 
@@ -110,6 +178,14 @@ export const DirectorDashboard: React.FC = () => {
           </div>
 
           <div className="dmr-dash-actions">
+            <button
+              type="button"
+              className="dmr-dash-btn dmr-dash-btn-secondary"
+              onClick={() => setIsAnnouncementModalOpen(true)}
+              style={{ backgroundColor: 'rgba(87, 208, 97, 0.15)', borderColor: '#57D061', color: '#57D061' }}
+            >
+              📢 Đăng thông báo mới
+            </button>
             <button
               type="button"
               className="dmr-dash-btn dmr-dash-btn-secondary"
@@ -159,16 +235,17 @@ export const DirectorDashboard: React.FC = () => {
         {/* Navigation Tabs */}
         <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '24px', paddingBottom: '4px' }}>
           {[
-            { id: 'overview', label: '📊 Tổng quan (UC55)' },
-            { id: 'operations', label: '🏛️ Vận hành (UC54)' },
-            { id: 'staff', label: '👥 Nhân viên (UC52, UC53)' },
+            { id: 'overview', label: '📊 Tổng quan' },
+            { id: 'announcements', label: '📢 Đăng thông báo' },
+            { id: 'operations', label: '🏛️ Vận hành' },
+            { id: 'staff', label: '👥 Nhân viên' },
             { id: 'studentActs', label: '🎓 Hoạt động Học viên' },
             { id: 'teacherActs', label: '👨‍🏫 Hoạt động Giảng viên' },
-            { id: 'revenueRpt', label: '💰 Báo cáo Doanh thu (UC60)' },
-            { id: 'studentRpt', label: '📈 Báo cáo Học viên (UC56)' },
-            { id: 'teacherRpt', label: '📋 Báo cáo Giảng viên (UC57)' },
-            { id: 'classRpt', label: '🏫 Báo cáo Lớp học (UC58)' },
-            { id: 'courseRpt', label: '📚 Báo cáo Khóa học (UC59)' },
+            { id: 'revenueRpt', label: '💰 Báo cáo Doanh thu' },
+            { id: 'studentRpt', label: '📈 Báo cáo Học viên' },
+            { id: 'teacherRpt', label: '📋 Báo cáo Giảng viên' },
+            { id: 'classRpt', label: '🏫 Báo cáo Lớp học' },
+            { id: 'courseRpt', label: '📚 Báo cáo Khóa học' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -199,7 +276,7 @@ export const DirectorDashboard: React.FC = () => {
           </div>
         ) : (
           <>
-            {/* ── TAB 1: OVERVIEW (UC55) ──────────────────────────────── */}
+            {/* ── TAB 1: OVERVIEW ─────────────────────────────────────── */}
             {activeTab === 'overview' && (
               <div>
                 <div className="dmr-kpi-grid">
@@ -312,15 +389,176 @@ export const DirectorDashboard: React.FC = () => {
                       </div>
                     </div>
                   </div>
+
+                  {/* Bottom: Announcements Quick View */}
+                  <div className="dmr-card" style={{ gridColumn: '1 / -1', marginTop: '8px' }}>
+                    <div className="dmr-card-header">
+                      <div>
+                        <h3 className="dmr-card-title">📢 Bản Tin &amp; Thông Báo Đã Đăng</h3>
+                        <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)' }}>
+                          Hiển thị công khai trên Cổng thông tin học viên &amp; Website trung tâm
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          type="button"
+                          className="dmr-card-action"
+                          onClick={() => setIsAnnouncementModalOpen(true)}
+                        >
+                          + Đăng thông báo mới
+                        </button>
+                        <button
+                          type="button"
+                          className="dmr-card-action"
+                          onClick={() => setActiveTab('announcements')}
+                        >
+                          Xem tất cả ➔
+                        </button>
+                      </div>
+                    </div>
+                    {announcements.length === 0 ? (
+                      <p style={{ color: 'rgba(255,255,255,0.6)', padding: '10px 0' }}>Chưa có thông báo nào được đăng.</p>
+                    ) : (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px', marginTop: '10px' }}>
+                        {announcements.slice(0, 3).map((ann) => (
+                          <div
+                            key={ann._id}
+                            style={{
+                              padding: '12px 14px',
+                              borderRadius: '10px',
+                              backgroundColor: 'rgba(255,255,255,0.03)',
+                              border: ann.isPinned ? '1px solid #57D061' : '1px solid rgba(255,255,255,0.08)',
+                            }}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                              <span style={{ fontSize: '0.75rem', color: '#FCD34D', fontWeight: 700 }}>
+                                {ann.category || 'Tin tức'}
+                              </span>
+                              <span style={{ fontSize: '0.7rem', color: '#57D061' }}>
+                                {ann.targetAudience === 'ALL' ? 'Tất cả' : ann.targetAudience === 'STUDENTS' ? 'Học viên' : ann.targetAudience === 'TEACHERS' ? 'Giảng viên' : 'Giáo vụ'}
+                              </span>
+                            </div>
+                            <strong style={{ color: '#FFF', fontSize: '0.95rem', display: 'block', marginBottom: '4px' }}>
+                              {ann.title}
+                            </strong>
+                            <p style={{ margin: 0, fontSize: '0.8rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.4 }}>
+                              {ann.summary || ann.content?.slice(0, 80)}...
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* ── TAB 2: MONITOR OPERATIONS (UC54) ─────────────────────── */}
+            {/* ── TAB: ANNOUNCEMENTS ───────────────────────────────────── */}
+            {activeTab === 'announcements' && (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <div>
+                    <h2 style={{ fontSize: '1.3rem', color: '#FFF', margin: 0 }}>
+                      Quản Lý &amp; Đăng Thông Báo Trung Tâm
+                    </h2>
+                    <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)' }}>
+                      Đăng tải tin tức, sự kiện, lịch thi thử IELTS và quy chế học vụ tới Học viên, Giảng viên và Nhân sự
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsAnnouncementModalOpen(true)}
+                    style={{
+                      backgroundColor: '#57D061',
+                      border: 'none',
+                      color: '#052F2E',
+                      padding: '10px 22px',
+                      borderRadius: '25px',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      fontSize: '0.9rem',
+                    }}
+                  >
+                    + Đăng thông báo mới
+                  </button>
+                </div>
+
+                <div className="dmr-card">
+                  {announcements.length === 0 ? (
+                    <p style={{ color: 'rgba(255,255,255,0.6)', padding: '16px 0' }}>Chưa có thông báo nào trong hệ thống.</p>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                      {announcements.map((ann) => (
+                        <div
+                          key={ann._id}
+                          style={{
+                            padding: '16px 20px',
+                            borderRadius: '12px',
+                            backgroundColor: 'rgba(255,255,255,0.03)',
+                            border: ann.isPinned ? '1px solid #57D061' : '1px solid rgba(255,255,255,0.08)',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'flex-start',
+                            gap: '16px',
+                          }}
+                        >
+                          <div style={{ flex: 1 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                              {ann.isPinned && (
+                                <span style={{ padding: '2px 8px', borderRadius: '10px', fontSize: '0.72rem', backgroundColor: '#57D061', color: '#052F2E', fontWeight: 800 }}>
+                                  📌 Ghim đầu trang
+                                </span>
+                              )}
+                              <span style={{ padding: '2px 8px', borderRadius: '10px', fontSize: '0.72rem', backgroundColor: 'rgba(245, 158, 11, 0.2)', color: '#FCD34D', fontWeight: 700 }}>
+                                {ann.category || 'Tin tức'}
+                              </span>
+                              <span style={{ padding: '2px 8px', borderRadius: '10px', fontSize: '0.72rem', backgroundColor: 'rgba(59, 130, 246, 0.2)', color: '#93C5FD', fontWeight: 700 }}>
+                                Đối tượng: {ann.targetAudience === 'ALL' ? 'Toàn bộ' : ann.targetAudience === 'STUDENTS' ? 'Học viên' : ann.targetAudience === 'TEACHERS' ? 'Giảng viên' : 'Giáo vụ'}
+                              </span>
+                              <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)' }}>
+                                Ngày đăng: {new Date(ann.publicationDate || ann.createdAt).toLocaleDateString('vi-VN')}
+                              </span>
+                            </div>
+                            <h3 style={{ margin: '0 0 6px', color: '#FFF', fontSize: '1.15rem' }}>{ann.title}</h3>
+                            <p style={{ margin: '0 0 8px', color: 'rgba(255,255,255,0.8)', fontSize: '0.9rem', lineHeight: 1.5 }}>
+                              {ann.content}
+                            </p>
+                            <span style={{ fontSize: '0.75rem', color: '#A0EC1D' }}>
+                              Tác giả: {ann.author?.fullName || user?.fullName} • Lượt xem: {ann.views || 0}
+                            </span>
+                          </div>
+
+                          <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteAnnouncement(ann._id)}
+                              style={{
+                                backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                                border: '1px solid #EF4444',
+                                color: '#EF4444',
+                                padding: '6px 12px',
+                                borderRadius: '15px',
+                                fontSize: '0.78rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              🗑️ Xóa
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ── TAB 2: MONITOR OPERATIONS ───────────────────────────── */}
             {activeTab === 'operations' && (
               <div>
                 <h2 style={{ fontSize: '1.3rem', color: '#FFF', marginBottom: '16px' }}>
-                  Giám Sát Vận Hành Toàn Trung Tâm (UC54)
+                  Giám Sát Vận Hành Toàn Trung Tâm
                 </h2>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '20px' }}>
@@ -361,12 +599,12 @@ export const DirectorDashboard: React.FC = () => {
               </div>
             )}
 
-            {/* ── TAB 3: STAFF MANAGEMENT (UC52, UC53) ─────────────────── */}
+            {/* ── TAB 3: STAFF MANAGEMENT ─────────────────────────────── */}
             {activeTab === 'staff' && (
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                   <h2 style={{ fontSize: '1.3rem', color: '#FFF', margin: 0 }}>
-                    Danh Sách &amp; Quản Lý Nhân Sự Giáo Vụ (UC52, UC53)
+                    Danh Sách &amp; Quản Lý Nhân Sự Giáo Vụ
                   </h2>
                   <button
                     type="button"
@@ -381,7 +619,7 @@ export const DirectorDashboard: React.FC = () => {
                       cursor: 'pointer',
                     }}
                   >
-                    + Thêm tài khoản nhân viên (UC53)
+                    + Thêm tài khoản nhân viên
                   </button>
                 </div>
 
@@ -499,13 +737,13 @@ export const DirectorDashboard: React.FC = () => {
               </div>
             )}
 
-            {/* ── TAB 6: REVENUE REPORTS (UC60) ────────────────────────── */}
+            {/* ── TAB 6: REVENUE REPORTS ──────────────────────────────── */}
             {activeTab === 'revenueRpt' && (
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                   <div>
                     <h2 style={{ fontSize: '1.3rem', color: '#FFF', margin: 0 }}>
-                      Báo Cáo Doanh Thu Thực Tế (UC60)
+                      Báo Cáo Doanh Thu Thực Tế
                     </h2>
                     <span style={{ fontSize: '0.85rem', color: '#A0EC1D' }}>
                       Tổng hợp toàn bộ giao dịch từ database • Không cần chia theo cơ sở
@@ -571,11 +809,11 @@ export const DirectorDashboard: React.FC = () => {
               </div>
             )}
 
-            {/* ── TAB 7: STUDENT REPORTS (UC56) ────────────────────────── */}
+            {/* ── TAB 7: STUDENT REPORTS ──────────────────────────────── */}
             {activeTab === 'studentRpt' && (
               <div>
                 <h2 style={{ fontSize: '1.3rem', color: '#FFF', marginBottom: '16px' }}>
-                  Báo Cáo &amp; Phân Tích Dữ Liệu Học Viên (UC56)
+                  Báo Cáo &amp; Phân Tích Dữ Liệu Học Viên
                 </h2>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
                   <div className="dmr-card">
@@ -611,11 +849,11 @@ export const DirectorDashboard: React.FC = () => {
               </div>
             )}
 
-            {/* ── TAB 8: TEACHER REPORTS (UC57) ────────────────────────── */}
+            {/* ── TAB 8: TEACHER REPORTS ──────────────────────────────── */}
             {activeTab === 'teacherRpt' && (
               <div>
                 <h2 style={{ fontSize: '1.3rem', color: '#FFF', marginBottom: '16px' }}>
-                  Báo Cáo Năng Lực &amp; Hiệu Suất Giảng Viên (UC57)
+                  Báo Cáo Năng Lực &amp; Hiệu Suất Giảng Viên
                 </h2>
                 <div className="dmr-card">
                   <table style={{ width: '100%', borderCollapse: 'collapse', color: '#FFF' }}>
@@ -649,12 +887,12 @@ export const DirectorDashboard: React.FC = () => {
               </div>
             )}
 
-            {/* ── TAB 9: CLASS REPORTS (UC58) ──────────────────────────── */}
+            {/* ── TAB 9: CLASS REPORTS ────────────────────────────────── */}
             {activeTab === 'classRpt' && (
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                   <h2 style={{ fontSize: '1.3rem', color: '#FFF', margin: 0 }}>
-                    Báo Cáo Lấp Đầy &amp; Hoạt Động Lớp Học (UC58)
+                    Báo Cáo Lấp Đầy &amp; Hoạt Động Lớp Học
                   </h2>
                   <span style={{ color: '#57D061', fontWeight: 800 }}>
                     Tỷ lệ lấp đầy toàn hệ thống: {classReports?.overallFillRate}
@@ -693,11 +931,11 @@ export const DirectorDashboard: React.FC = () => {
               </div>
             )}
 
-            {/* ── TAB 10: COURSE REPORTS (UC59) ────────────────────────── */}
+            {/* ── TAB 10: COURSE REPORTS ──────────────────────────────── */}
             {activeTab === 'courseRpt' && (
               <div>
                 <h2 style={{ fontSize: '1.3rem', color: '#FFF', marginBottom: '16px' }}>
-                  Báo Cáo Hiệu Quả Chương Trình Đào Tạo (UC59)
+                  Báo Cáo Hiệu Quả Chương Trình Đào Tạo
                 </h2>
                 <div className="dmr-card">
                   <table style={{ width: '100%', borderCollapse: 'collapse', color: '#FFF' }}>
@@ -733,12 +971,12 @@ export const DirectorDashboard: React.FC = () => {
           </>
         )}
 
-        {/* ── ADD STAFF MODAL (UC53) ─────────────────────────────────── */}
+        {/* ── ADD STAFF MODAL ───────────────────────────────────────── */}
         {isAddStaffOpen && (
           <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '16px' }}>
             <div style={{ backgroundColor: '#0F2F2E', border: '1px solid #1E4E4D', borderRadius: '16px', width: '100%', maxWidth: '500px', padding: '24px', color: '#FFF' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '14px' }}>
-                <h3 style={{ margin: 0, color: '#57D061' }}>Thêm Tài Khoản Giáo Vụ Mới (UC53)</h3>
+                <h3 style={{ margin: 0, color: '#57D061' }}>Thêm Tài Khoản Giáo Vụ Mới</h3>
                 <button type="button" onClick={() => setIsAddStaffOpen(false)} style={{ background: 'none', border: 'none', color: '#FFF', cursor: 'pointer', fontSize: '1.2rem' }}>✕</button>
               </div>
               <form onSubmit={handleAddStaff} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -771,6 +1009,125 @@ export const DirectorDashboard: React.FC = () => {
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
                   <button type="button" onClick={() => setIsAddStaffOpen(false)} style={{ padding: '8px 16px', borderRadius: '20px', background: 'none', border: '1px solid #666', color: '#FFF', cursor: 'pointer' }}>Hủy</button>
                   <button type="submit" style={{ padding: '8px 20px', borderRadius: '20px', backgroundColor: '#57D061', border: 'none', color: '#052F2E', fontWeight: 800, cursor: 'pointer' }}>Tạo tài khoản</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* ── CREATE ANNOUNCEMENT MODAL ─────────────────────────── */}
+        {isAnnouncementModalOpen && (
+          <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '16px' }}>
+            <div style={{ backgroundColor: '#0F2F2E', border: '1px solid #1E4E4D', borderRadius: '16px', width: '100%', maxWidth: '600px', padding: '24px', color: '#FFF' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '14px' }}>
+                <h3 style={{ margin: 0, color: '#57D061' }}>📢 Đăng Thông Báo Trung Tâm Mới</h3>
+                <button type="button" onClick={() => setIsAnnouncementModalOpen(false)} style={{ background: 'none', border: 'none', color: '#FFF', cursor: 'pointer', fontSize: '1.2rem' }}>✕</button>
+              </div>
+              <form onSubmit={handleCreateAnnouncement} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)', marginBottom: '4px' }}>
+                    Tiêu đề thông báo <span style={{ color: '#EF4444' }}>*</span>:
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={annTitle}
+                    onChange={(e) => setAnnTitle(e.target.value)}
+                    placeholder="VD: Thông báo Lịch Thi Thử IELTS Mock Test Tháng 11"
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', backgroundColor: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.2)', color: '#FFF' }}
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)', marginBottom: '4px' }}>
+                      Danh mục:
+                    </label>
+                    <select
+                      value={annCategory}
+                      onChange={(e) => setAnnCategory(e.target.value)}
+                      style={{ width: '100%', padding: '10px', borderRadius: '8px', backgroundColor: '#0A2524', border: '1px solid rgba(255,255,255,0.2)', color: '#FFF' }}
+                    >
+                      <option value="Khảo thí IELTS">Khảo thí IELTS</option>
+                      <option value="Học vụ & Lịch học">Học vụ &amp; Lịch học</option>
+                      <option value="Khai giảng lớp mới">Khai giảng lớp mới</option>
+                      <option value="Sự kiện & Workshop">Sự kiện &amp; Workshop</option>
+                      <option value="Học phí & Ưu đãi">Học phí &amp; Ưu đãi</option>
+                      <option value="Chung">Thông báo chung</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)', marginBottom: '4px' }}>
+                      Đối tượng nhận tin:
+                    </label>
+                    <select
+                      value={annTargetAudience}
+                      onChange={(e) => setAnnTargetAudience(e.target.value as any)}
+                      style={{ width: '100%', padding: '10px', borderRadius: '8px', backgroundColor: '#0A2524', border: '1px solid rgba(255,255,255,0.2)', color: '#FFF' }}
+                    >
+                      <option value="ALL">Toàn trung tâm (Tất cả)</option>
+                      <option value="STUDENTS">Học viên</option>
+                      <option value="TEACHERS">Giảng viên</option>
+                      <option value="STAFF">Cán bộ &amp; Giáo vụ</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)', marginBottom: '4px' }}>
+                    Tóm tắt ngắn (hiển thị ngoài trang chủ):
+                  </label>
+                  <input
+                    type="text"
+                    value={annSummary}
+                    onChange={(e) => setAnnSummary(e.target.value)}
+                    placeholder="VD: Kỳ thi đánh giá năng lực 4 kỹ năng IELTS chuẩn Quốc tế diễn ra vào thứ Bảy..."
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', backgroundColor: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.2)', color: '#FFF' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)', marginBottom: '4px' }}>
+                    Nội dung thông báo chi tiết <span style={{ color: '#EF4444' }}>*</span>:
+                  </label>
+                  <textarea
+                    required
+                    rows={5}
+                    value={annContent}
+                    onChange={(e) => setAnnContent(e.target.value)}
+                    placeholder="Nhập nội dung đầy đủ của thông báo..."
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', backgroundColor: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.2)', color: '#FFF', resize: 'vertical' }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <input
+                    type="checkbox"
+                    id="directorAnnIsPinned"
+                    checked={annIsPinned}
+                    onChange={(e) => setAnnIsPinned(e.target.checked)}
+                    style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                  />
+                  <label htmlFor="directorAnnIsPinned" style={{ fontSize: '0.85rem', color: '#FFF', cursor: 'pointer' }}>
+                    📌 Ghim thông báo này lên đầu trang cổng thông tin
+                  </label>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setIsAnnouncementModalOpen(false)}
+                    style={{ padding: '8px 18px', borderRadius: '20px', background: 'none', border: '1px solid #666', color: '#FFF', cursor: 'pointer' }}
+                  >
+                    Hủy bỏ
+                  </button>
+                  <button
+                    type="submit"
+                    style={{ padding: '8px 24px', borderRadius: '20px', backgroundColor: '#57D061', border: 'none', color: '#052F2E', fontWeight: 800, cursor: 'pointer' }}
+                  >
+                    Đăng thông báo ngay
+                  </button>
                 </div>
               </form>
             </div>

@@ -25,8 +25,10 @@ export const StudentDashboard: React.FC = () => {
   // Request form state
   const [requestType, setRequestType] = useState<'CLASS_CHANGE' | 'SCHEDULE_CHANGE'>('CLASS_CHANGE');
   const [requestCurrentClass, setRequestCurrentClass] = useState<string>('');
+  const [requestTargetClass, setRequestTargetClass] = useState<string>('');
   const [requestTargetSchedule, setRequestTargetSchedule] = useState<string>('');
   const [requestReason, setRequestReason] = useState<string>('');
+  const [availableClasses, setAvailableClasses] = useState<any[]>([]);
 
   // Feedback form state
   const [feedbackReceiver, setFeedbackReceiver] = useState<string>('');
@@ -46,7 +48,7 @@ export const StudentDashboard: React.FC = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [cls, sch, asg, res, cr, att, reg] = await Promise.all([
+      const [cls, sch, asg, res, cr, att, reg, availCls] = await Promise.all([
         studentService.getClasses(),
         studentService.getSchedule(),
         studentService.getAssignments(),
@@ -54,6 +56,7 @@ export const StudentDashboard: React.FC = () => {
         studentService.getChangeRequests(),
         studentService.getAttendance(),
         studentService.getRegistrations(),
+        studentService.getAvailableClasses(),
       ]);
 
       setClasses(cls || []);
@@ -63,13 +66,25 @@ export const StudentDashboard: React.FC = () => {
       setChangeRequests(cr || []);
       setAttendance(att || null);
       setRegistrations(reg || []);
+      setAvailableClasses(availCls || []);
 
       if (cls && cls.length > 0) {
-        setRequestCurrentClass(cls[0].classId);
-        setFeedbackClassId(cls[0].classId);
+        const curClassId = cls[0].classId;
+        setRequestCurrentClass(curClassId);
+        setFeedbackClassId(curClassId);
         if (cls[0].teacher?._id) {
           setFeedbackReceiver(cls[0].teacher._id);
         }
+        if (availCls && availCls.length > 0) {
+          const valid = availCls.filter((c: any) => c._id !== curClassId);
+          if (valid.length > 0) {
+            setRequestTargetClass(valid[0]._id);
+          } else {
+            setRequestTargetClass(availCls[0]._id);
+          }
+        }
+      } else if (availCls && availCls.length > 0) {
+        setRequestTargetClass(availCls[0]._id);
       }
     } catch (err: any) {
       console.error('Lỗi khi nạp dữ liệu học viên:', err);
@@ -104,17 +119,40 @@ export const StudentDashboard: React.FC = () => {
 
   const handleSubmitChangeRequest = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!requestCurrentClass || !requestReason.trim()) {
-      setMessage({ type: 'error', text: 'Vui lòng chọn lớp học và nhập lý do yêu cầu' });
+    const curClassToUse = requestCurrentClass || (classes.length > 0 ? classes[0].classId : '');
+    if (!curClassToUse || !requestReason.trim()) {
+      setMessage({ type: 'error', text: 'Vui lòng chọn lớp học hiện tại và nhập lý do yêu cầu' });
+      return;
+    }
+
+    let targetCls = requestTargetClass;
+    if (requestType === 'CLASS_CHANGE') {
+      const validTargets = availableClasses.filter((c) => c._id !== curClassToUse);
+      if (!targetCls && validTargets.length > 0) {
+        targetCls = validTargets[0]._id;
+      }
+      if (!targetCls) {
+        setMessage({ type: 'error', text: 'Không có lớp học nào khác để chuyển sang' });
+        return;
+      }
+      if (targetCls === curClassToUse) {
+        setMessage({ type: 'error', text: 'Lớp học chuyển sang phải khác lớp hiện tại' });
+        return;
+      }
+    }
+
+    if (requestType === 'SCHEDULE_CHANGE' && !requestTargetSchedule.trim()) {
+      setMessage({ type: 'error', text: 'Vui lòng nhập khung giờ/lịch học mong muốn chuyển sang' });
       return;
     }
 
     try {
       await studentService.createChangeRequest({
         requestType,
-        currentClass: requestCurrentClass,
-        targetSchedule: requestTargetSchedule,
-        reason: requestReason,
+        currentClass: curClassToUse,
+        targetClass: requestType === 'CLASS_CHANGE' ? targetCls : undefined,
+        targetSchedule: requestType === 'SCHEDULE_CHANGE' ? requestTargetSchedule.trim() : undefined,
+        reason: requestReason.trim(),
       });
       setMessage({ type: 'success', text: 'Đã gửi yêu cầu thay đổi tới phòng Giáo vụ thành công!' });
       setRequestReason('');
@@ -232,14 +270,14 @@ export const StudentDashboard: React.FC = () => {
         {/* Navigation Tabs */}
         <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '24px', paddingBottom: '4px' }}>
           {[
-            { id: 'overview', label: '📊 Tổng quan', uc: 'UC14, UC20' },
-            { id: 'classes', label: '🏫 Lớp & Giảng viên', uc: 'UC14, UC16, UC17' },
-            { id: 'schedule', label: '📅 Thời khóa biểu', uc: 'UC15, UC23' },
-            { id: 'assignments', label: '✍️ Bài tập & Nộp bài', uc: 'UC18, UC19' },
-            { id: 'results', label: '🏆 Bảng điểm & Học tập', uc: 'UC20' },
-            { id: 'requests', label: '🔄 Đổi lớp & Lịch', uc: 'UC21, UC22, UC24' },
-            { id: 'feedback', label: '💬 Đánh giá GV', uc: 'Feedback' },
-            { id: 'payments', label: '💳 Học phí & Ghi danh', uc: 'UC12, UC13' },
+            { id: 'overview', label: '📊 Tổng quan' },
+            { id: 'classes', label: '🏫 Lớp & Giảng viên' },
+            { id: 'schedule', label: '📅 Thời khóa biểu' },
+            { id: 'assignments', label: '✍️ Bài tập & Nộp bài' },
+            { id: 'results', label: '🏆 Bảng điểm & Học tập' },
+            { id: 'requests', label: '🔄 Đổi lớp & Lịch' },
+            { id: 'feedback', label: '💬 Đánh giá GV' },
+            { id: 'payments', label: '💳 Học phí & Ghi danh' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -435,11 +473,11 @@ export const StudentDashboard: React.FC = () => {
               </div>
             )}
 
-            {/* ── TAB 2: CLASSES & TEACHER INFO (UC14, UC16, UC17) ────── */}
+            {/* ── TAB 2: CLASSES & TEACHER INFO ──────────────────────── */}
             {activeTab === 'classes' && (
               <div>
                 <h2 style={{ fontSize: '1.3rem', color: '#FFF', marginBottom: '16px' }}>
-                  Thông Tin Lớp Học &amp; Giảng Viên Giảng Dạy (UC14, UC16, UC17)
+                  Thông Tin Lớp Học &amp; Giảng Viên Giảng Dạy
                 </h2>
                 {classes.length === 0 ? (
                   <div className="dmr-card" style={{ textAlign: 'center', padding: '40px' }}>
@@ -501,11 +539,11 @@ export const StudentDashboard: React.FC = () => {
               </div>
             )}
 
-            {/* ── TAB 3: SCHEDULE & ATTENDANCE (UC15, UC23) ────────────── */}
+            {/* ── TAB 3: SCHEDULE & ATTENDANCE ────────────────────────── */}
             {activeTab === 'schedule' && (
               <div>
                 <h2 style={{ fontSize: '1.3rem', color: '#FFF', marginBottom: '16px' }}>
-                  Lịch Học Tuần &amp; Kết Quả Chuyên Cần (UC15, UC23)
+                  Lịch Học Tuần &amp; Kết Quả Chuyên Cần
                 </h2>
                 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px', marginBottom: '24px' }}>
@@ -577,11 +615,11 @@ export const StudentDashboard: React.FC = () => {
               </div>
             )}
 
-            {/* ── TAB 4: ASSIGNMENTS & DO ASSIGNMENT (UC18, UC19) ──────── */}
+            {/* ── TAB 4: ASSIGNMENTS & DO ASSIGNMENT ─────────────────── */}
             {activeTab === 'assignments' && (
               <div>
                 <h2 style={{ fontSize: '1.3rem', color: '#FFF', marginBottom: '16px' }}>
-                  Danh Sách Bài Tập &amp; Nộp Bài Trực Tuyến (UC18, UC19)
+                  Danh Sách Bài Tập &amp; Nộp Bài Trực Tuyến
                 </h2>
 
                 {/* Submit Modal / Panel */}
@@ -729,11 +767,11 @@ export const StudentDashboard: React.FC = () => {
               </div>
             )}
 
-            {/* ── TAB 5: ACADEMIC RESULTS (UC20) ───────────────────────── */}
+            {/* ── TAB 5: ACADEMIC RESULTS ────────────────────────────── */}
             {activeTab === 'results' && (
               <div>
                 <h2 style={{ fontSize: '1.3rem', color: '#FFF', marginBottom: '16px' }}>
-                  Bảng Điểm &amp; Kết Quả Đào Tạo Chi Tiết (UC20)
+                  Bảng Điểm &amp; Kết Quả Đào Tạo Chi Tiết
                 </h2>
 
                 <div className="dmr-card" style={{ marginBottom: '24px' }}>
@@ -805,11 +843,11 @@ export const StudentDashboard: React.FC = () => {
               </div>
             )}
 
-            {/* ── TAB 6: REQUESTS (UC21, UC22, UC24) ──────────────────── */}
+            {/* ── TAB 6: REQUESTS ────────────────────────────────────────── */}
             {activeTab === 'requests' && (
               <div>
                 <h2 style={{ fontSize: '1.3rem', color: '#FFF', marginBottom: '16px' }}>
-                  Yêu Cầu Thay Đổi Lớp Học &amp; Lịch Học (UC21, UC22, UC24)
+                  Yêu Cầu Thay Đổi Lớp Học &amp; Lịch Học
                 </h2>
 
                 {/* Submit form */}
@@ -833,8 +871,8 @@ export const StudentDashboard: React.FC = () => {
                             color: '#FFF',
                           }}
                         >
-                          <option value="CLASS_CHANGE">Chuyển sang Lớp học khác (UC21)</option>
-                          <option value="SCHEDULE_CHANGE">Thay đổi Lịch học trong tuần (UC22)</option>
+                          <option value="CLASS_CHANGE">Chuyển sang Lớp học khác</option>
+                          <option value="SCHEDULE_CHANGE">Thay đổi Lịch học trong tuần</option>
                         </select>
                       </div>
 
@@ -844,7 +882,14 @@ export const StudentDashboard: React.FC = () => {
                         </label>
                         <select
                           value={requestCurrentClass}
-                          onChange={(e) => setRequestCurrentClass(e.target.value)}
+                          onChange={(e) => {
+                            const newCur = e.target.value;
+                            setRequestCurrentClass(newCur);
+                            const nextValid = availableClasses.filter((c) => c._id !== newCur);
+                            if (nextValid.length > 0) {
+                              setRequestTargetClass(nextValid[0]._id);
+                            }
+                          }}
                           style={{
                             width: '100%',
                             padding: '10px',
@@ -862,25 +907,56 @@ export const StudentDashboard: React.FC = () => {
                         </select>
                       </div>
 
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', marginBottom: '6px' }}>
-                          Khung giờ mong muốn chuyển sang:
-                        </label>
-                        <input
-                          type="text"
-                          value={requestTargetSchedule}
-                          onChange={(e) => setRequestTargetSchedule(e.target.value)}
-                          placeholder="VD: Ca tối Thứ 3-5-7 (19h00)"
-                          style={{
-                            width: '100%',
-                            padding: '10px',
-                            borderRadius: '8px',
-                            backgroundColor: '#0F2F2E',
-                            border: '1px solid rgba(255,255,255,0.2)',
-                            color: '#FFF',
-                          }}
-                        />
-                      </div>
+                      {requestType === 'CLASS_CHANGE' ? (
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', marginBottom: '6px' }}>
+                            Lớp học mong muốn chuyển sang:
+                          </label>
+                          <select
+                            value={requestTargetClass}
+                            onChange={(e) => setRequestTargetClass(e.target.value)}
+                            style={{
+                              width: '100%',
+                              padding: '10px',
+                              borderRadius: '8px',
+                              backgroundColor: '#0F2F2E',
+                              border: '1px solid rgba(255,255,255,0.2)',
+                              color: '#FFF',
+                            }}
+                          >
+                            {availableClasses
+                              .filter((c) => c._id !== requestCurrentClass)
+                              .map((c) => (
+                                <option key={c._id} value={c._id}>
+                                  {c.name || c.classCode} (GV: {c.teacher?.fullName || 'Đang cập nhật'} • Phòng: {c.room || 'Chưa xếp'})
+                                </option>
+                              ))}
+                            {availableClasses.filter((c) => c._id !== requestCurrentClass).length === 0 && (
+                              <option value="">(Không có lớp khác khả dụng)</option>
+                            )}
+                          </select>
+                        </div>
+                      ) : (
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', marginBottom: '6px' }}>
+                            Khung giờ mong muốn chuyển sang:
+                          </label>
+                          <input
+                            type="text"
+                            value={requestTargetSchedule}
+                            onChange={(e) => setRequestTargetSchedule(e.target.value)}
+                            placeholder="VD: Ca tối Thứ 3-5-7 (19h00)"
+                            style={{
+                              width: '100%',
+                              padding: '10px',
+                              borderRadius: '8px',
+                              backgroundColor: '#0F2F2E',
+                              border: '1px solid rgba(255,255,255,0.2)',
+                              color: '#FFF',
+                            }}
+                          />
+                        </div>
+                      )}
                     </div>
 
                     <div>
@@ -922,9 +998,9 @@ export const StudentDashboard: React.FC = () => {
                   </form>
                 </div>
 
-                {/* Track requests list (UC24) */}
+                {/* Track requests list */}
                 <div className="dmr-card">
-                  <h3 className="dmr-card-title">Lịch Sử &amp; Tiến Trình Xét Duyệt Yêu Cầu (UC24)</h3>
+                  <h3 className="dmr-card-title">Lịch Sử &amp; Tiến Trình Xét Duyệt Yêu Cầu</h3>
                   {changeRequests.length === 0 ? (
                     <p style={{ color: 'rgba(255,255,255,0.6)', marginTop: '10px' }}>Bạn chưa gửi yêu cầu thay đổi nào.</p>
                   ) : (
@@ -948,7 +1024,18 @@ export const StudentDashboard: React.FC = () => {
                             </span>
                             <h4 style={{ margin: '4px 0', color: '#FFF' }}>{req.reason}</h4>
                             <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)' }}>
-                              Lớp: {req.currentClass?.name || req.currentClass?.classCode} • Ngày gửi: {new Date(req.createdAt).toLocaleDateString('vi-VN')}
+                              Lớp hiện tại: {req.currentClass?.name || req.currentClass?.classCode}
+                              {req.targetClass && (
+                                <span style={{ color: '#57D061', marginLeft: '6px' }}>
+                                  ➔ Sang lớp: {req.targetClass?.name || req.targetClass?.classCode}
+                                </span>
+                              )}
+                              {req.targetSchedule && (
+                                <span style={{ color: '#57D061', marginLeft: '6px' }}>
+                                  ➔ Lịch mới: {req.targetSchedule}
+                                </span>
+                              )}
+                              {' • Ngày gửi: ' + new Date(req.createdAt).toLocaleDateString('vi-VN')}
                             </span>
                             {req.reviewNote && (
                               <p style={{ margin: '6px 0 0', fontSize: '0.85rem', color: '#A0EC1D' }}>
@@ -1089,12 +1176,12 @@ export const StudentDashboard: React.FC = () => {
               </div>
             )}
 
-            {/* ── TAB 8: PAYMENTS & REGISTRATIONS (UC12, UC13) ──────────── */}
+            {/* ── TAB 8: PAYMENTS & REGISTRATIONS ───────────────────── */}
             {activeTab === 'payments' && (
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                   <h2 style={{ fontSize: '1.3rem', color: '#FFF', margin: 0 }}>
-                    Trạng Thái Đăng Ký &amp; Thanh Toán Học Phí (UC12, UC13)
+                    Trạng Thái Đăng Ký &amp; Thanh Toán Học Phí
                   </h2>
                   <button
                     type="button"
@@ -1114,7 +1201,7 @@ export const StudentDashboard: React.FC = () => {
                 </div>
 
                 <div className="dmr-card">
-                  <h3 className="dmr-card-title">Danh Sách Khóa Học Đã Đăng Ký (UC13)</h3>
+                  <h3 className="dmr-card-title">Danh Sách Khóa Học Đã Đăng Ký</h3>
                   {registrations.length === 0 ? (
                     <p style={{ color: 'rgba(255,255,255,0.6)' }}>Chưa có bản ghi đăng ký nào.</p>
                   ) : (
@@ -1212,7 +1299,7 @@ export const StudentDashboard: React.FC = () => {
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                <h3 style={{ margin: 0, color: '#57D061' }}>💳 Cổng Thanh Toán Học Phí (UC12)</h3>
+                <h3 style={{ margin: 0, color: '#57D061' }}>💳 Cổng Thanh Toán Học Phí Trực Tuyến</h3>
                 <button
                   type="button"
                   onClick={() => setIsPaymentModalOpen(false)}

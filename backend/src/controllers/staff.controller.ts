@@ -13,6 +13,7 @@ import {
   ChangeRequest,
   Assignment,
   Submission,
+  Notification,
 } from '../models';
 
 /**
@@ -726,12 +727,35 @@ export const processChangeRequest = async (req: AuthRequest, res: Response): Pro
 
     // If APPROVED and requestType is CLASS_CHANGE, move student to targetClass
     if (status === 'APPROVED' && request.requestType === 'CLASS_CHANGE' && request.targetClass) {
+      const targetClassDoc = await Class.findById(request.targetClass);
+      const updatePayload: any = { class: request.targetClass };
+      if (targetClassDoc?.course) {
+        updatePayload.course = targetClassDoc.course;
+      }
       await Enrollment.findOneAndUpdate(
         { student: request.student, class: request.currentClass },
-        { class: request.targetClass }
+        updatePayload
       );
       await Class.findByIdAndUpdate(request.currentClass, { $inc: { currentEnrollment: -1 } });
       await Class.findByIdAndUpdate(request.targetClass, { $inc: { currentEnrollment: 1 } });
+    }
+
+    // If APPROVED and requestType is SCHEDULE_CHANGE with targetSchedule
+    if (status === 'APPROVED' && request.requestType === 'SCHEDULE_CHANGE' && request.targetSchedule) {
+      await Class.findByIdAndUpdate(request.currentClass, { timeSlot: request.targetSchedule });
+    }
+
+    // Send in-app notification to the requester (student or teacher)
+    if (request.student) {
+      await Notification.create({
+        recipient: request.student,
+        title: `Yêu cầu đổi ${request.requestType === 'CLASS_CHANGE' ? 'lớp học' : 'lịch học/dạy'} đã được ${status === 'APPROVED' ? 'chấp thuận' : 'từ chối'}`,
+        message: reviewNote
+          ? `Giáo vụ phản hồi: "${reviewNote}"`
+          : `Yêu cầu của bạn đã được phòng Giáo vụ xét duyệt: ${status === 'APPROVED' ? 'Chấp thuận' : 'Từ chối'}.`,
+        type: 'SYSTEM',
+        isRead: false,
+      });
     }
 
     res.status(200).json({

@@ -351,10 +351,18 @@ export const createTeacherScheduleRequest = async (req: AuthRequest, res: Respon
     const teacherId = req.user?._id;
     const { currentClass, targetSchedule, reason } = req.body;
 
-    if (!currentClass || !reason) {
+    if (!currentClass || !reason?.trim()) {
       res.status(400).json({
         success: false,
         message: 'Vui lòng chọn lớp học và nhập lý do đổi lịch',
+      });
+      return;
+    }
+
+    if (!targetSchedule?.trim()) {
+      res.status(400).json({
+        success: false,
+        message: 'Vui lòng nhập lịch dạy mong muốn dời sang',
       });
       return;
     }
@@ -364,7 +372,7 @@ export const createTeacherScheduleRequest = async (req: AuthRequest, res: Respon
       requesterRole: 'TEACHER',
       requestType: 'SCHEDULE_CHANGE',
       currentClass,
-      targetSchedule: targetSchedule || '',
+      targetSchedule: targetSchedule.trim(),
       reason: reason.trim(),
       status: 'PENDING',
     });

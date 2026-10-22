@@ -2,6 +2,7 @@ import api from './api';
 
 export interface StudentService {
   getClasses: () => Promise<any>;
+  getAvailableClasses: () => Promise<any>;
   getSchedule: () => Promise<any>;
   getAssignments: () => Promise<any>;
   submitAssignment: (id: string, data: { content: string; attachments?: string[] }) => Promise<any>;
@@ -36,6 +37,11 @@ export interface StudentService {
 export const studentService: StudentService = {
   getClasses: async () => {
     const res = await api.get('/student/classes');
+    return res.data?.data;
+  },
+
+  getAvailableClasses: async () => {
+    const res = await api.get('/student/available-classes');
     return res.data?.data;
   },
 

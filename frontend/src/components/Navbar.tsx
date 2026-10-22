@@ -206,7 +206,7 @@ const Navbar: React.FC = () => {
         </ul>
 
         {/* Right Action Widgets */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
           {/* Target Score Widget */}
           <div
             className="dmr-leaf-points"
@@ -219,7 +219,7 @@ const Navbar: React.FC = () => {
 
           {/* Cart Icon */}
           <Link to="/courses" className="dmr-store-btn" title="Cửa hàng khóa học IELTS">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
               <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
               <circle cx="10" cy="21" r="1.5" />
               <circle cx="19" cy="21" r="1.5" />
@@ -246,33 +246,54 @@ const Navbar: React.FC = () => {
                 className="dmr-user-avatar"
                 onClick={() => setIsProfileOpen(true)}
                 title="Nhấp để xem và cập nhật hồ sơ cá nhân"
-                style={{ cursor: 'pointer' }}
+                style={{ cursor: 'pointer', flexShrink: 0 }}
               >
                 {user.fullName.charAt(0).toUpperCase()}
               </div>
 
               <div
-                style={{ display: 'flex', flexDirection: 'column', cursor: 'pointer' }}
+                style={{ display: 'flex', flexDirection: 'column', cursor: 'pointer', minWidth: 0 }}
                 onClick={() => setIsProfileOpen(true)}
                 title="Nhấp để xem và cập nhật hồ sơ cá nhân"
               >
-                <span style={{ fontSize: '0.85rem', fontWeight: 700, lineHeight: 1.1 }}>
-                  {user.fullName}
+                <span
+                  style={{
+                    fontSize: '0.82rem',
+                    fontWeight: 700,
+                    lineHeight: 1.2,
+                    maxWidth: '120px',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    color: '#FFFFFF',
+                    display: 'block',
+                  }}
+                  title={user.fullName}
+                >
+                  {user.fullName.replace(/\s*\(.*?\)/g, '')}
                 </span>
-                <span style={{ fontSize: '0.7rem', color: '#A0EC1D' }}>
-                  {user.role} • Hồ sơ
+                <span style={{ fontSize: '0.68rem', color: '#A0EC1D', fontWeight: 600 }}>
+                  {user.role === 'TEACHER'
+                    ? 'Giảng viên'
+                    : user.role === 'TRAINING_STAFF'
+                    ? 'Giáo vụ'
+                    : user.role === 'DIRECTOR'
+                    ? 'Giám đốc'
+                    : 'Học viên'} • Hồ sơ
                 </span>
               </div>
               <Link
                 to={getDashboardPath(user.role)}
                 style={{
-                  color: '#FFFFFF',
-                  background: 'rgba(255,255,255,0.18)',
+                  color: '#052F2E',
+                  background: '#57D061',
                   padding: '4px 10px',
-                  borderRadius: '20px',
-                  fontSize: '0.78rem',
-                  fontWeight: 600,
+                  borderRadius: '16px',
+                  fontSize: '0.75rem',
+                  fontWeight: 800,
                   textDecoration: 'none',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
                 }}
               >
                 Dashboard
@@ -281,13 +302,16 @@ const Navbar: React.FC = () => {
                 type="button"
                 onClick={handleLogout}
                 style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#FFB4A2',
-                  fontSize: '0.8rem',
+                  background: 'rgba(239, 68, 68, 0.2)',
+                  border: '1px solid rgba(239, 68, 68, 0.4)',
+                  color: '#FCA5A5',
+                  fontSize: '0.75rem',
                   cursor: 'pointer',
-                  fontWeight: 600,
-                  padding: '0 4px',
+                  fontWeight: 700,
+                  padding: '4px 8px',
+                  borderRadius: '14px',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
                 }}
                 title="Đăng xuất"
               >

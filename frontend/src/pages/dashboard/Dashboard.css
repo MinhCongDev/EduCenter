@@ -201,6 +201,78 @@
   }
 }
 
+.dmr-card {
+  background: rgba(7, 47, 46, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(87, 208, 97, 0.22);
+  border-radius: 20px;
+  padding: 1.5rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  transition: all 0.25s ease;
+}
+
+.dmr-card:hover {
+  border-color: rgba(87, 208, 97, 0.35);
+}
+
+.dmr-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dmr-card-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+/* Card Action Button (e.g. 'Quản lý lớp ➔', 'Chấm bài ngay ➔') - styled to match teal/green theme */
+.dmr-card-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(87, 208, 97, 0.12);
+  color: #57D061;
+  border: 1px solid rgba(87, 208, 97, 0.35);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  text-decoration: none;
+  font-family: inherit;
+  outline: none;
+}
+
+.dmr-card-action:hover {
+  background: rgba(87, 208, 97, 0.28);
+  border-color: #57D061;
+  color: #FFFFFF;
+  transform: translateX(3px);
+  box-shadow: 0 4px 14px rgba(87, 208, 97, 0.3);
+}
+
+.dmr-dash-content-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+@media (max-width: 960px) {
+  .dmr-dash-content-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .dmr-card-box {
   background: rgba(7, 47, 46, 0.6);
   backdrop-filter: blur(10px);

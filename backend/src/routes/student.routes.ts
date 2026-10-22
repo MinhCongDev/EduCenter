@@ -11,6 +11,7 @@ import {
   submitFeedback,
   getRegistrations,
   makePayment,
+  getAvailableClasses,
 } from '../controllers/student.controller';
 import { authenticate } from '../middlewares/auth.middleware';
 
@@ -19,6 +20,9 @@ const router = Router();
 
 // All student routes require authentication and STUDENT role (or STAFF/DIRECTOR for preview)
 router.use(authenticate);
+
+// Available classes to transfer to
+router.get('/available-classes', getAvailableClasses);
 
 // UC14, UC16, UC17: View Assigned Class & Information & Teacher Info
 router.get('/classes', getAssignedClasses);

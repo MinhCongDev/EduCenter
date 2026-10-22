@@ -134,7 +134,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
             <span style={{ fontSize: '1.4rem' }}>🔑</span>
             <div>
               <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700 }}>
-                Quên Mật Khẩu (UC11)
+                Quên Mật Khẩu
               </h3>
               <span style={{ fontSize: '0.8rem', color: '#FCD34D' }}>
                 Bước {step}/2: {step === 1 ? 'Nhập email nhận mã' : 'Đặt mật khẩu mới'}

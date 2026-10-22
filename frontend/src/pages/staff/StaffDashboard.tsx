@@ -229,7 +229,8 @@ export const StaffDashboard: React.FC = () => {
   };
 
   const handleProcessRequest = async (requestId: string, status: 'APPROVED' | 'REJECTED') => {
-    const note = prompt(status === 'APPROVED' ? 'Nhập ghi chú chấp thuận:' : 'Nhập lý do từ chối:') || '';
+    const note = window.prompt(status === 'APPROVED' ? 'Nhập ghi chú phê duyệt (tùy chọn):' : 'Nhập lý do từ chối:');
+    if (note === null) return; // User cancelled prompt
     try {
       await staffService.processChangeRequest(requestId, {
         status,
@@ -332,15 +333,15 @@ export const StaffDashboard: React.FC = () => {
         <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '24px', paddingBottom: '4px' }}>
           {[
             { id: 'overview', label: '📊 Tổng quan' },
-            { id: 'courses', label: '📚 Khóa học (UC39)' },
-            { id: 'classes', label: '🏫 Lớp học (UC42, UC43, UC44)' },
-            { id: 'students', label: '👥 Học viên (UC40)' },
-            { id: 'teachers', label: '👨‍🏫 Giảng viên (UC41)' },
-            { id: 'schedules', label: '📅 Thời khóa biểu (UC45)' },
-            { id: 'registrations', label: '📝 Ghi danh (UC46)' },
-            { id: 'payments', label: '💳 Thu học phí (UC47)' },
-            { id: 'requests', label: '🔄 Duyệt đổi lớp/lịch (UC48, UC49)' },
-            { id: 'results', label: '🏆 Điểm học vụ (UC50, UC51)' },
+            { id: 'courses', label: '📚 Khóa học' },
+            { id: 'classes', label: '🏫 Lớp học' },
+            { id: 'students', label: '👥 Học viên' },
+            { id: 'teachers', label: '👨‍🏫 Giảng viên' },
+            { id: 'schedules', label: '📅 Thời khóa biểu' },
+            { id: 'registrations', label: '📝 Ghi danh' },
+            { id: 'payments', label: '💳 Thu học phí' },
+            { id: 'requests', label: '🔄 Duyệt đổi lớp/lịch' },
+            { id: 'results', label: '🏆 Điểm học vụ' },
             { id: 'finalExams', label: '🎯 Kỳ thi Final Exam' },
           ].map((tab) => (
             <button
@@ -427,7 +428,7 @@ export const StaffDashboard: React.FC = () => {
                   {/* Left: Pending Requests */}
                   <div className="dmr-card">
                     <div className="dmr-card-header">
-                      <h3 className="dmr-card-title">🔄 Yêu Cầu Chờ Xử Lý (UC48, UC49)</h3>
+                      <h3 className="dmr-card-title">🔄 Yêu Cầu Chờ Xử Lý</h3>
                       <button
                         type="button"
                         className="dmr-card-action"
@@ -459,7 +460,9 @@ export const StaffDashboard: React.FC = () => {
                               <div>
                                 <strong style={{ color: '#FFF' }}>{r.student?.fullName}</strong>
                                 <p style={{ margin: '2px 0 0', fontSize: '0.8rem', color: '#FCD34D' }}>
-                                  {r.requestType === 'CLASS_CHANGE' ? 'Xin đổi lớp' : 'Xin đổi lịch'}: {r.reason}
+                                  {r.requestType === 'CLASS_CHANGE'
+                                    ? `Xin đổi sang: ${r.targetClass?.name || r.targetClass?.classCode || 'Lớp mới'}`
+                                    : `Xin đổi lịch: ${r.targetSchedule || r.reason}`}
                                 </p>
                               </div>
                               <div style={{ display: 'flex', gap: '6px' }}>
@@ -505,7 +508,7 @@ export const StaffDashboard: React.FC = () => {
                   {/* Right: Recent Registrations */}
                   <div className="dmr-card">
                     <div className="dmr-card-header">
-                      <h3 className="dmr-card-title">📝 Ghi Danh Mới Nhất (UC46)</h3>
+                      <h3 className="dmr-card-title">📝 Ghi Danh Mới Nhất</h3>
                       <button
                         type="button"
                         className="dmr-card-action"
@@ -557,7 +560,7 @@ export const StaffDashboard: React.FC = () => {
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                   <h2 style={{ fontSize: '1.3rem', color: '#FFF', margin: 0 }}>
-                    Quản Lý Khóa Học &amp; Chương Trình Đào Tạo (UC39)
+                    Quản Lý Khóa Học &amp; Chương Trình Đào Tạo
                   </h2>
                   <button
                     type="button"
@@ -609,7 +612,7 @@ export const StaffDashboard: React.FC = () => {
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                   <h2 style={{ fontSize: '1.3rem', color: '#FFF', margin: 0 }}>
-                    Quản Lý Lớp Học &amp; Xếp Lớp Giảng Viên/Học Viên (UC42, UC43, UC44)
+                    Quản Lý Lớp Học &amp; Xếp Lớp Giảng Viên/Học Viên
                   </h2>
                   <div style={{ display: 'flex', gap: '10px' }}>
                     <button
@@ -626,7 +629,7 @@ export const StaffDashboard: React.FC = () => {
                         fontSize: '0.85rem',
                       }}
                     >
-                      👤 Xếp học viên (UC43)
+                      👤 Xếp học viên
                     </button>
                     <button
                       type="button"
@@ -642,7 +645,7 @@ export const StaffDashboard: React.FC = () => {
                         fontSize: '0.85rem',
                       }}
                     >
-                      + Tạo lớp học mới (UC42)
+                      + Tạo lớp học mới
                     </button>
                   </div>
                 </div>
@@ -700,7 +703,7 @@ export const StaffDashboard: React.FC = () => {
                                 cursor: 'pointer',
                               }}
                             >
-                              Gán GV (UC44)
+                              Gán GV
                             </button>
                           </td>
                         </tr>
@@ -716,7 +719,7 @@ export const StaffDashboard: React.FC = () => {
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                   <h2 style={{ fontSize: '1.3rem', color: '#FFF', margin: 0 }}>
-                    Quản Lý Danh Sách &amp; Hồ Sơ Học Viên (UC40)
+                    Quản Lý Danh Sách &amp; Hồ Sơ Học Viên
                   </h2>
                   <input
                     type="text"
@@ -792,7 +795,7 @@ export const StaffDashboard: React.FC = () => {
             {activeTab === 'teachers' && (
               <div>
                 <h2 style={{ fontSize: '1.3rem', color: '#FFF', marginBottom: '16px' }}>
-                  Quản Lý Đội Ngũ Giảng Viên &amp; Phân Bổ Lớp Dạy (UC41)
+                  Quản Lý Đội Ngũ Giảng Viên &amp; Phân Bổ Lớp Dạy
                 </h2>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '20px' }}>
                   {teachers.map((t) => (
@@ -830,7 +833,7 @@ export const StaffDashboard: React.FC = () => {
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                   <h2 style={{ fontSize: '1.3rem', color: '#FFF', margin: 0 }}>
-                    Quản Lý Thời Khóa Biểu &amp; Phòng Học (UC45)
+                    Quản Lý Thời Khóa Biểu &amp; Phòng Học
                   </h2>
                   <button
                     type="button"
@@ -883,7 +886,7 @@ export const StaffDashboard: React.FC = () => {
             {activeTab === 'registrations' && (
               <div>
                 <h2 style={{ fontSize: '1.3rem', color: '#FFF', marginBottom: '16px' }}>
-                  Theo Dõi Danh Sách Ghi Danh Khóa Học (UC46)
+                  Theo Dõi Danh Sách Ghi Danh Khóa Học
                 </h2>
                 <div className="dmr-card">
                   <table style={{ width: '100%', borderCollapse: 'collapse', color: '#FFF' }}>
@@ -934,7 +937,7 @@ export const StaffDashboard: React.FC = () => {
             {activeTab === 'payments' && (
               <div>
                 <h2 style={{ fontSize: '1.3rem', color: '#FFF', marginBottom: '16px' }}>
-                  Theo Dõi Giao Dịch &amp; Đối Soát Học Phí (UC47)
+                  Theo Dõi Giao Dịch &amp; Đối Soát Học Phí
                 </h2>
                 <div className="dmr-card">
                   <table style={{ width: '100%', borderCollapse: 'collapse', color: '#FFF' }}>
@@ -1006,7 +1009,7 @@ export const StaffDashboard: React.FC = () => {
             {activeTab === 'requests' && (
               <div>
                 <h2 style={{ fontSize: '1.3rem', color: '#FFF', marginBottom: '16px' }}>
-                  Xử Lý &amp; Xét Duyệt Yêu Cầu Đổi Lớp / Đổi Lịch Học (UC48, UC49)
+                  Xử Lý &amp; Xét Duyệt Yêu Cầu Đổi Lớp / Đổi Lịch Học
                 </h2>
                 <div className="dmr-card">
                   <table style={{ width: '100%', borderCollapse: 'collapse', color: '#FFF' }}>
@@ -1028,10 +1031,13 @@ export const StaffDashboard: React.FC = () => {
                             <div style={{ fontSize: '0.75rem', color: '#A0EC1D' }}>{r.student?.role}</div>
                           </td>
                           <td style={{ padding: '12px 10px', color: '#FCD34D', fontWeight: 700 }}>
-                            {r.requestType === 'CLASS_CHANGE' ? 'ĐỔI LỚP (UC48)' : 'ĐỔI LỊCH (UC49)'}
+                            {r.requestType === 'CLASS_CHANGE' ? 'ĐỔI LỚP' : 'ĐỔI LỊCH'}
                           </td>
                           <td style={{ padding: '12px 10px', fontSize: '0.85rem' }}>
                             <div>Hiện tại: {r.currentClass?.name || r.currentClass?.classCode}</div>
+                            {r.targetClass && (
+                              <div style={{ color: '#57D061' }}>Chuyển sang: {r.targetClass?.name || r.targetClass?.classCode}</div>
+                            )}
                             {r.targetSchedule && (
                               <div style={{ color: '#57D061' }}>Muốn dời sang: {r.targetSchedule}</div>
                             )}
@@ -1105,11 +1111,11 @@ export const StaffDashboard: React.FC = () => {
               </div>
             )}
 
-            {/* ── TAB 10: ACADEMIC RESULTS (UC50, UC51) ────────────────── */}
+            {/* ── TAB 10: ACADEMIC RESULTS ──────────────────────────────── */}
             {activeTab === 'results' && (
               <div>
                 <h2 style={{ fontSize: '1.3rem', color: '#FFF', marginBottom: '16px' }}>
-                  Theo Dõi Kết Quả Học Tập &amp; Điểm Số Toàn Trung Tâm (UC50, UC51)
+                  Theo Dõi Kết Quả Học Tập &amp; Điểm Số Toàn Trung Tâm
                 </h2>
                 <div className="dmr-card">
                   <table style={{ width: '100%', borderCollapse: 'collapse', color: '#FFF' }}>
@@ -1211,7 +1217,7 @@ export const StaffDashboard: React.FC = () => {
           <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '16px' }}>
             <div style={{ backgroundColor: '#0F2F2E', border: '1px solid #1E4E4D', borderRadius: '16px', width: '100%', maxWidth: '500px', padding: '24px', color: '#FFF' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '14px' }}>
-                <h3 style={{ margin: 0, color: '#57D061' }}>Tạo Khóa Học IELTS Mới (UC39)</h3>
+                <h3 style={{ margin: 0, color: '#57D061' }}>Tạo Khóa Học IELTS Mới</h3>
                 <button type="button" onClick={() => setIsCourseModalOpen(false)} style={{ background: 'none', border: 'none', color: '#FFF', cursor: 'pointer', fontSize: '1.2rem' }}>✕</button>
               </div>
               <form onSubmit={handleCreateCourse} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -1261,7 +1267,7 @@ export const StaffDashboard: React.FC = () => {
           <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '16px' }}>
             <div style={{ backgroundColor: '#0F2F2E', border: '1px solid #1E4E4D', borderRadius: '16px', width: '100%', maxWidth: '520px', padding: '24px', color: '#FFF' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '14px' }}>
-                <h3 style={{ margin: 0, color: '#57D061' }}>Mở Lớp Học Mới (UC42)</h3>
+                <h3 style={{ margin: 0, color: '#57D061' }}>Mở Lớp Học Mới</h3>
                 <button type="button" onClick={() => setIsClassModalOpen(false)} style={{ background: 'none', border: 'none', color: '#FFF', cursor: 'pointer', fontSize: '1.2rem' }}>✕</button>
               </div>
               <form onSubmit={handleCreateClass} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -1310,12 +1316,12 @@ export const StaffDashboard: React.FC = () => {
           </div>
         )}
 
-        {/* Assign Student Modal (UC43) */}
+        {/* Assign Student Modal */}
         {isAssignStudentModalOpen && (
           <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '16px' }}>
             <div style={{ backgroundColor: '#0F2F2E', border: '1px solid #1E4E4D', borderRadius: '16px', width: '100%', maxWidth: '480px', padding: '24px', color: '#FFF' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '14px' }}>
-                <h3 style={{ margin: 0, color: '#57D061' }}>Xếp Học Viên Vào Lớp (UC43)</h3>
+                <h3 style={{ margin: 0, color: '#57D061' }}>Xếp Học Viên Vào Lớp</h3>
                 <button type="button" onClick={() => setIsAssignStudentModalOpen(false)} style={{ background: 'none', border: 'none', color: '#FFF', cursor: 'pointer', fontSize: '1.2rem' }}>✕</button>
               </div>
               <form onSubmit={handleAssignStudent} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -1340,12 +1346,12 @@ export const StaffDashboard: React.FC = () => {
           </div>
         )}
 
-        {/* Assign Teacher Modal (UC44) */}
+        {/* Assign Teacher Modal */}
         {isAssignTeacherModalOpen && (
           <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '16px' }}>
             <div style={{ backgroundColor: '#0F2F2E', border: '1px solid #1E4E4D', borderRadius: '16px', width: '100%', maxWidth: '480px', padding: '24px', color: '#FFF' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '14px' }}>
-                <h3 style={{ margin: 0, color: '#57D061' }}>Phân Công Giảng Viên Dạy Lớp (UC44)</h3>
+                <h3 style={{ margin: 0, color: '#57D061' }}>Phân Công Giảng Viên Dạy Lớp</h3>
                 <button type="button" onClick={() => setIsAssignTeacherModalOpen(false)} style={{ background: 'none', border: 'none', color: '#FFF', cursor: 'pointer', fontSize: '1.2rem' }}>✕</button>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -1364,12 +1370,12 @@ export const StaffDashboard: React.FC = () => {
           </div>
         )}
 
-        {/* Schedule Modal (UC45) */}
+        {/* Schedule Modal */}
         {isScheduleModalOpen && (
           <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '16px' }}>
             <div style={{ backgroundColor: '#0F2F2E', border: '1px solid #1E4E4D', borderRadius: '16px', width: '100%', maxWidth: '480px', padding: '24px', color: '#FFF' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '14px' }}>
-                <h3 style={{ margin: 0, color: '#57D061' }}>Thêm Buổi Học Vào Lịch (UC45)</h3>
+                <h3 style={{ margin: 0, color: '#57D061' }}>Thêm Buổi Học Vào Lịch</h3>
                 <button type="button" onClick={() => setIsScheduleModalOpen(false)} style={{ background: 'none', border: 'none', color: '#FFF', cursor: 'pointer', fontSize: '1.2rem' }}>✕</button>
               </div>
               <form onSubmit={handleCreateSchedule} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>

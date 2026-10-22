@@ -13,7 +13,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   return (
     <div className="dashboard-layout" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#052F2E' }}>
       <Navbar />
-      <main className="dashboard-main-content" style={{ flex: 1 }}>
+      <main className="dashboard-main-content" style={{ flex: 1, paddingTop: '76px' }}>
         {children}
       </main>
       <Footer />

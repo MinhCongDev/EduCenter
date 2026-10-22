@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { AuthRequest } from '../middlewares/auth.middleware';
 import {
   Enrollment,
+  Class,
   ClassSchedule,
   Assignment,
   Submission,
@@ -302,13 +303,38 @@ export const createChangeRequest = async (req: AuthRequest, res: Response): Prom
       return;
     }
 
+    if (requestType === 'CLASS_CHANGE') {
+      if (!targetClass) {
+        res.status(400).json({
+          success: false,
+          message: 'Vui lòng chọn lớp học mong muốn chuyển sang',
+        });
+        return;
+      }
+      if (String(targetClass) === String(currentClass)) {
+        res.status(400).json({
+          success: false,
+          message: 'Lớp học chuyển sang phải khác lớp hiện tại',
+        });
+        return;
+      }
+    }
+
+    if (requestType === 'SCHEDULE_CHANGE' && !targetSchedule?.trim()) {
+      res.status(400).json({
+        success: false,
+        message: 'Vui lòng nhập khung giờ/lịch học mong muốn chuyển sang',
+      });
+      return;
+    }
+
     const changeRequest = await ChangeRequest.create({
       student: studentId,
       requesterRole: 'STUDENT',
       requestType,
       currentClass,
       targetClass: targetClass || undefined,
-      targetSchedule: targetSchedule || '',
+      targetSchedule: targetSchedule?.trim() || '',
       reason: reason.trim(),
       status: 'PENDING',
     });
@@ -506,3 +532,27 @@ export const makePayment = async (req: AuthRequest, res: Response): Promise<void
     });
   }
 };
+
+/**
+ * Get all available classes for transferring or viewing
+ * GET /api/student/available-classes
+ */
+export const getAvailableClasses = async (_req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const classes = await Class.find({ status: { $ne: 'CANCELLED' } })
+      .populate('course', 'title code tuitionFee')
+      .populate('teacher', 'fullName email')
+      .sort({ startDate: -1 });
+
+    res.status(200).json({
+      success: true,
+      data: classes,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Lỗi khi lấy danh sách lớp học khả dụng',
+    });
+  }
+};
+
