@@ -199,7 +199,7 @@ const Navbar: React.FC = () => {
           {/* Sự kiện / Workshop */}
           <li className="dmr-nav-item">
             <Link to="/announcements" className="dmr-nav-link">
-              <span>Workshop 8.0+</span>
+              <span>Thông Báo</span>
               <span className="dmr-pulse-dot" />
             </Link>
           </li>
@@ -643,14 +643,14 @@ const Navbar: React.FC = () => {
         </div>
       )}
 
-      {/* UC07: Update Personal Information Modal */}
+      {/* Update Personal Information Modal */}
       <ProfileModal
         isOpen={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}
         onOpenChangePassword={() => setIsChangePasswordOpen(true)}
       />
 
-      {/* UC10: Change Password Modal */}
+      {/* Change Password Modal */}
       <ChangePasswordModal
         isOpen={isChangePasswordOpen}
         onClose={() => setIsChangePasswordOpen(false)}

@@ -10,10 +10,10 @@ import {
 
 const router = Router();
 
-// UC02: View Courses List, UC04: Search Courses, UC05: Filter Courses
+// View Courses List, Search Courses, Filter Courses
 router.get('/', getCourses);
 
-// UC03: View Courses Detail
+// View Courses Detail
 router.get('/:id', getCourseById);
 
 // Staff / Director management routes

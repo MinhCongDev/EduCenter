@@ -178,7 +178,7 @@ const HomePage: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // UC01 & UC06: Fetch Center Info & Announcements
+  // Fetch Center Info & Announcements
   useEffect(() => {
     const loadCenterAndNews = async () => {
       try {
@@ -912,7 +912,7 @@ const HomePage: React.FC = () => {
           </div>
         </section>
 
-        {/* SECTION: THÔNG BÁO TỪ TRUNG TÂM (UC06) */}
+        {/* SECTION: THÔNG BÁO TỪ TRUNG TÂM */}
         <section className="dmr-section" id="news">
           <div className="dmr-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
             <div>
@@ -920,7 +920,7 @@ const HomePage: React.FC = () => {
                 BẢN TIN KHẢO THÍ &amp; SỰ KIỆN MỚI NHẤT
               </div>
               <h2 className="dmr-main-title" style={{ margin: 0 }}>
-                Thông Báo &amp; Sự Kiện Từ EduCenter (UC06)
+                Thông Báo &amp; Sự Kiện Từ EduCenter
               </h2>
             </div>
             <Link
@@ -995,14 +995,14 @@ const HomePage: React.FC = () => {
           </div>
         </section>
 
-        {/* SECTION: THÔNG TIN TRUNG TÂM EDUCENTER (UC01) */}
+        {/* SECTION: THÔNG TIN TRUNG TÂM EDUCENTER */}
         <section className="dmr-section" id="about">
           <div className="dmr-section-header" style={{ textAlign: 'center' }}>
             <div style={{ color: '#07403F', fontWeight: 800, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px' }}>
               GIỚI THIỆU TỔ CHỨC ĐÀO TẠO
             </div>
             <h2 className="dmr-main-title" style={{ justifyContent: 'center' }}>
-              Thông Tin Trung Tâm EduCenter (UC01)
+              Thông Tin Trung Tâm EduCenter
             </h2>
             <p style={{ color: '#64748B', fontSize: '1.05rem', maxWidth: '750px', margin: '8px auto 0' }}>
               {centerInfo?.slogan || 'Học viện Luyện thi IELTS 8.0+ Chuẩn Khảo thí Quốc tế'}

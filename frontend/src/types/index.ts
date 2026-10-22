@@ -107,7 +107,7 @@ export interface RegisterResponse {
   data: RegisterResult;
 }
 
-// Center Information types (UC01)
+// Center Information types
 export interface Branch {
   _id?: string;
   branchName: string;
@@ -145,7 +145,7 @@ export interface CenterInfo {
   };
 }
 
-// ─── Course types (UC02, UC03, UC04, UC05) ──────────────────────────
+// ─── Course types ──────────────────────────
 export type CourseFormat = 'ONLINE' | 'OFFLINE' | 'BLENDED';
 export type CourseStatus = 'ACTIVE' | 'INACTIVE' | 'DRAFT';
 
@@ -230,7 +230,7 @@ export interface CourseQueryParams {
   limit?: number;
 }
 
-// ─── Announcement types (UC06) ──────────────────────────
+// ─── Announcement types ──────────────────────────
 export interface Announcement {
   _id: string;
   title: string;

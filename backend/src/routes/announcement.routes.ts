@@ -10,7 +10,7 @@ import { authenticate, authorize } from '../middlewares/auth.middleware';
 
 const router = Router();
 
-// UC06: View Announcements (Public)
+// View Announcements (Public)
 router.get('/', getAnnouncements);
 router.get('/:id', getAnnouncementById);
 

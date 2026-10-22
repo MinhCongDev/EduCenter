@@ -109,7 +109,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700 }}>
-              Đổi Mật Khẩu (UC10)
+              Đổi Mật Khẩu
             </h3>
           </div>
           <button

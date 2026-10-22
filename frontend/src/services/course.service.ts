@@ -3,9 +3,9 @@ import type { Course, CourseFormData, CourseQueryParams, PaginatedResponse, ApiR
 
 export const courseService = {
   /**
-   * UC02: View Courses List
-   * UC04: Search Courses
-   * UC05: Filter Courses
+   * View Courses List
+   * Search Courses
+   * Filter Courses
    */
   getCourses: async (params?: CourseQueryParams): Promise<PaginatedResponse<Course>> => {
     const response = await api.get<PaginatedResponse<Course>>('/courses', { params });
@@ -13,7 +13,7 @@ export const courseService = {
   },
 
   /**
-   * UC03: View Courses Detail
+   * View Courses Detail
    */
   getCourseById: async (id: string): Promise<ApiResponse<Course>> => {
     const response = await api.get<ApiResponse<Course>>(`/courses/${id}`);

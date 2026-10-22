@@ -3,9 +3,9 @@ import { Course } from '../models/course.model';
 import { Class } from '../models/class.model';
 
 /**
- * UC02: View Courses List
- * UC04: Search Courses
- * UC05: Filter Courses
+ * View Courses List
+ * Search Courses
+ * Filter Courses
  * GET /api/courses
  */
 export const getCourses = async (req: Request, res: Response): Promise<void> => {
@@ -30,7 +30,7 @@ export const getCourses = async (req: Request, res: Response): Promise<void> => 
       query.status = 'ACTIVE';
     }
 
-    // UC04: Search Courses by keyword
+    // Search Courses by keyword
     if (search && typeof search === 'string' && search.trim() !== '') {
       const searchRegex = new RegExp(search.trim(), 'i');
       query.$or = [
@@ -43,7 +43,7 @@ export const getCourses = async (req: Request, res: Response): Promise<void> => 
       ];
     }
 
-    // UC05: Filter Courses
+    // Filter Courses
     if (level && typeof level === 'string' && level !== 'ALL') {
       query.$or = [
         ...(query.$or || []),
@@ -111,7 +111,7 @@ export const getCourses = async (req: Request, res: Response): Promise<void> => 
 };
 
 /**
- * UC03: View Courses Detail
+ * View Courses Detail
  * GET /api/courses/:id
  */
 export const getCourseById = async (req: Request, res: Response): Promise<void> => {

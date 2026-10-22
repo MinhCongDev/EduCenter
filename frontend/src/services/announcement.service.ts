@@ -3,7 +3,7 @@ import type { Announcement, AnnouncementQueryParams, PaginatedResponse, ApiRespo
 
 export const announcementService = {
   /**
-   * UC06: View Announcements
+   * View Announcements
    */
   getAnnouncements: async (params?: AnnouncementQueryParams): Promise<PaginatedResponse<Announcement>> => {
     const response = await api.get<PaginatedResponse<Announcement>>('/announcements', { params });

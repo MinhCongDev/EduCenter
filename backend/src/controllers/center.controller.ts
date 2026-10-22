@@ -81,7 +81,7 @@ const DEFAULT_CENTER_DATA = {
 };
 
 /**
- * UC01: View Center Information
+ * View Center Information
  * GET /api/center
  */
 export const getCenterInfo = async (_req: Request, res: Response): Promise<void> => {

@@ -3,7 +3,7 @@ import { Announcement } from '../models/announcement.model';
 import { AuthRequest } from '../middlewares/auth.middleware';
 
 /**
- * UC06: View Announcements
+ * View Announcements
  * GET /api/announcements
  */
 export const getAnnouncements = async (req: Request, res: Response): Promise<void> => {
