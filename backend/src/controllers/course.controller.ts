@@ -77,7 +77,7 @@ export const getCourses = async (req: Request, res: Response): Promise<void> => 
     } else if (sortBy === 'price_desc') {
       sortOptions = { tuitionFee: -1 };
     } else if (sortBy === 'duration') {
-      sortOptions = { durationWeeks: 1 };
+      sortOptions = { sessions: 1 };
     } else if (sortBy === 'title') {
       sortOptions = { title: 1 };
     }

@@ -188,7 +188,6 @@ export interface Course {
   category: string;
   entryLevel: string;
   targetLevel?: string;
-  durationWeeks: number;
   sessions: number;
   tuitionFee: number;
   price?: number;
@@ -211,7 +210,7 @@ export interface CourseFormData {
   category: string;
   entryLevel?: string;
   targetLevel?: string;
-  durationWeeks: number;
+  sessions: number;
   tuitionFee: number;
   status: CourseStatus;
   syllabus: string[];
@@ -300,6 +299,7 @@ export interface ClassCourseOption {
   _id: string;
   code: string;
   title: string;
+  sessions: number;
 }
 
 export interface ClassTeacherOption {
@@ -332,7 +332,6 @@ export interface ClassFormData {
   scheduleDays: string[];
   timeSlot: string;
   startDate: string;
-  endDate: string;
   capacity: number;
   status: ClassStatus;
 }
@@ -663,4 +662,112 @@ export interface Toast {
   title?: string;
   message: string;
   duration?: number;
+}
+
+export type PaymentRecordStatus = 'PENDING' | 'SUCCESS' | 'FAILED' | 'REFUNDED';
+
+export interface EnrollmentPayment {
+  _id: string;
+  amount: number;
+  method: string;
+  transactionCode: string;
+  status: PaymentRecordStatus;
+  paymentDate: string;
+}
+
+export interface EnrollmentRecord {
+  _id: string;
+  student: {
+    _id: string;
+    fullName: string;
+    email: string;
+    phone?: string;
+  };
+  studentProfile?: {
+    studentCode?: string;
+    status?: string;
+  };
+  course?: {
+    _id: string;
+    code: string;
+    title: string;
+    tuitionFee: number;
+  };
+  class?: {
+    _id: string;
+    classCode: string;
+    name?: string;
+    startDate: string;
+    endDate: string;
+  };
+  registrationDate: string;
+  status: EnrollmentStatus;
+  payments: EnrollmentPayment[];
+  createdAt: string;
+}
+
+export interface EnrollmentOptions {
+  courses: Pick<Course, '_id' | 'code' | 'title'>[];
+  classes: (Pick<ClassItem, '_id' | 'classCode' | 'name'> & { course: Pick<Course, '_id' | 'code' | 'title'> | null })[];
+}
+
+export interface TimetableTeacher {
+  _id: string;
+  fullName: string;
+  email: string;
+}
+
+export interface TimetableClass {
+  _id: string;
+  classCode: string;
+  name?: string;
+  startDate: string;
+  endDate: string;
+  course: Pick<Course, '_id' | 'code' | 'title'>;
+}
+
+export interface TimetableEvent {
+  _id: string;
+  date: string;
+  dayOfWeek: string;
+  startTime: string;
+  endTime: string;
+  classroom: string;
+  topic?: string;
+  status: 'ACTIVE' | 'CANCELLED';
+  class: TimetableClass;
+  teachers: TimetableTeacher[];
+}
+
+export interface TimetableScheduleRecord {
+  _id: string;
+  sessionDate?: string;
+  dayOfWeek: string;
+  startTime: string;
+  endTime: string;
+  classroom: string;
+  topic?: string;
+  status: 'ACTIVE' | 'CANCELLED';
+  class: TimetableClass & { teacher: TimetableTeacher };
+  teachers: TimetableTeacher[];
+}
+
+export interface TimetableOptions {
+  classes: (Pick<ClassItem, '_id' | 'classCode' | 'name'> & { teachers: TimetableTeacher[] })[];
+  teachers: TimetableTeacher[];
+  rooms: string[];
+}
+
+export interface TimetableWeek {
+  weekStart: string;
+  weekEnd: string;
+  events: TimetableEvent[];
+}
+
+export interface TimetableFormData {
+  sessionDate: string;
+  startTime: string;
+  endTime: string;
+  classroom: string;
+  topic: string;
 }

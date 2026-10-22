@@ -505,7 +505,6 @@ export const CoursesPage: React.FC = () => {
 
                   {/* Highlights */}
                   <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', fontSize: '0.8rem', color: '#475569' }}>
-                    <span>⏱️ {course.durationWeeks} tuần</span>
                     <span>📅 {course.sessions} buổi</span>
                     <span>🎯 Đầu vào: {course.entryLevel}</span>
                   </div>
@@ -637,7 +636,7 @@ export const CoursesPage: React.FC = () => {
               <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.85rem', color: '#E2E8F0', flexWrap: 'wrap' }}>
                 <span>🎯 Đầu vào: <strong>{selectedCourse.entryLevel}</strong></span>
                 <span>🏆 Mục tiêu: <strong>{selectedCourse.targetLevel || 'IELTS 6.5+'}</strong></span>
-                <span>⏱️ Thời lượng: <strong>{selectedCourse.durationWeeks} tuần ({selectedCourse.sessions} buổi)</strong></span>
+                <span>⏱️ Thời lượng: <strong>{selectedCourse.sessions} buổi học</strong></span>
               </div>
             </div>
 

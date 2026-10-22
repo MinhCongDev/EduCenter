@@ -15,6 +15,8 @@ import { teacherRouter } from './routes/teacher.routes';
 import { studentRouter } from './routes/student.routes';
 import { publicRouter } from './routes/public.routes';
 import { directorRouter } from './routes/director.routes';
+import { enrollmentRouter } from './routes/enrollment.routes';
+import { classScheduleRouter } from './routes/classSchedule.routes';
 import { errorHandler } from './middlewares/error.middleware';
 import { notFound } from './middlewares/notFound.middleware';
 
@@ -94,6 +96,8 @@ app.use('/api/center', centerRouter);
 app.use('/api/courses', courseRouter);
 app.use('/api/announcements', announcementRouter);
 app.use('/api/classes', classRouter);
+app.use('/api/enrollments', enrollmentRouter);
+app.use('/api/schedules', classScheduleRouter);
 app.use('/api/teacher', teacherRouter);
 // Student module (datlt)
 app.use('/api/public', publicRouter);

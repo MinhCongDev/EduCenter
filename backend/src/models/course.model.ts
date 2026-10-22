@@ -11,7 +11,6 @@ export interface ICourse extends Document {
   category: string;
   entryLevel: string;
   targetLevel?: string;
-  durationWeeks: number;
   sessions: number;
   tuitionFee: number;
   format: LearningFormat;
@@ -57,14 +56,9 @@ const courseSchema = new Schema<ICourse>(
       default: '6.5 - 7.5+',
       trim: true,
     },
-    durationWeeks: {
-      type: Number,
-      required: [true, 'Thời lượng (tuần) là bắt buộc'],
-      min: 1,
-      default: 12,
-    },
     sessions: {
       type: Number,
+      required: [true, 'Số buổi học là bắt buộc'],
       default: 36,
       min: 1,
     },

@@ -153,6 +153,15 @@ Frontend will start at: **http://localhost:5173**
 | Reports | `/api/reports` |
 | Health | `/api/health` |
 
+### Training staff APIs
+
+- `GET /api/enrollments` — server-side search, enrollment/payment-status filters, course/class filters, and pagination.
+- `GET /api/enrollments/options` — course and class filter options.
+- `GET /api/enrollments/:id` — enrollment details with related payment records.
+- `GET /api/schedules/week?weekStart=YYYY-MM-DD` — recurring schedule instances for a week; supports `classId`, `teacherId`, and `room` filters.
+- `GET /api/schedules/options` — active class and teacher options.
+- `GET /api/schedules/:id`, `POST /api/schedules`, `PUT /api/schedules/:id`, `DELETE /api/schedules/:id` — schedule detail and management, with room/teacher conflict checks.
+
 ---
 
 ## 🗺️ Frontend Routes
@@ -180,6 +189,10 @@ Frontend will start at: **http://localhost:5173**
 | Route | Page |
 |---|---|
 | `/staff/dashboard` | Dashboard |
+| `/staff/courses` | Course management |
+| `/staff/classes` | Class management |
+| `/staff/enrollments` | Enrollment management |
+| `/staff/timetable` | Weekly timetable |
 
 ### Director (protected)
 | Route | Page |

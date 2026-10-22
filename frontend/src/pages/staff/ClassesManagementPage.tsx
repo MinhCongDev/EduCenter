@@ -13,7 +13,6 @@ const EMPTY_FORM: ClassFormData = {
   scheduleDays: [],
   timeSlot: '',
   startDate: '',
-  endDate: '',
   capacity: 20,
   status: 'OPEN',
 };
@@ -47,7 +46,6 @@ const ClassFormModal: React.FC<ClassFormModalProps> = ({ classItem, options, onS
           scheduleDays: classItem.scheduleDays,
           timeSlot: classItem.timeSlot,
           startDate: classItem.startDate.slice(0, 10),
-          endDate: classItem.endDate.slice(0, 10),
           capacity: classItem.capacity,
           status: classItem.status,
         }
@@ -73,9 +71,9 @@ const ClassFormModal: React.FC<ClassFormModalProps> = ({ classItem, options, onS
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    if (form.endDate < form.startDate) return;
     void onSave(form);
   };
+  const selectedCourse = options.courses.find((course) => course._id === form.course);
 
   return (
     <div className="modal-overlay" role="dialog" aria-modal="true" aria-label={classItem ? 'Chỉnh sửa lớp học' : 'Thêm lớp học'}>
@@ -127,6 +125,11 @@ const ClassFormModal: React.FC<ClassFormModalProps> = ({ classItem, options, onS
               ))}
             </div>
           </fieldset>
+          {selectedCourse && (
+            <div className="form-hint" role="status">
+              Khóa học gồm <strong>{selectedCourse.sessions} buổi</strong>. Hệ thống tự xếp đủ số buổi theo các ngày đã chọn và tính ngày kết thúc.
+            </div>
+          )}
 
           <div className="form-row">
             <div className="form-group">
@@ -139,15 +142,9 @@ const ClassFormModal: React.FC<ClassFormModalProps> = ({ classItem, options, onS
             </div>
           </div>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label" htmlFor="class-start-date">Ngày bắt đầu <span className="required">*</span></label>
-              <input id="class-start-date" name="startDate" type="date" className="form-input" value={form.startDate} onChange={handleChange} required />
-            </div>
-            <div className="form-group">
-              <label className="form-label" htmlFor="class-end-date">Ngày kết thúc <span className="required">*</span></label>
-              <input id="class-end-date" name="endDate" type="date" min={form.startDate || undefined} className="form-input" value={form.endDate} onChange={handleChange} required />
-            </div>
+          <div className="form-group">
+            <label className="form-label" htmlFor="class-start-date">Ngày bắt đầu <span className="required">*</span></label>
+            <input id="class-start-date" name="startDate" type="date" className="form-input" value={form.startDate} onChange={handleChange} required />
           </div>
 
           <div className="form-group">
@@ -157,7 +154,6 @@ const ClassFormModal: React.FC<ClassFormModalProps> = ({ classItem, options, onS
             </select>
           </div>
 
-          {form.endDate < form.startDate && <div className="form-error-banner" role="alert">Ngày kết thúc phải sau ngày bắt đầu.</div>}
           <div className="modal-footer">
             <button type="button" className="btn btn-outline" onClick={onClose} disabled={saving}>Hủy</button>
             <button type="submit" className="btn btn-primary" disabled={saving || options.courses.length === 0 || options.teachers.length === 0}>
