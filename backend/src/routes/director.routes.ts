@@ -2,6 +2,9 @@ import { Router } from 'express';
 import { authenticate, authorize } from '../middlewares/auth.middleware';
 import {
   getDashboardStats,
+  getApprovals,
+  reviewApproval,
+  createProposal,
   getStaffAccountsList,
   addStaffAccount,
   updateStaffStatus,
@@ -19,8 +22,11 @@ const router = Router();
 // Only DIRECTOR (and optionally master admin) can access director routes
 router.use(authenticate, authorize('DIRECTOR'));
 
-// 1. Dashboard Overview Stats
+// 1. Dashboard Overview Stats & Approvals
 router.get('/dashboard-stats', getDashboardStats);
+router.get('/approvals', getApprovals);
+router.post('/approvals', createProposal);
+router.patch('/approvals/:id/review', reviewApproval);
 
 // 2. Staff Accounts Management (View list, Add account, Update status)
 router.get('/staff', getStaffAccountsList);

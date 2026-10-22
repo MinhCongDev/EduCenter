@@ -70,6 +70,7 @@ const getMenuItems = (role: UserRole): DashboardItem[] => {
   if (role === 'DIRECTOR') {
     return [
       { label: 'Tổng quan', path: '/director/dashboard' },
+      { label: 'Quản lý thông báo', path: '/director/dashboard?tab=announcements' },
       { label: 'Quản lý nhân sự', path: '/director/dashboard?tab=staff_accounts' },
       { label: 'Giám sát vận hành', path: '/director/dashboard?tab=monitoring' },
       { label: 'Báo cáo học viên', path: '/director/dashboard?tab=student_reports' },

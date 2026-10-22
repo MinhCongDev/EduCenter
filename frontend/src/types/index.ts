@@ -257,8 +257,29 @@ export interface AnnouncementQueryParams {
   search?: string;
   category?: string;
   audience?: string;
+  status?: string;
   page?: number;
   limit?: number;
+}
+
+export interface ProposalItem {
+  _id: string;
+  code: string;
+  title: string;
+  description?: string;
+  proposerName: string;
+  proposerRole?: string;
+  category: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  reviewedBy?: {
+    _id: string;
+    fullName: string;
+    email: string;
+  };
+  reviewNote?: string;
+  reviewedAt?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // ─── API Wrapper ──────────────────────────

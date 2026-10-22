@@ -36,6 +36,7 @@ import './models/classSchedule.model';
 import './models/changeRequest.model';
 import './models/announcement.model';
 import './models/notification.model';
+import './models/proposal.model';
 
 const app: Application = express();
 

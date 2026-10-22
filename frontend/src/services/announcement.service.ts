@@ -17,4 +17,28 @@ export const announcementService = {
     const response = await api.get<ApiResponse<Announcement>>(`/announcements/${id}`);
     return response.data;
   },
+
+  /**
+   * Create Announcement (Director / Staff)
+   */
+  createAnnouncement: async (data: Partial<Announcement>): Promise<ApiResponse<Announcement>> => {
+    const response = await api.post<ApiResponse<Announcement>>('/announcements', data);
+    return response.data;
+  },
+
+  /**
+   * Update Announcement (Director / Staff)
+   */
+  updateAnnouncement: async (id: string, data: Partial<Announcement>): Promise<ApiResponse<Announcement>> => {
+    const response = await api.put<ApiResponse<Announcement>>(`/announcements/${id}`, data);
+    return response.data;
+  },
+
+  /**
+   * Delete Announcement (Director / Staff)
+   */
+  deleteAnnouncement: async (id: string): Promise<ApiResponse<void>> => {
+    const response = await api.delete<ApiResponse<void>>(`/announcements/${id}`);
+    return response.data;
+  },
 };

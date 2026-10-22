@@ -1,4 +1,5 @@
 import api from './api';
+import type { ProposalItem } from '../types';
 
 export interface DirectorSummary {
   totalRevenue: number;
@@ -175,8 +176,11 @@ export interface RevenueReportsData {
 }
 
 export const directorService = {
-  // 1. Dashboard Stats
-  getDashboardStats: () => api.get<{ success: boolean; data: { summary: DirectorSummary; courseRevenue: any[]; recentApprovals: any[] } }>('/director/dashboard-stats'),
+  // 1. Dashboard Stats & Approvals
+  getDashboardStats: () => api.get<{ success: boolean; data: { summary: DirectorSummary; courseRevenue: any[]; recentApprovals: ProposalItem[] } }>('/director/dashboard-stats'),
+  getApprovals: (params?: { status?: string; search?: string }) => api.get<{ success: boolean; data: ProposalItem[] }>('/director/approvals', { params }),
+  reviewApproval: (id: string, status: 'APPROVED' | 'REJECTED', reviewNote?: string) => api.patch<{ success: boolean; message: string; data: ProposalItem }>(`/director/approvals/${id}/review`, { status, reviewNote }),
+  createApproval: (payload: { title: string; description?: string; category?: string; proposerName?: string; proposerRole?: string }) => api.post<{ success: boolean; message: string; data: ProposalItem }>('/director/approvals', payload),
 
   // 2. Staff Accounts
   getStaffAccounts: () => api.get<{ success: boolean; data: { accounts: StaffAccount[] } }>('/director/staff'),
