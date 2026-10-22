@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import NotificationBell from './NotificationBell';
 import type { UserRole } from '../types';
@@ -20,6 +20,7 @@ const getDashboardPath = (role: UserRole): string => {
 const Navbar: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [targetScore, setTargetScore] = useState(7.5);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -34,6 +35,17 @@ const Navbar: React.FC = () => {
 
   const handleCycleTarget = () => {
     setTargetScore((prev) => (prev >= 8.5 ? 6.5 : Number((prev + 0.5).toFixed(1))));
+  };
+
+  const handleScrollTo = (targetId: string) => (e: React.MouseEvent) => {
+    if (location.pathname === '/') {
+      e.preventDefault();
+      const el = document.getElementById(targetId);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        window.history.pushState(null, '', `/#${targetId}`);
+      }
+    }
   };
 
   return (
@@ -62,19 +74,19 @@ const Navbar: React.FC = () => {
               Về EduCenter ▾
             </span>
             <div className="dmr-dropdown">
-              <Link to="/#about" className="dmr-dropdown-link">
+              <Link to="/#about" onClick={handleScrollTo('about')} className="dmr-dropdown-link">
                 <span className="dmr-dropdown-title">VỀ CHÚNG TÔI</span>
                 <span className="dmr-dropdown-desc">Tổ chức đào tạo IELTS chuẩn khảo thí quốc tế</span>
               </Link>
-              <Link to="/#teachers" className="dmr-dropdown-link">
+              <Link to="/#teachers" onClick={handleScrollTo('teachers')} className="dmr-dropdown-link">
                 <span className="dmr-dropdown-title">Đội ngũ giảng viên 8.5+</span>
                 <span className="dmr-dropdown-desc">100% giáo viên đạt 8.5 - 9.0 IELTS Overall</span>
               </Link>
-              <Link to="/#reviews" className="dmr-dropdown-link">
+              <Link to="/#reviews" onClick={handleScrollTo('reviews')} className="dmr-dropdown-link">
                 <span className="dmr-dropdown-title">Bảng vàng học viên</span>
                 <span className="dmr-dropdown-desc">Hơn 50.000 học viên đạt 6.5 - 8.5 IELTS</span>
               </Link>
-              <Link to="/#partners" className="dmr-dropdown-link">
+              <Link to="/#partners" onClick={handleScrollTo('partners')} className="dmr-dropdown-link">
                 <span className="dmr-dropdown-title">Đối tác IDP &amp; British Council</span>
                 <span className="dmr-dropdown-desc">Đối tác đăng ký thi IELTS chính thức</span>
               </Link>
@@ -191,12 +203,12 @@ const Navbar: React.FC = () => {
 
           {/* Thư viện đề & Sách */}
           <li className="dmr-nav-item">
-            <Link to="/#books" className="dmr-nav-link">
+            <Link to="/#books" onClick={handleScrollTo('books')} className="dmr-nav-link">
               <span>Tài liệu &amp; Sách</span>
             </Link>
           </li>
 
-          {/* Sự kiện / Workshop */}
+          {/* Thông báo */}
           <li className="dmr-nav-item">
             <Link to="/announcements" className="dmr-nav-link">
               <span>Thông Báo</span>
@@ -394,7 +406,11 @@ const Navbar: React.FC = () => {
                         type="button"
                         onClick={() => {
                           setIsUserMenuOpen(false);
-                          setIsProfileOpen(true);
+                          if (user.role === 'STUDENT') {
+                            navigate('/student/profile');
+                          } else {
+                            setIsProfileOpen(true);
+                          }
                         }}
                         style={{
                           display: 'flex',
@@ -535,7 +551,10 @@ const Navbar: React.FC = () => {
           </Link>
           <Link
             to="/#books"
-            onClick={() => setMobileMenuOpen(false)}
+            onClick={(e) => {
+              setMobileMenuOpen(false);
+              handleScrollTo('books')(e);
+            }}
             style={{ color: '#FFF', fontWeight: 700, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}
           >
             📚 Bộ đề Cambridge IELTS &amp; Forecast Speaking
@@ -545,11 +564,14 @@ const Navbar: React.FC = () => {
             onClick={() => setMobileMenuOpen(false)}
             style={{ color: '#FFF', fontWeight: 700, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}
           >
-            🔥 Workshop Chiến thuật Đạt 8.0+ IELTS
+            📢 Thông báo
           </Link>
           <Link
             to="/#teachers"
-            onClick={() => setMobileMenuOpen(false)}
+            onClick={(e) => {
+              setMobileMenuOpen(false);
+              handleScrollTo('teachers')(e);
+            }}
             style={{ color: '#FFF', fontWeight: 700, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}
           >
             👨‍🏫 Đội ngũ Giảng viên 8.5+ - 9.0 IELTS

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { centerService } from '../../services/center.service';
 import { announcementService } from '../../services/announcement.service';
@@ -162,6 +162,7 @@ const partnerLogos = [
 
 const HomePage: React.FC = () => {
   const { isAuthenticated } = useAuth();
+  const location = useLocation();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [couponCode, setCouponCode] = useState('');
   const [couponMessage, setCouponMessage] = useState<string | null>(null);
@@ -169,6 +170,20 @@ const HomePage: React.FC = () => {
   const [centerInfo, setCenterInfo] = useState<CenterInfo | null>(null);
   const [dynamicAnnouncements, setDynamicAnnouncements] = useState<Announcement[]>([]);
   const [centerTab, setCenterTab] = useState<'branches' | 'facilities' | 'mission'>('branches');
+
+  // Smooth scroll to hash anchor on load or hash change
+  useEffect(() => {
+    if (location.hash) {
+      const targetId = location.hash.replace('#', '');
+      const timer = setTimeout(() => {
+        const el = document.getElementById(targetId);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [location.hash, location.pathname]);
 
   // Auto slide interval
   useEffect(() => {
