@@ -26,4 +26,9 @@ export const enrollmentService = {
     const response = await api.get<ApiResponse<EnrollmentRecord>>(`/enrollments/${id}`);
     return response.data;
   },
+
+  async assignClass(id: string, classId: string): Promise<ApiResponse<void>> {
+    const response = await api.patch<ApiResponse<void>>(`/enrollments/${id}/class`, { classId });
+    return response.data;
+  },
 };

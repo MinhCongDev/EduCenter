@@ -41,7 +41,30 @@ const enrollmentBadgeClass = (status: EnrollmentStatus) => {
   return 'class-status-open';
 };
 
-const EnrollmentDetailModal: React.FC<{ enrollment: EnrollmentRecord; onClose: () => void }> = ({ enrollment, onClose }) => (
+const EnrollmentDetailModal: React.FC<{
+  enrollment: EnrollmentRecord;
+  classes: EnrollmentOptions['classes'];
+  onClose: () => void;
+  onAssignClass: (classId: string) => void;
+  assigning: boolean;
+  assignmentError: string;
+  assignmentMessage: string;
+}> = ({ enrollment, classes, onClose, onAssignClass, assigning, assignmentError, assignmentMessage }) => {
+  const [selectedClassId, setSelectedClassId] = useState(enrollment.class?._id ?? '');
+  const availableClasses = classes.filter((classItem) =>
+    classItem.course?._id === enrollment.course?._id
+    && (
+      classItem._id === enrollment.class?._id
+      || ((classItem.status === 'OPEN' || classItem.status === 'IN_PROGRESS')
+        && (classItem.currentEnrollment ?? 0) < classItem.capacity)
+    )
+  );
+  const canAssign = enrollment.status !== 'DROPPED' && enrollment.status !== 'COMPLETED';
+  const alreadyAssigned = enrollment.class !== undefined
+    && enrollment.class !== null
+    && selectedClassId === enrollment.class._id;
+
+  return (
   <div className="modal-overlay" role="dialog" aria-modal="true" aria-label="Chi tiết ghi danh">
     <div className="modal-box modal-lg enrollment-detail-modal">
       <div className="modal-header">
@@ -65,6 +88,56 @@ const EnrollmentDetailModal: React.FC<{ enrollment: EnrollmentRecord; onClose: (
           <strong><span className={`course-status-badge ${enrollmentBadgeClass(enrollment.status)}`}>{ENROLLMENT_STATUS[enrollment.status]}</span></strong>
         </div>
       </div>
+
+      <section className="enrollment-class-assignment">
+        <h3 className="enrollment-payment-heading">Xếp lớp cho học viên</h3>
+        {enrollment.course ? (
+          <>
+            <label className="form-label" htmlFor="enrollment-class-select">Lớp thuộc khóa học {enrollment.course.code}</label>
+            <select
+              id="enrollment-class-select"
+              className="form-input"
+              value={selectedClassId}
+              disabled={!canAssign || assigning}
+              onChange={(event) => {
+                setSelectedClassId(event.target.value);
+              }}
+            >
+              <option value="">Chọn lớp học</option>
+              {availableClasses.map((classItem) => (
+                <option key={classItem._id} value={classItem._id}>
+                  {classItem.classCode} ({classItem.currentEnrollment ?? 0}/{classItem.capacity} học viên)
+                </option>
+              ))}
+            </select>
+            {!availableClasses.length && <p className="form-hint">Khóa học này hiện chưa có lớp còn chỗ để xếp.</p>}
+            {selectedClassId === enrollment.class?._id && enrollment.class && (
+              <p className="form-hint">Học viên hiện đã được xếp vào lớp này.</p>
+            )}
+            {!canAssign && <p className="form-hint">Ghi danh đã hủy hoặc hoàn thành nên không thể thay đổi lớp.</p>}
+            {assignmentError && <div className="form-error-banner" role="alert">{assignmentError}</div>}
+            {assignmentMessage && <p className="form-hint" role="status">{assignmentMessage}</p>}
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={!canAssign || assigning || !selectedClassId || selectedClassId === enrollment.class?._id}
+                onClick={() => onAssignClass(selectedClassId)}
+              >
+                {assigning
+                  ? 'Đang lưu…'
+                  : alreadyAssigned
+                    ? 'Đã xếp lớp'
+                    : enrollment.class
+                      ? 'Chuyển lớp'
+                      : 'Xếp lớp'}
+              </button>
+            </div>
+          </>
+        ) : (
+          <p className="form-hint">Không xác định được khóa học đã đăng ký nên chưa thể chọn lớp.</p>
+        )}
+      </section>
 
       <h3 className="enrollment-payment-heading">Thanh toán liên quan</h3>
       {enrollment.payments.length === 0 ? (
@@ -92,7 +165,8 @@ const EnrollmentDetailModal: React.FC<{ enrollment: EnrollmentRecord; onClose: (
       </div>
     </div>
   </div>
-);
+  );
+};
 
 const EnrollmentsManagementPage: React.FC = () => {
   const [enrollments, setEnrollments] = useState<EnrollmentRecord[]>([]);
@@ -111,6 +185,9 @@ const EnrollmentsManagementPage: React.FC = () => {
   const [selectedEnrollment, setSelectedEnrollment] = useState<EnrollmentRecord | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState('');
+  const [assigningClass, setAssigningClass] = useState(false);
+  const [assignmentError, setAssignmentError] = useState('');
+  const [assignmentMessage, setAssignmentMessage] = useState('');
   const limit = 10;
 
   useEffect(() => {
@@ -160,6 +237,8 @@ const EnrollmentsManagementPage: React.FC = () => {
   const openDetails = async (id: string) => {
     setDetailLoading(true);
     setDetailError('');
+    setAssignmentError('');
+    setAssignmentMessage('');
     try {
       const response = await enrollmentService.getEnrollment(id);
       if (!response.data) throw new Error('Không nhận được dữ liệu chi tiết ghi danh.');
@@ -168,6 +247,46 @@ const EnrollmentsManagementPage: React.FC = () => {
       setDetailError('Không tải được chi tiết ghi danh. Vui lòng thử lại.');
     } finally {
       setDetailLoading(false);
+    }
+  };
+
+  const handleAssignClass = async (classId: string) => {
+    if (!selectedEnrollment) return;
+    setAssigningClass(true);
+    setAssignmentError('');
+    setAssignmentMessage('');
+    try {
+      const classItem = options.classes.find((item) => item._id === classId);
+      if (!classItem) throw new Error('Không tìm thấy thông tin lớp vừa chọn.');
+      await enrollmentService.assignClass(selectedEnrollment._id, classId);
+      const previousClassId = selectedEnrollment.class?._id;
+      setOptions((current) => ({
+        ...current,
+        classes: current.classes.map((item) => {
+          if (item._id === classId) return { ...item, currentEnrollment: item.currentEnrollment + 1 };
+          if (item._id === previousClassId && item.currentEnrollment > 0) {
+            return { ...item, currentEnrollment: item.currentEnrollment - 1 };
+          }
+          return item;
+        }),
+      }));
+      setSelectedEnrollment((current) => current ? {
+        ...current,
+        class: {
+          _id: classItem._id,
+          classCode: classItem.classCode,
+          name: classItem.name,
+          startDate: classItem.startDate,
+          endDate: classItem.endDate,
+        },
+      } : current);
+      setAssignmentMessage('Đã xếp lớp cho học viên thành công.');
+      setReloadKey((current) => current + 1);
+    } catch (requestError) {
+      const message = (requestError as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setAssignmentError(message || (requestError instanceof Error ? requestError.message : 'Không thể xếp lớp. Vui lòng thử lại.'));
+    } finally {
+      setAssigningClass(false);
     }
   };
 
@@ -273,7 +392,18 @@ const EnrollmentsManagementPage: React.FC = () => {
         </div>
       )}
 
-      {selectedEnrollment && <EnrollmentDetailModal enrollment={selectedEnrollment} onClose={() => setSelectedEnrollment(null)} />}
+      {selectedEnrollment && (
+        <EnrollmentDetailModal
+          key={`${selectedEnrollment._id}-${selectedEnrollment.class?._id ?? 'unassigned'}`}
+          enrollment={selectedEnrollment}
+          classes={options.classes}
+          onClose={() => setSelectedEnrollment(null)}
+          onAssignClass={(id) => void handleAssignClass(id)}
+          assigning={assigningClass}
+          assignmentError={assignmentError}
+          assignmentMessage={assignmentMessage}
+        />
+      )}
     </div>
   );
 };

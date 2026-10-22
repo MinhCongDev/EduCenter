@@ -37,8 +37,8 @@ const getMenuItems = (role: UserRole): DashboardItem[] => {
       { label: 'Quản lý lớp học', path: '/staff/classes' },
       { label: 'Quản lý ghi danh', path: '/staff/enrollments' },
       { label: 'Thời khóa biểu', path: '/staff/timetable' },
-      { label: 'Học viên' },
-      { label: 'Giảng viên' },
+      { label: 'Quản lý học viên', path: '/staff/students' },
+      { label: 'Quản lý giảng viên', path: '/staff/teachers' },
       { label: 'Báo cáo' },
       { label: 'Cài đặt' },
     ];

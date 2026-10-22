@@ -311,6 +311,7 @@ export interface ClassTeacherOption {
 export interface TrainingClass {
   _id: string;
   classCode: string;
+  name?: string;
   course: ClassCourseOption;
   teacher: ClassTeacherOption;
   room: string;
@@ -319,9 +320,142 @@ export interface TrainingClass {
   startDate: string;
   endDate: string;
   capacity: number;
+  currentEnrollment?: number;
   status: ClassStatus;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ClassGradeSummary {
+  _id: string;
+  evaluationType: string;
+  title: string;
+  testDate: string;
+  overallBand: number;
+  listening?: number;
+  reading?: number;
+  writing?: number;
+  speaking?: number;
+  feedback?: string;
+  status: 'DRAFT' | 'PUBLISHED';
+}
+
+export interface ClassRosterStudent {
+  enrollmentId: string;
+  registrationDate: string;
+  tuitionStatus: TuitionStatus;
+  student: {
+    _id: string;
+    fullName: string;
+    email: string;
+    phone?: string;
+    status: string;
+  };
+  profile: {
+    studentCode: string;
+    currentBand?: number;
+    targetBand?: number;
+    learningGoal?: string;
+    status: string;
+  } | null;
+  grades: ClassGradeSummary[];
+}
+
+export interface ClassDetail {
+  classroom: TrainingClass;
+  students: ClassRosterStudent[];
+}
+
+export interface ManagedStudent {
+  _id: string;
+  fullName: string;
+  email: string;
+  phone?: string;
+  status: UserStatus;
+  createdAt: string;
+  profile: {
+    studentCode: string;
+    status: string;
+    currentBand?: number;
+    targetBand?: number;
+  } | null;
+  activeClasses: number;
+  completedClasses: number;
+}
+
+export interface ManagedStudentGrade {
+  _id: string;
+  title: string;
+  evaluationType: string;
+  testDate: string;
+  overallBand: number;
+  listening?: number;
+  reading?: number;
+  writing?: number;
+  speaking?: number;
+  feedback?: string;
+  status: 'DRAFT' | 'PUBLISHED';
+  teacher: { _id: string; fullName: string } | string;
+}
+
+export interface ManagedStudentEnrollment {
+  _id: string;
+  status: EnrollmentStatus;
+  tuitionStatus: TuitionStatus;
+  registrationDate: string;
+  enrollmentDate: string;
+  course?: Pick<Course, '_id' | 'code' | 'title' | 'sessions'>;
+  class: (Pick<TrainingClass, '_id' | 'classCode' | 'name' | 'scheduleDays' | 'timeSlot' | 'startDate' | 'endDate' | 'status'> & {
+    course: Pick<Course, '_id' | 'code' | 'title' | 'sessions'> | null;
+    teacher: Pick<User, '_id' | 'fullName' | 'email'> | null;
+    room: string;
+  }) | null;
+  grades: ManagedStudentGrade[];
+}
+
+export interface ManagedStudentDetail {
+  user: Pick<User, '_id' | 'fullName' | 'email' | 'phone' | 'address' | 'dob' | 'status' | 'createdAt'>;
+  profile: {
+    studentCode: string;
+    dob?: string;
+    currentBand?: number;
+    targetBand?: number;
+    learningGoal?: string;
+    emergencyContact?: { name: string; relationship: string; phone: string };
+    status: string;
+  } | null;
+  enrollments: ManagedStudentEnrollment[];
+}
+
+export interface ManagedTeacher {
+  _id: string;
+  fullName: string;
+  email: string;
+  phone?: string;
+  status: UserStatus;
+  createdAt: string;
+  profile: {
+    teacherCode: string;
+    specialization: string[];
+    yearsOfExperience: number;
+  } | null;
+  assignedClasses: number;
+}
+
+export interface ManagedTeacherDetail {
+  user: Pick<User, '_id' | 'fullName' | 'email' | 'phone' | 'address' | 'dob' | 'status' | 'createdAt'>;
+  profile: {
+    teacherCode: string;
+    specialization: string[];
+    bio: string;
+    qualifications: string[];
+    ieltsBand?: number;
+    yearsOfExperience: number;
+    status: 'ACTIVE' | 'INACTIVE';
+  } | null;
+  classes: (Pick<TrainingClass, '_id' | 'classCode' | 'name' | 'startDate' | 'endDate' | 'status'> & {
+    course: Pick<Course, '_id' | 'code' | 'title'> | null;
+  })[];
 }
 
 export interface ClassFormData {
@@ -692,14 +826,14 @@ export interface EnrollmentRecord {
     code: string;
     title: string;
     tuitionFee: number;
-  };
+  } | null;
   class?: {
     _id: string;
     classCode: string;
     name?: string;
     startDate: string;
     endDate: string;
-  };
+  } | null;
   registrationDate: string;
   status: EnrollmentStatus;
   payments: EnrollmentPayment[];
@@ -708,7 +842,11 @@ export interface EnrollmentRecord {
 
 export interface EnrollmentOptions {
   courses: Pick<Course, '_id' | 'code' | 'title'>[];
-  classes: (Pick<ClassItem, '_id' | 'classCode' | 'name'> & { course: Pick<Course, '_id' | 'code' | 'title'> | null })[];
+  classes: (
+    Pick<ClassItem, '_id' | 'classCode' | 'name' | 'status' | 'capacity' | 'currentEnrollment' | 'startDate' | 'endDate'> & {
+      course: Pick<Course, '_id' | 'code' | 'title'> | null;
+    }
+  )[];
 }
 
 export interface TimetableTeacher {

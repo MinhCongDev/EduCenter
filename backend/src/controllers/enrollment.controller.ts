@@ -189,14 +189,27 @@ const buildResultPipeline = (
 
 export const getEnrollmentOptions = async (_req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const [courses, classes] = await Promise.all([
+    const [courses, classes, enrollmentCounts] = await Promise.all([
       Course.find().select('code title').sort({ title: 1 }).lean(),
-      Class.find().select('classCode name course').populate('course', 'code title').sort({ classCode: 1 }).lean(),
+      Class.find()
+        .select('classCode name course status capacity currentEnrollment startDate endDate')
+        .populate('course', 'code title')
+        .sort({ classCode: 1 })
+        .lean(),
+      Enrollment.aggregate<{ _id: mongoose.Types.ObjectId; count: number }>([
+        { $match: { status: 'ENROLLED', class: { $exists: true, $ne: null } } },
+        { $group: { _id: '$class', count: { $sum: 1 } } },
+      ]),
     ]);
+    const countsByClassId = new Map(enrollmentCounts.map(({ _id, count }) => [_id.toString(), count]));
+    const classesWithEnrollmentCounts = classes.map((classItem) => ({
+      ...classItem,
+      currentEnrollment: countsByClassId.get(classItem._id.toString()) ?? 0,
+    }));
     res.status(200).json({
       success: true,
       message: 'Lấy tùy chọn lọc ghi danh thành công',
-      data: { courses, classes },
+      data: { courses, classes: classesWithEnrollmentCounts },
     });
   } catch (error) {
     next(error);
@@ -242,5 +255,94 @@ export const getEnrollmentById = async (req: AuthRequest, res: Response, next: N
     res.status(200).json({ success: true, message: 'Lấy chi tiết ghi danh thành công', data: enrollment });
   } catch (error) {
     next(error);
+  }
+};
+
+export const assignEnrollmentClass = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  let session: mongoose.ClientSession | undefined;
+  try {
+    const { id } = req.params;
+    const { classId } = req.body as { classId?: string };
+    if (!mongoose.isValidObjectId(id)) throw createError('Mã ghi danh không hợp lệ', 400);
+    if (typeof classId !== 'string' || !mongoose.isValidObjectId(classId)) {
+      throw createError('Mã lớp học không hợp lệ', 400);
+    }
+
+    const transactionSession = await mongoose.startSession();
+    session = transactionSession;
+    await transactionSession.withTransaction(async () => {
+      const enrollment = await Enrollment.findById(id).session(transactionSession);
+      if (!enrollment) throw createError('Không tìm thấy ghi danh', 404);
+      if (enrollment.status === 'DROPPED' || enrollment.status === 'COMPLETED') {
+        throw createError('Không thể xếp lớp cho ghi danh đã hủy hoặc hoàn thành', 409);
+      }
+
+      const currentClass = enrollment.class
+        ? await Class.findById(enrollment.class).select('course').session(transactionSession)
+        : null;
+      const courseId = enrollment.course?.toString() || currentClass?.course?.toString();
+      if (!courseId) throw createError('Không xác định được khóa học của ghi danh này', 409);
+
+      const targetClass = await Class.findById(classId).session(transactionSession);
+      if (!targetClass) throw createError('Không tìm thấy lớp học', 404);
+      if (targetClass.course.toString() !== courseId) {
+        throw createError('Chỉ được xếp học viên vào lớp thuộc khóa học đã đăng ký', 400);
+      }
+
+      const alreadyInTargetClass = currentClass?._id.toString() === targetClass._id.toString();
+      if (alreadyInTargetClass && enrollment.status === 'ENROLLED') return;
+
+      if (!alreadyInTargetClass && targetClass.status !== 'OPEN' && targetClass.status !== 'IN_PROGRESS') {
+        throw createError('Chỉ có thể xếp vào lớp đang mở hoặc đang diễn ra', 409);
+      }
+
+      const targetEnrollmentCount = await Enrollment.countDocuments({
+        class: targetClass._id,
+        status: 'ENROLLED',
+      }).session(transactionSession);
+      if (targetEnrollmentCount >= targetClass.capacity) {
+        throw createError('Lớp đã đầy hoặc không còn nhận học viên', 409);
+      }
+
+      if (!alreadyInTargetClass) {
+        const duplicateEnrollment = await Enrollment.exists({
+          student: enrollment.student,
+          class: targetClass._id,
+          _id: { $ne: enrollment._id },
+        }).session(transactionSession);
+        if (duplicateEnrollment) {
+          throw createError('Học viên đã có ghi danh vào lớp này', 409);
+        }
+      }
+
+      await Class.updateOne(
+        { _id: targetClass._id },
+        { $set: { currentEnrollment: targetEnrollmentCount + 1 } },
+        { session: transactionSession }
+      );
+
+      if (currentClass && !alreadyInTargetClass && enrollment.status === 'ENROLLED') {
+        const currentEnrollmentCount = await Enrollment.countDocuments({
+          class: currentClass._id,
+          status: 'ENROLLED',
+        }).session(transactionSession);
+        await Class.updateOne(
+          { _id: currentClass._id },
+          { $set: { currentEnrollment: Math.max(0, currentEnrollmentCount - 1) } },
+          { session: transactionSession }
+        );
+      }
+
+      enrollment.class = targetClass._id;
+      enrollment.course = targetClass.course;
+      enrollment.status = 'ENROLLED';
+      await enrollment.save({ session: transactionSession });
+    });
+
+    res.status(200).json({ success: true, message: 'Xếp lớp cho học viên thành công' });
+  } catch (error) {
+    next(error);
+  } finally {
+    await session?.endSession();
   }
 };

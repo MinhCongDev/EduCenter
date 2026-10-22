@@ -38,6 +38,10 @@ const CoursesManagementPage = lazy(() => import('./pages/staff/CoursesManagement
 const ClassesManagementPage = lazy(() => import('./pages/staff/ClassesManagementPage'));
 const EnrollmentsManagementPage = lazy(() => import('./pages/staff/EnrollmentsManagementPage'));
 const TimetableManagementPage = lazy(() => import('./pages/staff/TimetableManagementPage'));
+const StudentsManagementPage = lazy(() => import('./pages/staff/StudentsManagementPage'));
+const StudentDetailPage = lazy(() => import('./pages/staff/StudentDetailPage'));
+const TeachersManagementPage = lazy(() => import('./pages/staff/TeachersManagementPage'));
+const TeacherDetailPage = lazy(() => import('./pages/staff/TeacherDetailPage'));
 const DirectorDashboard = lazy(() => import('./pages/director/DirectorDashboard'));
 
 // Error pages
@@ -309,6 +313,46 @@ const AppRouter: React.FC = () => {
             <ProtectedRoute allowedRoles={['TRAINING_STAFF']}>
               <DashboardLayout>
                 <TimetableManagementPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/staff/students"
+          element={
+            <ProtectedRoute allowedRoles={['TRAINING_STAFF']}>
+              <DashboardLayout>
+                <StudentsManagementPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/staff/students/:id"
+          element={
+            <ProtectedRoute allowedRoles={['TRAINING_STAFF']}>
+              <DashboardLayout>
+                <StudentDetailPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/staff/teachers"
+          element={
+            <ProtectedRoute allowedRoles={['TRAINING_STAFF']}>
+              <DashboardLayout>
+                <TeachersManagementPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/staff/teachers/:id"
+          element={
+            <ProtectedRoute allowedRoles={['TRAINING_STAFF']}>
+              <DashboardLayout>
+                <TeacherDetailPage />
               </DashboardLayout>
             </ProtectedRoute>
           }

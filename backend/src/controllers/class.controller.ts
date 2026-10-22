@@ -8,6 +8,8 @@ import { createError } from '../middlewares/error.middleware';
 import mongoose, { Types } from 'mongoose';
 import { Attendance } from '../models/attendance.model';
 import { ClassSchedule } from '../models/classSchedule.model';
+import { Grade } from '../models/grade.model';
+import { Student } from '../models/student.model';
 import {
   buildScheduleCandidates,
   generateSessionDates,
@@ -70,12 +72,83 @@ export const getClasses = async (req: AuthRequest, res: Response, next: NextFunc
         .limit(limitNum),
       Class.countDocuments(filter),
     ]);
+    const classIds = classes.map((classroom) => classroom._id);
+    const enrollmentCounts = await Enrollment.aggregate<{ _id: Types.ObjectId; count: number }>([
+      { $match: { class: { $in: classIds }, status: 'ENROLLED' } },
+      { $group: { _id: '$class', count: { $sum: 1 } } },
+    ]);
+    const countsByClassId = new Map(enrollmentCounts.map(({ _id, count }) => [_id.toString(), count]));
+    const data = classes.map((classroom) => ({
+      ...classroom.toObject(),
+      currentEnrollment: countsByClassId.get(classroom._id.toString()) ?? 0,
+    }));
 
     res.status(200).json({
       success: true,
       message: 'Lấy danh sách lớp học thành công',
-      data: classes,
+      data,
       pagination: { total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getClassById = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) throw createError('Mã lớp học không hợp lệ', 400);
+
+    const classroom = await Class.findById(req.params.id).populate(classPopulate);
+    if (!classroom) {
+      res.status(404).json({ success: false, message: 'Không tìm thấy lớp học' });
+      return;
+    }
+
+    const enrollments = await Enrollment.find({ class: classroom._id, status: 'ENROLLED' })
+      .select('student status registrationDate enrollmentDate tuitionStatus')
+      .sort({ registrationDate: 1, createdAt: 1 })
+      .lean();
+    const studentIds = enrollments.map((enrollment) => enrollment.student);
+    const [users, profiles, grades] = await Promise.all([
+      User.find({ _id: { $in: studentIds } }).select('fullName email phone status').lean(),
+      Student.find({ user: { $in: studentIds } })
+        .select('user studentCode currentBand targetBand learningGoal status')
+        .lean(),
+      Grade.find({ class: classroom._id, student: { $in: studentIds } })
+        .select('student evaluationType title testDate overallBand listening reading writing speaking feedback status')
+        .sort({ testDate: -1, createdAt: -1 })
+        .lean(),
+    ]);
+    const userById = new Map(users.map((user) => [user._id.toString(), user]));
+    const profileByUserId = new Map(profiles.map((profile) => [profile.user.toString(), profile]));
+    const gradesByStudentId = new Map<string, typeof grades>();
+    for (const grade of grades) {
+      const studentId = grade.student.toString();
+      const studentGrades = gradesByStudentId.get(studentId) ?? [];
+      studentGrades.push(grade);
+      gradesByStudentId.set(studentId, studentGrades);
+    }
+
+    const students = enrollments.flatMap((enrollment) => {
+      const userId = enrollment.student.toString();
+      const student = userById.get(userId);
+      if (!student) return [];
+      return [{
+        enrollmentId: enrollment._id,
+        registrationDate: enrollment.registrationDate,
+        tuitionStatus: enrollment.tuitionStatus,
+        student,
+        profile: profileByUserId.get(userId) ?? null,
+        grades: gradesByStudentId.get(userId) ?? [],
+      }];
+    });
+    const classroomData = classroom.toObject();
+    classroomData.currentEnrollment = enrollments.length;
+
+    res.status(200).json({
+      success: true,
+      message: 'Lấy chi tiết lớp học thành công',
+      data: { classroom: classroomData, students },
     });
   } catch (error) {
     next(error);
