@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { directorService } from '../../services/director.service';
 import { announcementService } from '../../services/announcement.service';
+import { courseService } from '../../services/course.service';
 import type {
   DirectorSummary,
   StaffAccount,
@@ -15,12 +16,20 @@ import type {
   ClassAndCourseReportsData,
   RevenueReportsData,
 } from '../../services/director.service';
-import type { ProposalItem, Announcement } from '../../types';
+import type {
+  ProposalItem,
+  Announcement,
+  Course,
+  CourseMilestone,
+  MilestoneType,
+  CourseFormData,
+} from '../../types';
 
 export type DirectorTab =
   | 'overview'
   | 'announcements'
   | 'staff_accounts'
+  | 'courses_curriculum'
   | 'monitoring'
   | 'student_reports'
   | 'teacher_reports'
@@ -41,6 +50,7 @@ export const DirectorDashboard: React.FC = () => {
         'overview',
         'announcements',
         'staff_accounts',
+        'courses_curriculum',
         'monitoring',
         'student_reports',
         'teacher_reports',
@@ -85,8 +95,57 @@ export const DirectorDashboard: React.FC = () => {
 
   const [courseRevenueList, setCourseRevenueList] = useState<Array<{ name: string; revenue: number; count: number }>>([]);
   const [staffAccounts, setStaffAccounts] = useState<StaffAccount[]>([]);
-  const [staffFilterRole, setStaffFilterRole] = useState<'ALL' | 'TRAINING_STAFF' | 'TEACHER'>('ALL');
+  const [staffFilterRole, setStaffFilterRole] = useState<'ALL' | 'STUDENT' | 'TEACHER' | 'TRAINING_STAFF' | 'DIRECTOR'>('ALL');
   const [staffSearch, setStaffSearch] = useState<string>('');
+
+  // ── Role Assignment State (Phân quyền người dùng) ──
+  const [roleModalUser, setRoleModalUser] = useState<StaffAccount | null>(null);
+  const [selectedNewRole, setSelectedNewRole] = useState<'STUDENT' | 'TEACHER' | 'TRAINING_STAFF' | 'DIRECTOR'>('STUDENT');
+  const [isChangingRole, setIsChangingRole] = useState<boolean>(false);
+
+  // ── Courses & Curriculum Management State (Quản lý khóa học, chương trình học & mốc hoàn thành) ──
+  const [coursesList, setCoursesList] = useState<Course[]>([]);
+  const [coursesLoading, setCoursesLoading] = useState<boolean>(false);
+  const [courseSearch, setCourseSearch] = useState<string>('');
+  const [courseCategoryFilter, setCourseCategoryFilter] = useState<string>('ALL');
+
+  // Modal quản lý giáo trình & mốc hoàn thành
+  const [isCurriculumModalOpen, setIsCurriculumModalOpen] = useState<boolean>(false);
+  const [curriculumCourse, setCurriculumCourse] = useState<Course | null>(null);
+  const [curriculumTab, setCurriculumTab] = useState<'syllabus' | 'milestones'>('syllabus');
+  const [curriculumSyllabus, setCurriculumSyllabus] = useState<string[]>([]);
+  const [curriculumMilestones, setCurriculumMilestones] = useState<CourseMilestone[]>([]);
+  const [newSyllabusItem, setNewSyllabusItem] = useState<string>('');
+  const [isSavingCurriculum, setIsSavingCurriculum] = useState<boolean>(false);
+
+  // Form thêm mốc hoàn thành mới
+  const [newMilestoneForm, setNewMilestoneForm] = useState<{
+    title: string;
+    description: string;
+    type: MilestoneType;
+    targetSession: number;
+  }>({
+    title: '',
+    description: '',
+    type: 'CHECKPOINT',
+    targetSession: 6,
+  });
+
+  // Modal Thêm / Chỉnh sửa khóa học CRUD
+  const [isCourseCrudOpen, setIsCourseCrudOpen] = useState<boolean>(false);
+  const [editingCourseItem, setEditingCourseItem] = useState<Course | null>(null);
+  const [courseCrudForm, setCourseCrudForm] = useState<CourseFormData>({
+    code: '',
+    title: '',
+    description: '',
+    category: 'Luyện Thi IELTS',
+    sessions: 36,
+    tuitionFee: 0,
+    status: 'ACTIVE',
+    syllabus: [],
+    milestones: [],
+  });
+  const [isSavingCourseCrud, setIsSavingCourseCrud] = useState<boolean>(false);
 
   // ── Teacher Reports Filters ──
   const [teaRepSearch, setTeaRepSearch] = useState<string>('');
@@ -117,12 +176,13 @@ export const DirectorDashboard: React.FC = () => {
     email: '',
     password: 'Password123@',
     phone: '',
-    role: 'TRAINING_STAFF',
-    department: 'Phòng Đào tạo & Khảo thí',
-    position: 'Chuyên viên Đào tạo',
+    role: 'STUDENT',
+    department: 'Học viên Trung tâm',
+    position: 'Học viên IELTS',
     specialization: 'IELTS 4 Kỹ Năng',
     ieltsBand: 8.5,
     yearsOfExperience: 3,
+    targetBand: 7.0,
   });
 
   // Monitoring Sub-tabs: 'operations' | 'students' | 'teachers'
@@ -193,6 +253,21 @@ export const DirectorDashboard: React.FC = () => {
     }
   }, [announcementSearch, announcementCategory, announcementAudience, announcementStatus]);
 
+  // ── Handler: Courses & Curriculum Management (Quản lý khóa học, giáo trình & mốc hoàn thành) ──
+  const fetchDirectorCourses = useCallback(async () => {
+    setCoursesLoading(true);
+    try {
+      const res = await courseService.getCourses({ page: 1, limit: 100 });
+      if (res?.data) {
+        setCoursesList(res.data);
+      }
+    } catch (err: any) {
+      console.error('Lỗi tải danh sách khóa học:', err);
+    } finally {
+      setCoursesLoading(false);
+    }
+  }, []);
+
   // ── Load All Data ──
   const loadDirectorData = async () => {
     try {
@@ -248,8 +323,9 @@ export const DirectorDashboard: React.FC = () => {
         setRevenueReports(revRepRes.data.data);
       }
 
-      // Also fetch announcements
+      // Also fetch announcements & courses
       fetchAnnouncementsList();
+      fetchDirectorCourses();
     } catch (err: any) {
       showToast('⚠️ Lỗi đồng bộ dữ liệu giám đốc: ' + (err?.message || 'Lỗi mạng'));
     } finally {
@@ -264,8 +340,10 @@ export const DirectorDashboard: React.FC = () => {
   useEffect(() => {
     if (activeTab === 'announcements') {
       fetchAnnouncementsList();
+    } else if (activeTab === 'courses_curriculum') {
+      fetchDirectorCourses();
     }
-  }, [activeTab, fetchAnnouncementsList]);
+  }, [activeTab, fetchAnnouncementsList, fetchDirectorCourses]);
 
   // ── Approvals Action Handlers (Calling Real Backend API) ──
   const handleApprove = async (id: string) => {
@@ -411,7 +489,7 @@ export const DirectorDashboard: React.FC = () => {
     }
   };
 
-  // ── Handler: Add Staff Account ──
+  // ── Handler: Add Staff / All User Account ──
   const handleCreateStaff = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newStaffForm.fullName.trim() || !newStaffForm.email.trim() || !newStaffForm.password) {
@@ -421,21 +499,28 @@ export const DirectorDashboard: React.FC = () => {
     setIsSubmittingStaff(true);
     try {
       await directorService.addStaffAccount(newStaffForm);
-      showToast(`🎉 Tạo tài khoản ${newStaffForm.role === 'TEACHER' ? 'Giảng viên' : 'Giáo vụ'} thành công!`);
+      const roleNames: Record<string, string> = {
+        STUDENT: 'Học viên',
+        TEACHER: 'Giảng viên',
+        TRAINING_STAFF: 'Giáo vụ',
+        DIRECTOR: 'Ban Giám Đốc',
+      };
+      showToast(`🎉 Tạo tài khoản ${roleNames[newStaffForm.role] || newStaffForm.role} thành công!`);
       setIsAddStaffModalOpen(false);
       setNewStaffForm({
         fullName: '',
         email: '',
         password: 'Password123@',
         phone: '',
-        role: 'TRAINING_STAFF',
-        department: 'Phòng Đào tạo & Khảo thí',
-        position: 'Chuyên viên Đào tạo',
+        role: 'STUDENT',
+        department: 'Học viên Trung tâm',
+        position: 'Học viên IELTS',
         specialization: 'IELTS 4 Kỹ Năng',
         ieltsBand: 8.5,
         yearsOfExperience: 3,
+        targetBand: 7.0,
       });
-      // Refresh staff list
+      // Refresh staff/users list
       const res = await directorService.getStaffAccounts();
       if (res?.data?.data?.accounts) setStaffAccounts(res.data.data.accounts);
     } catch (err: any) {
@@ -445,7 +530,7 @@ export const DirectorDashboard: React.FC = () => {
     }
   };
 
-  // ── Handler: Toggle Staff Status ──
+  // ── Handler: Toggle User Status ──
   const handleToggleStaffStatus = async (account: StaffAccount) => {
     const nextStatus = account.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
     try {
@@ -456,6 +541,220 @@ export const DirectorDashboard: React.FC = () => {
       );
     } catch (err: any) {
       showToast('❌ Không thể đổi trạng thái: ' + (err?.response?.data?.message || err.message));
+    }
+  };
+
+  // ── Handler: Role Assignment (Phân quyền người dùng) ──
+  const handleOpenRoleModal = (account: StaffAccount) => {
+    setRoleModalUser(account);
+    setSelectedNewRole(account.role);
+  };
+
+  const handleConfirmChangeRole = async () => {
+    if (!roleModalUser) return;
+    setIsChangingRole(true);
+    try {
+      await directorService.updateUserRole(roleModalUser._id, selectedNewRole);
+      const roleLabels: Record<string, string> = {
+        STUDENT: 'Học Viên',
+        TEACHER: 'Giảng Viên',
+        TRAINING_STAFF: 'Phòng Giáo Vụ',
+        DIRECTOR: 'Ban Giám Đốc',
+      };
+      showToast(`👑 Đã phân quyền tài khoản ${roleModalUser.fullName} thành [${roleLabels[selectedNewRole] || selectedNewRole}] thành công!`);
+      setStaffAccounts((prev) =>
+        prev.map((a) => (a._id === roleModalUser._id ? { ...a, role: selectedNewRole } : a))
+      );
+      setRoleModalUser(null);
+    } catch (err: any) {
+      showToast('❌ Lỗi phân quyền: ' + (err?.response?.data?.message || err.message));
+    } finally {
+      setIsChangingRole(false);
+    }
+  };
+
+  // ── Handler: Courses & Curriculum Management (Quản lý khóa học, giáo trình & mốc hoàn thành) ──
+  const handleOpenCurriculumModal = (course: Course) => {
+    setCurriculumCourse(course);
+    setCurriculumTab('syllabus');
+    setCurriculumSyllabus(course.syllabus || []);
+    setCurriculumMilestones(
+      course.milestones && course.milestones.length > 0
+        ? course.milestones
+        : [
+            {
+              milestoneId: 'MS-1',
+              title: 'Khởi động & Nắm vững nền tảng học thuật',
+              description: 'Làm quen cấu trúc đề thi, củng cố từ vựng và ngữ pháp trọng tâm theo chuẩn Cambridge.',
+              order: 1,
+              type: 'LESSON_COMPLETION',
+              targetSession: 6,
+            },
+            {
+              milestoneId: 'MS-2',
+              title: 'Hoàn thành Kỹ năng Listening & Reading',
+              description: 'Nắm vững chiến thuật Skimming/Scanning và phân tích bẫy dạng bài Multiple Choice, Heading.',
+              order: 2,
+              type: 'SKILL_CHECK',
+              targetSession: 14,
+            },
+            {
+              milestoneId: 'MS-3',
+              title: 'Bài thi đánh giá Giữa kỳ (Mid-term Test)',
+              description: 'Kiểm tra đo lường độ tiến bộ sau 50% thời lượng khóa học, nhận diện điểm yếu kỹ năng.',
+              order: 3,
+              type: 'MOCK_TEST',
+              targetSession: 18,
+            },
+            {
+              milestoneId: 'MS-4',
+              title: 'Chuyên sâu phản xạ Speaking & Bố cục Writing',
+              description: 'Luyện tập Speaking Part 2-3 với giáo viên, hoàn thành tối thiểu 4 bài viết Task 1 & Task 2.',
+              order: 4,
+              type: 'ASSIGNMENT',
+              targetSession: 28,
+            },
+            {
+              milestoneId: 'MS-5',
+              title: 'Thi thử 4 kỹ năng trọn vẹn (Full Mock Test)',
+              description: 'Mô phỏng thi thực tế áp lực thời gian tại phòng khảo thí của trung tâm.',
+              order: 5,
+              type: 'MOCK_TEST',
+              targetSession: Math.max(1, (course.sessions || 36) - 2),
+            },
+            {
+              milestoneId: 'MS-6',
+              title: 'Tổng kết & Đạt chuẩn đầu ra (Target Band)',
+              description: 'Đánh giá năng lực tổng kết toàn khóa học và cấp chứng nhận hoàn thành.',
+              order: 6,
+              type: 'CHECKPOINT',
+              targetSession: course.sessions || 36,
+            },
+          ]
+    );
+    setNewSyllabusItem('');
+    setIsCurriculumModalOpen(true);
+  };
+
+  const handleAddSyllabusItem = () => {
+    if (!newSyllabusItem.trim()) return;
+    setCurriculumSyllabus((prev) => [...prev, newSyllabusItem.trim()]);
+    setNewSyllabusItem('');
+  };
+
+  const handleRemoveSyllabusItem = (index: number) => {
+    setCurriculumSyllabus((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleAddMilestone = () => {
+    if (!newMilestoneForm.title.trim()) {
+      showToast('Vui lòng nhập tiêu đề mốc hoàn thành');
+      return;
+    }
+    const newMs: CourseMilestone = {
+      milestoneId: `MS-${curriculumMilestones.length + 1}`,
+      title: newMilestoneForm.title.trim(),
+      description: newMilestoneForm.description.trim(),
+      order: curriculumMilestones.length + 1,
+      type: newMilestoneForm.type,
+      targetSession: Number(newMilestoneForm.targetSession) || 1,
+    };
+    setCurriculumMilestones((prev) => [...prev, newMs]);
+    setNewMilestoneForm({
+      title: '',
+      description: '',
+      type: 'CHECKPOINT',
+      targetSession: 6,
+    });
+  };
+
+  const handleRemoveMilestone = (index: number) => {
+    setCurriculumMilestones((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSaveCurriculum = async () => {
+    if (!curriculumCourse) return;
+    setIsSavingCurriculum(true);
+    try {
+      await courseService.updateCourse(curriculumCourse._id, {
+        syllabus: curriculumSyllabus,
+        milestones: curriculumMilestones,
+      });
+      showToast('🎉 Đã cập nhật Giáo trình & Các mốc hoàn thành khóa học thành công!');
+      setIsCurriculumModalOpen(false);
+      fetchDirectorCourses();
+    } catch (err: any) {
+      showToast('❌ Lỗi lưu giáo trình: ' + (err?.response?.data?.message || err.message));
+    } finally {
+      setIsSavingCurriculum(false);
+    }
+  };
+
+  // Course CRUD Handlers
+  const handleOpenCreateCourse = () => {
+    setEditingCourseItem(null);
+    setCourseCrudForm({
+      code: '',
+      title: '',
+      description: '',
+      category: 'Luyện Thi IELTS',
+      sessions: 36,
+      tuitionFee: 9500000,
+      status: 'ACTIVE',
+      syllabus: [],
+      milestones: [],
+    });
+    setIsCourseCrudOpen(true);
+  };
+
+  const handleOpenEditCourse = (c: Course) => {
+    setEditingCourseItem(c);
+    setCourseCrudForm({
+      code: c.code,
+      title: c.title,
+      description: c.description || '',
+      category: c.category || 'Luyện Thi IELTS',
+      sessions: c.sessions || 36,
+      tuitionFee: c.tuitionFee || 0,
+      status: c.status || 'ACTIVE',
+      syllabus: c.syllabus || [],
+      milestones: c.milestones || [],
+    });
+    setIsCourseCrudOpen(true);
+  };
+
+  const handleSaveCourseCrud = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!courseCrudForm.code.trim() || !courseCrudForm.title.trim()) {
+      showToast('Vui lòng nhập mã và tên khóa học');
+      return;
+    }
+    setIsSavingCourseCrud(true);
+    try {
+      if (editingCourseItem) {
+        await courseService.updateCourse(editingCourseItem._id, courseCrudForm);
+        showToast('🎉 Cập nhật thông tin khóa học thành công!');
+      } else {
+        await courseService.createCourse(courseCrudForm);
+        showToast('🎉 Tạo khóa học mới thành công!');
+      }
+      setIsCourseCrudOpen(false);
+      fetchDirectorCourses();
+    } catch (err: any) {
+      showToast('❌ Lỗi lưu khóa học: ' + (err?.response?.data?.message || err.message));
+    } finally {
+      setIsSavingCourseCrud(false);
+    }
+  };
+
+  const handleDeleteCourse = async (id: string, title: string) => {
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa khóa học "${title}" không?`)) return;
+    try {
+      await courseService.deleteCourse(id);
+      showToast('🗑️ Đã xóa khóa học thành công!');
+      fetchDirectorCourses();
+    } catch (err: any) {
+      showToast('❌ Lỗi xóa khóa học: ' + (err?.response?.data?.message || err.message));
     }
   };
 
@@ -894,7 +1193,14 @@ export const DirectorDashboard: React.FC = () => {
               className="dash-quick-btn"
               onClick={() => handleTabChange('staff_accounts')}
             >
-              👥 Quản lý nhân sự ({staffAccounts.length || summary.staffCount + summary.teachersCount})
+              👥 Quản lý tài khoản &amp; Phân quyền ({staffAccounts.length})
+            </button>
+            <button
+              type="button"
+              className="dash-quick-btn"
+              onClick={() => handleTabChange('courses_curriculum')}
+            >
+              📚 Quản lý khóa học &amp; Giáo trình ({coursesList.length || classCourseReports?.courses?.length || 0})
             </button>
             <button
               type="button"
@@ -922,7 +1228,7 @@ export const DirectorDashboard: React.FC = () => {
               className="dash-quick-btn"
               onClick={() => handleTabChange('class_course_reports')}
             >
-              🏫 Báo cáo lớp &amp; khóa
+              🏫 Báo cáo lớp học
             </button>
             <button
               type="button"
@@ -943,7 +1249,7 @@ export const DirectorDashboard: React.FC = () => {
               className="dash-quick-btn primary"
               onClick={() => setIsAddStaffModalOpen(true)}
             >
-              ➕ Thêm nhân sự mới
+              ➕ Thêm tài khoản mới
             </button>
           </div>
 
@@ -1204,7 +1510,15 @@ export const DirectorDashboard: React.FC = () => {
                     onClick={() => handleTabChange('staff_accounts')}
                   >
                     <span>👥</span>
-                    <span>Quản Lý Danh Sách Nhân Sự &amp; Giảng Viên</span>
+                    <span>Quản Lý Tài Khoản Toàn Trung Tâm &amp; Phân Quyền</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="dash-quick-btn"
+                    onClick={() => handleTabChange('courses_curriculum')}
+                  >
+                    <span>📚</span>
+                    <span>Quản Lý Khóa Học &amp; Nội Dung Giáo Trình</span>
                   </button>
                   <button
                     type="button"
@@ -1576,17 +1890,17 @@ export const DirectorDashboard: React.FC = () => {
       )}
 
       {/* ─────────────────────────────────────────────────────────────
-          2. VIEW STAFF ACCOUNTS LIST & ADD STAFF ACCOUNT
+          2. ALL USER ACCOUNTS MANAGEMENT & ROLE ASSIGNMENT (QUẢN LÝ TÀI KHOẢN TOÀN TRUNG TÂM & PHÂN QUYỀN)
           ───────────────────────────────────────────────────────────── */}
       {activeTab === 'staff_accounts' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
             <div>
-              <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>
-                👥 Quản Lý Tài Khoản Nhân Sự &amp; Giảng Viên (Staff Accounts)
+              <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>
+                👥 Quản Lý Tài Khoản Toàn Trung Tâm &amp; Phân Quyền (Tất Cả)
               </h2>
               <span style={{ fontSize: '0.82rem', color: '#64748b' }}>
-                Xem danh sách tài khoản, kiểm soát trạng thái hoạt động và cấp tài khoản nhân sự mới
+                Quản trị toàn bộ tài khoản: Học viên, Giảng viên, Giáo vụ đào tạo &amp; Ban giám đốc. Thực hiện phân quyền vai trò và kiểm soát trạng thái hoạt động.
               </span>
             </div>
 
@@ -1597,171 +1911,488 @@ export const DirectorDashboard: React.FC = () => {
                 backgroundColor: '#059669',
                 color: '#ffffff',
                 border: 'none',
-                padding: '0.6rem 1.25rem',
+                padding: '0.65rem 1.35rem',
                 borderRadius: '10px',
-                fontSize: '0.85rem',
+                fontSize: '0.86rem',
                 fontWeight: 700,
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
-                boxShadow: '0 2px 6px rgba(5, 150, 105, 0.25)',
+                boxShadow: '0 3px 8px rgba(5, 150, 105, 0.28)',
               }}
             >
               <span>➕</span>
-              <span>Thêm Tài Khoản Nhân Sự Mới</span>
+              <span>Thêm Tài Khoản Mới</span>
             </button>
           </div>
 
-          {/* Search & Filter Bar */}
+          {/* Search & Role Filter Tabs Bar */}
           <div className="dash-card" style={{ padding: '1rem', borderRadius: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: '0.45rem', alignItems: 'center', flexWrap: 'wrap' }}>
               <button
                 type="button"
                 onClick={() => setStaffFilterRole('ALL')}
                 className={`dash-quick-btn ${staffFilterRole === 'ALL' ? 'primary' : ''}`}
-                style={{ padding: '0.35rem 0.85rem', fontSize: '0.8rem' }}
+                style={{ padding: '0.4rem 0.85rem', fontSize: '0.8rem' }}
               >
                 Tất cả ({staffAccounts.length})
               </button>
               <button
                 type="button"
-                onClick={() => setStaffFilterRole('TRAINING_STAFF')}
-                className={`dash-quick-btn ${staffFilterRole === 'TRAINING_STAFF' ? 'primary' : ''}`}
-                style={{ padding: '0.35rem 0.85rem', fontSize: '0.8rem' }}
+                onClick={() => setStaffFilterRole('STUDENT')}
+                className={`dash-quick-btn ${staffFilterRole === 'STUDENT' ? 'primary' : ''}`}
+                style={{ padding: '0.4rem 0.85rem', fontSize: '0.8rem' }}
               >
-                Phòng Giáo Vụ ({staffAccounts.filter((s) => s.role === 'TRAINING_STAFF').length})
+                🎓 Học Viên ({staffAccounts.filter((s) => s.role === 'STUDENT').length})
               </button>
               <button
                 type="button"
                 onClick={() => setStaffFilterRole('TEACHER')}
                 className={`dash-quick-btn ${staffFilterRole === 'TEACHER' ? 'primary' : ''}`}
-                style={{ padding: '0.35rem 0.85rem', fontSize: '0.8rem' }}
+                style={{ padding: '0.4rem 0.85rem', fontSize: '0.8rem' }}
               >
-                Giảng Viên ({staffAccounts.filter((s) => s.role === 'TEACHER').length})
+                👨‍🏫 Giảng Viên ({staffAccounts.filter((s) => s.role === 'TEACHER').length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setStaffFilterRole('TRAINING_STAFF')}
+                className={`dash-quick-btn ${staffFilterRole === 'TRAINING_STAFF' ? 'primary' : ''}`}
+                style={{ padding: '0.4rem 0.85rem', fontSize: '0.8rem' }}
+              >
+                💼 Phòng Giáo Vụ ({staffAccounts.filter((s) => s.role === 'TRAINING_STAFF').length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setStaffFilterRole('DIRECTOR')}
+                className={`dash-quick-btn ${staffFilterRole === 'DIRECTOR' ? 'primary' : ''}`}
+                style={{ padding: '0.4rem 0.85rem', fontSize: '0.8rem' }}
+              >
+                👔 Ban Giám Đốc ({staffAccounts.filter((s) => s.role === 'DIRECTOR').length})
               </button>
             </div>
 
             <div>
               <input
                 type="text"
-                placeholder="🔍 Tìm theo tên, email, mã nhân sự..."
+                placeholder="🔍 Tìm theo tên, email, mã tài khoản..."
                 value={staffSearch}
                 onChange={(e) => setStaffSearch(e.target.value)}
                 style={{
-                  padding: '0.45rem 0.85rem',
+                  padding: '0.5rem 0.85rem',
                   borderRadius: '8px',
-                  border: '1px solid #cbd5e1',
-                  fontSize: '0.82rem',
+                  border: '1.5px solid #cbd5e1',
+                  fontSize: '0.84rem',
                   width: '280px',
+                  outline: 'none',
                 }}
               />
             </div>
           </div>
 
-          {/* Staff Accounts Table */}
+          {/* All Accounts Table */}
           <div className="dash-card" style={{ padding: '0.5rem', borderRadius: '16px', overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid #e2e8f0', backgroundColor: '#f8fafc', textAlign: 'left', color: '#475569' }}>
                   <th style={{ padding: '10px 14px' }}>Mã &amp; Họ Tên</th>
-                  <th style={{ padding: '10px 14px' }}>Vai Trò</th>
-                  <th style={{ padding: '10px 14px' }}>Bộ Phận / Chuyên Môn</th>
+                  <th style={{ padding: '10px 14px' }}>Vai Trò Hệ Thống</th>
+                  <th style={{ padding: '10px 14px' }}>Bộ Phận / Trình Độ</th>
                   <th style={{ padding: '10px 14px' }}>Liên Hệ</th>
                   <th style={{ padding: '10px 14px' }}>Trạng Thái</th>
-                  <th style={{ padding: '10px 14px' }}>Thao Tác</th>
+                  <th style={{ padding: '10px 14px', textAlign: 'center' }}>Thao Tác Quản Trị</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredStaff.length > 0 ? (
-                  filteredStaff.map((account) => (
-                    <tr key={account._id} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                      <td style={{ padding: '12px 14px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  filteredStaff.map((account) => {
+                    const isDir = account.role === 'DIRECTOR';
+                    const isStaff = account.role === 'TRAINING_STAFF';
+                    const isTeacher = account.role === 'TEACHER';
+                    const isStudent = account.role === 'STUDENT';
+
+                    const avatarBg = isDir
+                      ? '#fef3c7'
+                      : isTeacher
+                      ? '#ecfdf5'
+                      : isStaff
+                      ? '#eff6ff'
+                      : '#f3e8ff';
+                    const avatarColor = isDir
+                      ? '#b45309'
+                      : isTeacher
+                      ? '#047857'
+                      : isStaff
+                      ? '#1d4ed8'
+                      : '#7e22ce';
+
+                    return (
+                      <tr key={account._id} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                        <td style={{ padding: '12px 14px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <span
+                              style={{
+                                width: '38px',
+                                height: '38px',
+                                borderRadius: '50%',
+                                backgroundColor: avatarBg,
+                                color: avatarColor,
+                                fontWeight: 800,
+                                display: 'grid',
+                                placeItems: 'center',
+                                fontSize: '0.92rem',
+                                border: `1px solid ${avatarColor}33`,
+                              }}
+                            >
+                              {account.fullName.charAt(0).toUpperCase()}
+                            </span>
+                            <div>
+                              <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.9rem' }}>{account.fullName}</div>
+                              <div style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 600 }}>{account.code}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td style={{ padding: '12px 14px' }}>
+                          {isDir && (
+                            <span style={{ backgroundColor: '#fef3c7', color: '#92400e', border: '1px solid #fde68a', padding: '4px 10px', borderRadius: '6px', fontSize: '0.76rem', fontWeight: 800 }}>
+                              👔 Ban Giám Đốc
+                            </span>
+                          )}
+                          {isStaff && (
+                            <span style={{ backgroundColor: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', padding: '4px 10px', borderRadius: '6px', fontSize: '0.76rem', fontWeight: 800 }}>
+                              💼 Phòng Giáo Vụ
+                            </span>
+                          )}
+                          {isTeacher && (
+                            <span style={{ backgroundColor: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', padding: '4px 10px', borderRadius: '6px', fontSize: '0.76rem', fontWeight: 800 }}>
+                              👨‍🏫 Giảng Viên (Band {account.ieltsBand || 8.5})
+                            </span>
+                          )}
+                          {isStudent && (
+                            <span style={{ backgroundColor: '#f3e8ff', color: '#7e22ce', border: '1px solid #e9d5ff', padding: '4px 10px', borderRadius: '6px', fontSize: '0.76rem', fontWeight: 800 }}>
+                              🎓 Học Viên
+                            </span>
+                          )}
+                        </td>
+                        <td style={{ padding: '12px 14px' }}>
+                          <div style={{ fontWeight: 600, color: '#0f172a' }}>{account.department}</div>
+                          <div style={{ fontSize: '0.78rem', color: '#64748b' }}>{account.position}</div>
+                        </td>
+                        <td style={{ padding: '12px 14px' }}>
+                          <div style={{ color: '#1e293b' }}>{account.email}</div>
+                          <div style={{ fontSize: '0.78rem', color: '#64748b' }}>{account.phone || '—'}</div>
+                        </td>
+                        <td style={{ padding: '12px 14px' }}>
                           <span
                             style={{
-                              width: '36px',
-                              height: '36px',
-                              borderRadius: '50%',
-                              backgroundColor: account.role === 'TEACHER' ? '#ecfdf5' : '#eff6ff',
-                              color: account.role === 'TEACHER' ? '#047857' : '#1d4ed8',
+                              padding: '3px 8px',
+                              borderRadius: '6px',
                               fontWeight: 800,
-                              display: 'grid',
-                              placeItems: 'center',
-                              fontSize: '0.9rem',
+                              fontSize: '0.75rem',
+                              backgroundColor: account.status === 'ACTIVE' ? '#ecfdf5' : '#fee2e2',
+                              color: account.status === 'ACTIVE' ? '#047857' : '#b91c1c',
+                              border: account.status === 'ACTIVE' ? '1px solid #a7f3d0' : '1px solid #fca5a5',
                             }}
                           >
-                            {account.fullName.charAt(0).toUpperCase()}
+                            {account.status === 'ACTIVE' ? 'Đang hoạt động' : 'Tạm khóa'}
                           </span>
-                          <div>
-                            <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.9rem' }}>{account.fullName}</div>
-                            <div style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 600 }}>{account.code}</div>
+                        </td>
+                        <td style={{ padding: '12px 14px' }}>
+                          <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'center' }}>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenRoleModal(account)}
+                              style={{
+                                padding: '4px 10px',
+                                borderRadius: '6px',
+                                fontSize: '0.75rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                border: '1px solid #bfdbfe',
+                                backgroundColor: '#eff6ff',
+                                color: '#1d4ed8',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                              }}
+                            >
+                              <span>👑</span>
+                              <span>Phân Quyền</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleToggleStaffStatus(account)}
+                              style={{
+                                padding: '4px 10px',
+                                borderRadius: '6px',
+                                fontSize: '0.75rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                border: account.status === 'ACTIVE' ? '1px solid #fca5a5' : '1px solid #a7f3d0',
+                                backgroundColor: account.status === 'ACTIVE' ? '#fef2f2' : '#ecfdf5',
+                                color: account.status === 'ACTIVE' ? '#dc2626' : '#047857',
+                              }}
+                            >
+                              {account.status === 'ACTIVE' ? 'Khóa TK' : 'Kích hoạt'}
+                            </button>
                           </div>
-                        </div>
-                      </td>
-                      <td style={{ padding: '12px 14px' }}>
-                        {account.role === 'TEACHER' ? (
-                          <span style={{ backgroundColor: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', padding: '3px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700 }}>
-                            👨‍🏫 Giảng Viên (Band {account.ieltsBand || 8.5})
-                          </span>
-                        ) : (
-                          <span style={{ backgroundColor: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', padding: '3px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700 }}>
-                            💼 Phòng Giáo Vụ
-                          </span>
-                        )}
-                      </td>
-                      <td style={{ padding: '12px 14px' }}>
-                        <div style={{ fontWeight: 600, color: '#0f172a' }}>{account.department}</div>
-                        <div style={{ fontSize: '0.78rem', color: '#64748b' }}>{account.position}</div>
-                      </td>
-                      <td style={{ padding: '12px 14px' }}>
-                        <div style={{ color: '#1e293b' }}>{account.email}</div>
-                        <div style={{ fontSize: '0.78rem', color: '#64748b' }}>{account.phone || '—'}</div>
-                      </td>
-                      <td style={{ padding: '12px 14px' }}>
-                        <span
-                          style={{
-                            padding: '3px 8px',
-                            borderRadius: '6px',
-                            fontWeight: 800,
-                            fontSize: '0.75rem',
-                            backgroundColor: account.status === 'ACTIVE' ? '#ecfdf5' : '#fee2e2',
-                            color: account.status === 'ACTIVE' ? '#047857' : '#b91c1c',
-                            border: account.status === 'ACTIVE' ? '1px solid #a7f3d0' : '1px solid #fca5a5',
-                          }}
-                        >
-                          {account.status === 'ACTIVE' ? 'Đang hoạt động' : 'Tạm khóa'}
-                        </span>
-                      </td>
-                      <td style={{ padding: '12px 14px' }}>
-                        <button
-                          type="button"
-                          onClick={() => handleToggleStaffStatus(account)}
-                          style={{
-                            padding: '4px 10px',
-                            borderRadius: '6px',
-                            fontSize: '0.75rem',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                            border: account.status === 'ACTIVE' ? '1px solid #fca5a5' : '1px solid #a7f3d0',
-                            backgroundColor: account.status === 'ACTIVE' ? '#fef2f2' : '#ecfdf5',
-                            color: account.status === 'ACTIVE' ? '#dc2626' : '#047857',
-                          }}
-                        >
-                          {account.status === 'ACTIVE' ? 'Khóa TK' : 'Kích hoạt'}
-                        </button>
-                      </td>
-                    </tr>
-                  ))
+                        </td>
+                      </tr>
+                    );
+                  })
                 ) : (
                   <tr>
-                    <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
-                      Không tìm thấy tài khoản nhân sự nào phù hợp.
+                    <td colSpan={6} style={{ textAlign: 'center', padding: '2.5rem', color: '#64748b' }}>
+                      Không tìm thấy tài khoản người dùng nào phù hợp.
                     </td>
                   </tr>
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────
+          2b. COURSES & CURRICULUM MANAGEMENT (QUẢN LÝ KHÓA HỌC, CHƯƠNG TRÌNH HỌC & MỐC HOÀN THÀNH)
+          ───────────────────────────────────────────────────────────── */}
+      {activeTab === 'courses_curriculum' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+            <div>
+              <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>
+                📚 Quản Lý Khóa Học, Chương Trình Học &amp; Mốc Hoàn Thành
+              </h2>
+              <span style={{ fontSize: '0.82rem', color: '#64748b' }}>
+                Quản trị toàn diện các khóa học, nội dung khung giáo trình (Syllabus từng buổi) và các mốc đánh giá hoàn thành (Checkpoints, Mock Tests).
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleOpenCreateCourse}
+              style={{
+                backgroundColor: '#059669',
+                color: '#ffffff',
+                border: 'none',
+                padding: '0.65rem 1.35rem',
+                borderRadius: '10px',
+                fontSize: '0.86rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                boxShadow: '0 3px 8px rgba(5, 150, 105, 0.28)',
+              }}
+            >
+              <span>➕</span>
+              <span>Tạo Khóa Học Mới</span>
+            </button>
+          </div>
+
+          {/* Filter Bar */}
+          <div className="dash-card" style={{ padding: '1rem', borderRadius: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flex: 1, minWidth: '240px' }}>
+              <input
+                type="text"
+                placeholder="🔍 Tìm theo mã khóa, tên khóa học..."
+                value={courseSearch}
+                onChange={(e) => setCourseSearch(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.5rem 0.85rem',
+                  borderRadius: '8px',
+                  border: '1.5px solid #cbd5e1',
+                  fontSize: '0.84rem',
+                  outline: 'none',
+                }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <select
+                value={courseCategoryFilter}
+                onChange={(e) => setCourseCategoryFilter(e.target.value)}
+                style={{
+                  padding: '0.5rem 0.85rem',
+                  borderRadius: '8px',
+                  border: '1.5px solid #cbd5e1',
+                  fontSize: '0.84rem',
+                  backgroundColor: '#ffffff',
+                }}
+              >
+                <option value="ALL">Tất cả phân loại</option>
+                <option value="Luyện Thi IELTS">Luyện Thi IELTS</option>
+                <option value="Tiếng Anh Giao Tiếp">Tiếng Anh Giao Tiếp</option>
+                <option value="Tiếng Anh Học Thuật">Tiếng Anh Học Thuật</option>
+                <option value="Tiếng Anh Doanh Nghiệp">Tiếng Anh Doanh Nghiệp</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Courses Table */}
+          <div className="dash-card" style={{ padding: '0.5rem', borderRadius: '16px', overflowX: 'auto' }}>
+            {coursesLoading ? (
+              <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>
+                ⏳ Đang tải dữ liệu khóa học và giáo trình...
+              </div>
+            ) : (
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid #e2e8f0', backgroundColor: '#f8fafc', textAlign: 'left', color: '#475569' }}>
+                    <th style={{ padding: '10px 14px' }}>Mã &amp; Tên Khóa Học</th>
+                    <th style={{ padding: '10px 14px' }}>Danh Mục</th>
+                    <th style={{ padding: '10px 14px' }}>Thời Lượng</th>
+                    <th style={{ padding: '10px 14px' }}>Học Phí</th>
+                    <th style={{ padding: '10px 14px' }}>Nội Dung Giáo Trình</th>
+                    <th style={{ padding: '10px 14px' }}>Mốc Hoàn Thành</th>
+                    <th style={{ padding: '10px 14px' }}>Trạng Thái</th>
+                    <th style={{ padding: '10px 14px', textAlign: 'center' }}>Thao Tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {coursesList
+                    .filter((c) => {
+                      if (courseSearch.trim()) {
+                        const q = courseSearch.toLowerCase();
+                        const match = c.title.toLowerCase().includes(q) || c.code.toLowerCase().includes(q);
+                        if (!match) return false;
+                      }
+                      if (courseCategoryFilter !== 'ALL' && c.category !== courseCategoryFilter) {
+                        return false;
+                      }
+                      return true;
+                    })
+                    .map((course) => {
+                      const syllabusCount = course.syllabus?.length || 0;
+                      const milestoneCount = course.milestones?.length || 0;
+
+                      return (
+                        <tr key={course._id} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                          <td style={{ padding: '12px 14px' }}>
+                            <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.92rem' }}>{course.title}</div>
+                            <div style={{ fontSize: '0.75rem', color: '#059669', fontWeight: 700 }}>{course.code}</div>
+                          </td>
+                          <td style={{ padding: '12px 14px' }}>
+                            <span style={{ backgroundColor: '#f1f5f9', color: '#334155', padding: '3px 8px', borderRadius: '6px', fontSize: '0.76rem', fontWeight: 600 }}>
+                              {course.category}
+                            </span>
+                          </td>
+                          <td style={{ padding: '12px 14px', fontWeight: 700 }}>
+                            {course.sessions} buổi ({course.sessions * 1.5} giờ)
+                          </td>
+                          <td style={{ padding: '12px 14px', color: '#059669', fontWeight: 800 }}>
+                            {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(course.tuitionFee)}
+                          </td>
+                          <td style={{ padding: '12px 14px' }}>
+                            <span
+                              style={{
+                                backgroundColor: syllabusCount > 0 ? '#ecfdf5' : '#fef2f2',
+                                color: syllabusCount > 0 ? '#047857' : '#b91c1c',
+                                padding: '3px 8px',
+                                borderRadius: '6px',
+                                fontSize: '0.75rem',
+                                fontWeight: 700,
+                              }}
+                            >
+                              📖 {syllabusCount} bài học
+                            </span>
+                          </td>
+                          <td style={{ padding: '12px 14px' }}>
+                            <span
+                              style={{
+                                backgroundColor: milestoneCount > 0 ? '#eff6ff' : '#fffbeb',
+                                color: milestoneCount > 0 ? '#1d4ed8' : '#b45309',
+                                padding: '3px 8px',
+                                borderRadius: '6px',
+                                fontSize: '0.75rem',
+                                fontWeight: 700,
+                              }}
+                            >
+                              🎯 {milestoneCount} mốc kiểm tra
+                            </span>
+                          </td>
+                          <td style={{ padding: '12px 14px' }}>
+                            <span
+                              style={{
+                                padding: '3px 8px',
+                                borderRadius: '6px',
+                                fontWeight: 800,
+                                fontSize: '0.75rem',
+                                backgroundColor: course.status === 'ACTIVE' ? '#ecfdf5' : '#fee2e2',
+                                color: course.status === 'ACTIVE' ? '#047857' : '#b91c1c',
+                              }}
+                            >
+                              {course.status === 'ACTIVE' ? 'Đang mở' : 'Tạm dừng'}
+                            </span>
+                          </td>
+                          <td style={{ padding: '12px 14px' }}>
+                            <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'center' }}>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenCurriculumModal(course)}
+                                title="Quản lý Giáo trình & Khung bài học & Mốc đánh giá"
+                                style={{
+                                  padding: '5px 11px',
+                                  borderRadius: '6px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  backgroundColor: '#059669',
+                                  color: '#ffffff',
+                                  border: 'none',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                }}
+                              >
+                                <span>📖</span>
+                                <span>Nội Dung &amp; Mốc</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleOpenEditCourse(course)}
+                                style={{
+                                  padding: '5px 9px',
+                                  borderRadius: '6px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  backgroundColor: '#ffffff',
+                                  color: '#334155',
+                                  border: '1px solid #cbd5e1',
+                                }}
+                              >
+                                ✏️ Sửa
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteCourse(course._id, course.title)}
+                                style={{
+                                  padding: '5px 9px',
+                                  borderRadius: '6px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  backgroundColor: '#fef2f2',
+                                  color: '#dc2626',
+                                  border: '1px solid #fca5a5',
+                                }}
+                              >
+                                🗑️ Xóa
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       )}
@@ -3351,10 +3982,10 @@ export const DirectorDashboard: React.FC = () => {
                 </div>
                 <div>
                   <h3 style={{ margin: 0, fontSize: '1.18rem', fontWeight: 800, color: '#FFFFFF', letterSpacing: '-0.01em' }}>
-                    Cấp Tài Khoản Nhân Sự Mới
+                    Cấp Tài Khoản Người Dùng Mới
                   </h3>
                   <p style={{ margin: '2px 0 0', fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.85)' }}>
-                    Khởi tạo thông tin, phân quyền và thiết lập mật khẩu truy cập hệ thống
+                    Khởi tạo tài khoản cho Học viên, Giảng viên, Giáo vụ đào tạo hoặc Ban Giám Đốc
                   </p>
                 </div>
               </div>
@@ -3388,13 +4019,13 @@ export const DirectorDashboard: React.FC = () => {
                 <div>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.84rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.35rem' }}>
                     <span>👤</span>
-                    <span>Họ và tên nhân sự</span>
+                    <span>Họ và tên người dùng</span>
                     <span style={{ color: '#EF4444' }}>*</span>
                   </label>
                   <input
                     type="text"
                     required
-                    placeholder="Ví dụ: ThS. Lê Hoàng Bách"
+                    placeholder="Ví dụ: Nguyễn Văn An, ThS. Lê Hoàng Bách..."
                     value={newStaffForm.fullName}
                     onChange={(e) => setNewStaffForm({ ...newStaffForm, fullName: e.target.value })}
                     style={{
@@ -3431,7 +4062,7 @@ export const DirectorDashboard: React.FC = () => {
                     <input
                       type="email"
                       required
-                      placeholder="bach.le@educenter.edu.vn"
+                      placeholder="user@educenter.edu.vn"
                       value={newStaffForm.email}
                       onChange={(e) => setNewStaffForm({ ...newStaffForm, email: e.target.value })}
                       style={{
@@ -3491,7 +4122,8 @@ export const DirectorDashboard: React.FC = () => {
                   <div>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
                       <span>💼</span>
-                      <span>Vai trò công việc:</span>
+                      <span>Vai trò người dùng:</span>
+                      <span style={{ color: '#EF4444' }}>*</span>
                     </label>
                     <select
                       value={newStaffForm.role}
@@ -3502,30 +4134,24 @@ export const DirectorDashboard: React.FC = () => {
                         borderRadius: '10px',
                         border: '1.5px solid #E2E8F0',
                         fontSize: '0.85rem',
-                        fontWeight: 600,
+                        fontWeight: 700,
                         color: '#0F172A',
                         backgroundColor: '#F8FAFC',
                         cursor: 'pointer',
                         outline: 'none',
                       }}
-                      onFocus={(e) => {
-                        e.target.style.borderColor = '#059669';
-                        e.target.style.backgroundColor = '#FFFFFF';
-                      }}
-                      onBlur={(e) => {
-                        e.target.style.borderColor = '#E2E8F0';
-                        e.target.style.backgroundColor = '#F8FAFC';
-                      }}
                     >
-                      <option value="TRAINING_STAFF">💼 Chuyên viên Giáo vụ (TRAINING_STAFF)</option>
-                      <option value="TEACHER">👨‍🏫 Giảng viên IELTS (TEACHER)</option>
+                      <option value="STUDENT">🎓 Học Viên Trung Tâm (STUDENT)</option>
+                      <option value="TEACHER">👨‍🏫 Giảng Viên IELTS (TEACHER)</option>
+                      <option value="TRAINING_STAFF">💼 Chuyên Viên Giáo Vụ (TRAINING_STAFF)</option>
+                      <option value="DIRECTOR">👔 Ban Giám Đốc Điều Hành (DIRECTOR)</option>
                     </select>
                   </div>
 
                   <div>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
                       <span>🔑</span>
-                      <span>Mật khẩu khởi tạo</span>
+                      <span>Mật khẩu khởi tạo:</span>
                       <span style={{ color: '#EF4444' }}>*</span>
                     </label>
                     <input
@@ -3543,19 +4169,36 @@ export const DirectorDashboard: React.FC = () => {
                         outline: 'none',
                         backgroundColor: '#F8FAFC',
                       }}
-                      onFocus={(e) => {
-                        e.target.style.borderColor = '#059669';
-                        e.target.style.backgroundColor = '#FFFFFF';
-                      }}
-                      onBlur={(e) => {
-                        e.target.style.borderColor = '#E2E8F0';
-                        e.target.style.backgroundColor = '#F8FAFC';
-                      }}
                     />
                   </div>
                 </div>
 
-                {newStaffForm.role === 'TRAINING_STAFF' ? (
+                {/* Conditional Fields based on Role */}
+                {newStaffForm.role === 'STUDENT' && (
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
+                      🎯 Mục tiêu Target Band:
+                    </label>
+                    <input
+                      type="number"
+                      step="0.5"
+                      min="5.0"
+                      max="9.0"
+                      value={newStaffForm.targetBand || 7.0}
+                      onChange={(e) => setNewStaffForm({ ...newStaffForm, targetBand: Number(e.target.value) })}
+                      style={{
+                        width: '100%',
+                        padding: '0.65rem 0.95rem',
+                        borderRadius: '10px',
+                        border: '1.5px solid #E2E8F0',
+                        fontSize: '0.86rem',
+                        backgroundColor: '#F8FAFC',
+                      }}
+                    />
+                  </div>
+                )}
+
+                {newStaffForm.role === 'TRAINING_STAFF' && (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.85rem' }}>
                     <div>
                       <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
@@ -3571,8 +4214,6 @@ export const DirectorDashboard: React.FC = () => {
                           borderRadius: '10px',
                           border: '1.5px solid #E2E8F0',
                           fontSize: '0.86rem',
-                          color: '#334155',
-                          outline: 'none',
                           backgroundColor: '#F8FAFC',
                         }}
                       />
@@ -3591,14 +4232,14 @@ export const DirectorDashboard: React.FC = () => {
                           borderRadius: '10px',
                           border: '1.5px solid #E2E8F0',
                           fontSize: '0.86rem',
-                          color: '#334155',
-                          outline: 'none',
                           backgroundColor: '#F8FAFC',
                         }}
                       />
                     </div>
                   </div>
-                ) : (
+                )}
+
+                {newStaffForm.role === 'TEACHER' && (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.85rem' }}>
                     <div>
                       <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
@@ -3606,7 +4247,7 @@ export const DirectorDashboard: React.FC = () => {
                       </label>
                       <input
                         type="text"
-                        placeholder="Writing / Speaking"
+                        placeholder="Writing / Speaking / 4 Kỹ Năng"
                         value={newStaffForm.specialization}
                         onChange={(e) => setNewStaffForm({ ...newStaffForm, specialization: e.target.value })}
                         style={{
@@ -3615,8 +4256,6 @@ export const DirectorDashboard: React.FC = () => {
                           borderRadius: '10px',
                           border: '1.5px solid #E2E8F0',
                           fontSize: '0.86rem',
-                          color: '#334155',
-                          outline: 'none',
                           backgroundColor: '#F8FAFC',
                         }}
                       />
@@ -3638,8 +4277,6 @@ export const DirectorDashboard: React.FC = () => {
                           borderRadius: '10px',
                           border: '1.5px solid #E2E8F0',
                           fontSize: '0.86rem',
-                          color: '#334155',
-                          outline: 'none',
                           backgroundColor: '#F8FAFC',
                         }}
                       />
@@ -3660,12 +4297,16 @@ export const DirectorDashboard: React.FC = () => {
                           borderRadius: '10px',
                           border: '1.5px solid #E2E8F0',
                           fontSize: '0.86rem',
-                          color: '#334155',
-                          outline: 'none',
                           backgroundColor: '#F8FAFC',
                         }}
                       />
                     </div>
+                  </div>
+                )}
+
+                {newStaffForm.role === 'DIRECTOR' && (
+                  <div style={{ backgroundColor: '#fef3c7', padding: '10px 14px', borderRadius: '10px', fontSize: '0.83rem', color: '#92400e' }}>
+                    👔 Tài khoản Ban Giám Đốc sẽ có toàn quyền điều hành hệ thống, xem báo cáo tài chính và phê duyệt các đề xuất.
                   </div>
                 )}
               </div>
@@ -3695,10 +4336,7 @@ export const DirectorDashboard: React.FC = () => {
                     fontWeight: 700,
                     fontSize: '0.88rem',
                     cursor: 'pointer',
-                    transition: 'all 0.15s ease',
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F1F5F9')}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#FFFFFF')}
                 >
                   Hủy bỏ
                 </button>
@@ -3713,22 +4351,715 @@ export const DirectorDashboard: React.FC = () => {
                     color: '#FFFFFF',
                     fontWeight: 800,
                     fontSize: '0.88rem',
-                    cursor: isSubmittingStaff ? 'not-allowed' : 'pointer',
+                    cursor: 'pointer',
                     boxShadow: '0 4px 14px rgba(5, 150, 105, 0.35)',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    transition: 'all 0.2s ease',
-                    opacity: isSubmittingStaff ? 0.75 : 1,
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isSubmittingStaff) e.currentTarget.style.transform = 'translateY(-1px)';
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isSubmittingStaff) e.currentTarget.style.transform = 'translateY(0)';
                   }}
                 >
-                  {isSubmittingStaff ? 'Đang tạo...' : '💾 Cấp Tài Khoản'}
+                  {isSubmittingStaff ? 'Đang khởi tạo...' : '✨ Tạo Tài Khoản Mới'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────
+          MODAL: PHÂN QUYỀN VAI TRÒ NGƯỜI DÙNG (ROLE ASSIGNMENT)
+          ───────────────────────────────────────────────────────────── */}
+      {roleModalUser && (
+        <div
+          className="dmr-modal-backdrop"
+          onClick={() => setRoleModalUser(null)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '1rem',
+          }}
+        >
+          <div
+            style={{
+              maxWidth: '480px',
+              width: '94%',
+              borderRadius: '20px',
+              backgroundColor: '#FFFFFF',
+              boxShadow: '0 25px 60px -15px rgba(15, 23, 42, 0.28)',
+              border: '1px solid #E2E8F0',
+              overflow: 'hidden',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                padding: '1.25rem 1.5rem',
+                background: 'linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%)',
+                color: '#FFFFFF',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '1.4rem' }}>👑</span>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800 }}>Phân Quyền Vai Trò Tài Khoản</h3>
+                  <div style={{ fontSize: '0.78rem', color: '#bfdbfe' }}>Quyền hạn truy cập và chức năng hệ thống</div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRoleModalUser(null)}
+                style={{ background: 'none', border: 'none', color: '#ffffff', fontSize: '1.1rem', cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ backgroundColor: '#f8fafc', padding: '10px 14px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.95rem' }}>{roleModalUser.fullName}</div>
+                <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{roleModalUser.email} • Mã: {roleModalUser.code}</div>
+                <div style={{ fontSize: '0.8rem', marginTop: '4px' }}>
+                  Vai trò hiện tại: <strong style={{ color: '#059669' }}>{roleModalUser.role}</strong>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.5rem' }}>
+                  Chọn vai trò mới cần phân quyền:
+                </label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {[
+                    { value: 'STUDENT', label: '🎓 Học Viên (STUDENT)', desc: 'Xem khóa học, bài tập, tiến độ và lịch học cá nhân' },
+                    { value: 'TEACHER', label: '👨‍🏫 Giảng Viên (TEACHER)', desc: 'Điểm danh, chấm bài tập, quản lý học viên lớp mình dạy' },
+                    { value: 'TRAINING_STAFF', label: '💼 Phòng Giáo Vụ (TRAINING_STAFF)', desc: 'Quản lý khóa học, xếp lớp, duyệt thi thử, học vụ' },
+                    { value: 'DIRECTOR', label: '👔 Ban Giám Đốc (DIRECTOR)', desc: 'Toàn quyền điều hành, duyệt đề xuất và báo cáo tài chính' },
+                  ].map((r) => (
+                    <label
+                      key={r.value}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '10px',
+                        padding: '10px 12px',
+                        borderRadius: '10px',
+                        border: selectedNewRole === r.value ? '2px solid #2563eb' : '1px solid #e2e8f0',
+                        backgroundColor: selectedNewRole === r.value ? '#eff6ff' : '#ffffff',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name="newRole"
+                        value={r.value}
+                        checked={selectedNewRole === r.value}
+                        onChange={() => setSelectedNewRole(r.value as any)}
+                        style={{ marginTop: '3px' }}
+                      />
+                      <div>
+                        <div style={{ fontWeight: 800, fontSize: '0.85rem', color: '#0f172a' }}>{r.label}</div>
+                        <div style={{ fontSize: '0.76rem', color: '#64748b' }}>{r.desc}</div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ padding: '1rem 1.5rem', backgroundColor: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+              <button
+                type="button"
+                onClick={() => setRoleModalUser(null)}
+                style={{ padding: '0.6rem 1.2rem', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#ffffff', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' }}
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                disabled={isChangingRole}
+                onClick={handleConfirmChangeRole}
+                style={{
+                  padding: '0.6rem 1.4rem',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%)',
+                  color: '#ffffff',
+                  fontWeight: 800,
+                  fontSize: '0.85rem',
+                  cursor: 'pointer',
+                }}
+              >
+                {isChangingRole ? 'Đang cập nhật...' : '👑 Xác Nhận Phân Quyền'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────
+          MODAL: QUẢN LÝ NỘI DUNG GIÁO TRÌNH & MỐC HOÀN THÀNH (CURRICULUM & MILESTONES)
+          ───────────────────────────────────────────────────────────── */}
+      {isCurriculumModalOpen && curriculumCourse && (
+        <div
+          className="dmr-modal-backdrop"
+          onClick={() => setIsCurriculumModalOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '1rem',
+          }}
+        >
+          <div
+            style={{
+              maxWidth: '820px',
+              width: '95%',
+              maxHeight: '92vh',
+              overflowY: 'auto',
+              borderRadius: '20px',
+              backgroundColor: '#FFFFFF',
+              boxShadow: '0 25px 60px -15px rgba(15, 23, 42, 0.28)',
+              border: '1px solid #E2E8F0',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div
+              style={{
+                padding: '1.25rem 1.65rem',
+                background: 'linear-gradient(135deg, #064E3B 0%, #065F46 50%, #047857 100%)',
+                color: '#FFFFFF',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                position: 'sticky',
+                top: 0,
+                zIndex: 10,
+              }}
+            >
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.18rem', fontWeight: 800, color: '#FFFFFF' }}>
+                  📖 Quản Lý Nội Dung Khóa Học &amp; Các Mốc Hoàn Thành
+                </h3>
+                <p style={{ margin: '3px 0 0', fontSize: '0.82rem', color: 'rgba(255, 255, 255, 0.85)' }}>
+                  Khóa học: <strong>{curriculumCourse.title}</strong> ({curriculumCourse.code}) • {curriculumCourse.sessions} buổi học
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCurriculumModalOpen(false)}
+                style={{ background: 'none', border: 'none', color: '#ffffff', fontSize: '1.2rem', cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Sub-tab navigation */}
+            <div style={{ display: 'flex', gap: '0.5rem', padding: '1rem 1.65rem 0.5rem', borderBottom: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
+              <button
+                type="button"
+                onClick={() => setCurriculumTab('syllabus')}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  fontWeight: 800,
+                  fontSize: '0.85rem',
+                  cursor: 'pointer',
+                  backgroundColor: curriculumTab === 'syllabus' ? '#059669' : '#e2e8f0',
+                  color: curriculumTab === 'syllabus' ? '#ffffff' : '#475569',
+                }}
+              >
+                📚 Khung Giáo Trình &amp; Buổi Học ({curriculumSyllabus.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurriculumTab('milestones')}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  fontWeight: 800,
+                  fontSize: '0.85rem',
+                  cursor: 'pointer',
+                  backgroundColor: curriculumTab === 'milestones' ? '#059669' : '#e2e8f0',
+                  color: curriculumTab === 'milestones' ? '#ffffff' : '#475569',
+                }}
+              >
+                🎯 Các Mốc Đánh Giá &amp; Hoàn Thành ({curriculumMilestones.length})
+              </button>
+            </div>
+
+            {/* Content Area */}
+            <div style={{ padding: '1.5rem 1.65rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              {curriculumTab === 'syllabus' ? (
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.5rem' }}>
+                    Thêm buổi học / bài học mới vào giáo trình:
+                  </label>
+                  <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+                    <input
+                      type="text"
+                      placeholder="Ví dụ: Buổi 5: Chiến thuật Skimming & Scanning bài đọc Matching Headings..."
+                      value={newSyllabusItem}
+                      onChange={(e) => setNewSyllabusItem(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddSyllabusItem();
+                        }
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: '0.65rem 0.85rem',
+                        borderRadius: '8px',
+                        border: '1.5px solid #cbd5e1',
+                        fontSize: '0.85rem',
+                        outline: 'none',
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddSyllabusItem}
+                      style={{
+                        backgroundColor: '#059669',
+                        color: '#ffffff',
+                        border: 'none',
+                        padding: '0.65rem 1.25rem',
+                        borderRadius: '8px',
+                        fontWeight: 700,
+                        fontSize: '0.85rem',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      ➕ Thêm Buổi Học
+                    </button>
+                  </div>
+
+                  <div style={{ maxHeight: '340px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {curriculumSyllabus.length > 0 ? (
+                      curriculumSyllabus.map((item, idx) => (
+                        <div
+                          key={idx}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '10px 14px',
+                            backgroundColor: '#f8fafc',
+                            borderRadius: '10px',
+                            border: '1px solid #e2e8f0',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
+                            <span style={{ backgroundColor: '#ecfdf5', color: '#047857', fontWeight: 800, padding: '3px 8px', borderRadius: '6px', fontSize: '0.78rem' }}>
+                              Buổi {idx + 1}
+                            </span>
+                            <span style={{ fontSize: '0.85rem', color: '#0f172a', fontWeight: 600 }}>{item}</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveSyllabusItem(idx)}
+                            style={{
+                              backgroundColor: 'transparent',
+                              border: 'none',
+                              color: '#dc2626',
+                              cursor: 'pointer',
+                              fontWeight: 700,
+                              fontSize: '0.85rem',
+                            }}
+                          >
+                            ✕ Xóa
+                          </button>
+                        </div>
+                      ))
+                    ) : (
+                      <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
+                        Chưa có buổi học nào. Hãy nhập tên buổi học ở trên để xây dựng giáo trình.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  {/* Add Milestone Form */}
+                  <div style={{ backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '1.25rem' }}>
+                    <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#0f172a', marginBottom: '0.75rem' }}>
+                      ➕ Thêm Mốc Đánh Giá / Kiểm Tra Tiến Độ Mới:
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem' }}>
+                          Tiêu đề mốc:
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Ví dụ: Mid-term Mock Test 4 kỹ năng"
+                          value={newMilestoneForm.title}
+                          onChange={(e) => setNewMilestoneForm({ ...newMilestoneForm, title: e.target.value })}
+                          style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '0.82rem' }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem' }}>
+                          Phân loại mốc:
+                        </label>
+                        <select
+                          value={newMilestoneForm.type}
+                          onChange={(e) => setNewMilestoneForm({ ...newMilestoneForm, type: e.target.value as any })}
+                          style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '0.82rem' }}
+                        >
+                          <option value="CHECKPOINT">🚩 Checkpoint tiến độ</option>
+                          <option value="MOCK_TEST">📝 Bài thi thử (Mock Test)</option>
+                          <option value="SKILL_CHECK">🎯 Kiểm tra kỹ năng (Skill Check)</option>
+                          <option value="ASSIGNMENT">📑 Bài tập lớn (Assignment)</option>
+                          <option value="LESSON_COMPLETION">🎓 Hoàn thành khóa học (Completion)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem' }}>
+                          Buổi học mục tiêu (Target Session):
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          max={curriculumCourse.sessions || 100}
+                          value={newMilestoneForm.targetSession}
+                          onChange={(e) => setNewMilestoneForm({ ...newMilestoneForm, targetSession: Number(e.target.value) })}
+                          style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '0.82rem' }}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem' }}>
+                        Mô tả yêu cầu hoàn thành:
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Mô tả tiêu chí vượt qua mốc kiểm tra này..."
+                        value={newMilestoneForm.description}
+                        onChange={(e) => setNewMilestoneForm({ ...newMilestoneForm, description: e.target.value })}
+                        style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '0.82rem', marginBottom: '0.75rem' }}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleAddMilestone}
+                      style={{
+                        backgroundColor: '#059669',
+                        color: '#ffffff',
+                        border: 'none',
+                        padding: '0.55rem 1.25rem',
+                        borderRadius: '8px',
+                        fontWeight: 700,
+                        fontSize: '0.82rem',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      ➕ Thêm Mốc Hoàn Thành
+                    </button>
+                  </div>
+
+                  {/* Milestones List */}
+                  <div style={{ maxHeight: '300px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {curriculumMilestones.length > 0 ? (
+                      curriculumMilestones.map((ms, idx) => (
+                        <div
+                          key={idx}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '10px 14px',
+                            backgroundColor: '#ffffff',
+                            borderRadius: '10px',
+                            border: '1px solid #e2e8f0',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+                          }}
+                        >
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ backgroundColor: '#eff6ff', color: '#1d4ed8', fontWeight: 800, padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem' }}>
+                                Mốc #{idx + 1} • Buổi {ms.targetSession || 0}
+                              </span>
+                              <span style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.88rem' }}>{ms.title}</span>
+                              <span style={{ backgroundColor: '#f1f5f9', color: '#475569', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700 }}>
+                                {ms.type}
+                              </span>
+                            </div>
+                            {ms.description && (
+                              <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '3px' }}>{ms.description}</div>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveMilestone(idx)}
+                            style={{ backgroundColor: 'transparent', border: 'none', color: '#dc2626', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem' }}
+                          >
+                            ✕ Xóa
+                          </button>
+                        </div>
+                      ))
+                    ) : (
+                      <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
+                        Chưa có mốc hoàn thành nào. Hãy điền thông tin để tạo mốc mới.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div
+              style={{
+                padding: '1rem 1.65rem',
+                borderTop: '1px solid #E2E8F0',
+                display: 'flex',
+                justifyContent: 'flex-end',
+                gap: '0.75rem',
+                backgroundColor: '#F8FAFC',
+                borderBottomLeftRadius: '20px',
+                borderBottomRightRadius: '20px',
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setIsCurriculumModalOpen(false)}
+                style={{
+                  padding: '0.65rem 1.35rem',
+                  borderRadius: '10px',
+                  border: '1.5px solid #E2E8F0',
+                  background: '#FFFFFF',
+                  color: '#64748B',
+                  fontWeight: 700,
+                  fontSize: '0.88rem',
+                  cursor: 'pointer',
+                }}
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                disabled={isSavingCurriculum}
+                onClick={handleSaveCurriculum}
+                style={{
+                  padding: '0.65rem 1.65rem',
+                  borderRadius: '10px',
+                  border: 'none',
+                  background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                  color: '#FFFFFF',
+                  fontWeight: 800,
+                  fontSize: '0.88rem',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 14px rgba(5, 150, 105, 0.35)',
+                }}
+              >
+                {isSavingCurriculum ? 'Đang lưu...' : '💾 Lưu Toàn Bộ Giáo Trình & Mốc Hoàn Thành'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────
+          MODAL: THÊM / CHỈNH SỬA KHÓA HỌC CRUD (COURSE FORM)
+          ───────────────────────────────────────────────────────────── */}
+      {isCourseCrudOpen && (
+        <div
+          className="dmr-modal-backdrop"
+          onClick={() => setIsCourseCrudOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '1rem',
+          }}
+        >
+          <div
+            style={{
+              maxWidth: '640px',
+              width: '94%',
+              maxHeight: '92vh',
+              overflowY: 'auto',
+              borderRadius: '20px',
+              backgroundColor: '#FFFFFF',
+              boxShadow: '0 25px 60px -15px rgba(15, 23, 42, 0.28)',
+              border: '1px solid #E2E8F0',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div
+              style={{
+                padding: '1.25rem 1.65rem',
+                background: 'linear-gradient(135deg, #064E3B 0%, #065F46 50%, #047857 100%)',
+                color: '#FFFFFF',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <h3 style={{ margin: 0, fontSize: '1.18rem', fontWeight: 800 }}>
+                {editingCourseItem ? '✏️ Chỉnh Sửa Thông Tin Khóa Học' : '➕ Tạo Khóa Học Mới'}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsCourseCrudOpen(false)}
+                style={{ background: 'none', border: 'none', color: '#ffffff', fontSize: '1.2rem', cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleSaveCourseCrud} style={{ display: 'flex', flexDirection: 'column' }}>
+              <div style={{ padding: '1.5rem 1.65rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.85rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
+                      Mã khóa học: *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="VD: IELTS-FND, IELTS-INT"
+                      value={courseCrudForm.code}
+                      onChange={(e) => setCourseCrudForm({ ...courseCrudForm, code: e.target.value.toUpperCase() })}
+                      style={{ width: '100%', padding: '0.65rem 0.85rem', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '0.85rem' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
+                      Danh mục:
+                    </label>
+                    <select
+                      value={courseCrudForm.category}
+                      onChange={(e) => setCourseCrudForm({ ...courseCrudForm, category: e.target.value })}
+                      style={{ width: '100%', padding: '0.65rem 0.85rem', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '0.85rem' }}
+                    >
+                      <option value="Luyện Thi IELTS">Luyện Thi IELTS</option>
+                      <option value="Tiếng Anh Giao Tiếp">Tiếng Anh Giao Tiếp</option>
+                      <option value="Tiếng Anh Học Thuật">Tiếng Anh Học Thuật</option>
+                      <option value="Tiếng Anh Doanh Nghiệp">Tiếng Anh Doanh Nghiệp</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
+                    Tên khóa học: *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="VD: Khóa Luyện Thi IELTS Toàn Diện 7.5+"
+                    value={courseCrudForm.title}
+                    onChange={(e) => setCourseCrudForm({ ...courseCrudForm, title: e.target.value })}
+                    style={{ width: '100%', padding: '0.65rem 0.85rem', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '0.85rem' }}
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.85rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
+                      Số buổi học: *
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      required
+                      value={courseCrudForm.sessions}
+                      onChange={(e) => setCourseCrudForm({ ...courseCrudForm, sessions: Number(e.target.value) })}
+                      style={{ width: '100%', padding: '0.65rem 0.85rem', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '0.85rem' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
+                      Học phí (VNĐ): *
+                    </label>
+                    <input
+                      type="number"
+                      step="100000"
+                      min="0"
+                      required
+                      value={courseCrudForm.tuitionFee}
+                      onChange={(e) => setCourseCrudForm({ ...courseCrudForm, tuitionFee: Number(e.target.value) })}
+                      style={{ width: '100%', padding: '0.65rem 0.85rem', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '0.85rem' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
+                      Trạng thái:
+                    </label>
+                    <select
+                      value={courseCrudForm.status}
+                      onChange={(e) => setCourseCrudForm({ ...courseCrudForm, status: e.target.value as any })}
+                      style={{ width: '100%', padding: '0.65rem 0.85rem', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '0.85rem' }}
+                    >
+                      <option value="ACTIVE">Hoạt động (ACTIVE)</option>
+                      <option value="INACTIVE">Tạm dừng (INACTIVE)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
+                    Mô tả khóa học:
+                  </label>
+                  <textarea
+                    rows={3}
+                    placeholder="Mục tiêu khóa học, phương pháp giảng dạy..."
+                    value={courseCrudForm.description}
+                    onChange={(e) => setCourseCrudForm({ ...courseCrudForm, description: e.target.value })}
+                    style={{ width: '100%', padding: '0.65rem 0.85rem', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '0.85rem', resize: 'vertical' }}
+                  />
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div style={{ padding: '1rem 1.65rem', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', backgroundColor: '#f8fafc' }}>
+                <button
+                  type="button"
+                  onClick={() => setIsCourseCrudOpen(false)}
+                  style={{ padding: '0.6rem 1.25rem', borderRadius: '8px', border: '1.5px solid #cbd5e1', background: '#ffffff', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' }}
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingCourseCrud}
+                  style={{
+                    padding: '0.6rem 1.45rem',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                    color: '#ffffff',
+                    fontWeight: 800,
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {isSavingCourseCrud ? 'Đang lưu...' : '💾 Lưu Khóa Học'}
                 </button>
               </div>
             </form>

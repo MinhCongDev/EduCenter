@@ -17,7 +17,7 @@ export interface StaffAccount {
   fullName: string;
   email: string;
   phone?: string;
-  role: 'TRAINING_STAFF' | 'TEACHER';
+  role: 'STUDENT' | 'TEACHER' | 'TRAINING_STAFF' | 'DIRECTOR';
   status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
   avatarUrl?: string;
   code: string;
@@ -28,17 +28,20 @@ export interface StaffAccount {
   joinDate: string;
 }
 
+export type UserAccount = StaffAccount;
+
 export interface AddStaffPayload {
   fullName: string;
   email: string;
   password?: string;
   phone?: string;
-  role: 'TRAINING_STAFF' | 'TEACHER';
+  role: 'STUDENT' | 'TEACHER' | 'TRAINING_STAFF' | 'DIRECTOR';
   department?: string;
   position?: string;
   specialization?: string;
   ieltsBand?: number;
   yearsOfExperience?: number;
+  targetBand?: number;
 }
 
 export interface CenterOperationsData {
@@ -202,10 +205,12 @@ export const directorService = {
   reviewApproval: (id: string, status: 'APPROVED' | 'REJECTED', reviewNote?: string) => api.patch<{ success: boolean; message: string; data: ProposalItem }>(`/director/approvals/${id}/review`, { status, reviewNote }),
   createApproval: (payload: { title: string; description?: string; category?: string; proposerName?: string; proposerRole?: string }) => api.post<{ success: boolean; message: string; data: ProposalItem }>('/director/approvals', payload),
 
-  // 2. Staff Accounts
-  getStaffAccounts: () => api.get<{ success: boolean; data: { accounts: StaffAccount[] } }>('/director/staff'),
+  // 2. All User Accounts & Permissions
+  getStaffAccounts: (params?: { role?: string }) => api.get<{ success: boolean; data: { accounts: StaffAccount[] } }>('/director/staff', { params }),
+  getAllAccounts: (params?: { role?: string }) => api.get<{ success: boolean; data: { accounts: StaffAccount[] } }>('/director/staff', { params }),
   addStaffAccount: (payload: AddStaffPayload) => api.post<{ success: boolean; message: string; data: { user: any } }>('/director/staff', payload),
-  updateStaffStatus: (id: string, status: 'ACTIVE' | 'INACTIVE') => api.patch<{ success: boolean; message: string }>('/director/staff/' + id + '/status', { status }),
+  updateStaffStatus: (id: string, status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED') => api.patch<{ success: boolean; message: string }>('/director/staff/' + id + '/status', { status }),
+  updateUserRole: (id: string, role: 'STUDENT' | 'TEACHER' | 'TRAINING_STAFF' | 'DIRECTOR') => api.patch<{ success: boolean; message: string; data: { user: any } }>('/director/staff/' + id + '/role', { role }),
 
   // 3. Operations & Activities Monitoring
   getOperationsMonitoring: () => api.get<{ success: boolean; data: CenterOperationsData }>('/director/monitoring/operations'),

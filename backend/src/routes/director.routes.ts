@@ -8,6 +8,7 @@ import {
   getStaffAccountsList,
   addStaffAccount,
   updateStaffStatus,
+  updateUserRole,
   getCenterOperationsMonitoring,
   getStudentActivitiesMonitoring,
   getTeacherActivitiesMonitoring,
@@ -28,10 +29,17 @@ router.get('/approvals', getApprovals);
 router.post('/approvals', createProposal);
 router.patch('/approvals/:id/review', reviewApproval);
 
-// 2. Staff Accounts Management (View list, Add account, Update status)
+// 2. All User Accounts & Permissions Management
 router.get('/staff', getStaffAccountsList);
 router.post('/staff', addStaffAccount);
 router.patch('/staff/:id/status', updateStaffStatus);
+router.patch('/staff/:id/role', updateUserRole);
+
+// Alias routes for clarity
+router.get('/users', getStaffAccountsList);
+router.post('/users', addStaffAccount);
+router.patch('/users/:id/status', updateStaffStatus);
+router.patch('/users/:id/role', updateUserRole);
 
 // 3. Center Operations & Activities Monitoring
 router.get('/monitoring/operations', getCenterOperationsMonitoring);

@@ -178,6 +178,22 @@ export interface ClassItem {
   };
 }
 
+export type MilestoneType =
+  | 'LESSON_COMPLETION'
+  | 'ASSIGNMENT'
+  | 'MOCK_TEST'
+  | 'SKILL_CHECK'
+  | 'CHECKPOINT';
+
+export interface CourseMilestone {
+  milestoneId: string;
+  title: string;
+  description?: string;
+  order: number;
+  type?: MilestoneType;
+  targetSession?: number;
+}
+
 // Rich Course (main canonical)
 export interface Course {
   _id: string;
@@ -195,6 +211,7 @@ export interface Course {
   status: CourseStatus;
   learningObjectives: string[];
   syllabus: string[];
+  milestones?: CourseMilestone[];
   bannerUrl?: string;
   featured?: boolean;
   classes?: ClassItem[];
@@ -214,6 +231,7 @@ export interface CourseFormData {
   tuitionFee: number;
   status: CourseStatus;
   syllabus: string[];
+  milestones?: CourseMilestone[];
 }
 
 export interface CourseQueryParams {

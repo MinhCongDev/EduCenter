@@ -267,76 +267,99 @@ export const createProposal = async (req: AuthRequest, res: Response): Promise<v
 };
 
 /**
- * 2. View Staff Accounts List (Staff & Teachers)
- * GET /api/director/staff
+/**
+ * 2. View All Accounts List (All Users: Students, Teachers, Staff, Directors)
+ * GET /api/director/staff or GET /api/director/users
  */
-export const getStaffAccountsList = async (_req: Request, res: Response): Promise<void> => {
+export const getStaffAccountsList = async (req: Request, res: Response): Promise<void> => {
   try {
-    const [staffUsers, teacherUsers, staffProfiles, teacherProfiles] = await Promise.all([
-      User.find({ role: 'TRAINING_STAFF' }).select('-password').lean(),
-      User.find({ role: 'TEACHER' }).select('-password').lean(),
+    const { role } = req.query;
+
+    const userQuery: any = {};
+    if (role && role !== 'ALL') {
+      userQuery.role = role;
+    }
+
+    const [users, staffProfiles, teacherProfiles, studentProfiles] = await Promise.all([
+      User.find(userQuery).select('-password').sort({ createdAt: -1 }).lean(),
       Staff.find().lean(),
       Teacher.find().lean(),
+      Student.find().lean(),
     ]);
 
     const staffMap = new Map(staffProfiles.map((s) => [s.user.toString(), s]));
     const teacherMap = new Map(teacherProfiles.map((t) => [t.user.toString(), t]));
+    const studentMap = new Map(studentProfiles.map((s) => [s.user.toString(), s]));
 
-    const accounts = [
-      ...staffUsers.map((u) => {
-        const profile = staffMap.get(u._id.toString());
-        return {
-          _id: u._id,
-          user: u,
-          fullName: u.fullName,
-          email: u.email,
-          phone: u.phone,
-          role: u.role,
-          status: u.status,
-          avatarUrl: u.avatarUrl,
-          code: profile?.staffCode || `STF-${u._id.toString().slice(-4).toUpperCase()}`,
-          department: profile?.department || 'Phòng Đào tạo & Khảo thí',
-          position: profile?.position || 'Chuyên viên Đào tạo',
-          joinDate: profile?.joinDate || u.createdAt,
-        };
-      }),
-      ...teacherUsers.map((u) => {
-        const profile = teacherMap.get(u._id.toString());
-        return {
-          _id: u._id,
-          user: u,
-          fullName: u.fullName,
-          email: u.email,
-          phone: u.phone,
-          role: u.role,
-          status: u.status,
-          avatarUrl: u.avatarUrl,
-          code: profile?.teacherCode || `TEA-${u._id.toString().slice(-4).toUpperCase()}`,
-          department: 'Khoa Giảng dạy IELTS',
-          position: profile?.specialization?.join(', ') || 'Giảng viên IELTS Academic',
-          ieltsBand: profile?.ieltsBand || 8.5,
-          yearsOfExperience: profile?.yearsOfExperience || 3,
-          joinDate: profile?.createdAt || u.createdAt,
-        };
-      }),
-    ];
+    const accounts = users.map((u) => {
+      const uId = u._id.toString();
+      const sProf = staffMap.get(uId);
+      const tProf = teacherMap.get(uId);
+      const stuProf = studentMap.get(uId);
+
+      let code = '';
+      let department = '';
+      let position = '';
+      let ieltsBand: number | undefined;
+
+      switch (u.role) {
+        case 'DIRECTOR':
+          code = `DIR-${uId.slice(-4).toUpperCase()}`;
+          department = 'Ban Giám Đốc';
+          position = 'Giám Đốc Điều Hành (Director)';
+          break;
+        case 'TRAINING_STAFF':
+          code = sProf?.staffCode || `STF-${uId.slice(-4).toUpperCase()}`;
+          department = sProf?.department || 'Phòng Đào tạo & Khảo thí';
+          position = sProf?.position || 'Chuyên viên Đào tạo';
+          break;
+        case 'TEACHER':
+          code = tProf?.teacherCode || `TEA-${uId.slice(-4).toUpperCase()}`;
+          department = 'Khoa Giảng dạy IELTS';
+          position = tProf?.specialization?.join(', ') || 'Giảng viên IELTS Academic';
+          ieltsBand = tProf?.ieltsBand || 8.5;
+          break;
+        case 'STUDENT':
+        default:
+          code = stuProf?.studentCode || `STU-${uId.slice(-4).toUpperCase()}`;
+          department = 'Học viên Trung tâm';
+          position = stuProf?.targetBand ? `Mục tiêu Band ${stuProf.targetBand}` : 'Học viên Khóa học';
+          break;
+      }
+
+      return {
+        _id: u._id,
+        user: u,
+        fullName: u.fullName,
+        email: u.email,
+        phone: u.phone,
+        role: u.role,
+        status: u.status,
+        avatarUrl: u.avatarUrl,
+        code,
+        department,
+        position,
+        ieltsBand,
+        joinDate: u.createdAt,
+      };
+    });
 
     res.status(200).json({
       success: true,
-      message: 'Lấy danh sách tài khoản nhân sự và giảng viên thành công',
+      message: 'Lấy danh sách tất cả tài khoản người dùng thành công',
       data: { accounts },
     });
   } catch (err: any) {
     res.status(500).json({
       success: false,
-      message: 'Lỗi máy chủ khi lấy danh sách nhân sự: ' + err.message,
+      message: 'Lỗi máy chủ khi lấy danh sách tài khoản: ' + err.message,
     });
   }
 };
 
 /**
- * 3. Add Staff Account (Teacher or Training Staff)
- * POST /api/director/staff
+ * 3. Add Account (Supports Student, Teacher, Staff, Director)
+ * POST /api/director/staff or POST /api/director/users
  */
 export const addStaffAccount = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -351,6 +374,7 @@ export const addStaffAccount = async (req: Request, res: Response): Promise<void
       specialization,
       ieltsBand,
       yearsOfExperience,
+      targetBand,
     } = req.body;
 
     if (!fullName || !email || !password || !role) {
@@ -361,10 +385,10 @@ export const addStaffAccount = async (req: Request, res: Response): Promise<void
       return;
     }
 
-    if (!['TRAINING_STAFF', 'TEACHER'].includes(role)) {
+    if (!['STUDENT', 'TEACHER', 'TRAINING_STAFF', 'DIRECTOR'].includes(role)) {
       res.status(400).json({
         success: false,
-        message: 'Vai trò nhân sự chỉ có thể là TRAINING_STAFF hoặc TEACHER',
+        message: 'Vai trò người dùng không hợp lệ',
       });
       return;
     }
@@ -410,11 +434,18 @@ export const addStaffAccount = async (req: Request, res: Response): Promise<void
         yearsOfExperience: yearsOfExperience ? Number(yearsOfExperience) : 3,
         status: 'ACTIVE',
       });
+    } else if (role === 'STUDENT') {
+      await Student.create({
+        user: newUser._id,
+        studentCode: `STU-${randomSuffix}`,
+        targetBand: targetBand ? Number(targetBand) : 7.0,
+        status: 'ACTIVE',
+      });
     }
 
     res.status(201).json({
       success: true,
-      message: `Tạo tài khoản nhân sự (${role === 'TEACHER' ? 'Giảng viên' : 'Giáo vụ'}) thành công!`,
+      message: `Tạo tài khoản người dùng (${role}) thành công!`,
       data: {
         user: {
           _id: newUser._id,
@@ -427,14 +458,14 @@ export const addStaffAccount = async (req: Request, res: Response): Promise<void
   } catch (err: any) {
     res.status(500).json({
       success: false,
-      message: 'Lỗi máy chủ khi tạo tài khoản nhân sự: ' + err.message,
+      message: 'Lỗi máy chủ khi tạo tài khoản: ' + err.message,
     });
   }
 };
 
 /**
- * 4. Update Staff Account Status (Toggle ACTIVE / INACTIVE)
- * PATCH /api/director/staff/:id/status
+ * 4. Update Account Status (Toggle ACTIVE / INACTIVE / SUSPENDED)
+ * PATCH /api/director/staff/:id/status or PATCH /api/director/users/:id/status
  */
 export const updateStaffStatus = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -458,16 +489,19 @@ export const updateStaffStatus = async (req: Request, res: Response): Promise<vo
     if (!updatedUser) {
       res.status(404).json({
         success: false,
-        message: 'Không tìm thấy tài khoản nhân sự',
+        message: 'Không tìm thấy tài khoản người dùng',
       });
       return;
     }
 
     // Synchronize profile status
+    const targetStatus = status === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE';
     if (updatedUser.role === 'TRAINING_STAFF') {
-      await Staff.findOneAndUpdate({ user: updatedUser._id }, { status: status === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE' });
+      await Staff.findOneAndUpdate({ user: updatedUser._id }, { status: targetStatus });
     } else if (updatedUser.role === 'TEACHER') {
-      await Teacher.findOneAndUpdate({ user: updatedUser._id }, { status: status === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE' });
+      await Teacher.findOneAndUpdate({ user: updatedUser._id }, { status: targetStatus });
+    } else if (updatedUser.role === 'STUDENT') {
+      await Student.findOneAndUpdate({ user: updatedUser._id }, { status: status === 'ACTIVE' ? 'ACTIVE' : 'RESERVED' });
     }
 
     res.status(200).json({
@@ -478,7 +512,82 @@ export const updateStaffStatus = async (req: Request, res: Response): Promise<vo
   } catch (err: any) {
     res.status(500).json({
       success: false,
-      message: 'Lỗi máy chủ khi cập nhật trạng thái nhân sự: ' + err.message,
+      message: 'Lỗi máy chủ khi cập nhật trạng thái: ' + err.message,
+    });
+  }
+};
+
+/**
+ * 4b. Update Account Role & Permissions (Phân quyền người dùng)
+ * PATCH /api/director/users/:id/role or PATCH /api/director/staff/:id/role
+ */
+export const updateUserRole = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { role } = req.body;
+
+    if (!['STUDENT', 'TEACHER', 'TRAINING_STAFF', 'DIRECTOR'].includes(role)) {
+      res.status(400).json({
+        success: false,
+        message: 'Vai trò người dùng không hợp lệ',
+      });
+      return;
+    }
+
+    const user = await User.findByIdAndUpdate(id, { role }, { new: true }).select('-password');
+    if (!user) {
+      res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy tài khoản người dùng',
+      });
+      return;
+    }
+
+    // Tự động tạo hồ sơ vai trò tương ứng nếu chưa tồn tại
+    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+    if (role === 'TEACHER') {
+      const existingTeacher = await Teacher.findOne({ user: user._id });
+      if (!existingTeacher) {
+        await Teacher.create({
+          user: user._id,
+          teacherCode: `TEA-${randomSuffix}`,
+          specialization: ['IELTS 4 Kỹ Năng'],
+          bio: 'Giảng viên học viện EduCenter',
+          status: 'ACTIVE',
+        });
+      }
+    } else if (role === 'TRAINING_STAFF') {
+      const existingStaff = await Staff.findOne({ user: user._id });
+      if (!existingStaff) {
+        await Staff.create({
+          user: user._id,
+          staffCode: `STF-${randomSuffix}`,
+          department: 'Phòng Đào tạo & Khảo thí',
+          position: 'Chuyên viên Đào tạo',
+          status: 'ACTIVE',
+        });
+      }
+    } else if (role === 'STUDENT') {
+      const existingStudent = await Student.findOne({ user: user._id });
+      if (!existingStudent) {
+        await Student.create({
+          user: user._id,
+          studentCode: `STU-${randomSuffix}`,
+          targetBand: 7.0,
+          status: 'ACTIVE',
+        });
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Đã cập nhật phân quyền tài khoản ${user.fullName} sang vai trò: ${role}`,
+      data: { user },
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi cập nhật phân quyền người dùng: ' + err.message,
     });
   }
 };
