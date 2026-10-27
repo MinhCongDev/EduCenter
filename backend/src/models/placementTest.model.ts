@@ -1,55 +1,114 @@
 import mongoose, { Document, Model, Schema, Types } from 'mongoose';
 
-export const PLACEMENT_TEST_DIFFICULTIES = ['BEGINNER', 'INTERMEDIATE', 'ADVANCED'] as const;
-export const PLACEMENT_TEST_SKILLS = ['LISTENING', 'SPEAKING', 'READING', 'WRITING'] as const;
-export type PlacementTestDifficulty = typeof PLACEMENT_TEST_DIFFICULTIES[number];
-export type PlacementTestSkill = typeof PLACEMENT_TEST_SKILLS[number];
+export const PLACEMENT_TEST_DIFFICULTIES = [
+  'BEGINNER',
+  'INTERMEDIATE',
+  'ADVANCED',
+  'Cơ bản - Trung cấp',
+  'Trung cấp - Khá',
+  'Nâng cao - Chuyên sâu',
+] as const;
+
+export const PLACEMENT_TEST_SKILLS = [
+  'LISTENING',
+  'SPEAKING',
+  'READING',
+  'WRITING',
+  'Grammar',
+  'Vocabulary',
+  'Reading',
+  'Critical Reasoning',
+] as const;
+
+export type PlacementTestDifficulty = string;
+export type PlacementTestSkill = string;
 export type PlacementTestStatus = 'DRAFT' | 'PUBLISHED';
 
+export interface IPlacementOption {
+  key?: string;
+  text: string;
+}
+
+export interface IPlacementPassage {
+  id?: string;
+  title: string;
+  subtitle?: string;
+  content: string;
+}
+
 export interface IPlacementTestQuestion {
-  skill: PlacementTestSkill;
+  _id?: string;
+  id?: string;
+  questionNumber?: number;
+  skill: string;
   prompt: string;
-  options: string[];
+  questionText?: string;
+  section?: string;
+  passageId?: string;
+  type?: string;
+  options: (string | IPlacementOption)[];
   correctOption: number;
+  correctAnswer?: string;
+  explanation?: string;
 }
 
 export interface IPlacementTest extends Document {
+  slug?: string;
   title: string;
-  course: Types.ObjectId;
-  difficulty: PlacementTestDifficulty;
+  subtitle?: string;
+  category?: string;
+  targetLevel?: string;
+  course?: Types.ObjectId;
+  difficulty: string;
   durationMinutes: number;
   status: PlacementTestStatus;
+  bannerUrl?: string;
+  description?: string;
+  instructions?: string[];
+  passages?: IPlacementPassage[];
   questions: IPlacementTestQuestion[];
   createdAt: Date;
   updatedAt: Date;
 }
 
-const questionSchema = new Schema<IPlacementTestQuestion>(
+const questionSchema = new Schema(
   {
     skill: {
       type: String,
-      enum: PLACEMENT_TEST_SKILLS,
-      required: true,
+      default: 'READING',
     },
     prompt: {
       type: String,
       required: true,
       trim: true,
-      maxlength: 1000,
+    },
+    questionText: {
+      type: String,
+    },
+    section: {
+      type: String,
+    },
+    passageId: {
+      type: String,
+    },
+    type: {
+      type: String,
+      default: 'MULTIPLE_CHOICE',
     },
     options: {
-      type: [{ type: String, trim: true, maxlength: 500 }],
+      type: Schema.Types.Mixed,
       required: true,
-      validate: {
-        validator: (options: string[]) => options.length >= 2 && options.length <= 6,
-        message: 'Mỗi câu hỏi cần từ 2 đến 6 phương án',
-      },
     },
     correctOption: {
       type: Number,
-      required: true,
-      min: 0,
-      max: 5,
+      default: 0,
+    },
+    correctAnswer: {
+      type: String,
+    },
+    explanation: {
+      type: String,
+      default: '',
     },
   },
   { _id: true }
@@ -57,46 +116,78 @@ const questionSchema = new Schema<IPlacementTestQuestion>(
 
 const placementTestSchema = new Schema<IPlacementTest>(
   {
+    slug: {
+      type: String,
+      trim: true,
+      sparse: true,
+    },
     title: {
       type: String,
       required: true,
       trim: true,
-      maxlength: 150,
+      maxlength: 250,
+    },
+    subtitle: {
+      type: String,
+      default: '',
+    },
+    category: {
+      type: String,
+      default: 'Chẩn đoán trình độ',
+    },
+    targetLevel: {
+      type: String,
+      default: 'Band 0.0 - 5.5',
     },
     course: {
       type: Schema.Types.ObjectId,
       ref: 'Course',
-      required: true,
     },
     difficulty: {
       type: String,
-      enum: PLACEMENT_TEST_DIFFICULTIES,
-      required: true,
+      default: 'BEGINNER',
     },
     durationMinutes: {
       type: Number,
       required: true,
       min: 5,
       max: 240,
+      default: 30,
     },
     status: {
       type: String,
       enum: ['DRAFT', 'PUBLISHED'],
-      default: 'DRAFT',
+      default: 'PUBLISHED',
     },
+    bannerUrl: {
+      type: String,
+      default: '',
+    },
+    description: {
+      type: String,
+      default: '',
+    },
+    instructions: {
+      type: [String],
+      default: [],
+    },
+    passages: [
+      {
+        id: { type: String },
+        title: { type: String },
+        subtitle: { type: String },
+        content: { type: String },
+      },
+    ],
     questions: {
       type: [questionSchema],
       default: [],
-      validate: {
-        validator: (questions: IPlacementTestQuestion[]) => questions.length <= 100,
-        message: 'Bài kiểm tra không được vượt quá 100 câu hỏi',
-      },
     },
   },
   { timestamps: true }
 );
 
-placementTestSchema.index({ course: 1, difficulty: 1 }, { unique: true });
+placementTestSchema.index({ status: 1 });
 
 export const PlacementTest: Model<IPlacementTest> =
   mongoose.models.PlacementTest

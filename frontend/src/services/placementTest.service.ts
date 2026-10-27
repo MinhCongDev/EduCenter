@@ -1,7 +1,9 @@
 import api from './api';
 
 export interface PlacementTestSummary {
+  _id?: string;
   id: string;
+  slug?: string;
   title: string;
   subtitle: string;
   category: string;
@@ -12,6 +14,8 @@ export interface PlacementTestSummary {
   bannerUrl: string;
   description: string;
   instructions: string[];
+  course?: { _id: string; code: string; title: string };
+  status?: string;
 }
 
 export interface PlacementPassage {
@@ -29,7 +33,7 @@ export interface PlacementQuestion {
   passageId?: string;
   questionText: string;
   options: Array<{ key: string; text: string }>;
-  skill: 'Grammar' | 'Vocabulary' | 'Reading' | 'Critical Reasoning';
+  skill: 'Grammar' | 'Vocabulary' | 'Reading' | 'Critical Reasoning' | string;
 }
 
 export interface PlacementTestDetail extends PlacementTestSummary {
@@ -101,60 +105,77 @@ export interface TestHistoryItem {
 }
 
 export const placementTestService = {
-  // 1. Get all 3 placement tests (Instant from built-in real Cambridge exam dataset)
+  // 1. Lấy danh sách tất cả bài kiểm tra đầu vào trực tiếp từ MongoDB Atlas
   getTests: async (): Promise<PlacementTestSummary[]> => {
-    if (FALLBACK_TEST_SUMMARIES && FALLBACK_TEST_SUMMARIES.length > 0) {
-      return FALLBACK_TEST_SUMMARIES;
-    }
     try {
       const res = await api.get<{ success: boolean; data: PlacementTestSummary[] }>('/placement-tests');
-      if (res.data?.success && res.data.data) {
+      if (res.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
         return res.data.data;
       }
     } catch (e) {
-      // Fallback
+      console.warn('Backend API /placement-tests không phản hồi, sử dụng dữ liệu dự phòng:', e);
     }
     return FALLBACK_TEST_SUMMARIES;
   },
 
-  // 2. Get test detail by ID (Instant 0ms load, zero waiting)
+  // 2. Lấy chi tiết bài kiểm tra theo ID / Slug trực tiếp từ MongoDB
   getTestById: async (id: string): Promise<PlacementTestDetail | null> => {
-    // Return immediately from built-in real exam database
-    if (FALLBACK_TEST_DETAILS[id]) {
-      return FALLBACK_TEST_DETAILS[id];
-    }
     try {
       const res = await api.get<{ success: boolean; data: PlacementTestDetail }>(`/placement-tests/${id}`);
       if (res.data?.success && res.data.data) {
         return res.data.data;
       }
     } catch (e) {
-      console.warn('Backend not responding, using offline fallback test detail', e);
+      console.warn('Backend API /placement-tests/:id không phản hồi, sử dụng fallback:', e);
     }
-    return null;
+    return FALLBACK_TEST_DETAILS[id] || null;
   },
 
-  // 3. Submit test answers (Instant evaluation + background backend sync)
+  // 3. Nộp bài làm: Hệ thống chấm điểm trực tiếp trên MongoDB và lưu điểm vào hồ sơ học viên
   submitTest: async (id: string, answers: Record<string, string>): Promise<PlacementResultResponse> => {
-    // Evaluate locally instantly for 0ms response time
-    const localResult = evaluateLocally(id, answers);
+    try {
+      const res = await api.post<{ success: boolean; data: PlacementResultResponse }>(
+        `/placement-tests/${id}/submit`,
+        { answers }
+      );
+      if (res.data?.success && res.data.data) {
+        const result = res.data.data;
+        // Lưu lịch sử vào local storage backup
+        try {
+          const history = JSON.parse(localStorage.getItem('educenter_placement_history') || '[]');
+          history.unshift({
+            id: `RES-${Date.now()}`,
+            testId: result.testId,
+            testTitle: result.testTitle,
+            submittedAt: result.submittedAt,
+            score: result.score,
+            totalQuestions: result.totalQuestions,
+            scorePercentage: result.scorePercentage,
+            predictedBand: result.predictedBand,
+            levelName: result.levelName,
+            recommendedCourse: result.primaryCourse?.title || '',
+          });
+          localStorage.setItem('educenter_placement_history', JSON.stringify(history.slice(0, 15)));
+        } catch {
+          // ignore
+        }
+        return result;
+      }
+    } catch (e) {
+      console.warn('Lỗi khi nộp bài lên server, chuyển sang chấm điểm cục bộ:', e);
+    }
 
-    // Sync in background to backend if active
-    api.post(`/placement-tests/${id}/submit`, { answers }).catch(() => {
-      // Ignore background sync errors
-    });
-
-    return localResult;
+    return evaluateLocally(id, answers);
   },
 
-  // 4. Get my test history
+  // 4. Lấy lịch sử làm bài kiểm tra
   getMyHistory: async (): Promise<TestHistoryItem[]> => {
     try {
       const res = await api.get<{ success: boolean; data: TestHistoryItem[] }>('/placement-tests/my/history');
       if (res.data?.success && res.data.data) {
         return res.data.data;
       }
-    } catch (e) {
+    } catch {
       // Ignore
     }
     // Local storage fallback
