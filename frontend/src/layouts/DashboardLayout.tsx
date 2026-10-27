@@ -40,6 +40,7 @@ const getMenuItems = (role: UserRole): DashboardItem[] => {
       { label: 'Quản lý lớp học', path: '/staff/classes' },
       { label: 'Yêu cầu học viên', path: '/staff/requests' },
       { label: 'Phản hồi học viên', path: '/staff/feedback' },
+      { label: 'Bài kiểm tra đầu vào', path: '/staff/placement-tests' },
       { label: 'Quản lý ghi danh', path: '/staff/enrollments' },
       { label: 'Thời khóa biểu', path: '/staff/timetable' },
       { label: 'Quản lý học viên', path: '/staff/students' },
@@ -56,6 +57,7 @@ const getMenuItems = (role: UserRole): DashboardItem[] => {
       { label: 'Lịch dạy & Điểm danh', path: '/teacher/dashboard?tab=schedule_attendance' },
       { label: 'Bài tập & Chấm bài', path: '/teacher/dashboard?tab=assignments_grading' },
       { label: 'Kết quả học tập', path: '/teacher/dashboard?tab=academic_grades' },
+      { label: 'Tiến độ & Mốc hoàn thành', path: '/teacher/dashboard?tab=course_progress' },
       { label: 'Báo cáo' },
       { label: 'Cài đặt', action: 'open-profile' },
     ];
@@ -72,12 +74,14 @@ const getMenuItems = (role: UserRole): DashboardItem[] => {
       { label: 'Lịch học', path: '/student/schedule' },
       { label: 'Bài tập về nhà', path: '/student/dashboard?tab=assignments' },
       { label: 'Kết quả học tập', path: '/student/dashboard?tab=grades' },
+      { label: 'Tiến độ học tập', path: '/student/progress' },
       // Thanh toán: lấy code từ nhánh `main` — 1 trang hợp nhất
       // `StudentPaymentsPage` (tab "Học phí" + "Lịch sử giao dịch").
       { label: 'Học phí & Thanh toán', path: '/student/payments' },
       { label: 'Yêu cầu thay đổi', path: '/student/requests' },
       { label: 'Thông báo', path: '/student/notifications' },
       { label: 'Cài đặt', path: '/student/profile?tab=settings' },
+      { label: '🎯 Thi thử & Test đầu vào', path: '/placement-tests' },
     ];
   }
 

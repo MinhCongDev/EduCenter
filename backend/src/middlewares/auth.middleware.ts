@@ -49,6 +49,30 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
 };
 
 /**
+ * Optional authentication: Gán req.user nếu có token hợp lệ, nếu không có token hoặc token sai thì vẫn tiếp tục với req.user = undefined
+ */
+export const optionalAuthenticate = async (req: AuthRequest, _res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return next();
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, config.jwt.secret) as { id: string };
+
+    const user = await User.findById(decoded.id);
+    if (user && user.status === 'ACTIVE') {
+      req.user = user;
+    }
+    next();
+  } catch {
+    // Không ném lỗi 401, cho phép truy cập dưới dạng khách
+    next();
+  }
+};
+
+/**
  * Role-based access control (RBAC) middleware
  */
 export const authorize = (...roles: UserRole[]) => {

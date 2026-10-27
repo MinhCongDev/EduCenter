@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { centerService } from '../../services/center.service';
 import { announcementService } from '../../services/announcement.service';
@@ -162,7 +162,6 @@ const partnerLogos = [
 
 const HomePage: React.FC = () => {
   const { isAuthenticated } = useAuth();
-  const location = useLocation();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [couponCode, setCouponCode] = useState('');
   const [couponMessage, setCouponMessage] = useState<string | null>(null);
@@ -170,20 +169,6 @@ const HomePage: React.FC = () => {
   const [centerInfo, setCenterInfo] = useState<CenterInfo | null>(null);
   const [dynamicAnnouncements, setDynamicAnnouncements] = useState<Announcement[]>([]);
   const [centerTab, setCenterTab] = useState<'branches' | 'facilities' | 'mission'>('branches');
-
-  // Smooth scroll to hash anchor on load or hash change
-  useEffect(() => {
-    if (location.hash) {
-      const targetId = location.hash.replace('#', '');
-      const timer = setTimeout(() => {
-        const el = document.getElementById(targetId);
-        if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      }, 150);
-      return () => clearTimeout(timer);
-    }
-  }, [location.hash, location.pathname]);
 
   // Auto slide interval
   useEffect(() => {
@@ -193,7 +178,7 @@ const HomePage: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Fetch Center Info & Announcements
+  // UC01 & UC06: Fetch Center Info & Announcements
   useEffect(() => {
     const loadCenterAndNews = async () => {
       try {
@@ -333,6 +318,218 @@ const HomePage: React.FC = () => {
         <div className="dmr-floating-shape" style={{ top: '80px', left: '20px', fontSize: '28px' }}>🎓</div>
         <div className="dmr-floating-shape" style={{ top: '350px', right: '30px', fontSize: '24px' }}>🎯</div>
         <div className="dmr-floating-shape" style={{ top: '800px', left: '40px', fontSize: '26px' }}>🇬🇧</div>
+
+        {/* SECTION: BÀI TEST ĐẦU VÀO GỢI Ý KHÓA HỌC */}
+        <section
+          style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '24px',
+            border: '2px solid #059669',
+            padding: '2.5rem 2rem',
+            marginBottom: '3rem',
+            boxShadow: '0 8px 30px rgba(4, 120, 87, 0.1)',
+            position: 'relative',
+            overflow: 'hidden',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '1.5rem',
+              marginBottom: '2rem',
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  backgroundColor: '#ecfdf5',
+                  color: '#047857',
+                  padding: '4px 12px',
+                  borderRadius: '999px',
+                  fontWeight: 800,
+                  fontSize: '0.8rem',
+                  marginBottom: '0.5rem',
+                }}
+              >
+                <span>🎯</span>
+                <span>HỆ THỐNG KHẢO THÍ CHUẨN QUỐC TẾ</span>
+              </div>
+              <h2 style={{ fontFamily: 'var(--font-beanbag)', fontSize: '2rem', fontWeight: 900, color: '#07403F', margin: 0 }}>
+                Kiểm Tra Trình Độ Đầu Vào &amp; Gợi Ý Khóa Học Cá Nhân Hóa
+              </h2>
+              <p style={{ margin: '0.4rem 0 0', color: '#4a5568', fontSize: '0.95rem' }}>
+                Hoàn thành 1 trong 3 bài test thật dài để chẩn đoán chính xác Band điểm hiện tại và nhận gợi ý khóa học phù hợp nhất.
+              </p>
+            </div>
+
+            <Link
+              to="/placement-test"
+              style={{
+                backgroundColor: '#059669',
+                color: '#ffffff',
+                textDecoration: 'none',
+                padding: '0.85rem 1.75rem',
+                borderRadius: '50px',
+                fontWeight: 800,
+                fontSize: '0.95rem',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                boxShadow: '0 4px 14px rgba(5, 150, 105, 0.3)',
+              }}
+            >
+              <span>Xem Cả 3 Bài Test</span>
+              <span>→</span>
+            </Link>
+          </div>
+
+          {/* 3 Test Mini Cards Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.25rem' }}>
+            {/* Test 1 */}
+            <div
+              style={{
+                backgroundColor: '#f8fafc',
+                borderRadius: '16px',
+                border: '1px solid #e2e8f0',
+                padding: '1.5rem',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span style={{ backgroundColor: '#ecfdf5', color: '#047857', fontSize: '0.75rem', fontWeight: 800, padding: '3px 8px', borderRadius: '6px' }}>
+                    Band 0.0 - 5.5
+                  </span>
+                  <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>⏱️ 30 phút • 25 câu</span>
+                </div>
+                <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>
+                  IELTS Diagnostic Test - Ngữ Pháp &amp; Từ Vựng
+                </h3>
+                <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b', lineHeight: 1.5 }}>
+                  Chẩn đoán nền tảng cho người mất gốc hoặc mới bắt đầu. Gợi ý khóa học: IELTS Mất Gốc hoặc Pre-IELTS.
+                </p>
+              </div>
+
+              <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid #e2e8f0' }}>
+                <Link
+                  to="/placement-test/ielts-diagnostic-01"
+                  style={{
+                    color: '#047857',
+                    fontWeight: 800,
+                    fontSize: '0.88rem',
+                    textDecoration: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <span>Bắt đầu bài test 1</span>
+                  <span>→</span>
+                </Link>
+              </div>
+            </div>
+
+            {/* Test 2 */}
+            <div
+              style={{
+                backgroundColor: '#f0fdf4',
+                borderRadius: '16px',
+                border: '1.5px solid #a7f3d0',
+                padding: '1.5rem',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span style={{ backgroundColor: '#059669', color: '#ffffff', fontSize: '0.75rem', fontWeight: 800, padding: '3px 8px', borderRadius: '6px' }}>
+                    Band 5.0 - 7.5+ • ĐỀ THI THẬT
+                  </span>
+                  <span style={{ fontSize: '0.8rem', color: '#047857', fontWeight: 700 }}>⏱️ 40 phút • 28 câu</span>
+                </div>
+                <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.15rem', fontWeight: 800, color: '#064e3b' }}>
+                  IELTS Academic Reading - Đọc Hiểu Thực Chiến
+                </h3>
+                <p style={{ margin: 0, fontSize: '0.85rem', color: '#334155', lineHeight: 1.5 }}>
+                  2 bài đọc Cambridge dài thật (Roman Tunnels &amp; AI Healthcare). Bẫy True/False/Not Given &amp; Matching Headings.
+                </p>
+              </div>
+
+              <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid #a7f3d0' }}>
+                <Link
+                  to="/placement-test/ielts-reading-real-02"
+                  style={{
+                    color: '#059669',
+                    fontWeight: 800,
+                    fontSize: '0.88rem',
+                    textDecoration: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <span>Bắt đầu bài test 2</span>
+                  <span>→</span>
+                </Link>
+              </div>
+            </div>
+
+            {/* Test 3 */}
+            <div
+              style={{
+                backgroundColor: '#f8fafc',
+                borderRadius: '16px',
+                border: '1px solid #e2e8f0',
+                padding: '1.5rem',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span style={{ backgroundColor: '#fef3c7', color: '#b45309', fontSize: '0.75rem', fontWeight: 800, padding: '3px 8px', borderRadius: '6px' }}>
+                    Band 4.5 - 8.5+ • DỰ ĐOÁN TOÀN DIỆN
+                  </span>
+                  <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>⏱️ 45 phút • 30 câu</span>
+                </div>
+                <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>
+                  IELTS Comprehensive Band Predictor
+                </h3>
+                <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b', lineHeight: 1.5 }}>
+                  Đánh giá toàn diện từ vựng C2, ngữ pháp đảo ngữ, đọc hiểu phản biện &amp; phân tích tính mạch lạc PEEL.
+                </p>
+              </div>
+
+              <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid #e2e8f0' }}>
+                <Link
+                  to="/placement-test/ielts-comprehensive-predictor-03"
+                  style={{
+                    color: '#047857',
+                    fontWeight: 800,
+                    fontSize: '0.88rem',
+                    textDecoration: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <span>Bắt đầu bài test 3</span>
+                  <span>→</span>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
 
         {/* SECTION: KHÓA HỌC IELTS NỔI BẬT */}
         <section className="dmr-section" id="courses">
@@ -497,7 +694,7 @@ const HomePage: React.FC = () => {
           </div>
 
           <div className="dmr-cards-row">
-            {/* Card: Online VIP */}
+            {/* Card: Offline Center Class */}
             <div className="dmr-tier-card">
               <div>
                 <div className="dmr-tier-header">
@@ -514,13 +711,13 @@ const HomePage: React.FC = () => {
                       flexShrink: 0,
                     }}
                   >
-                    💻
+                    🏫
                   </div>
                   <div>
-                    <div className="dmr-tier-name">IELTS VIP Zoom ⭐</div>
-                    <div className="dmr-tier-tagline">Học trực tiếp với giảng viên 8.5+ IELTS</div>
+                    <div className="dmr-tier-name">Lớp Học Trực Tiếp Tại Trung Tâm ⭐</div>
+                    <div className="dmr-tier-tagline">Học trực tiếp cùng Giảng viên 8.5+ IELTS</div>
                     <div className="dmr-tier-desc">
-                      Lớp học quy mô nhỏ (tối đa 8 học viên), tương tác 2 chiều liên tục. Có trợ giảng hỗ trợ chữa bài tập và giải đáp thắc mắc 24/7 suốt khóa học.
+                      Phòng học hiện đại tiêu chuẩn quốc tế, tương tác thực hành 2 chiều liên tục. Giáo viên chỉnh âm Speaking và sửa bài Writing trực tiếp trên lớp.
                     </div>
                   </div>
                 </div>
@@ -540,7 +737,7 @@ const HomePage: React.FC = () => {
               </div>
             </div>
 
-            {/* Card: Online Basic */}
+            {/* Card: Blended Learning & Center Operations */}
             <div className="dmr-tier-card">
               <div>
                 <div className="dmr-tier-header">
@@ -557,13 +754,13 @@ const HomePage: React.FC = () => {
                       flexShrink: 0,
                     }}
                   >
-                    📱
+                    🎯
                   </div>
                   <div>
-                    <div className="dmr-tier-name">IELTS Self-Study 🚀</div>
-                    <div className="dmr-tier-tagline">Học online qua video bài giảng &amp; Ngân hàng đề thi</div>
+                    <div className="dmr-tier-name">Mô Hình Blended Learning 🚀</div>
+                    <div className="dmr-tier-tagline">Đào tạo bài bản theo tiến độ &amp; Khảo thí định kỳ</div>
                     <div className="dmr-tier-desc">
-                      Hơn 500+ bài giảng video chuyên sâu từ cựu giám khảo, tích hợp kho đề Cambridge 10-19 có chấm điểm tự động và phân tích giải thích cặn kẽ.
+                      Lộ trình học theo từng mốc hoàn thành rõ ràng, điểm danh chuyên cần, kiểm tra đầu vào xếp lớp và thi thử Mock Test 4 kỹ năng như thi thật.
                     </div>
                   </div>
                 </div>
@@ -733,11 +930,30 @@ const HomePage: React.FC = () => {
 
         {/* SECTION: TÀI LIỆU & GIÁO TRÌNH ĐỘC QUYỀN */}
         <section className="dmr-section" id="books">
-          <div className="dmr-section-header">
+          <div className="dmr-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
             <div className="dmr-sub-title-row">
               <span className="dmr-sub-title-dark">Thư viện Giáo trình &amp; Tài liệu IELTS</span>
               <span className="dmr-sub-title-light">Biên soạn bởi Hội đồng Chuyên môn EduCenter IELTS</span>
             </div>
+            <Link
+              to="/courses"
+              style={{
+                backgroundColor: '#059669',
+                color: '#FFFFFF',
+                padding: '8px 20px',
+                borderRadius: '50px',
+                fontWeight: 700,
+                textDecoration: 'none',
+                fontSize: '0.875rem',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                boxShadow: '0 2px 8px rgba(5, 150, 105, 0.25)',
+              }}
+            >
+              <span>📚</span>
+              <span>Khám Phá Khóa Học IELTS ↗</span>
+            </Link>
           </div>
 
           <div className="dmr-book-card">
@@ -751,7 +967,7 @@ const HomePage: React.FC = () => {
               <p style={{ color: '#718096', fontSize: '0.95rem', lineHeight: 1.6, marginBottom: '20px' }}>
                 Tích hợp giải chi tiết bộ Cambridge IELTS 10-19, Ebook 1.200 từ vựng Academic theo 20 chủ đề trọng tâm và tuyển tập 100 bài luận mẫu Task 2 đạt band 8.0+.
               </p>
-              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
                 <Link to="/courses" className="dmr-level-pill" style={{ width: 'auto', padding: '0 24px', borderRadius: '50px', borderColor: '#1E9AA5', color: '#1E9AA5' }}>
                   Band 4.5 - 5.5
                 </Link>
@@ -760,6 +976,22 @@ const HomePage: React.FC = () => {
                 </Link>
                 <Link to="/courses" className="dmr-level-pill" style={{ width: 'auto', padding: '0 24px', borderRadius: '50px', borderColor: '#1E9AA5', color: '#1E9AA5' }}>
                   Band 7.5+ Master
+                </Link>
+                <Link
+                  to="/courses"
+                  style={{
+                    backgroundColor: '#EC6E23',
+                    color: '#FFFFFF',
+                    padding: '8px 22px',
+                    borderRadius: '50px',
+                    fontWeight: 800,
+                    textDecoration: 'none',
+                    fontSize: '0.9rem',
+                    boxShadow: '0 2px 8px rgba(236, 110, 35, 0.3)',
+                    marginLeft: '4px',
+                  }}
+                >
+                  🚀 Đăng ký học ngay ➔
                 </Link>
               </div>
             </div>
@@ -927,7 +1159,7 @@ const HomePage: React.FC = () => {
           </div>
         </section>
 
-        {/* SECTION: THÔNG BÁO TỪ TRUNG TÂM */}
+        {/* SECTION: THÔNG BÁO TỪ TRUNG TÂM (UC06) */}
         <section className="dmr-section" id="news">
           <div className="dmr-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
             <div>
@@ -1010,7 +1242,7 @@ const HomePage: React.FC = () => {
           </div>
         </section>
 
-        {/* SECTION: THÔNG TIN TRUNG TÂM EDUCENTER */}
+        {/* SECTION: THÔNG TIN TRUNG TÂM EDUCENTER (UC01) */}
         <section className="dmr-section" id="about">
           <div className="dmr-section-header" style={{ textAlign: 'center' }}>
             <div style={{ color: '#07403F', fontWeight: 800, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px' }}>

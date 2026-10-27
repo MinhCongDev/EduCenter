@@ -22,6 +22,8 @@ import { directorRouter } from './routes/director.routes';
 import { enrollmentRouter } from './routes/enrollment.routes';
 import { classScheduleRouter } from './routes/classSchedule.routes';
 import { staffManagementRouter } from './routes/staffManagement.routes';
+import { progressRouter } from './routes/progress.routes';
+import { placementTestRouter } from './routes/placementTest.routes';
 import { errorHandler } from './middlewares/error.middleware';
 import { notFound } from './middlewares/notFound.middleware';
 
@@ -44,7 +46,10 @@ import './models/changeRequest.model';
 import './models/announcement.model';
 import './models/notification.model';
 import './models/feedback.model';
+import './models/placementTest.model';
+import './models/placementTestResult.model';
 import './models/proposal.model';
+import './models/studentProgress.model';
 
 const app: Application = express();
 
@@ -104,6 +109,7 @@ app.use('/api/courses', courseRouter);
 app.use('/api/announcements', announcementRouter);
 app.use('/api/classes', classRouter);
 app.use('/api/enrollments', enrollmentRouter);
+app.use('/api/placement-tests', placementTestRouter);
 app.use('/api/schedules', classScheduleRouter);
 app.use('/api/staff-management', staffManagementRouter);
 app.use('/api/teacher', teacherRouter);
@@ -113,6 +119,7 @@ app.use('/api/payments', paymentRouter);
 app.use('/api/public', publicRouter);
 app.use('/api/student', studentRouter);
 app.use('/api/director', directorRouter);
+app.use('/api/progress', progressRouter);
 
 // ===========================
 // 404 Handler

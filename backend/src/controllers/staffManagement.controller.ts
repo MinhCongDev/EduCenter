@@ -336,3 +336,44 @@ export const updateManagedAccountStatus = async (
     next(error);
   }
 };
+
+export const updateStudentPlacement = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) throw createError('Mã học viên không hợp lệ', 400);
+
+    const { currentBand, targetBand, placementTestScore, placementTestDate, placementNotes } = req.body as {
+      currentBand?: number;
+      targetBand?: number;
+      placementTestScore?: number;
+      placementTestDate?: string;
+      placementNotes?: string;
+    };
+
+    const studentProfile = await Student.findOneAndUpdate(
+      { $or: [{ user: req.params.id }, { _id: req.params.id }] },
+      {
+        ...(currentBand !== undefined && { currentBand: Number(currentBand) }),
+        ...(targetBand !== undefined && { targetBand: Number(targetBand) }),
+        ...(placementTestScore !== undefined && { placementTestScore: Number(placementTestScore) }),
+        ...(placementTestDate !== undefined && { placementTestDate: new Date(placementTestDate) }),
+        ...(placementNotes !== undefined && { placementNotes: String(placementNotes) }),
+      },
+      { new: true }
+    );
+
+    if (!studentProfile) throw createError('Không tìm thấy hồ sơ học viên', 404);
+
+    res.status(200).json({
+      success: true,
+      message: 'Cập nhật thông tin trình độ và kết quả kiểm tra đầu vào thành công',
+      data: studentProfile,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+

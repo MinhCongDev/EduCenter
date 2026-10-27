@@ -152,12 +152,19 @@ const buildResultPipeline = (
       studentProfile: {
         studentCode: '$studentProfile.studentCode',
         status: '$studentProfile.status',
+        currentBand: '$studentProfile.currentBand',
+        targetBand: '$studentProfile.targetBand',
+        placementTestScore: '$studentProfile.placementTestScore',
+        placementTestDate: '$studentProfile.placementTestDate',
+        placementNotes: '$studentProfile.placementNotes',
       },
       course: {
         _id: '$course._id',
         code: '$course.code',
         title: '$course.title',
         tuitionFee: '$course.tuitionFee',
+        entryLevel: '$course.entryLevel',
+        targetLevel: '$course.targetLevel',
       },
       class: {
         _id: '$class._id',

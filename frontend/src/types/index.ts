@@ -257,6 +257,48 @@ export interface CourseQueryParams {
   limit?: number;
 }
 
+export type PlacementTestDifficulty = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
+export type PlacementTestSkill = 'LISTENING' | 'SPEAKING' | 'READING' | 'WRITING';
+export type PlacementTestStatus = 'DRAFT' | 'PUBLISHED';
+
+export interface PlacementTestQuestion {
+  _id?: string;
+  skill: PlacementTestSkill;
+  prompt: string;
+  options: string[];
+  correctOption: number;
+}
+
+export interface PlacementTest {
+  _id: string;
+  title: string;
+  course: Pick<Course, '_id' | 'code' | 'title'>;
+  difficulty: PlacementTestDifficulty;
+  durationMinutes: number;
+  status: PlacementTestStatus;
+  questions: PlacementTestQuestion[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PlacementTestFormData {
+  title: string;
+  course: string;
+  difficulty: PlacementTestDifficulty;
+  durationMinutes: number;
+  status: PlacementTestStatus;
+  questions: PlacementTestQuestion[];
+}
+
+export interface PlacementTestQueryParams {
+  search?: string;
+  courseId?: string;
+  difficulty?: PlacementTestDifficulty;
+  status?: PlacementTestStatus;
+  page?: number;
+  limit?: number;
+}
+
 // ─── Announcement types ──────────────────────────
 export interface Announcement {
   _id: string;
@@ -993,12 +1035,19 @@ export interface EnrollmentRecord {
   studentProfile?: {
     studentCode?: string;
     status?: string;
+    currentBand?: number;
+    targetBand?: number;
+    placementTestScore?: number;
+    placementTestDate?: string;
+    placementNotes?: string;
   };
   course?: {
     _id: string;
     code: string;
     title: string;
     tuitionFee: number;
+    entryLevel?: string;
+    targetLevel?: string;
   } | null;
   class?: {
     _id: string;
