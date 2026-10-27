@@ -21,17 +21,15 @@ const ResendVerificationPage = lazy(() => import('./pages/public/ResendVerificat
 
 // Dashboard pages
 const StudentDashboard = lazy(() => import('./pages/student/StudentDashboard'));
-const StudentPaymentsPage = lazy(() => import('./pages/student/StudentPaymentsPage'));
 const MyClassesPage = lazy(() => import('./pages/student/MyClassesPage'));
 const ClassDetailsPage = lazy(() => import('./pages/student/ClassDetailsPage'));
 const AssignmentsPage = lazy(() => import('./pages/student/AssignmentsPage'));
 const AttendancePage = lazy(() => import('./pages/student/AttendancePage'));
 const GradesPage = lazy(() => import('./pages/student/GradesPage'));
 const SchedulePage = lazy(() => import('./pages/student/SchedulePage'));
-// Trang học phí (datlt) — hiển thị theo từng lớp, có trạng thái đã hoàn tiền
+// Trang thanh toán — hợp nhất 3 nguồn vào 1: tab "Học phí" (theo lớp)
+// + tab "Lịch sử giao dịch" (theo hóa đơn), kèm VietQR & biên lai điện tử.
 const TuitionPage = lazy(() => import('./pages/student/TuitionPage'));
-// Lịch sử thanh toán (main) — tách riêng khỏi trang học phí
-const PaymentsPage = lazy(() => import('./pages/student/PaymentsPage'));
 const RequestsPage = lazy(() => import('./pages/student/RequestsPage'));
 const ProfilePage = lazy(() => import('./pages/student/ProfilePage'));
 const CombinedSchedulePage = lazy(() => import('./pages/student/CombinedSchedulePage'));
@@ -209,36 +207,33 @@ const AppRouter: React.FC = () => {
             </ProtectedRoute>
           }
         />
-        {/* Đã gộp "Lịch sử thanh toán" vào trang Thanh toán khóa học */}
-        {/* ── Thanh toán: hợp nhất 2 nguồn, không mất chức năng của main ──
-            • /student/payments      → StudentPaymentsPage (main): trang thanh toán
-              tổng hợp có VietQR / VNPay + tiến trình thanh toán
-            • /student/tuition       → TuitionPage (datlt): học phí theo từng lớp,
-              có trạng thái "Đã hoàn tiền"
-            • /student/payment-history→ PaymentsPage (main): lịch sử thanh toán
-        */}
+        {/* ── Thanh toán: đã hợp nhất về 1 trang duy nhất ──
+            /student/tuition là trang chính (tab "Học phí" + tab "Lịch sử giao dịch",
+            kèm VietQR/VNPay và biên lai điện tử).
+            /student/payments và /student/payment-history giữ lại làm alias
+            để các link cũ (email, thông báo, bookmark) không bị gãy. */}
+        <Route
+          path="/student/tuition"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <DashboardLayout>
+                <TuitionPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/student/payments"
           element={
             <ProtectedRoute allowedRoles={['STUDENT']}>
               <DashboardLayout>
-                <StudentPaymentsPage />
+                <TuitionPage />
               </DashboardLayout>
             </ProtectedRoute>
           }
         />
         <Route
           path="/student/payment-history"
-          element={
-            <ProtectedRoute allowedRoles={['STUDENT']}>
-              <DashboardLayout>
-                <PaymentsPage />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/student/tuition"
           element={
             <ProtectedRoute allowedRoles={['STUDENT']}>
               <DashboardLayout>

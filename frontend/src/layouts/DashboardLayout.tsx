@@ -72,11 +72,8 @@ const getMenuItems = (role: UserRole): DashboardItem[] => {
       { label: 'Lịch học', path: '/student/schedule' },
       { label: 'Bài tập về nhà', path: '/student/dashboard?tab=assignments' },
       { label: 'Kết quả học tập', path: '/student/dashboard?tab=grades' },
-      // Học phí theo từng lớp (datlt) — có trạng thái "Đã hoàn tiền"
+      // Thanh toán đã hợp nhất về 1 trang: tab "Học phí" + tab "Lịch sử giao dịch".
       { label: 'Thanh toán khóa học', path: '/student/tuition' },
-      // Trang thanh toán tổng hợp + VietQR/VNPay (main)
-      { label: 'Học phí & Thanh toán', path: '/student/payments' },
-      { label: 'Lịch sử thanh toán', path: '/student/payment-history' },
       { label: 'Yêu cầu thay đổi', path: '/student/requests' },
       { label: 'Thông báo', path: '/student/notifications' },
       { label: 'Cài đặt', path: '/student/profile?tab=settings' },
