@@ -1210,7 +1210,7 @@ export const TeacherDashboard: React.FC = () => {
                             </td>
                           </tr>
                         );
-                      })}
+                      }))}
                     </tbody>
                   </table>
                 </div>
