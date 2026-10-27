@@ -4,7 +4,6 @@ import { Payment, PaymentMethod, PaymentStatus } from '../models/payment.model';
 import { Enrollment } from '../models/enrollment.model';
 import { Center } from '../models/center.model';
 import { Notification } from '../models/notification.model';
-import { activeEnrollmentFilter } from '../utils/enrollment';
 
 /**
  * GET /api/payments/my-payments
@@ -50,29 +49,12 @@ export const getMyPayments = async (req: AuthRequest, res: Response): Promise<vo
       .reduce((sum, p) => sum + (p.amount || 0), 0);
 
     const successCount = allStudentPayments.filter((p) => p.status === 'SUCCESS').length;
-    // Chỉ tính hóa đơn PENDING còn "sống" — tức là thuộc enrollment còn hiệu lực.
-    // Hóa đơn PENDING của lượt ghi danh đã rút (DROPPED) là hóa đơn mồ côi,
-    // không được tính vào "học phí chờ đóng" (đã được `getTuition` loại trừ).
-    const activeEnrollmentIds = new Set(
-      (
-        await Enrollment.find({
-          student: studentId,
-          ...activeEnrollmentFilter(),
-        }).select('_id')
-      ).map((e) => e._id.toString())
-    );
-    const pendingPayments = allStudentPayments.filter(
-      (p) => p.status === 'PENDING' && (!p.enrollment || activeEnrollmentIds.has(p.enrollment.toString()))
-    );
-    const pendingCount = pendingPayments.length;
+    const pendingCount = allStudentPayments.filter((p) => p.status === 'PENDING').length;
 
-    // Lấy các khoản học phí còn nợ (Enrollment còn hiệu lực + tuitionStatus = PENDING).
-    // Bắt buộc lọc `status` — nếu không, các lượt ghi danh đã rút (DROPPED) vẫn
-    // còn tuitionStatus = PENDING và sẽ bị tính nhầm là "học phí còn nợ".
+    // Lấy các khoản học phí còn nợ (Enrollment có tuitionStatus = PENDING)
     const pendingEnrollments = await Enrollment.find({
       student: studentId,
       tuitionStatus: 'PENDING',
-      ...activeEnrollmentFilter(),
     }).populate('course', 'tuitionFee title code');
 
     const pendingTuitionCount = pendingEnrollments.length;
@@ -118,7 +100,6 @@ export const getPendingTuition = async (req: AuthRequest, res: Response): Promis
     const pendingEnrollments = await Enrollment.find({
       student: studentId,
       tuitionStatus: 'PENDING',
-      ...activeEnrollmentFilter(),
     })
       .populate('course', 'title code description tuitionFee originalPrice durationWeeks level format')
       .populate('class', 'classCode room scheduleDays timeSlot startDate endDate status')
@@ -172,9 +153,6 @@ export const processPayment = async (req: AuthRequest, res: Response): Promise<v
     const enrollment = await Enrollment.findOne({
       _id: enrollmentId,
       student: studentId,
-      // Chỉ cho thanh toán các lượt ghi danh còn hiệu lực (đã rút lớp thì
-      // không được phép đóng học phí nữa).
-      ...activeEnrollmentFilter(),
     }).populate('course', 'title code tuitionFee');
 
     if (!enrollment) {
@@ -212,39 +190,18 @@ export const processPayment = async (req: AuthRequest, res: Response): Promise<v
     enrollment.tuitionStatus = 'PAID';
     await enrollment.save();
 
-    // Tạo bản ghi Payment.
-    // Nếu enrollment đã có hóa đơn PENDING (hóa đơn tạo sẵn khi ghi danh) thì
-    // thanh toán chính hóa đơn đó thay vì tạo hóa đơn mới — tránh để lại
-    // hóa đơn PENDING mồ côi (làm sai số liệu "học phí chờ đóng") và tránh
-    // vi phạm unique index (enrollment + status=SUCCESS).
-    const existingInvoice = await Payment.findOne({
+    // Tạo bản ghi Payment
+    const payment = await Payment.create({
+      student: studentId,
       enrollment: enrollment._id,
-      status: { $ne: 'SUCCESS' },
-    }).sort({ createdAt: 1 });
-
-    let payment;
-    if (existingInvoice) {
-      existingInvoice.status = 'SUCCESS' as PaymentStatus;
-      existingInvoice.amount = amount;
-      existingInvoice.method = method as PaymentMethod;
-      existingInvoice.transactionCode = transactionCode;
-      existingInvoice.paymentDate = new Date();
-      existingInvoice.note = note || `Học viên thanh toán học phí khóa ${course?.title || 'IELTS'} qua cổng ${method}`;
-      await existingInvoice.save();
-      payment = existingInvoice;
-    } else {
-      payment = await Payment.create({
-        student: studentId,
-        enrollment: enrollment._id,
-        course: course?._id,
-        amount,
-        method: method as PaymentMethod,
-        transactionCode,
-        status: 'SUCCESS' as PaymentStatus,
-        paymentDate: new Date(),
-        note: note || `Học viên thanh toán học phí khóa ${course?.title || 'IELTS'} qua cổng ${method}`,
-      });
-    }
+      course: course?._id,
+      amount,
+      method: method as PaymentMethod,
+      transactionCode,
+      status: 'SUCCESS' as PaymentStatus,
+      paymentDate: new Date(),
+      note: note || `Học viên thanh toán học phí khóa ${course?.title || 'IELTS'} qua cổng ${method}`,
+    });
 
     // Tạo thông báo cho học viên
     await Notification.create({

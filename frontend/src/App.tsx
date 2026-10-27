@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
 import GuestLayout from './layouts/GuestLayout';
@@ -27,9 +27,12 @@ const AssignmentsPage = lazy(() => import('./pages/student/AssignmentsPage'));
 const AttendancePage = lazy(() => import('./pages/student/AttendancePage'));
 const GradesPage = lazy(() => import('./pages/student/GradesPage'));
 const SchedulePage = lazy(() => import('./pages/student/SchedulePage'));
-// Trang thanh toán — hợp nhất 3 nguồn vào 1: tab "Học phí" (theo lớp)
-// + tab "Lịch sử giao dịch" (theo hóa đơn), kèm VietQR & biên lai điện tử.
-const TuitionPage = lazy(() => import('./pages/student/TuitionPage'));
+// Trang thanh toán — lấy nguyên code từ nhánh `main`:
+//   - `StudentPaymentsPage`: 1 trang hợp nhất, 2 tab "Học phí" + "Lịch sử giao dịch",
+//     kèm VietQR / VNPay QR và biên lai điện tử.
+//   - `PaymentsPage`: trang lịch sử thanh toán riêng.
+const StudentPaymentsPage = lazy(() => import('./pages/student/StudentPaymentsPage'));
+const PaymentsPage = lazy(() => import('./pages/student/PaymentsPage'));
 const RequestsPage = lazy(() => import('./pages/student/RequestsPage'));
 const ProfilePage = lazy(() => import('./pages/student/ProfilePage'));
 const CombinedSchedulePage = lazy(() => import('./pages/student/CombinedSchedulePage'));
@@ -207,27 +210,19 @@ const AppRouter: React.FC = () => {
             </ProtectedRoute>
           }
         />
-        {/* ── Thanh toán: đã hợp nhất về 1 trang duy nhất ──
-            /student/tuition là trang chính (tab "Học phí" + tab "Lịch sử giao dịch",
-            kèm VietQR/VNPay và biên lai điện tử).
-            /student/payments và /student/payment-history giữ lại làm alias
-            để các link cũ (email, thông báo, bookmark) không bị gãy. */}
-        <Route
-          path="/student/tuition"
-          element={
-            <ProtectedRoute allowedRoles={['STUDENT']}>
-              <DashboardLayout>
-                <TuitionPage />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
+        {/* ── Thanh toán (code lấy từ nhánh `main`) ──
+            /student/payments        → StudentPaymentsPage (1 trang hợp nhất:
+                                       tab "Học phí" + tab "Lịch sử giao dịch",
+                                       kèm VietQR/VNPay và biên lai điện tử).
+            /student/payment-history → PaymentsPage (lịch sử thanh toán riêng).
+            /student/tuition         → redirect về /student/payments để các
+                                       link cũ (email, thông báo, bookmark) không bị gãy. */}
         <Route
           path="/student/payments"
           element={
             <ProtectedRoute allowedRoles={['STUDENT']}>
               <DashboardLayout>
-                <TuitionPage />
+                <StudentPaymentsPage />
               </DashboardLayout>
             </ProtectedRoute>
           }
@@ -237,10 +232,15 @@ const AppRouter: React.FC = () => {
           element={
             <ProtectedRoute allowedRoles={['STUDENT']}>
               <DashboardLayout>
-                <TuitionPage />
+                <PaymentsPage />
               </DashboardLayout>
             </ProtectedRoute>
           }
+        />
+        {/* Đường dẫn cũ `/student/tuition` chuyển hướng về trang thanh toán mới. */}
+        <Route
+          path="/student/tuition"
+          element={<Navigate to="/student/payments" replace />}
         />
         <Route
           path="/student/requests"

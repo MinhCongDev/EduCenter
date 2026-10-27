@@ -72,8 +72,9 @@ const getMenuItems = (role: UserRole): DashboardItem[] => {
       { label: 'Lịch học', path: '/student/schedule' },
       { label: 'Bài tập về nhà', path: '/student/dashboard?tab=assignments' },
       { label: 'Kết quả học tập', path: '/student/dashboard?tab=grades' },
-      // Thanh toán đã hợp nhất về 1 trang: tab "Học phí" + tab "Lịch sử giao dịch".
-      { label: 'Thanh toán khóa học', path: '/student/tuition' },
+      // Thanh toán: lấy code từ nhánh `main` — 1 trang hợp nhất
+      // `StudentPaymentsPage` (tab "Học phí" + "Lịch sử giao dịch").
+      { label: 'Học phí & Thanh toán', path: '/student/payments' },
       { label: 'Yêu cầu thay đổi', path: '/student/requests' },
       { label: 'Thông báo', path: '/student/notifications' },
       { label: 'Cài đặt', path: '/student/profile?tab=settings' },

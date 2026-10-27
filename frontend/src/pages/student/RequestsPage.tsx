@@ -197,7 +197,7 @@ const RequestsPage: React.FC = () => {
         <Link to="/student/classes" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
           📚 Lớp Học
         </Link>
-        <Link to="/student/tuition" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
+        <Link to="/student/payments" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
           💳 Thanh Toán
         </Link>
       </div>
