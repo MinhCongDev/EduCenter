@@ -186,17 +186,23 @@ const Navbar: React.FC = () => {
               Thi thử IELTS ▾
             </span>
             <div className="dmr-dropdown">
-              <Link to="/courses" className="dmr-dropdown-link">
+              <Link to="/placement-test" className="dmr-dropdown-link">
+                <span className="dmr-dropdown-title">
+                  🎯 Test Đầu Vào &amp; Gợi Ý Lộ Trình <span className="dmr-badge-orange">HOT</span>
+                </span>
+                <span className="dmr-dropdown-desc">3 bài test thực chiến chuẩn Cambridge, dự đoán Band và gợi ý khóa học</span>
+              </Link>
+              <Link to="/placement-test" className="dmr-dropdown-link">
                 <span className="dmr-dropdown-title">
                   Mock Test Online (Computer) <span className="dmr-badge-orange">MIỄN PHÍ</span>
                 </span>
-                <span className="dmr-dropdown-desc">Mô phỏng 100% phần mềm thi IELTS trên máy tính</span>
+                <span className="dmr-dropdown-desc">Mô phỏng 100% giao diện thi IELTS trực tuyến trên máy tính</span>
               </Link>
-              <Link to="/courses" className="dmr-dropdown-link">
+              <Link to="/placement-test/ielts-reading-real-02" className="dmr-dropdown-link">
                 <span className="dmr-dropdown-title">
-                  Thi thử Offline tại cơ sở <span className="dmr-badge-orange">MIỄN PHÍ</span>
+                  Thi thử Học Thuật Real Test <span className="dmr-badge-orange">MIỄN PHÍ</span>
                 </span>
-                <span className="dmr-dropdown-desc">Phòng thi trang bị tai nghe cách âm chuyên dụng</span>
+                <span className="dmr-dropdown-desc">Đề thi thật Cambridge có phân tích chi tiết theo từng kỹ năng</span>
               </Link>
             </div>
           </li>

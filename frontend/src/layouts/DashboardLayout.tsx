@@ -35,6 +35,7 @@ const getMenuItems = (role: UserRole): DashboardItem[] => {
       { label: 'Tổng quan', path: dashboardPaths[role] },
       { label: 'Quản lý khóa học', path: '/staff/courses' },
       { label: 'Quản lý lớp học', path: '/staff/classes' },
+      { label: 'Bài kiểm tra đầu vào', path: '/staff/placement-tests' },
       { label: 'Quản lý ghi danh', path: '/staff/enrollments' },
       { label: 'Thời khóa biểu', path: '/staff/timetable' },
       { label: 'Quản lý học viên', path: '/staff/students' },
@@ -62,6 +63,7 @@ const getMenuItems = (role: UserRole): DashboardItem[] => {
       { label: 'Lịch học', path: '/student/dashboard?tab=schedule' },
       { label: 'Bài tập về nhà', path: '/student/dashboard?tab=assignments' },
       { label: 'Kết quả học tập', path: '/student/dashboard?tab=grades' },
+      { label: '🎯 Thi thử & Test đầu vào', path: '/placement-tests' },
     ];
   }
 

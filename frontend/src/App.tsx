@@ -15,6 +15,8 @@ import ErrorBoundary from './components/ErrorBoundary';
 const HomePage = lazy(() => import('./pages/public/HomePage'));
 const CoursesPage = lazy(() => import('./pages/public/CoursesPage'));
 const AnnouncementsPage = lazy(() => import('./pages/public/AnnouncementsPage'));
+const PlacementTestListPage = lazy(() => import('./pages/public/PlacementTestListPage'));
+const PlacementTestDetailPage = lazy(() => import('./pages/public/PlacementTestDetailPage'));
 const AuthPage = lazy(() => import('./pages/public/AuthPage'));
 const VerifyEmailPage = lazy(() => import('./pages/public/VerifyEmailPage'));
 const ResendVerificationPage = lazy(() => import('./pages/public/ResendVerificationPage'));
@@ -37,6 +39,7 @@ const TeacherDashboard = lazy(() => import('./pages/teacher/TeacherDashboard'));
 const StaffDashboard = lazy(() => import('./pages/staff/StaffDashboard'));
 const CoursesManagementPage = lazy(() => import('./pages/staff/CoursesManagementPage'));
 const ClassesManagementPage = lazy(() => import('./pages/staff/ClassesManagementPage'));
+const PlacementTestsManagementPage = lazy(() => import('./pages/staff/PlacementTestsManagementPage'));
 const EnrollmentsManagementPage = lazy(() => import('./pages/staff/EnrollmentsManagementPage'));
 const TimetableManagementPage = lazy(() => import('./pages/staff/TimetableManagementPage'));
 const StudentsManagementPage = lazy(() => import('./pages/staff/StudentsManagementPage'));
@@ -97,6 +100,38 @@ const AppRouter: React.FC = () => {
           element={
             <GuestLayout>
               <AnnouncementsPage />
+            </GuestLayout>
+          }
+        />
+        <Route
+          path="/placement-test"
+          element={
+            <GuestLayout>
+              <PlacementTestListPage />
+            </GuestLayout>
+          }
+        />
+        <Route
+          path="/placement-test/:id"
+          element={
+            <GuestLayout>
+              <PlacementTestDetailPage />
+            </GuestLayout>
+          }
+        />
+        <Route
+          path="/placement-tests"
+          element={
+            <GuestLayout>
+              <PlacementTestListPage />
+            </GuestLayout>
+          }
+        />
+        <Route
+          path="/placement-tests/:id"
+          element={
+            <GuestLayout>
+              <PlacementTestDetailPage />
             </GuestLayout>
           }
         />
@@ -307,6 +342,16 @@ const AppRouter: React.FC = () => {
             <ProtectedRoute allowedRoles={['TRAINING_STAFF']}>
               <DashboardLayout>
                 <ClassesManagementPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/staff/placement-tests"
+          element={
+            <ProtectedRoute allowedRoles={['TRAINING_STAFF']}>
+              <DashboardLayout>
+                <PlacementTestsManagementPage />
               </DashboardLayout>
             </ProtectedRoute>
           }

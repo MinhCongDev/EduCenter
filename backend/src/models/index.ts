@@ -17,5 +17,6 @@ export * from './feedback.model';
 export * from './center.model';
 export * from './changeRequest.model';
 export * from './grade.model';
+export * from './placementTest.model';
 export * from './proposal.model';
 export * from './studentProgress.model';
