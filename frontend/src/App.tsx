@@ -38,6 +38,7 @@ const TeacherDashboard = lazy(() => import('./pages/teacher/TeacherDashboard'));
 const StaffDashboard = lazy(() => import('./pages/staff/StaffDashboard'));
 const CoursesManagementPage = lazy(() => import('./pages/staff/CoursesManagementPage'));
 const ClassesManagementPage = lazy(() => import('./pages/staff/ClassesManagementPage'));
+const PlacementTestsManagementPage = lazy(() => import('./pages/staff/PlacementTestsManagementPage'));
 const EnrollmentsManagementPage = lazy(() => import('./pages/staff/EnrollmentsManagementPage'));
 const TimetableManagementPage = lazy(() => import('./pages/staff/TimetableManagementPage'));
 const StudentsManagementPage = lazy(() => import('./pages/staff/StudentsManagementPage'));
@@ -330,6 +331,16 @@ const AppRouter: React.FC = () => {
             <ProtectedRoute allowedRoles={['TRAINING_STAFF']}>
               <DashboardLayout>
                 <ClassesManagementPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/staff/placement-tests"
+          element={
+            <ProtectedRoute allowedRoles={['TRAINING_STAFF']}>
+              <DashboardLayout>
+                <PlacementTestsManagementPage />
               </DashboardLayout>
             </ProtectedRoute>
           }

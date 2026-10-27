@@ -108,6 +108,12 @@ const StaffDashboard: React.FC = () => {
       path: '/staff/classes',
     },
     {
+      id: 'action-manage-placement-tests',
+      title: 'Bài kiểm tra đầu vào',
+      description: 'Tạo đề trắc nghiệm theo khóa học và độ khó',
+      path: '/staff/placement-tests',
+    },
+    {
       id: 'action-manage-students',
       title: 'Quản lý học viên',
       description: 'Tra cứu hồ sơ, lớp học và kết quả học tập',

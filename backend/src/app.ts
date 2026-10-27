@@ -41,6 +41,7 @@ import './models/classSchedule.model';
 import './models/changeRequest.model';
 import './models/announcement.model';
 import './models/notification.model';
+import './models/placementTest.model';
 import './models/proposal.model';
 
 const app: Application = express();
@@ -101,6 +102,7 @@ app.use('/api/courses', courseRouter);
 app.use('/api/announcements', announcementRouter);
 app.use('/api/classes', classRouter);
 app.use('/api/enrollments', enrollmentRouter);
+app.use('/api/placement-tests', placementTestRouter);
 app.use('/api/schedules', classScheduleRouter);
 app.use('/api/staff-management', staffManagementRouter);
 app.use('/api/teacher', teacherRouter);
@@ -109,7 +111,6 @@ app.use('/api/payments', paymentRouter);
 app.use('/api/public', publicRouter);
 app.use('/api/student', studentRouter);
 app.use('/api/director', directorRouter);
-app.use('/api/placement-tests', placementTestRouter);
 
 // ===========================
 // 404 Handler
