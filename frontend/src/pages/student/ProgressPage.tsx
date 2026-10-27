@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { progressService, StudentProgressSummary, MilestoneItem } from '../../services/progress.service';
+import { progressService, type StudentProgressSummary } from '../../services/progress.service';
 import { useToast } from '../../contexts/ToastContext';
 import { EmptyState, SkeletonPage } from '../../components/Skeleton';
 import { formatDate } from '../../utils/format';
@@ -65,8 +65,11 @@ const ProgressPage: React.FC = () => {
           icon="📚"
           title="Bạn chưa tham gia lớp học nào"
           description="Hãy đăng ký khóa học để bắt đầu theo dõi lộ trình và các mốc hoàn thành."
-          actionText="Khám phá khóa học"
-          actionLink="/courses"
+          action={
+            <Link to="/courses" className="btn btn-primary" style={{ marginTop: '1rem', display: 'inline-block' }}>
+              Khám phá khóa học
+            </Link>
+          }
         />
       </div>
     );
