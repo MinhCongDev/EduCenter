@@ -61,6 +61,10 @@ ehthumbs.db
 coverage/
 **/coverage/
 
+# File credential test (chua mat khau tai khoan mau) — khong commit
+backend/test-login.json
+**/test-login.json
+
 # Jest cache
 .jest-cache/
 **/.jest-cache/
