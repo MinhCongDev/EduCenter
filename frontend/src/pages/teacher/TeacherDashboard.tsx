@@ -69,6 +69,7 @@ export const TeacherDashboard: React.FC = () => {
   // ── Data States ──
   const [classes, setClasses] = useState<AssignedClass[]>([]);
   const [selectedClassId, setSelectedClassId] = useState<string>('');
+  const [selectedClassFilterId, setSelectedClassFilterId] = useState<string>('');
   const [students, setStudents] = useState<TeacherStudent[]>([]);
   const [studentSearch, setStudentSearch] = useState<string>('');
   const [schedules, setSchedules] = useState<TeachingScheduleItem[]>([]);
@@ -192,6 +193,7 @@ export const TeacherDashboard: React.FC = () => {
       setClasses(loadedClasses);
       if (loadedClasses.length > 0 && !selectedClassId) {
         setSelectedClassId(loadedClasses[0]._id);
+        setSelectedClassFilterId(loadedClasses[0]._id);
         setProgressClassId(loadedClasses[0]._id);
         fetchClassProgress(loadedClasses[0]._id);
         setReqClassId(loadedClasses[0]._id);
@@ -227,13 +229,19 @@ export const TeacherDashboard: React.FC = () => {
     loadDashboardData();
   }, []);
 
-  // Filtered Students for selected class
-  const classStudents = students.filter((s) => {
+  // Filtered Students for Attendance tab (chính xác học viên của lớp đang điểm danh)
+  const attendanceStudents = students.filter((s) => {
     if (!selectedClassId) return true;
-    return s.classes.some((c) => c._id === selectedClassId) || s.classes.length === 0;
+    return s.classes.some((c) => c._id === selectedClassId);
   });
 
-  const searchedStudents = classStudents.filter((s) => {
+  // Filtered Students for Class Management tab (học viên của lớp đang chọn xem)
+  const filteredStudentsForClass = students.filter((s) => {
+    if (!selectedClassFilterId) return true;
+    return s.classes.some((c) => c._id === selectedClassFilterId);
+  });
+
+  const searchedStudents = filteredStudentsForClass.filter((s) => {
     if (!studentSearch.trim()) return true;
     const q = studentSearch.toLowerCase();
     return s.fullName.toLowerCase().includes(q) || s.studentCode.toLowerCase().includes(q) || s.email.toLowerCase().includes(q);
@@ -256,11 +264,13 @@ export const TeacherDashboard: React.FC = () => {
       return;
     }
     try {
-      const records = Object.entries(attendanceForm).map(([studentId, data]) => ({
-        studentId,
-        status: data.status,
-        notes: data.notes,
-      }));
+      const records = Object.entries(attendanceForm)
+        .filter(([studentId]) => attendanceStudents.some((s) => s._id === studentId))
+        .map(([studentId, data]) => ({
+          studentId,
+          status: data.status,
+          notes: data.notes,
+        }));
 
       await teacherService.checkAttendance({
         classId: selectedClassId,
@@ -272,15 +282,6 @@ export const TeacherDashboard: React.FC = () => {
     } catch (err: any) {
       showToast('❌ Lỗi khi lưu điểm danh: ' + (err?.response?.data?.message || err.message));
     }
-  };
-
-  const handleMarkAllPresent = () => {
-    const updated = { ...attendanceForm };
-    classStudents.forEach((stu) => {
-      updated[stu._id] = { ...(updated[stu._id] || {}), status: 'PRESENT' };
-    });
-    setAttendanceForm(updated);
-    showToast('Đã đánh dấu tất cả học viên: CÓ MẶT');
   };
 
   // ── Handler: Submit Schedule Change Request ──
@@ -1043,25 +1044,54 @@ export const TeacherDashboard: React.FC = () => {
               </div>
             </div>
 
+            {/* Quick Class Selection Bar for Attendance */}
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '0.85rem', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>Chọn lớp điểm danh:</span>
+              {classes.map((c) => {
+                const isCur = c._id === selectedClassId;
+                const countInClass = students.filter((s) => s.classes.some((cl) => cl._id === c._id)).length;
+                return (
+                  <button
+                    key={c._id}
+                    type="button"
+                    onClick={() => setSelectedClassId(c._id)}
+                    style={{
+                      padding: '5px 12px',
+                      borderRadius: '8px',
+                      border: isCur ? '2px solid #059669' : '1px solid #cbd5e1',
+                      backgroundColor: isCur ? '#059669' : '#ffffff',
+                      color: isCur ? '#ffffff' : '#334155',
+                      fontWeight: 700,
+                      fontSize: '0.8rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: isCur ? '0 2px 6px rgba(5, 150, 105, 0.25)' : 'none',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <span>🏫 Lớp {c.classCode}</span>
+                    <span
+                      style={{
+                        backgroundColor: isCur ? 'rgba(255,255,255,0.25)' : '#f1f5f9',
+                        color: isCur ? '#ffffff' : '#475569',
+                        padding: '1px 6px',
+                        borderRadius: '6px',
+                        fontSize: '0.72rem',
+                        fontWeight: 800,
+                      }}
+                    >
+                      {countInClass} HV
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
             {attendanceViewMode === 'check' && (
               <>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                  <button
-                    type="button"
-                    onClick={handleMarkAllPresent}
-                    style={{
-                      background: '#ecfdf5',
-                      border: '1px solid #a7f3d0',
-                      color: '#047857',
-                      padding: '0.45rem 0.85rem',
-                      borderRadius: '8px',
-                      fontSize: '0.78rem',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    ⚡ Tất cả có mặt
-                  </button>
                   <button
                     type="button"
                     onClick={handleSaveAttendance}
@@ -1069,9 +1099,9 @@ export const TeacherDashboard: React.FC = () => {
                       backgroundColor: '#059669',
                       color: '#ffffff',
                       border: 'none',
-                      padding: '0.45rem 1.15rem',
+                      padding: '0.5rem 1.25rem',
                       borderRadius: '8px',
-                      fontSize: '0.78rem',
+                      fontSize: '0.8rem',
                       fontWeight: 800,
                       cursor: 'pointer',
                       boxShadow: '0 2px 6px rgba(5, 150, 105, 0.25)',
@@ -1092,21 +1122,34 @@ export const TeacherDashboard: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {classStudents.map((stu) => {
-                        const rec = attendanceForm[stu._id] || { status: 'PRESENT', notes: '' };
-                        return (
-                          <tr key={stu._id} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                            <td style={{ padding: '10px 12px' }}>
-                              <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.88rem' }}>{stu.fullName}</div>
-                              <div style={{ fontSize: '0.74rem', color: '#047857', fontWeight: 700, backgroundColor: '#ecfdf5', border: '1px solid #a7f3d0', padding: '1px 6px', borderRadius: '6px', display: 'inline-block', marginTop: '2px' }}>
-                                {stu.studentCode}
-                              </div>
-                            </td>
-                            <td style={{ padding: '10px 12px' }}>
-                              <span style={{ backgroundColor: '#fef3c7', color: '#b45309', border: '1px solid #fde68a', padding: '3px 8px', borderRadius: '8px', fontWeight: 800, fontSize: '0.75rem' }}>
-                                Band {stu.targetBand}
-                              </span>
-                            </td>
+                      {attendanceStudents.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} style={{ textAlign: 'center', padding: '2.5rem 1rem', color: '#64748b' }}>
+                            <div style={{ fontSize: '1.4rem', marginBottom: '6px' }}>📭</div>
+                            <div style={{ fontWeight: 700, color: '#1e293b' }}>
+                              Lớp {classes.find((c) => c._id === selectedClassId)?.classCode || 'này'} hiện chưa có học viên nào ghi danh.
+                            </div>
+                            <div style={{ fontSize: '0.78rem', marginTop: '4px' }}>
+                              Vui lòng chọn lớp khác ở thanh trên để thực hiện điểm danh.
+                            </div>
+                          </td>
+                        </tr>
+                      ) : (
+                        attendanceStudents.map((stu) => {
+                          const rec = attendanceForm[stu._id] || { status: 'PRESENT', notes: '' };
+                          return (
+                            <tr key={stu._id} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                              <td style={{ padding: '10px 12px' }}>
+                                <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.88rem' }}>{stu.fullName}</div>
+                                <div style={{ fontSize: '0.74rem', color: '#047857', fontWeight: 700, backgroundColor: '#ecfdf5', border: '1px solid #a7f3d0', padding: '1px 6px', borderRadius: '6px', display: 'inline-block', marginTop: '2px' }}>
+                                  {stu.studentCode}
+                                </div>
+                              </td>
+                              <td style={{ padding: '10px 12px' }}>
+                                <span style={{ backgroundColor: '#fef3c7', color: '#b45309', border: '1px solid #fde68a', padding: '3px 8px', borderRadius: '8px', fontWeight: 800, fontSize: '0.75rem' }}>
+                                  Band {stu.targetBand}
+                                </span>
+                              </td>
                             <td style={{ padding: '10px 12px' }}>
                               <div style={{ display: 'flex', gap: '4px' }}>
                                 {(
@@ -1357,53 +1400,169 @@ export const TeacherDashboard: React.FC = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           {/* Section 1: Assigned Classes */}
           <div>
-            <h2 style={{ margin: '0 0 0.75rem', fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>
-              🏫 Danh Sách Lớp Học Phụ Trách (Class Management)
-            </h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1rem' }}>
-              {classes.map((cls) => (
-                <div
-                  key={cls._id}
-                  className="dash-card"
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '8px' }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>
+                  🏫 Danh Sách Lớp Học Phụ Trách ({classes.length} lớp)
+                </h2>
+                <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                  Bấm trực tiếp vào lớp để lọc và xem danh sách học viên của lớp đó
+                </span>
+              </div>
+              {selectedClassFilterId && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedClassFilterId('')}
                   style={{
-                    padding: '1.25rem',
-                    borderRadius: '16px',
+                    padding: '5px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #cbd5e1',
                     backgroundColor: '#ffffff',
-                    border: '1px solid #e2e8f0',
-                    borderLeft: '4px solid #059669',
-                    boxShadow: '0 2px 6px rgba(0, 0, 0, 0.04)',
+                    color: '#334155',
+                    fontSize: '0.78rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontWeight: 800, color: '#047857', fontSize: '1.05rem' }}>
-                      {cls.classCode}
-                    </span>
-                    <span style={{ backgroundColor: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', padding: '3px 8px', borderRadius: '8px', fontSize: '0.72rem', fontWeight: 700 }}>
-                      {cls.status}
-                    </span>
+                  ✕ Xem tất cả học viên của mọi lớp
+                </button>
+              )}
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1rem' }}>
+              {classes.map((cls) => {
+                const isSelected = cls._id === selectedClassFilterId;
+                const studentCount = students.filter((s) => s.classes.some((c) => c._id === cls._id)).length;
+                return (
+                  <div
+                    key={cls._id}
+                    className="dash-card"
+                    onClick={() => setSelectedClassFilterId(isSelected ? '' : cls._id)}
+                    style={{
+                      padding: '1.25rem',
+                      borderRadius: '16px',
+                      backgroundColor: isSelected ? '#f0fdf4' : '#ffffff',
+                      border: isSelected ? '2px solid #059669' : '1px solid #e2e8f0',
+                      borderLeft: isSelected ? '6px solid #059669' : '4px solid #059669',
+                      boxShadow: isSelected ? '0 8px 24px rgba(5, 150, 105, 0.18)' : '0 2px 6px rgba(0, 0, 0, 0.04)',
+                      cursor: 'pointer',
+                      transform: isSelected ? 'translateY(-2px)' : 'none',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontWeight: 800, color: '#047857', fontSize: '1.05rem' }}>
+                        {cls.classCode}
+                      </span>
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                        {isSelected && (
+                          <span style={{ backgroundColor: '#059669', color: '#ffffff', padding: '2px 8px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 800 }}>
+                            🎯 Đang chọn
+                          </span>
+                        )}
+                        <span style={{ backgroundColor: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 700 }}>
+                          {cls.status}
+                        </span>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '0.92rem', fontWeight: 700, color: '#0f172a', marginTop: '0.35rem' }}>
+                      {cls.name || 'Lớp học'}
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <div>📍 Phòng: <strong style={{ color: '#0f172a' }}>{cls.room}</strong></div>
+                      <div>⏰ Lịch học: <strong style={{ color: '#0f172a' }}>{cls.scheduleDays.join(' - ')} ({cls.timeSlot})</strong></div>
+                      <div>👥 Sĩ số thực tế: <strong style={{ color: '#047857' }}>{studentCount} học viên</strong> / {cls.capacity} chỗ</div>
+                    </div>
+                    <div style={{ marginTop: '0.85rem', paddingTop: '0.65rem', borderTop: isSelected ? '1px solid #bbf7d0' : '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.78rem', fontWeight: 800, color: isSelected ? '#047857' : '#059669' }}>
+                        {isSelected ? '✓ Đang hiển thị học viên lớp này' : '👉 Bấm để xem học viên lớp này ➔'}
+                      </span>
+                      {isSelected && (
+                        <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                          (Bấm để bỏ chọn)
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <div style={{ fontSize: '0.92rem', fontWeight: 700, color: '#0f172a', marginTop: '0.35rem' }}>
-                    {cls.name}
-                  </div>
-                  <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <div>📍 Phòng: <strong style={{ color: '#0f172a' }}>{cls.room}</strong></div>
-                    <div>⏰ Lịch học: <strong style={{ color: '#0f172a' }}>{cls.scheduleDays.join(' - ')} ({cls.timeSlot})</strong></div>
-                    <div>👥 Sĩ số: <strong style={{ color: '#0f172a' }}>{cls.currentEnrollment} / {cls.capacity} học viên</strong></div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
           {/* Section 2: Student List & Detail */}
           <div>
+            {/* Quick Class Filter Buttons */}
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '0.85rem', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>Lọc nhanh:</span>
+              <button
+                type="button"
+                onClick={() => setSelectedClassFilterId('')}
+                style={{
+                  padding: '5px 12px',
+                  borderRadius: '8px',
+                  border: !selectedClassFilterId ? '2px solid #059669' : '1px solid #cbd5e1',
+                  backgroundColor: !selectedClassFilterId ? '#059669' : '#ffffff',
+                  color: !selectedClassFilterId ? '#ffffff' : '#334155',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                Tất cả các lớp ({students.length} HV)
+              </button>
+              {classes.map((c) => {
+                const isCur = c._id === selectedClassFilterId;
+                const countInClass = students.filter((s) => s.classes.some((cl) => cl._id === c._id)).length;
+                return (
+                  <button
+                    key={c._id}
+                    type="button"
+                    onClick={() => setSelectedClassFilterId(isCur ? '' : c._id)}
+                    style={{
+                      padding: '5px 12px',
+                      borderRadius: '8px',
+                      border: isCur ? '2px solid #059669' : '1px solid #cbd5e1',
+                      backgroundColor: isCur ? '#059669' : '#ffffff',
+                      color: isCur ? '#ffffff' : '#334155',
+                      fontSize: '0.8rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                  >
+                    <span>Lớp {c.classCode}</span>
+                    <span
+                      style={{
+                        backgroundColor: isCur ? 'rgba(255,255,255,0.25)' : '#f1f5f9',
+                        color: isCur ? '#ffffff' : '#475569',
+                        padding: '1px 6px',
+                        borderRadius: '6px',
+                        fontSize: '0.72rem',
+                        fontWeight: 800,
+                      }}
+                    >
+                      {countInClass} HV
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.75rem' }}>
               <div>
                 <h2 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>
-                  👥 Danh Sách Học Viên (Student Directory &amp; Detail)
+                  👥 {selectedClassFilterId
+                    ? `Danh Sách Học Viên — Lớp ${classes.find((c) => c._id === selectedClassFilterId)?.classCode} (${filteredStudentsForClass.length} học viên)`
+                    : `Danh Sách Học Viên — Toàn Bộ Các Lớp Phụ Trách (${filteredStudentsForClass.length} học viên)`
+                  }
                 </h2>
                 <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
-                  Nhấp vào học viên để xem hồ sơ chi tiết, điểm danh và kết quả học tập
+                  {selectedClassFilterId
+                    ? `Đang hiển thị danh sách học viên chính thức của lớp ${classes.find((c) => c._id === selectedClassFilterId)?.classCode}`
+                    : 'Nhấp vào học viên để xem hồ sơ chi tiết, điểm danh và kết quả học tập'
+                  }
                 </span>
               </div>
 
@@ -1433,67 +1592,121 @@ export const TeacherDashboard: React.FC = () => {
                     <th style={{ padding: '10px 14px' }}>Mã &amp; Tên Học Viên</th>
                     <th style={{ padding: '10px 14px' }}>Liên Hệ</th>
                     <th style={{ padding: '10px 14px' }}>Target Band</th>
-                    <th style={{ padding: '10px 14px' }}>Mục Tiêu</th>
+                    <th style={{ padding: '10px 14px' }}>Lớp Đang Học</th>
                     <th style={{ padding: '10px 14px' }}>Chuyên Cần</th>
                     <th style={{ padding: '10px 14px' }}>Thao Tác</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {searchedStudents.map((stu) => (
-                    <tr key={stu._id} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                      <td style={{ padding: '12px 14px' }}>
-                        <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.9rem' }}>{stu.fullName}</div>
-                        <div style={{ fontSize: '0.74rem', color: '#047857', fontWeight: 700, backgroundColor: '#ecfdf5', border: '1px solid #a7f3d0', padding: '1px 6px', borderRadius: '6px', display: 'inline-block', marginTop: '2px' }}>
-                          {stu.studentCode}
+                  {searchedStudents.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} style={{ textAlign: 'center', padding: '3rem 1rem', color: '#64748b' }}>
+                        <div style={{ fontSize: '1.6rem', marginBottom: '8px' }}>📭</div>
+                        <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#1e293b' }}>
+                          {selectedClassFilterId
+                            ? `Lớp ${classes.find((c) => c._id === selectedClassFilterId)?.classCode} hiện chưa có học viên nào ghi danh.`
+                            : 'Không tìm thấy học viên nào phù hợp với từ khóa tìm kiếm.'
+                          }
                         </div>
-                      </td>
-                      <td style={{ padding: '12px 14px', fontSize: '0.82rem' }}>
-                        <div style={{ color: '#1e293b', fontWeight: 600 }}>{stu.email}</div>
-                        <div style={{ color: '#64748b', fontSize: '0.78rem', marginTop: '2px' }}>{stu.phone}</div>
-                      </td>
-                      <td style={{ padding: '12px 14px' }}>
-                        <span style={{ backgroundColor: '#fef3c7', color: '#b45309', border: '1px solid #fde68a', padding: '3px 9px', borderRadius: '8px', fontWeight: 800, fontSize: '0.78rem' }}>
-                          Band {stu.targetBand}
-                        </span>
-                      </td>
-                      <td style={{ padding: '12px 14px', fontSize: '0.82rem', color: '#334155' }}>
-                        {stu.learningGoal}
-                      </td>
-                      <td style={{ padding: '12px 14px' }}>
-                        <span style={{ color: '#059669', fontWeight: 800, fontSize: '0.88rem' }}>
-                          {stu.attendanceStats?.attendanceRate || 92}%
-                        </span>
-                      </td>
-                      <td style={{ padding: '12px 14px' }}>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedStudentDetail(stu);
-                            setIsStudentDetailOpen(true);
-                          }}
-                          style={{
-                            backgroundColor: '#f8fafc',
-                            color: '#0f172a',
-                            border: '1px solid #cbd5e1',
-                            padding: '0.45rem 0.9rem',
-                            borderRadius: '8px',
-                            fontSize: '0.78rem',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                            transition: 'all 0.15s ease',
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = '#e2e8f0';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = '#f8fafc';
-                          }}
-                        >
-                          👁️ Chi tiết
-                        </button>
+                        {selectedClassFilterId && (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedClassFilterId('')}
+                            style={{
+                              marginTop: '10px',
+                              padding: '6px 16px',
+                              borderRadius: '8px',
+                              border: '1px solid #cbd5e1',
+                              backgroundColor: '#ffffff',
+                              fontSize: '0.8rem',
+                              fontWeight: 700,
+                              color: '#059669',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            Xem tất cả học viên của các lớp khác ➔
+                          </button>
+                        )}
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    searchedStudents.map((stu) => (
+                      <tr key={stu._id} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                        <td style={{ padding: '12px 14px' }}>
+                          <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.9rem' }}>{stu.fullName}</div>
+                          <div style={{ fontSize: '0.74rem', color: '#047857', fontWeight: 700, backgroundColor: '#ecfdf5', border: '1px solid #a7f3d0', padding: '1px 6px', borderRadius: '6px', display: 'inline-block', marginTop: '2px' }}>
+                            {stu.studentCode}
+                          </div>
+                        </td>
+                        <td style={{ padding: '12px 14px', fontSize: '0.82rem' }}>
+                          <div style={{ color: '#1e293b', fontWeight: 600 }}>{stu.email}</div>
+                          <div style={{ color: '#64748b', fontSize: '0.78rem', marginTop: '2px' }}>{stu.phone}</div>
+                        </td>
+                        <td style={{ padding: '12px 14px' }}>
+                          <span style={{ backgroundColor: '#fef3c7', color: '#b45309', border: '1px solid #fde68a', padding: '3px 9px', borderRadius: '8px', fontWeight: 800, fontSize: '0.78rem' }}>
+                            Band {stu.targetBand}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px 14px', fontSize: '0.82rem', color: '#334155' }}>
+                          {stu.classes && stu.classes.length > 0 ? (
+                            stu.classes.map((c) => (
+                              <span
+                                key={c._id}
+                                style={{
+                                  display: 'inline-block',
+                                  padding: '2px 8px',
+                                  borderRadius: '6px',
+                                  backgroundColor: '#eff6ff',
+                                  color: '#1d4ed8',
+                                  border: '1px solid #bfdbfe',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 700,
+                                  marginRight: '4px',
+                                }}
+                              >
+                                {c.classCode}
+                              </span>
+                            ))
+                          ) : (
+                            <span style={{ color: '#94a3b8' }}>Chưa xếp lớp</span>
+                          )}
+                        </td>
+                        <td style={{ padding: '12px 14px' }}>
+                          <span style={{ color: '#059669', fontWeight: 800, fontSize: '0.88rem' }}>
+                            {stu.attendanceStats?.attendanceRate || 92}%
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px 14px' }}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedStudentDetail(stu);
+                              setIsStudentDetailOpen(true);
+                            }}
+                            style={{
+                              backgroundColor: '#f8fafc',
+                              color: '#0f172a',
+                              border: '1px solid #cbd5e1',
+                              padding: '0.45rem 0.9rem',
+                              borderRadius: '8px',
+                              fontSize: '0.78rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = '#e2e8f0';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = '#f8fafc';
+                            }}
+                          >
+                            👁️ Chi tiết
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
