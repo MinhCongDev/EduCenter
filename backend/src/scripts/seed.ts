@@ -1453,13 +1453,13 @@ const seedDatabase = async () => {
     // 15. TẠO ĐIỂM DANH HỌC VIÊN (ATTENDANCE)
     // ==========================================
     console.log('📋 Đang tạo nhật ký điểm danh các buổi học...');
-    await Attendance.insertMany([
-      // Buổi 1 lớp 1 (2026-10-09)
+    const attendanceRecords = [
+      // Buổi 1 lớp 1 - Thứ 2 (2026-10-05)
       {
         class: class1._id,
         classSchedule: schedules[0]._id,
         student: studentDang._id,
-        sessionDate: new Date('2026-10-09'),
+        sessionDate: new Date('2026-10-05'),
         status: 'PRESENT',
         notes: 'Tích cực phát biểu và đóng góp ý tưởng phản biện',
         recordedBy: teacherAlex._id,
@@ -1468,7 +1468,7 @@ const seedDatabase = async () => {
         class: class1._id,
         classSchedule: schedules[0]._id,
         student: studentMai._id,
-        sessionDate: new Date('2026-10-09'),
+        sessionDate: new Date('2026-10-05'),
         status: 'PRESENT',
         notes: 'Chuẩn bị bài tập ở nhà đầy đủ, phát âm chuẩn',
         recordedBy: teacherAlex._id,
@@ -1477,7 +1477,7 @@ const seedDatabase = async () => {
         class: class1._id,
         classSchedule: schedules[0]._id,
         student: studentLinh._id,
-        sessionDate: new Date('2026-10-09'),
+        sessionDate: new Date('2026-10-05'),
         status: 'PRESENT',
         notes: 'Hoàn thành xuất sắc bài tập đọc Skimming tại lớp',
         recordedBy: teacherAlex._id,
@@ -1486,17 +1486,17 @@ const seedDatabase = async () => {
         class: class1._id,
         classSchedule: schedules[0]._id,
         student: studentQuan._id,
-        sessionDate: new Date('2026-10-09'),
+        sessionDate: new Date('2026-10-05'),
         status: 'PRESENT',
         notes: 'Phân tích đề bài Writing Task 2 rất sắc bén',
         recordedBy: teacherAlex._id,
       },
-      // Buổi 2 lớp 1 (2026-10-11)
+      // Buổi 2 lớp 1 - Thứ 4 (2026-10-07)
       {
         class: class1._id,
         classSchedule: schedules[1]._id,
         student: studentDang._id,
-        sessionDate: new Date('2026-10-11'),
+        sessionDate: new Date('2026-10-07'),
         status: 'PRESENT',
         notes: 'Làm bài tập nhóm tốt, có tiến bộ về từ vựng',
         recordedBy: teacherAlex._id,
@@ -1505,7 +1505,7 @@ const seedDatabase = async () => {
         class: class1._id,
         classSchedule: schedules[1]._id,
         student: studentMai._id,
-        sessionDate: new Date('2026-10-11'),
+        sessionDate: new Date('2026-10-07'),
         status: 'PRESENT',
         notes: 'Đóng góp ý tưởng phong phú cho Task 2',
         recordedBy: teacherAlex._id,
@@ -1514,7 +1514,7 @@ const seedDatabase = async () => {
         class: class1._id,
         classSchedule: schedules[1]._id,
         student: studentLinh._id,
-        sessionDate: new Date('2026-10-11'),
+        sessionDate: new Date('2026-10-07'),
         status: 'LATE',
         notes: 'Đến muộn 10 phút do thời tiết mưa lớn',
         recordedBy: teacherAlex._id,
@@ -1523,17 +1523,17 @@ const seedDatabase = async () => {
         class: class1._id,
         classSchedule: schedules[1]._id,
         student: studentQuan._id,
-        sessionDate: new Date('2026-10-11'),
+        sessionDate: new Date('2026-10-07'),
         status: 'PRESENT',
         notes: 'Tham gia tranh luận phản biện sôi nổi',
         recordedBy: teacherAlex._id,
       },
-      // Buổi 3 lớp 1 (2026-10-13)
+      // Buổi 3 lớp 1 - Thứ 6 (2026-10-09)
       {
         class: class1._id,
         classSchedule: schedules[2]._id,
         student: studentDang._id,
-        sessionDate: new Date('2026-10-13'),
+        sessionDate: new Date('2026-10-09'),
         status: 'PRESENT',
         notes: 'Phát biểu tốt',
         recordedBy: teacherAlex._id,
@@ -1542,7 +1542,7 @@ const seedDatabase = async () => {
         class: class1._id,
         classSchedule: schedules[2]._id,
         student: studentMai._id,
-        sessionDate: new Date('2026-10-13'),
+        sessionDate: new Date('2026-10-09'),
         status: 'PRESENT',
         notes: 'Đầy đủ bài tập và tích cực tương tác',
         recordedBy: teacherAlex._id,
@@ -1551,7 +1551,7 @@ const seedDatabase = async () => {
         class: class1._id,
         classSchedule: schedules[2]._id,
         student: studentLinh._id,
-        sessionDate: new Date('2026-10-13'),
+        sessionDate: new Date('2026-10-09'),
         status: 'PRESENT',
         notes: 'Phong độ học tập xuất sắc',
         recordedBy: teacherAlex._id,
@@ -1560,17 +1560,17 @@ const seedDatabase = async () => {
         class: class1._id,
         classSchedule: schedules[2]._id,
         student: studentQuan._id,
-        sessionDate: new Date('2026-10-13'),
+        sessionDate: new Date('2026-10-09'),
         status: 'EXCUSED',
         notes: 'Xin phép nghỉ có lý do: bận thi chứng chỉ tại trường ĐH',
         recordedBy: teacherAlex._id,
       },
-      // Buổi 1 lớp 2 (2026-10-10)
+      // Buổi 1 lớp 2 - Thứ 3 (2026-10-13)
       {
         class: class2._id,
         classSchedule: schedules[3]._id,
         student: studentKiet._id,
-        sessionDate: new Date('2026-10-10'),
+        sessionDate: new Date('2026-10-13'),
         status: 'PRESENT',
         notes: 'Ghi chép bài đầy đủ',
         recordedBy: teacherSarah._id,
@@ -1579,17 +1579,17 @@ const seedDatabase = async () => {
         class: class2._id,
         classSchedule: schedules[3]._id,
         student: studentTrang._id,
-        sessionDate: new Date('2026-10-10'),
+        sessionDate: new Date('2026-10-13'),
         status: 'PRESENT',
         notes: 'Chăm chỉ, thực hành nghe tốt',
         recordedBy: teacherSarah._id,
       },
-      // Buổi 2 lớp 2 (2026-10-12)
+      // Buổi 2 lớp 2 - Thứ 5 (2026-10-15)
       {
         class: class2._id,
         classSchedule: schedules[4]._id,
         student: studentKiet._id,
-        sessionDate: new Date('2026-10-12'),
+        sessionDate: new Date('2026-10-15'),
         status: 'LATE',
         notes: 'Đến muộn 15 phút do kẹt xe giờ cao điểm',
         recordedBy: teacherSarah._id,
@@ -1598,12 +1598,33 @@ const seedDatabase = async () => {
         class: class2._id,
         classSchedule: schedules[4]._id,
         student: studentTrang._id,
-        sessionDate: new Date('2026-10-12'),
+        sessionDate: new Date('2026-10-15'),
         status: 'PRESENT',
-        notes: 'Phát biểu tốt, tự tin phát âm',
+        notes: 'Bài tập dữ liệu mô tả biểu đồ rõ ràng, số liệu chính xác',
         recordedBy: teacherSarah._id,
       },
-    ]);
+      // Buổi 3 lớp 2 - Thứ 7 (2026-10-17)
+      {
+        class: class2._id,
+        classSchedule: schedules[5]._id,
+        student: studentKiet._id,
+        sessionDate: new Date('2026-10-17'),
+        status: 'PRESENT',
+        notes: 'Trả lời Speaking Part 1 tự nhiên, phát âm chuẩn',
+        recordedBy: teacherSarah._id,
+      },
+      {
+        class: class2._id,
+        classSchedule: schedules[5]._id,
+        student: studentTrang._id,
+        sessionDate: new Date('2026-10-17'),
+        status: 'ABSENT',
+        notes: 'Vắng mặt không báo lý do',
+        recordedBy: teacherSarah._id,
+      },
+    ];
+    await Attendance.insertMany(attendanceRecords);
+    const attendanceCount = attendanceRecords.length;
 
     // ==========================================
     // 16. TẠO BẢNG ĐIỂM & KẾT QUẢ THI (GRADES)
@@ -2021,7 +2042,7 @@ Yêu cầu 100% Giảng viên cơ hữu và thỉnh giảng tham dự đầy đ�
     console.log(`💳 11. Payments:        10 bản ghi thanh toán học phí`);
     console.log(`📝 12. Assignments:     ${assignments.length} bài tập về nhà`);
     console.log(`📬 13. Submissions:     6 bài nộp có điểm và phản hồi chi tiết`);
-    console.log(`📋 14. Attendance:      16 bản ghi điểm danh học viên`);
+    console.log(`📋 14. Attendance:      ${attendanceCount} bản ghi điểm danh học viên`);
     console.log(`🏆 15. Grades:          7 bảng điểm thi thử và giữa kỳ`);
     console.log(`⭐ 16. Feedback:        5 đánh giá 5 sao từ học viên`);
     console.log(`🔔 17. Notifications:   6 thông báo cá nhân`);
