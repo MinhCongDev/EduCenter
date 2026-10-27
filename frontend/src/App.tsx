@@ -15,6 +15,8 @@ import ErrorBoundary from './components/ErrorBoundary';
 const HomePage = lazy(() => import('./pages/public/HomePage'));
 const CoursesPage = lazy(() => import('./pages/public/CoursesPage'));
 const AnnouncementsPage = lazy(() => import('./pages/public/AnnouncementsPage'));
+const PlacementTestListPage = lazy(() => import('./pages/public/PlacementTestListPage'));
+const PlacementTestDetailPage = lazy(() => import('./pages/public/PlacementTestDetailPage'));
 const AuthPage = lazy(() => import('./pages/public/AuthPage'));
 const VerifyEmailPage = lazy(() => import('./pages/public/VerifyEmailPage'));
 const ResendVerificationPage = lazy(() => import('./pages/public/ResendVerificationPage'));
@@ -96,6 +98,38 @@ const AppRouter: React.FC = () => {
           element={
             <GuestLayout>
               <AnnouncementsPage />
+            </GuestLayout>
+          }
+        />
+        <Route
+          path="/placement-test"
+          element={
+            <GuestLayout>
+              <PlacementTestListPage />
+            </GuestLayout>
+          }
+        />
+        <Route
+          path="/placement-test/:id"
+          element={
+            <GuestLayout>
+              <PlacementTestDetailPage />
+            </GuestLayout>
+          }
+        />
+        <Route
+          path="/placement-tests"
+          element={
+            <GuestLayout>
+              <PlacementTestListPage />
+            </GuestLayout>
+          }
+        />
+        <Route
+          path="/placement-tests/:id"
+          element={
+            <GuestLayout>
+              <PlacementTestDetailPage />
             </GuestLayout>
           }
         />

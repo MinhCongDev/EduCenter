@@ -140,6 +140,7 @@ export interface ClassAndCourseReportsData {
     _id: string;
     code: string;
     name: string;
+    category?: string;
     targetBand?: string;
     fee: number;
     duration: string;
@@ -154,6 +155,16 @@ export interface RevenueReportsData {
     month: string;
     amount: number;
   }>;
+  weeklyRevenue?: Array<{
+    week: string;
+    sub?: string;
+    amount: number;
+    weekNumber?: number;
+  }>;
+  yearlyRevenue?: Array<{
+    year: string;
+    amount: number;
+  }>;
   revenueByCourse: Array<{
     course: string;
     amount: number;
@@ -161,17 +172,26 @@ export interface RevenueReportsData {
   }>;
   paymentMethods: Array<{
     method: string;
+    amount?: number;
     percentage: number;
   }>;
   recentTransactions: Array<{
     _id: string;
     student?: { fullName: string; email: string };
-    course?: { name: string; code: string };
+    course?: { _id?: string; title?: string; name?: string; code?: string; category?: string };
     amount: number;
     method: string;
     status: string;
     transactionCode: string;
     paymentDate: string;
+  }>;
+  availableCourses?: Array<{
+    _id: string;
+    title: string;
+    name?: string;
+    code: string;
+    category?: string;
+    status?: string;
   }>;
 }
 

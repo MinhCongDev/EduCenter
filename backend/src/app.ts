@@ -19,6 +19,7 @@ import { directorRouter } from './routes/director.routes';
 import { enrollmentRouter } from './routes/enrollment.routes';
 import { classScheduleRouter } from './routes/classSchedule.routes';
 import { staffManagementRouter } from './routes/staffManagement.routes';
+import { placementTestRouter } from './routes/placementTest.routes';
 import { errorHandler } from './middlewares/error.middleware';
 import { notFound } from './middlewares/notFound.middleware';
 
@@ -108,6 +109,7 @@ app.use('/api/payments', paymentRouter);
 app.use('/api/public', publicRouter);
 app.use('/api/student', studentRouter);
 app.use('/api/director', directorRouter);
+app.use('/api/placement-tests', placementTestRouter);
 
 // ===========================
 // 404 Handler
