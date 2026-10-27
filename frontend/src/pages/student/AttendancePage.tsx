@@ -16,6 +16,7 @@ const statusCfg = (s: AttendanceStatus) => {
   return map[s] || { label: s, cls: 'badge-amber', icon: '❓' };
 };
 
+/** Tên thứ trong tuần theo thứ tự Date.getDay() (0 = Chủ Nhật). */
 const DAY_NAMES = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
 
 const AttendancePage: React.FC = () => {
@@ -23,6 +24,8 @@ const AttendancePage: React.FC = () => {
   const toast = useToast();
   const [records, setRecords] = useState<Attendance[]>([]);
   const [stats, setStats] = useState<AttendanceStats | null>(null);
+  const [classCode, setClassCode] = useState<string>('');
+  const [courseTitle, setCourseTitle] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -33,12 +36,22 @@ const AttendancePage: React.FC = () => {
     if (!id) return;
     try {
       setIsLoading(true);
-      const res = await studentService.getAttendance(id);
+      // Tải song song dữ liệu điểm danh + thông tin lớp, để hiện mã lớp
+      // thật thay vì ObjectId kỹ thuật trên banner.
+      const [res, clsRes] = await Promise.all([
+        studentService.getAttendance(id),
+        studentService.getClassDetails(id).catch(() => null),
+      ]);
       if (res.success && res.data) {
         setRecords(res.data.attendance);
         setStats(res.data.stats);
       } else {
         toast.error(res.message || 'Không thể tải điểm danh');
+      }
+      const c = (clsRes?.data?.class as any)?.class;
+      if (c) {
+        setClassCode(c.classCode || '');
+        setCourseTitle(c.course?.title || '');
       }
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Không thể tải điểm danh');
@@ -59,12 +72,13 @@ const AttendancePage: React.FC = () => {
             {stats && stats.total > 0
               ? `Tổng cộng ${stats.total} buổi học. Tỷ lệ có mặt: ${stats.rate}%`
               : 'Chưa có dữ liệu điểm danh.'}
+            {courseTitle ? ` ${courseTitle}` : ''}
           </p>
         </div>
         <div className="dash-banner-right">
           <div className="dash-date-pill">
             <div>📅 {stats?.total || 0} buổi học</div>
-            <div className="sub">Lớp ID: {id}</div>
+            <div className="sub">{classCode || 'Lớp học'}</div>
           </div>
         </div>
       </div>
@@ -95,9 +109,12 @@ const AttendancePage: React.FC = () => {
             <div className="dash-metric-info">
               <span className="dash-metric-label">Có mặt</span>
               <span className="dash-metric-val" style={{ color: '#10b981' }}>
-                {stats.present}
+                {stats.attended ?? stats.present}
               </span>
-              <span className="dash-metric-trend up">Tỷ lệ {stats.rate}%</span>
+              <span className="dash-metric-trend up">
+                Tỷ lệ {stats.rate}%
+                {stats.late > 0 ? ` (${stats.present} đúng giờ, ${stats.late} trễ)` : ''}
+              </span>
             </div>
             <div className="dash-metric-icon icon-emerald">✅</div>
           </div>
@@ -113,6 +130,18 @@ const AttendancePage: React.FC = () => {
             </div>
             <div className="dash-metric-icon icon-purple">❌</div>
           </div>
+          {stats.excused > 0 && (
+            <div className="dash-metric-card">
+              <div className="dash-metric-info">
+                <span className="dash-metric-label">Có phép</span>
+                <span className="dash-metric-val" style={{ color: '#3b82f6' }}>
+                  {stats.excused}
+                </span>
+                <span className="dash-metric-trend">Được xin phép vắng</span>
+              </div>
+              <div className="dash-metric-icon icon-blue">📋</div>
+            </div>
+          )}
         </div>
       )}
 

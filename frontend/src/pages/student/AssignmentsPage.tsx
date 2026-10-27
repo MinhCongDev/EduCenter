@@ -21,6 +21,8 @@ const AssignmentsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const toast = useToast();
   const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [skills, setSkills] = useState<string[]>([]);
+  const [classCode, setClassCode] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<FilterKey>('ALL');
   const [submitting, setSubmitting] = useState(false);
@@ -42,14 +44,29 @@ const AssignmentsPage: React.FC = () => {
     try {
       setIsLoading(true);
       const res = await studentService.getAssignments(id);
-      if (res.success && res.data) setAssignments(res.data.assignments);
-      else toast.error(res.message || 'Không thể tải bài tập');
+      if (res.success && res.data) {
+        setAssignments(res.data.assignments);
+        setSkills(res.data.skills || []);
+      } else toast.error(res.message || 'Không thể tải bài tập');
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Không thể tải bài tập');
     } finally {
       setIsLoading(false);
     }
   };
+
+  // Lấy mã lớp để hiển thị thay vì ObjectId kỹ thuật.
+  useEffect(() => {
+    if (!id) return;
+    studentService
+      .getClassDetails(id)
+      .then((res) => {
+        if (res.success && res.data) {
+          setClassCode((res.data.class as any)?.class?.classCode || '');
+        }
+      })
+      .catch(() => {});
+  }, [id]);
 
   const openSubmitModal = (assignmentId: string) => {
     setShowModal(assignmentId);
@@ -107,17 +124,20 @@ const AssignmentsPage: React.FC = () => {
     return true;
   });
 
+  // Bộ lọc kỹ năng được dựng ĐỘNG từ dữ liệu bài tập thật của lớp.
+  // Trước đây hardcode LISTENING/READING/WRITING/... trong khi seed ghi
+  // 'Writing Task 2', 'Listening', 'Speaking Mock' → chọn là ra 0 kết quả.
   const skillOptions: { value: string; label: string }[] = [
     { value: 'ALL', label: 'Tất cả kỹ năng' },
-    { value: 'LISTENING', label: '🎧 Listening' },
-    { value: 'READING', label: '📖 Reading' },
-    { value: 'WRITING', label: '✍️ Writing' },
-    { value: 'SPEAKING', label: '🎤 Speaking' },
-    { value: 'OVERALL', label: '📚 Overall' },
-    { value: 'VOCABULARY', label: '📝 Vocabulary' },
-    { value: 'GRAMMAR', label: '🔤 Grammar' },
-    { value: 'OTHER', label: '📌 Khác' },
+    ...skills.map((s) => ({ value: s, label: `🎯 ${s}` })),
   ];
+
+  // Nếu kỹ năng đang chọn không còn tồn tại (đổi lớp / dữ liệu mới), reset về ALL.
+  useEffect(() => {
+    if (skillFilter !== 'ALL' && !skills.includes(skillFilter)) {
+      setSkillFilter('ALL');
+    }
+  }, [skills, skillFilter]);
 
   const tabs: { key: FilterKey; label: string; count: number }[] = [
     { key: 'ALL', label: 'Tất cả', count: assignments.length },
@@ -151,7 +171,7 @@ const AssignmentsPage: React.FC = () => {
         <div className="dash-banner-right">
           <div className="dash-date-pill">
             <div>📝 {assignments.filter((a) => !a.submissionStatus).length} chưa nộp</div>
-            <div className="sub">Lớp ID: {id}</div>
+            <div className="sub">{classCode || 'Lớp học'}</div>
           </div>
         </div>
       </div>
@@ -276,7 +296,11 @@ const AssignmentsPage: React.FC = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {filtered.map((a) => {
             const status = statusOf(a.submissionStatus);
+            // Bài đã đóng (CLOSED) không nộp được nữa, nhưng vẫn phải hiện
+            // để học viên xem được bài đã nộp/điểm đã chấm.
+            const closed = a.status === 'CLOSED';
             const past = !a.submissionStatus && isPast(a.dueDate);
+            const canSubmit = !closed && !past;
             return (
               <div key={a._id} className="dash-card">
                 <div className="dash-card-header">
@@ -284,9 +308,14 @@ const AssignmentsPage: React.FC = () => {
                     <span>{status.icon}</span>
                     {a.title}
                   </h2>
-                  <span className={`badge-pill ${past ? 'badge-purple' : status.cls}`}>
-                    {past ? '⏰ Quá hạn' : status.label}
-                  </span>
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    {closed && (
+                      <span className="badge-pill badge-blue">🔒 Đã đóng</span>
+                    )}
+                    <span className={`badge-pill ${past ? 'badge-purple' : status.cls}`}>
+                      {past ? '⏰ Quá hạn' : status.label}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="dash-subcard">
@@ -347,16 +376,29 @@ const AssignmentsPage: React.FC = () => {
                   )}
 
                   {!a.submissionStatus ? (
-                    <Button variant="primary" onClick={() => openSubmitModal(a._id)}>
-                      📤 Nộp bài ngay
-                    </Button>
+                    canSubmit ? (
+                      <Button variant="primary" onClick={() => openSubmitModal(a._id)}>
+                        📤 Nộp bài ngay
+                      </Button>
+                    ) : (
+                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <span className="badge-pill badge-purple">
+                          {closed ? '🔒 Bài đã đóng' : '⏰ Đã quá hạn nộp'}
+                        </span>
+                        <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+                          {closed
+                            ? 'Bài tập đã được giảng viên đóng, không thể nộp thêm.'
+                            : 'Đã quá hạn nộp — liên hệ giảng viên nếu cần nộp bù.'}
+                        </span>
+                      </div>
+                    )
                   ) : (
                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
                       <span className={`badge-pill ${status.cls}`}>
                         {status.icon} {status.label}
                         {a.submissionStatus === 'GRADED' && ` — Đã chấm điểm`}
                       </span>
-                      {a.submissionStatus !== 'GRADED' && !past && (
+                      {a.submissionStatus !== 'GRADED' && canSubmit && (
                         <Button
                           variant="secondary"
                           size="sm"

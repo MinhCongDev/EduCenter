@@ -1,19 +1,33 @@
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { authService } from '../../services/auth.service';
 import { studentService } from '../../services/student.service';
 import type { StudentProfile } from '../../types';
 import { Button } from '../../components/Button';
+import { SettingsPanel } from '../../components/SettingsPanel';
 import { SkeletonPage } from '../../components/Skeleton';
 import { formatDate } from '../../utils/format';
+import { studentStatusMeta } from '../../utils/labels';
+
+type ProfileTab = 'profile' | 'settings';
+
+const PROFILE_TABS: Array<{ key: ProfileTab; label: string; icon: string }> = [
+  { key: 'profile', label: 'Hồ sơ cá nhân', icon: '👤' },
+  { key: 'settings', label: 'Cài đặt', icon: '⚙️' },
+];
 
 const ProfilePage: React.FC = () => {
   const { user, updateUser } = useAuth();
   const toast = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const activeTab: ProfileTab = tabParam === 'settings' ? 'settings' : 'profile';
   const [student, setStudent] = useState<StudentProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingStudent, setSavingStudent] = useState(false);
 
   const [form, setForm] = useState({
     fullName: user?.fullName || '',
@@ -21,6 +35,15 @@ const ProfilePage: React.FC = () => {
     address: user?.address || '',
     dob: user?.dob ? new Date(user.dob).toISOString().slice(0, 10) : '',
     avatarUrl: user?.avatarUrl || '',
+  });
+
+  // ── Form hồ sơ học viên (PUT /api/student/profile) ──
+  const [studentForm, setStudentForm] = useState({
+    targetBand: '',
+    learningGoal: '',
+    ecName: '',
+    ecRelationship: '',
+    ecPhone: '',
   });
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -43,10 +66,15 @@ const ProfilePage: React.FC = () => {
           dob: u.dob ? new Date(u.dob).toISOString().slice(0, 10) : '',
           avatarUrl: u.avatarUrl || '',
         });
-        // Also refresh auth context
-        if (user && JSON.stringify(u) !== JSON.stringify(user)) {
-          // No-op; will sync after save
-        }
+        // Nạp sẵn form hồ sơ học viên để học viên chỉ cần chỉnh sửa.
+        const s = res.data.student;
+        setStudentForm({
+          targetBand: s?.targetBand != null ? String(s.targetBand) : '',
+          learningGoal: s?.learningGoal || '',
+          ecName: s?.emergencyContact?.name || '',
+          ecRelationship: s?.emergencyContact?.relationship || '',
+          ecPhone: s?.emergencyContact?.phone || '',
+        });
       } else {
         toast.error(res.message || 'Không thể tải thông tin cá nhân');
       }
@@ -54,6 +82,58 @@ const ProfilePage: React.FC = () => {
       toast.error(err.response?.data?.message || 'Không thể tải thông tin cá nhân');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  /**
+   * Lưu phần hồ sơ RIÊNG của học viên (band mục tiêu, mục tiêu học tập,
+   * liên hệ khẩn cấp). `currentBand` là kết quả đánh giá của giảng viên
+   * nên không cho học viên tự sửa.
+   */
+  const handleSaveStudent = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Ô trống = xoá band mục tiêu → gửi `null` xuống backend.
+    // Trước đây gửi `undefined` nên backend bỏ qua field và giữ giá trị
+    // cũ → học viên không bao giờ xoá được band mục tiêu.
+    const targetBand = studentForm.targetBand.trim()
+      ? Number(studentForm.targetBand)
+      : null;
+    if (
+      targetBand !== null &&
+      (Number.isNaN(targetBand) || targetBand < 0 || targetBand > 9)
+    ) {
+      toast.warning('Band mục tiêu phải trong khoảng 0 - 9');
+      return;
+    }
+    // Liên hệ khẩn cấp: nếu nhập tên thì bắt buộc có số điện thoại.
+    if (studentForm.ecName.trim() && !/^\d{9,11}$/.test(studentForm.ecPhone.replace(/\s/g, ''))) {
+      toast.warning('Số điện thoại liên hệ khẩn cấp không hợp lệ');
+      return;
+    }
+
+    try {
+      setSavingStudent(true);
+      const res = await studentService.updateMyProfile({
+        targetBand,
+        learningGoal: studentForm.learningGoal.trim(),
+        emergencyContact: {
+          name: studentForm.ecName.trim(),
+          relationship: studentForm.ecRelationship.trim(),
+          phone: studentForm.ecPhone.trim(),
+        },
+      });
+      if (res.success && res.data?.student) {
+        toast.success(res.message || 'Cập nhật hồ sơ học viên thành công');
+        setStudent(res.data.student);
+        await fetchProfile();
+      } else {
+        toast.error(res.message || 'Cập nhật hồ sơ học viên thất bại');
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Cập nhật hồ sơ học viên thất bại');
+    } finally {
+      setSavingStudent(false);
     }
   };
 
@@ -155,13 +235,18 @@ const ProfilePage: React.FC = () => {
 
   if (isLoading) return <SkeletonPage message="Đang tải thông tin cá nhân..." />;
 
+  const switchTab = (tab: ProfileTab) => {
+    if (tab === activeTab) return;
+    setSearchParams(tab === 'profile' ? {} : { tab });
+  };
+
   return (
     <div className="dash-container">
       <div className="dash-banner">
         <div className="dash-banner-content">
           <div className="dash-banner-badge">👤 Hồ Sơ</div>
           <h1>Thông Tin Cá Nhân</h1>
-          <p>Cập nhật thông tin cá nhân của bạn. Những thay đổi sẽ được áp dụng ngay lập tức.</p>
+          <p>Cập nhật thông tin cá nhân và cài đặt tài khoản của bạn. Những thay đổi sẽ được áp dụng ngay lập tức.</p>
         </div>
         <div className="dash-banner-right">
           <div className="dash-date-pill">
@@ -171,6 +256,33 @@ const ProfilePage: React.FC = () => {
         </div>
       </div>
 
+      {/* ── Tab: Hồ sơ cá nhân / Cài đặt ── */}
+      <div className="dash-tabs" role="tablist" aria-label="Hồ sơ và cài đặt">
+        {PROFILE_TABS.map((t) => (
+          <button
+            key={t.key}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === t.key}
+            className={`dash-tab${activeTab === t.key ? ' is-active' : ''}`}
+            onClick={() => switchTab(t.key)}
+          >
+            <span aria-hidden="true">{t.icon}</span>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'settings' ? (
+        /* ══════════════ TAB: CÀI ĐẶT ══════════════ */
+        <div className="dash-card">
+          <div className="dash-card-header">
+            <h2 className="dash-card-title"><span>⚙️</span> Cài Đặt Tài Khoản</h2>
+          </div>
+          <SettingsPanel />
+        </div>
+      ) : (
+        <>
       <div className="dash-two-col">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           {/* Avatar + summary */}
@@ -246,8 +358,8 @@ const ProfilePage: React.FC = () => {
                 <Field
                   label="Trạng thái"
                   value={
-                    <span className={`badge-pill ${student.status === 'ACTIVE' ? 'badge-green' : 'badge-amber'}`}>
-                      {student.status}
+                    <span className={`badge-pill ${studentStatusMeta(student.status).cls}`}>
+                      {studentStatusMeta(student.status).icon} {studentStatusMeta(student.status).label}
                     </span>
                   }
                 />
@@ -344,6 +456,114 @@ const ProfilePage: React.FC = () => {
         </div>
       </div>
 
+      {/* ── Hồ sơ học viên: band mục tiêu, mục tiêu học tập, liên hệ khẩn cấp ── */}
+      {student && (
+        <div className="dash-card" style={{ marginTop: '1.5rem' }}>
+          <div className="dash-card-header">
+            <h2 className="dash-card-title">
+              <span>🎯</span> Hồ Sơ Học Viên
+            </h2>
+            <span className="badge-pill badge-blue">Mã: {student.studentCode}</span>
+          </div>
+          <div className="dash-subcard">
+            <form onSubmit={handleSaveStudent}>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                  gap: '0 1.5rem',
+                }}
+              >
+                <div style={{ marginBottom: '1rem' }}>
+                  <label className="dash-subcard-label">Band mục tiêu (IELTS 0 - 9)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={9}
+                    step={0.5}
+                    value={studentForm.targetBand}
+                    onChange={(e) =>
+                      setStudentForm({ ...studentForm, targetBand: e.target.value })
+                    }
+                    placeholder="VD: 7.0"
+                    style={inputStyle}
+                  />
+                  <p style={{ margin: '0.35rem 0 0', color: '#94a3b8', fontSize: '0.72rem' }}>
+                    Band hiện tại do giảng viên đánh giá — không thể tự sửa.
+                  </p>
+                </div>
+
+                <div style={{ marginBottom: '1rem' }}>
+                  <label className="dash-subcard-label">Mục tiêu học tập</label>
+                  <input
+                    type="text"
+                    value={studentForm.learningGoal}
+                    onChange={(e) =>
+                      setStudentForm({ ...studentForm, learningGoal: e.target.value })
+                    }
+                    placeholder="VD: Du học & Định cư"
+                    style={inputStyle}
+                  />
+                </div>
+
+                <div style={{ marginBottom: '1rem' }}>
+                  <label className="dash-subcard-label">Người liên hệ khẩn cấp</label>
+                  <input
+                    type="text"
+                    value={studentForm.ecName}
+                    onChange={(e) =>
+                      setStudentForm({ ...studentForm, ecName: e.target.value })
+                    }
+                    placeholder="Họ và tên"
+                    style={inputStyle}
+                  />
+                </div>
+
+                <div style={{ marginBottom: '1rem' }}>
+                  <label className="dash-subcard-label">Quan hệ với người liên hệ</label>
+                  <input
+                    type="text"
+                    value={studentForm.ecRelationship}
+                    onChange={(e) =>
+                      setStudentForm({ ...studentForm, ecRelationship: e.target.value })
+                    }
+                    placeholder="VD: Bố, Mẹ, Anh chị"
+                    style={inputStyle}
+                  />
+                </div>
+
+                <div style={{ marginBottom: '1rem' }}>
+                  <label className="dash-subcard-label">SĐT liên hệ khẩn cấp</label>
+                  <input
+                    type="tel"
+                    value={studentForm.ecPhone}
+                    onChange={(e) =>
+                      setStudentForm({ ...studentForm, ecPhone: e.target.value })
+                    }
+                    placeholder="VD: 0901234567"
+                    style={inputStyle}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <Button type="submit" variant="primary" loading={savingStudent} icon="💾">
+                  Lưu hồ sơ học viên
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={fetchProfile}
+                  disabled={savingStudent}
+                >
+                  🔄 Tải lại
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* ── M2: Change Password Card ── */}
       <div className="dash-card" style={{ marginTop: '1.5rem' }}>
         <div className="dash-card-header">
@@ -416,6 +636,8 @@ const ProfilePage: React.FC = () => {
           )}
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 };

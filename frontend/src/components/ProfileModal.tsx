@@ -2,20 +2,32 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { authService } from '../services/auth.service';
+import { SettingsPanel } from './SettingsPanel';
 
 interface ProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
   onOpenChangePassword?: () => void;
+  /** Tab mở mặc định khi hiển thị ('profile' | 'settings'). */
+  initialTab?: 'profile' | 'settings';
 }
+
+type ModalTab = 'profile' | 'settings';
 
 export const ProfileModal: React.FC<ProfileModalProps> = ({
   isOpen,
   onClose,
   onOpenChangePassword,
+  initialTab = 'profile',
 }) => {
   const { user, updateUser, logout } = useAuth();
   const navigate = useNavigate();
+  const [tab, setTab] = useState<ModalTab>(initialTab);
+
+  // Đồng bộ tab mở mặc định mỗi lần modal hiển thị.
+  React.useEffect(() => {
+    if (isOpen) setTab(initialTab);
+  }, [isOpen, initialTab]);
 
   const handleLogout = () => {
     onClose();
@@ -98,7 +110,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
           backgroundColor: '#FFFFFF',
           borderRadius: '16px',
           width: '100%',
-          maxWidth: '520px',
+          maxWidth: '640px',
           overflow: 'hidden',
           boxShadow: '0 20px 40px rgba(0, 0, 0, 0.25)',
           animation: 'fadeIn 0.2s ease',
@@ -147,7 +159,47 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
           </button>
         </div>
 
+        {/* Tabs: Hồ sơ cá nhân / Cài đặt */}
+        <div
+          style={{
+            display: 'flex',
+            gap: '0.5rem',
+            padding: '0.75rem 1.5rem 0',
+            borderBottom: '1px solid #e2e8f0',
+          }}
+        >
+          {(
+            [
+              { key: 'profile' as const, label: '👤 Hồ sơ cá nhân' },
+              { key: 'settings' as const, label: '⚙️ Cài đặt' },
+            ]
+          ).map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => setTab(t.key)}
+              style={{
+                padding: '0.55rem 1rem',
+                border: 'none',
+                borderBottom: tab === t.key ? '2px solid #26743d' : '2px solid transparent',
+                background: 'transparent',
+                color: tab === t.key ? '#1c2b20' : '#64748b',
+                fontWeight: tab === t.key ? 700 : 600,
+                fontSize: '0.875rem',
+                cursor: 'pointer',
+              }}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
         {/* Form Body */}
+        {tab === 'settings' ? (
+          <div style={{ padding: '1.5rem' }}>
+            <SettingsPanel />
+          </div>
+        ) : (
         <form onSubmit={handleSubmit} style={{ padding: '1.5rem' }}>
           {error && (
             <div
@@ -363,6 +415,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
             </div>
           </div>
         </form>
+        )}
       </div>
     </div>
   );

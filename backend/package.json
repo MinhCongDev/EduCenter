@@ -11,6 +11,8 @@
     "seed": "ts-node-dev --transpile-only src/scripts/seed.ts",
     "seed:class-samples": "ts-node-dev --transpile-only src/scripts/seed-class-samples.ts",
     "fix:student-data": "ts-node src/scripts/fixStudentData.ts",
+    "fix:notification-links": "ts-node src/scripts/fixNotificationLinks.ts",
+    "verify:student-flow": "ts-node --transpile-only scripts/verify-student-flow.ts",
     "test": "jest --passWithNoTests",
     "test:watch": "jest --watch"
   },

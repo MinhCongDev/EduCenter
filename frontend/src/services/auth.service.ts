@@ -7,6 +7,7 @@ import type {
   User,
   UpdateProfileData,
   ChangePasswordData,
+  UserPreferences,
   ForgotPasswordData,
   ResetPasswordData,
   ApiResponse,
@@ -95,6 +96,29 @@ export const authService = {
     if (response.data.success && response.data.data?.user) {
       localStorage.setItem(USER_KEY, JSON.stringify(response.data.data.user));
     }
+    return response.data;
+  },
+
+  /**
+   * Lấy tùy chọn hiển thị & thông báo (tab "Cài đặt").
+   */
+  getPreferences: async (): Promise<ApiResponse<{ preferences: UserPreferences }>> => {
+    const response = await api.get<ApiResponse<{ preferences: UserPreferences }>>(
+      '/auth/preferences'
+    );
+    return response.data;
+  },
+
+  /**
+   * Cập nhật tùy chọn hiển thị & thông báo.
+   */
+  updatePreferences: async (
+    preferences: Partial<UserPreferences>
+  ): Promise<ApiResponse<{ preferences: UserPreferences }>> => {
+    const response = await api.put<ApiResponse<{ preferences: UserPreferences }>>(
+      '/auth/preferences',
+      preferences
+    );
     return response.data;
   },
 

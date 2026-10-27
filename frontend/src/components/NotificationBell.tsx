@@ -1,9 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { studentService } from '../services/student.service';
+import { staffService } from '../services/staff.service';
 import { useToast } from '../contexts/ToastContext';
-import type { NotificationItem } from '../types';
+import type { NotificationItem, UserRole } from '../types';
 import { NOTIFICATION_META } from '../types';
+import { resolveInternalLink } from '../utils/routes';
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -18,7 +20,19 @@ function timeAgo(iso: string): string {
   return new Date(iso).toLocaleDateString('vi-VN');
 }
 
-const NotificationBell: React.FC = () => {
+interface NotificationBellProps {
+  /**
+   * Vai trò của người đang đăng nhập.
+   *
+   * Học viên dùng bộ API notification của student, còn phòng giáo vụ / ban
+   * giám đốc dùng bộ API của staff. Trước đây chuông chỉ hiển thị cho học
+   * viên nên thông báo "yêu cầu mới" gửi tới nhân viên không có nơi để đọc
+   * — vòng đời thông báo bị đứt ở phía staff.
+   */
+  role?: UserRole;
+}
+
+const NotificationBell: React.FC<NotificationBellProps> = ({ role = 'STUDENT' }) => {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [unread, setUnread] = useState(0);
@@ -27,10 +41,15 @@ const NotificationBell: React.FC = () => {
   const navigate = useNavigate();
   const toast = useToast();
 
+  // Nhân viên (TRAINING_STAFF / DIRECTOR) dùng bộ API của staff.
+  const isStaff = role === 'TRAINING_STAFF' || role === 'DIRECTOR';
+
   const fetchNotifications = async () => {
     try {
       setLoading(true);
-      const res = await studentService.getMyNotifications(20);
+      const res = isStaff
+        ? await staffService.getMyNotifications(20)
+        : await studentService.getMyNotifications(20);
       if (res.success && res.data) {
         setItems(res.data.items || []);
         setUnread(res.data.unreadCount || 0);
@@ -47,7 +66,7 @@ const NotificationBell: React.FC = () => {
     // Poll every 60s
     const t = setInterval(fetchNotifications, 60000);
     return () => clearInterval(t);
-  }, []);
+  }, [isStaff]);
 
   // Click outside to close
   useEffect(() => {
@@ -67,7 +86,11 @@ const NotificationBell: React.FC = () => {
     setOpen(false);
     if (!n.isRead) {
       try {
-        await studentService.markNotificationAsRead(n._id);
+        if (isStaff) {
+          await staffService.markNotificationAsRead(n._id);
+        } else {
+          await studentService.markNotificationAsRead(n._id);
+        }
         setItems((prev) =>
           prev.map((x) =>
             x._id === n._id ? { ...x, isRead: true } : x
@@ -78,11 +101,23 @@ const NotificationBell: React.FC = () => {
         // ignore
       }
     }
-    if (n.linkUrl) navigate(n.linkUrl);
+    // Chỉ điều hướng tới link nội bộ hợp lệ. Link sai (route không tồn tại)
+    // sẽ bị bỏ qua thay vì đưa người dùng tới trang 404.
+    const target = resolveInternalLink(n.linkUrl);
+    if (target) navigate(target);
   };
 
   const handleMarkAll = async () => {
     try {
+      if (isStaff) {
+        const res = await staffService.markAllNotificationsAsRead();
+        if (res.success) {
+          setItems((prev) => prev.map((x) => ({ ...x, isRead: true })));
+          setUnread(0);
+          toast.success(res.message || 'Đã đánh dấu tất cả là đã đọc');
+        }
+        return;
+      }
       const res = await studentService.markAllNotificationsAsRead();
       if (res.success) {
         toast.success(res.message || 'Đã đánh dấu tất cả là đã đọc');
@@ -99,10 +134,23 @@ const NotificationBell: React.FC = () => {
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     try {
+      if (isStaff) {
+        await staffService.deleteNotification(id);
+        setItems((prev) => prev.filter((x) => x._id !== id));
+        setUnread((u) => {
+          const target = items.find((x) => x._id === id);
+          return target && !target.isRead ? Math.max(0, u - 1) : u;
+        });
+        return;
+      }
       await studentService.deleteNotification(id);
       setItems((prev) => prev.filter((x) => x._id !== id));
+      setUnread((u) => {
+        const target = items.find((x) => x._id === id);
+        return target && !target.isRead ? Math.max(0, u - 1) : u;
+      });
     } catch {
-      toast.error('Không thể xóa');
+      toast.error('Không thể xoá thông báo');
     }
   };
 

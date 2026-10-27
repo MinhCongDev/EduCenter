@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import type { UserRole } from '../types';
 import { ChangePasswordModal } from '../components/ChangePasswordModal';
 import { ProfileModal } from '../components/ProfileModal';
+import NotificationBell from '../components/NotificationBell';
 import '../styles/dashboard-layout.css';
 
 interface DashboardLayoutProps {
@@ -13,6 +14,8 @@ interface DashboardLayoutProps {
 interface DashboardItem {
   label: string;
   path?: string;
+  /** Mở hộp thoại cài đặt/hồ sơ dùng chung (dành cho vai trò chưa có trang riêng). */
+  action?: 'open-profile';
 }
 
 const dashboardPaths: Record<UserRole, string> = {
@@ -35,10 +38,12 @@ const getMenuItems = (role: UserRole): DashboardItem[] => {
       { label: 'Tổng quan', path: dashboardPaths[role] },
       { label: 'Quản lý khóa học', path: '/staff/courses' },
       { label: 'Quản lý lớp học', path: '/staff/classes' },
+      { label: 'Yêu cầu học viên', path: '/staff/requests' },
+      { label: 'Phản hồi học viên', path: '/staff/feedback' },
       { label: 'Học viên' },
       { label: 'Giảng viên' },
       { label: 'Báo cáo' },
-      { label: 'Cài đặt' },
+      { label: 'Cài đặt', action: 'open-profile' },
     ];
   }
 
@@ -50,20 +55,25 @@ const getMenuItems = (role: UserRole): DashboardItem[] => {
       { label: 'Bài tập & Chấm bài', path: '/teacher/dashboard?tab=assignments_grading' },
       { label: 'Kết quả học tập', path: '/teacher/dashboard?tab=academic_grades' },
       { label: 'Báo cáo' },
-      { label: 'Cài đặt' },
+      { label: 'Cài đặt', action: 'open-profile' },
     ];
   }
 
   if (role === 'STUDENT') {
     return [
       { label: 'Tổng quan', path: '/student/dashboard' },
-      { label: 'Khóa học của tôi', path: '/student/dashboard?tab=courses' },
-      { label: 'Lịch học', path: '/student/dashboard?tab=schedule' },
+      // "Khóa học của tôi" phải vào `/student/classes` (MyClassesPage) —
+      // đây mới là nơi duy nhất có chức năng tự ghi danh lớp mới và rút
+      // khỏi lớp. Trỏ sang tab `?tab=courses` của dashboard thì 2 tính
+      // năng nghiệp vụ này bị "vùng kín", không tìm thấy được.
+      { label: 'Khóa học của tôi', path: '/student/classes' },
+      { label: 'Lịch học', path: '/student/schedule' },
       { label: 'Bài tập về nhà', path: '/student/dashboard?tab=assignments' },
       { label: 'Kết quả học tập', path: '/student/dashboard?tab=grades' },
       { label: 'Thanh toán khóa học', path: '/student/tuition' },
-      { label: 'Thông báo' },
-      { label: 'Cài đặt' },
+      { label: 'Yêu cầu thay đổi', path: '/student/requests' },
+      { label: 'Thông báo', path: '/student/notifications' },
+      { label: 'Cài đặt', path: '/student/profile?tab=settings' },
     ];
   }
 
@@ -76,7 +86,7 @@ const getMenuItems = (role: UserRole): DashboardItem[] => {
       { label: 'Báo cáo giảng viên', path: '/director/dashboard?tab=teacher_reports' },
       { label: 'Báo cáo lớp & khóa học', path: '/director/dashboard?tab=class_course_reports' },
       { label: 'Báo cáo tài chính & doanh thu', path: '/director/dashboard?tab=revenue_reports' },
-      { label: 'Cài đặt' },
+      { label: 'Cài đặt', action: 'open-profile' },
     ];
   }
 
@@ -85,7 +95,7 @@ const getMenuItems = (role: UserRole): DashboardItem[] => {
     { label: 'Học viên' },
     { label: 'Nhân sự' },
     { label: 'Báo cáo' },
-    { label: 'Cài đặt' },
+    { label: 'Cài đặt', action: 'open-profile' },
   ];
 };
 
@@ -94,6 +104,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [profileTab, setProfileTab] = useState<'profile' | 'settings'>('profile');
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const role = user?.role ?? 'STUDENT';
   const items = getMenuItems(role);
@@ -138,6 +149,18 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
               >
                 {item.label}
               </NavLink>
+            ) : item.action === 'open-profile' ? (
+              <button
+                key={item.label}
+                type="button"
+                className="dashboard-nav-item"
+                onClick={() => {
+                  setProfileTab('settings');
+                  setIsProfileOpen(true);
+                }}
+              >
+                {item.label}
+              </button>
             ) : (
               <button
                 key={item.label}
@@ -164,7 +187,14 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                 <span>{roleLabels[role]}</span>
               </span>
             </div>
-            <button type="button" className="dashboard-account-action" onClick={() => setIsProfileOpen(true)}>
+            <button
+              type="button"
+              className="dashboard-account-action"
+              onClick={() => {
+                setProfileTab('profile');
+                setIsProfileOpen(true);
+              }}
+            >
               Hồ sơ cá nhân
             </button>
             <button type="button" className="dashboard-account-action" onClick={() => setIsChangePasswordOpen(true)}>
@@ -184,6 +214,24 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
             <h1>{pageTitle === 'Tổng quan' ? 'Bảng điều khiển' : pageTitle}</h1>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            {/* Chuông thông báo — mỗi vai trò dùng bộ API riêng:
+                học viên → `/api/student/notifications`,
+                phòng giáo vụ / ban giám đốc → `/api/staff/notifications`.
+                Trước đây chuông chỉ hiển thị cho học viên nên thông báo "yêu cầu
+                mới" gửi tới nhân viên không có nơi để đọc. */}
+            {role !== 'TEACHER' && (
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  padding: '0.35rem 0.5rem',
+                  borderRadius: '10px',
+                  color: '#1c2b20',
+                }}
+              >
+                <NotificationBell role={role} />
+              </span>
+            )}
             <span className="dashboard-topbar-role">{roleLabels[role]}</span>
             <span style={{
               background: '#dbeafe',
@@ -206,6 +254,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         isOpen={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}
         onOpenChangePassword={() => setIsChangePasswordOpen(true)}
+        initialTab={profileTab}
       />
       <ChangePasswordModal
         isOpen={isChangePasswordOpen}

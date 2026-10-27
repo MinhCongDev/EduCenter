@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middlewares/auth.middleware';
+import { notify, syncStudentBand } from '../services/notification.service';
 import {
   Class,
   Course,
@@ -178,9 +179,16 @@ export const getStudentList = async (req: AuthRequest, res: Response): Promise<v
           emergencyContact: studentProfile?.emergencyContact || { name: 'Phụ huynh', phone: studentUser.phone || '', relationship: 'Bố/Mẹ' },
           classes: [],
           attendanceStats: {
-            total: totalSessions || 10,
-            present: presentSessions || 9,
-            attendanceRate: totalSessions > 0 ? Math.round((presentSessions / totalSessions) * 100) : 92,
+            // Không dùng số giả (|| 10 / || 9) — học viên chưa có buổi điểm
+            // danh nào phải hiện 0, không phải 9/10 (92%). Công thức:
+            // tỷ lệ có mặt = (PRESENT + LATE) / tổng buổi — giống hệt
+            // `getAttendance` của student.controller.
+            total: totalSessions,
+            present: presentSessions,
+            attendanceRate:
+              totalSessions > 0
+                ? Math.round((presentSessions / totalSessions) * 100)
+                : 0,
           },
           latestGrade: latestGrade
             ? {
@@ -557,6 +565,26 @@ export const gradeSubmission = async (req: AuthRequest, res: Response): Promise<
       return;
     }
 
+    // ── Thông báo cho học viên ──
+    // Trước đây học viên chỉ biết mình được chấm bài khi mở trang Bài tập
+    // → phản hồi chậm. Giờ giảng viên chấm xong là học viên nhận thông báo
+    // ngay kèm link tới đúng bài tập.
+    const assignment: any = submission.assignment;
+    const gradedStudent: any = submission.student;
+    if (gradedStudent?._id) {
+      await notify({
+        user: gradedStudent._id,
+        type: 'ASSIGNMENT_GRADED',
+        title: `🎉 Bài tập "${assignment?.title || 'bài làm'}" đã được chấm điểm`,
+        message:
+          `Bạn đã được chấm ${submission.grade}/${assignment?.maxScore ?? '—'} điểm. ` +
+          (submission.feedback || 'Hãy xem nhận xét chi tiết của giảng viên.'),
+        link: assignment?.class
+          ? `/student/classes/${assignment.class}/assignments`
+          : '/student/dashboard',
+      });
+    }
+
     res.status(200).json({
       success: true,
       message: 'Chấm bài và phản hồi nhận xét thành công!',
@@ -661,6 +689,22 @@ export const createOrEnterGrade = async (req: AuthRequest, res: Response): Promi
       .populate('student', 'fullName email')
       .populate('class', 'classCode name');
 
+    // ── Đồng bộ band hiện tại + gửi thông báo cho học viên ──
+    // `Student.currentBand` là kết quả đánh giá của giảng viên. Trước đây
+    // mỗi lần nhập điểm, hồ sơ học viên vẫn giữ band cũ → trang Hồ Sơ và
+    // trang Kết quả học tập hiển thị sai.
+    await syncStudentBand(studentId, Number(overallBand));
+
+    await notify({
+      user: studentId,
+      type: 'GRADE_PUBLISHED',
+      title: `📊 Điểm ${title} đã được công bố`,
+      message:
+        `Overall Band của bạn là ${Number(overallBand).toFixed(1)}. ` +
+        (feedback || 'Xem nhận xét chi tiết của giảng viên trong mục Bảng điểm.'),
+      link: `/student/classes/${classId}/grades`,
+    });
+
     res.status(201).json({
       success: true,
       message: 'Nhập điểm học viên thành công!',
@@ -704,6 +748,11 @@ export const updateGrade = async (req: AuthRequest, res: Response): Promise<void
     if (!grade) {
       res.status(404).json({ success: false, message: 'Không tìm thấy bản ghi điểm' });
       return;
+    }
+
+    // Đồng bộ band hiện tại khi giảng viên chỉnh sửa điểm đã công bố.
+    if (overallBand !== undefined) {
+      await syncStudentBand((grade as any).student?._id ?? (grade as any).student, Number(overallBand));
     }
 
     res.status(200).json({
@@ -892,10 +941,38 @@ export const checkAttendance = async (req: AuthRequest, res: Response): Promise<
       })
     );
 
+    // ── Thông báo cho học viên bị đánh dấu VẮNG / ĐI TRỄ ──
+    // Học viên chỉ biết mình vắng khi mở trang Điểm Danh. Type
+    // `ATTENDANCE_MARKED` đã có trong enum nhưng chưa nơi nào phát ra →
+    // tính năng này không hoạt động. Giờ phát thông báo cho các ca bất thường
+    // (vắng / đi trễ), vì đây là thông tin học viên cần biết ngay.
+    const ATTENDANCE_LABEL: Record<string, string> = {
+      ABSENT: 'Vắng mặt',
+      LATE: 'Đi trễ',
+    };
+    const abnormal = records.filter(
+      (rec) => rec.status === 'ABSENT' || rec.status === 'LATE'
+    );
+    for (const rec of abnormal) {
+      await notify({
+        user: rec.studentId,
+        type: 'ATTENDANCE_MARKED',
+        title: `📅 Điểm danh: ${ATTENDANCE_LABEL[rec.status]}`,
+        message:
+          `Bạn được đánh dấu ${ATTENDANCE_LABEL[rec.status].toLowerCase()} ` +
+          `trong buổi học ngày ${date.toLocaleDateString('vi-VN')}.` +
+          (rec.notes ? ` Ghi chú: ${rec.notes}` : ''),
+        link: `/student/classes/${classId}/attendance`,
+      });
+    }
+
     res.status(200).json({
       success: true,
       message: `Đã lưu điểm danh thành công cho ${results.length} học viên!`,
-      data: { count: results.length },
+      data: {
+        count: results.length,
+        notified: abnormal.length,
+      },
     });
   } catch (error: any) {
     res.status(500).json({

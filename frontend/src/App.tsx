@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
 import GuestLayout from './layouts/GuestLayout';
@@ -27,15 +27,17 @@ const AssignmentsPage = lazy(() => import('./pages/student/AssignmentsPage'));
 const AttendancePage = lazy(() => import('./pages/student/AttendancePage'));
 const GradesPage = lazy(() => import('./pages/student/GradesPage'));
 const SchedulePage = lazy(() => import('./pages/student/SchedulePage'));
-const PaymentsPage = lazy(() => import('./pages/student/PaymentsPage'));
 const TuitionPage = lazy(() => import('./pages/student/TuitionPage'));
 const RequestsPage = lazy(() => import('./pages/student/RequestsPage'));
 const ProfilePage = lazy(() => import('./pages/student/ProfilePage'));
 const CombinedSchedulePage = lazy(() => import('./pages/student/CombinedSchedulePage'));
+const NotificationsPage = lazy(() => import('./pages/student/NotificationsPage'));
 const TeacherDashboard = lazy(() => import('./pages/teacher/TeacherDashboard'));
 const StaffDashboard = lazy(() => import('./pages/staff/StaffDashboard'));
 const CoursesManagementPage = lazy(() => import('./pages/staff/CoursesManagementPage'));
 const ClassesManagementPage = lazy(() => import('./pages/staff/ClassesManagementPage'));
+const RequestsManagementPage = lazy(() => import('./pages/staff/RequestsManagementPage'));
+const FeedbackManagementPage = lazy(() => import('./pages/staff/FeedbackManagementPage'));
 const DirectorDashboard = lazy(() => import('./pages/director/DirectorDashboard'));
 
 // Error pages
@@ -197,13 +199,12 @@ const AppRouter: React.FC = () => {
             </ProtectedRoute>
           }
         />
+        {/* Đã gộp "Lịch sử thanh toán" vào trang Thanh toán khóa học */}
         <Route
           path="/student/payments"
           element={
             <ProtectedRoute allowedRoles={['STUDENT']}>
-              <DashboardLayout>
-                <PaymentsPage />
-              </DashboardLayout>
+              <Navigate to="/student/tuition" replace />
             </ProtectedRoute>
           }
         />
@@ -223,6 +224,16 @@ const AppRouter: React.FC = () => {
             <ProtectedRoute allowedRoles={['STUDENT']}>
               <DashboardLayout>
                 <RequestsPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/notifications"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <DashboardLayout>
+                <NotificationsPage />
               </DashboardLayout>
             </ProtectedRoute>
           }
@@ -287,6 +298,26 @@ const AppRouter: React.FC = () => {
             <ProtectedRoute allowedRoles={['TRAINING_STAFF']}>
               <DashboardLayout>
                 <ClassesManagementPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/staff/requests"
+          element={
+            <ProtectedRoute allowedRoles={['TRAINING_STAFF', 'DIRECTOR']}>
+              <DashboardLayout>
+                <RequestsManagementPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/staff/feedback"
+          element={
+            <ProtectedRoute allowedRoles={['TRAINING_STAFF', 'DIRECTOR']}>
+              <DashboardLayout>
+                <FeedbackManagementPage />
               </DashboardLayout>
             </ProtectedRoute>
           }

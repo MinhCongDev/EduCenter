@@ -11,6 +11,8 @@ export interface IEnrollment extends Document {
   enrollmentDate: Date;
   status: EnrollmentStatus;
   tuitionStatus: TuitionStatus;
+  /** Thời điểm học viên rút khỏi lớp (chỉ có khi status = 'DROPPED'). */
+  droppedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -47,6 +49,9 @@ const enrollmentSchema = new Schema<IEnrollment>(
       type: String,
       enum: ['PENDING', 'PAID', 'REFUNDED'],
       default: 'PENDING',
+    },
+    droppedAt: {
+      type: Date,
     },
   },
   {

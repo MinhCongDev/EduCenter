@@ -4,7 +4,7 @@ import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import { OAuth2Client, TokenPayload } from 'google-auth-library';
-import { User, IUser } from '../models/user.model';
+import { User, IUser, IUserPreferences } from '../models/user.model';
 import { Student } from '../models/student.model';
 import { Enrollment } from '../models/enrollment.model';
 import { config } from '../config';
@@ -50,6 +50,7 @@ const toUserResponse = (user: IUser) => ({
   status: user.status,
   isVerified: user.isVerified,
   avatarUrl: user.avatarUrl,
+  preferences: user.preferences,
   createdAt: user.createdAt,
   updatedAt: user.updatedAt,
 });
@@ -709,6 +710,95 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
     res.status(500).json({
       success: false,
       message: error.message || 'Lỗi server khi cập nhật thông tin cá nhân',
+    });
+  }
+};
+
+/**
+ * Lấy / cập nhật tùy chọn hiển thị & thông báo (tab "Cài đặt" trong Hồ sơ cá nhân).
+ *
+ * GET  /api/auth/preferences
+ * PUT  /api/auth/preferences
+ */
+export const getPreferences = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Vui lòng đăng nhập' });
+      return;
+    }
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      res.status(404).json({ success: false, message: 'Không tìm thấy tài khoản' });
+      return;
+    }
+    res.status(200).json({
+      success: true,
+      message: 'Lấy tùy chọn thành công',
+      data: { preferences: user.preferences || {} },
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Lỗi server khi lấy tùy chọn',
+    });
+  }
+};
+
+export const updatePreferences = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Vui lòng đăng nhập' });
+      return;
+    }
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      res.status(404).json({ success: false, message: 'Không tìm thấy tài khoản' });
+      return;
+    }
+
+    const body = (req.body || {}) as Record<string, unknown>;
+    const allowed: Array<keyof IUserPreferences> = [
+      'inAppNotifications',
+      'emailNotifications',
+      'notifyGrades',
+      'notifyAttendance',
+      'notifyAnnouncements',
+      'notifyPayments',
+      'compactMode',
+    ];
+
+    // `user.preferences` là Mongoose sub-document: phải `.toObject()` mới lấy
+    // được giá trị thực (spread trực tiếp sẽ ra object rỗng → mất cấu hình
+    // đã lưu và reset về mặc định).
+    const existing = (user.preferences as any)?.toObject?.() ?? {};
+    const prefs: IUserPreferences = {
+      inAppNotifications: true,
+      emailNotifications: true,
+      notifyGrades: true,
+      notifyAttendance: true,
+      notifyAnnouncements: true,
+      notifyPayments: true,
+      compactMode: false,
+      ...existing,
+    };
+    for (const key of allowed) {
+      if (typeof body[key] === 'boolean') {
+        prefs[key] = body[key] as boolean;
+      }
+    }
+
+    user.preferences = prefs;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Cập nhật tùy chọn thành công',
+      data: { preferences: user.preferences },
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Lỗi server khi cập nhật tùy chọn',
     });
   }
 };

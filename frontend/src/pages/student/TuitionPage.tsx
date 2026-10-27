@@ -84,6 +84,12 @@ const TuitionPage: React.FC = () => {
     });
   }, [items, filter, search]);
 
+  // Số lớp ĐANG theo học (loại trừ lớp đã rút) và số khoản đã hoàn tiền.
+  // `items` giờ bao gồm cả enrollment DROPPED + REFUNDED nên không thể dùng
+  // `items.length` cho câu "Bạn đang theo học N khóa học".
+  const activeCount = items.filter((i) => i.enrollmentStatus !== 'DROPPED').length;
+  const refundedCount = items.filter((i) => i.tuitionStatus === 'REFUNDED').length;
+
   const openDetail = (item: TuitionItem) => {
     setDetail(item);
     setPayMethod('VNPAY');
@@ -138,7 +144,9 @@ const TuitionPage: React.FC = () => {
           <h1>Thanh Toán Khóa Học</h1>
           <p>
             {items.length > 0
-              ? `Bạn đang theo học ${items.length} khóa học • ${stats?.pendingCount || 0} khoản chờ thanh toán`
+              ? `Bạn đang theo học ${activeCount} khóa học • ${stats?.pendingCount || 0} khoản chờ thanh toán${
+                  refundedCount > 0 ? ` • ${refundedCount} khoản đã hoàn tiền` : ''
+                }`
               : 'Bạn chưa đăng ký khóa học nào để thanh toán.'}
           </p>
         </div>
@@ -155,11 +163,8 @@ const TuitionPage: React.FC = () => {
         <Link to="/student/dashboard" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
           ← Tổng quan
         </Link>
-        <Link to="/student/dashboard?tab=courses" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
+        <Link to="/student/classes" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
           📚 Khóa học của tôi
-        </Link>
-        <Link to="/student/payments" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
-          🧾 Lịch sử giao dịch
         </Link>
       </div>
 
@@ -191,9 +196,9 @@ const TuitionPage: React.FC = () => {
           <div className="dash-metric-card">
             <div className="dash-metric-info">
               <span className="dash-metric-label">Tổng khóa học</span>
-              <span className="dash-metric-val">{stats.total} khóa</span>
+              <span className="dash-metric-val">{activeCount} khóa</span>
               <span className="dash-metric-trend up">
-                {stats.refundedCount > 0 ? `${stats.refundedCount} đã hoàn tiền` : 'Không hoàn tiền'}
+                {refundedCount > 0 ? `${refundedCount} đã hoàn tiền` : 'Không hoàn tiền'}
               </span>
             </div>
             <div className="dash-metric-icon icon-blue">💼</div>
@@ -299,6 +304,26 @@ const TuitionPage: React.FC = () => {
                       />
                     )}
                   </div>
+                  {/* Lớp đã rút khỏi nhưng đã hoàn tiền — ghi rõ để học viên
+                      không tưởng là đang nợ hoặc đã ghi danh. */}
+                  {item.enrollmentStatus === 'DROPPED' && (
+                    <div
+                      style={{
+                        marginTop: '0.75rem',
+                        padding: '0.6rem 0.85rem',
+                        borderRadius: '10px',
+                        background: 'rgba(59,130,246,0.08)',
+                        border: '1px solid rgba(59,130,246,0.25)',
+                        color: '#1e40af',
+                        fontSize: '0.8rem',
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      🚪 <strong>Đã rút khỏi lớp học này.</strong> Học phí đã được
+                      đánh dấu hoàn tiền — vui lòng liên hệ phòng giáo vụ để được
+                      hoàn tiền.
+                    </div>
+                  )}
                 </div>
 
                 <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginTop: '0.75rem' }}>
@@ -323,7 +348,7 @@ const TuitionPage: React.FC = () => {
                   <Link
                     to={`/student/classes/${item.classId}`}
                     className="dash-quick-btn"
-                    style={{ textDecoration: 'none' }}
+                    style={{ textDecoration: 'none', display: item.enrollmentStatus === 'DROPPED' ? 'none' : undefined }}
                   >
                     ℹ️ Lớp Học
                   </Link>

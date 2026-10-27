@@ -2,9 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { studentService } from '../../services/student.service';
 import { useToast } from '../../contexts/ToastContext';
-import type { Assignment, Enrollment } from '../../types';
+import type { Assignment, ClassFeedback, Enrollment } from '../../types';
+import { Button } from '../../components/Button';
 import { EmptyState, SkeletonPage } from '../../components/Skeleton';
 import { formatDate, formatVND } from '../../utils/format';
+import { classStatusMeta, tuitionStatusMeta } from '../../utils/labels';
 
 const ClassDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -12,6 +14,22 @@ const ClassDetailsPage: React.FC = () => {
   const [cls, setCls] = useState<Enrollment | null>(null);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // ── Phản hồi / đánh giá lớp học ──
+  const [feedback, setFeedback] = useState<ClassFeedback | null>(null);
+  const [fbRating, setFbRating] = useState(5);
+  const [fbContent, setFbContent] = useState('');
+  const [fbTags, setFbTags] = useState<string[]>([]);
+  const [fbSubmitting, setFbSubmitting] = useState(false);
+
+  const FEEDBACK_TAGS = [
+    'Giảng viên nhiệt tình',
+    'Nội dung hữu ích',
+    'Lịch học ổn định',
+    'Tài liệu đầy đủ',
+    'Phòng học thoải mái',
+    'Nhịp độ học phù hợp',
+  ];
 
   useEffect(() => {
     if (id) fetchData();
@@ -21,17 +39,52 @@ const ClassDetailsPage: React.FC = () => {
     if (!id) return;
     try {
       setIsLoading(true);
-      const [clsRes, aRes] = await Promise.all([
+      const [clsRes, aRes, fbRes] = await Promise.all([
         studentService.getClassDetails(id),
         studentService.getAssignments(id),
+        studentService.getMyClassFeedback(id).catch(() => null),
       ]);
       if (clsRes.success && clsRes.data) setCls(clsRes.data.class);
       if (aRes.success && aRes.data) setAssignments(aRes.data.assignments);
       else toast.error(clsRes.message || 'Không thể tải lớp học');
+      // Nạp sẵn phản hồi đã có để học viên sửa thay vì gửi lại từ đầu.
+      const mine = fbRes?.data?.items?.[0] || null;
+      if (mine) {
+        setFeedback(mine);
+        setFbRating(mine.rating);
+        setFbContent(mine.content);
+        setFbTags(mine.tags || []);
+      }
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Không thể tải chi tiết lớp học');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleSubmitFeedback = async () => {
+    if (!id) return;
+    if (fbContent.trim().length < 5) {
+      toast.warning('Nội dung phản hồi phải có ít nhất 5 ký tự');
+      return;
+    }
+    try {
+      setFbSubmitting(true);
+      const res = await studentService.submitClassFeedback(id, {
+        content: fbContent.trim(),
+        rating: fbRating,
+        tags: fbTags,
+      });
+      if (res.success && res.data?.feedback) {
+        setFeedback(res.data.feedback);
+        toast.success(res.message || 'Cảm ơn bạn đã gửi phản hồi!');
+      } else {
+        toast.error(res.message || 'Gửi phản hồi thất bại');
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Gửi phản hồi thất bại');
+    } finally {
+      setFbSubmitting(false);
     }
   };
 
@@ -57,6 +110,8 @@ const ClassDetailsPage: React.FC = () => {
   const c = cls.class as any;
   const pending = assignments.filter((a) => !a.submissionStatus);
   const submitted = assignments.filter((a) => a.submissionStatus);
+  const classStatus = classStatusMeta(c.status);
+  const tuition = tuitionStatusMeta(cls.tuitionStatus);
 
   return (
     <div className="dash-container">
@@ -102,10 +157,14 @@ const ClassDetailsPage: React.FC = () => {
           <div className="dash-metric-info">
             <span className="dash-metric-label">Trạng thái học phí</span>
             <span className="dash-metric-val">
-              {cls.tuitionStatus === 'PAID' ? '✅ Đã thanh toán' : '⚠️ Chưa thanh toán'}
+              {tuition.icon} {tuition.label}
             </span>
             <span className={`dash-metric-trend ${cls.tuitionStatus === 'PAID' ? 'up' : ''}`}>
-              {cls.tuitionStatus === 'PAID' ? 'Hoàn tất' : 'Cần thanh toán sớm'}
+              {cls.tuitionStatus === 'PAID'
+                ? 'Hoàn tất'
+                : cls.tuitionStatus === 'REFUNDED'
+                ? 'Đã hoàn — liên hệ phòng giáo vụ'
+                : 'Cần thanh toán sớm'}
             </span>
           </div>
           <div className="dash-metric-icon icon-emerald">💰</div>
@@ -123,7 +182,9 @@ const ClassDetailsPage: React.FC = () => {
         <div className="dash-metric-card">
           <div className="dash-metric-info">
             <span className="dash-metric-label">Trạng thái lớp</span>
-            <span className="dash-metric-val">{c.status}</span>
+            <span className="dash-metric-val">
+              {classStatus.icon} {classStatus.label}
+            </span>
             <span className="dash-metric-trend up">
               {c.course?.durationWeeks || '—'} tuần • {c.sessions || c.course?.sessions || '—'} buổi
             </span>
@@ -242,6 +303,117 @@ const ClassDetailsPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* ── Phản hồi / Đánh giá lớp học ──
+          Học viên đánh giá lớp đang học (1 phản hồi / 1 lớp, có thể sửa).
+          Trước đây model Feedback có sẵn ở backend nhưng không có API/UI
+          nào dùng → tính năng thu thập ý kiến học viên không hoạt động. */}
+      <div className="dash-card" style={{ marginTop: '1.5rem' }}>
+        <div className="dash-card-header">
+          <h2 className="dash-card-title"><span>💬</span> Đánh Giá Lớp Học</h2>
+          {feedback && (
+            <span className="badge-pill badge-green">Đã gửi đánh giá</span>
+          )}
+        </div>
+        <div className="dash-subcard">
+          <div style={{ marginBottom: '1rem' }}>
+            <div className="dash-subcard-label">Mức độ hài lòng</div>
+            <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center', marginTop: '0.4rem' }}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  aria-label={`${star} sao`}
+                  onClick={() => setFbRating(star)}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '1.6rem',
+                    lineHeight: 1,
+                    padding: '0 2px',
+                    opacity: star <= fbRating ? 1 : 0.25,
+                    transition: 'opacity .15s',
+                  }}
+                >
+                  ⭐
+                </button>
+              ))}
+              <span style={{ fontSize: '0.85rem', color: '#64748b', marginLeft: '0.4rem' }}>
+                {fbRating}/5 sao
+              </span>
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '1rem' }}>
+            <div className="dash-subcard-label">Nhận xét của bạn *</div>
+            <textarea
+              value={fbContent}
+              onChange={(e) => setFbContent(e.target.value)}
+              placeholder="Chia sẻ trải nghiệm với giảng viên, nội dung bài học, cơ sở vật chất..."
+              rows={4}
+              maxLength={1000}
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                borderRadius: '8px',
+                border: '1px solid #e5e7eb',
+                fontSize: '0.9rem',
+                marginTop: '0.25rem',
+                fontFamily: 'inherit',
+                resize: 'vertical',
+              }}
+            />
+            <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+              {fbContent.trim().length}/1000 ký tự
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '1rem' }}>
+            <div className="dash-subcard-label">Chọn nhãn đánh giá</div>
+            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginTop: '0.4rem' }}>
+              {FEEDBACK_TAGS.map((tag) => {
+                const active = fbTags.includes(tag);
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() =>
+                      setFbTags((prev) =>
+                        prev.includes(tag)
+                          ? prev.filter((t) => t !== tag)
+                          : prev.length >= 6
+                          ? prev
+                          : [...prev, tag]
+                      )
+                    }
+                    className={`dash-quick-btn ${active ? 'primary' : ''}`}
+                    style={{ padding: '0.3rem 0.75rem', fontSize: '0.75rem' }}
+                  >
+                    {active ? '✓ ' : ''}{tag}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            <Button
+              variant="primary"
+              onClick={handleSubmitFeedback}
+              loading={fbSubmitting}
+              icon="💬"
+            >
+              {feedback ? 'Cập nhật đánh giá' : 'Gửi đánh giá'}
+            </Button>
+            {feedback && (
+              <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
+                Đã gửi lần cuối: {formatDate(feedback.createdAt, true)}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

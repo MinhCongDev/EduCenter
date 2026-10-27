@@ -4,6 +4,31 @@ import bcrypt from 'bcryptjs';
 export type UserRole = 'STUDENT' | 'TEACHER' | 'TRAINING_STAFF' | 'DIRECTOR';
 export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
 
+/**
+ * Tùy chọn hiển thị / thông báo của người dùng.
+ *
+ * Lưu trong `User.preferences` (đặt trong hồ sơ cá nhân → tab "Cài đặt").
+ * `notification.service.notify()` đọc các cờ này để không tạo thông báo
+ * mà người dùng đã tắt — nhờ vậy tùy chọn có tác dụng thật chứ không chỉ
+ * là giao diện.
+ */
+export interface IUserPreferences {
+  /** Nhận thông báo trong hệ thống (chuông thông báo). */
+  inAppNotifications: boolean;
+  /** Nhận thông báo qua email. */
+  emailNotifications: boolean;
+  /** Thông báo khi có điểm / kết quả bài tập mới. */
+  notifyGrades: boolean;
+  /** Thông báo khi giảng viên điểm danh (vắng / trễ). */
+  notifyAttendance: boolean;
+  /** Thông báo khi có thông báo lớp / thông báo chung. */
+  notifyAnnouncements: boolean;
+  /** Thông báo khi có cập nhật thanh toán. */
+  notifyPayments: boolean;
+  /** Giao diện mật độ thoáng (gọn) — lưu cục bộ ở máy người dùng. */
+  compactMode: boolean;
+}
+
 export interface IUser extends Document {
   email: string;
   password?: string;
@@ -15,6 +40,7 @@ export interface IUser extends Document {
   address?: string;
   dob?: Date;
   isVerified: boolean;
+  preferences?: IUserPreferences;
   emailVerificationToken?: string;
   emailVerificationExpires?: Date;
   resetPasswordToken?: string;
@@ -75,6 +101,29 @@ const userSchema = new Schema<IUser>(
       // Registration explicitly sets this to false until the email is verified.
       type: Boolean,
       default: true,
+    },
+    preferences: {
+      type: new Schema<IUserPreferences>(
+        {
+          inAppNotifications: { type: Boolean, default: true },
+          emailNotifications: { type: Boolean, default: true },
+          notifyGrades: { type: Boolean, default: true },
+          notifyAttendance: { type: Boolean, default: true },
+          notifyAnnouncements: { type: Boolean, default: true },
+          notifyPayments: { type: Boolean, default: true },
+          compactMode: { type: Boolean, default: false },
+        },
+        { _id: false }
+      ),
+      default: () => ({
+        inAppNotifications: true,
+        emailNotifications: true,
+        notifyGrades: true,
+        notifyAttendance: true,
+        notifyAnnouncements: true,
+        notifyPayments: true,
+        compactMode: false,
+      }),
     },
     emailVerificationToken: {
       type: String,

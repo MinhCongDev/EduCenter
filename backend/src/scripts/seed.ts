@@ -25,6 +25,7 @@ import {
   ChangeRequest,
   Grade,
 } from '../models';
+import { activeEnrollmentFilter } from '../utils/enrollment';
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
@@ -1123,9 +1124,12 @@ const seedDatabase = async () => {
     // (Nếu không, Class.currentEnrollment sẽ lệch với dữ liệu Enrollment
     //  và học viên sẽ thấy số liệu "0/25" dù đang có người học.)
     for (const cls of await Class.find({})) {
+      // Dùng chung quy tắc "enrollment còn hiệu lực" với các controller
+      // (ENROLLED + COMPLETED) để counter khớp với số học viên mà học viên
+      // thực sự nhìn thấy ở trang "Lớp học của tôi".
       const real = await Enrollment.countDocuments({
         class: cls._id,
-        status: 'ENROLLED',
+        ...activeEnrollmentFilter(),
       });
       if (cls.currentEnrollment !== real) {
         await Class.updateOne({ _id: cls._id }, { $set: { currentEnrollment: real } });
@@ -1783,6 +1787,11 @@ const seedDatabase = async () => {
     // 18. TẠO THÔNG BÁO CÁ NHÂN (NOTIFICATIONS)
     // ==========================================
     console.log('🔔 Đang tạo thông báo cá nhân cho người dùng...');
+    // linkUrl phải trỏ tới route THẬT của frontend, nếu không người dùng
+    // click thông báo sẽ bị đưa tới trang 404.
+    //  - Học viên: bài tập / điểm đều nằm dưới /student/classes/:classId/...
+    //  - Giảng viên: tab chấm bài nằm trong TeacherDashboard
+    //  - Nhân viên giáo vụ: chưa có trang "yêu cầu" riêng → về dashboard
     await Notification.insertMany([
       {
         recipient: studentDang._id,
@@ -1791,7 +1800,7 @@ const seedDatabase = async () => {
           'Điểm Overall Band của bạn là 7.0 (L: 7.5, R: 7.0, W: 6.5, S: 7.0). Xem nhận xét chi tiết của Thầy Alex Nguyễn trong mục Bảng điểm.',
         type: 'SUCCESS',
         isRead: true,
-        linkUrl: '/student/grades',
+        linkUrl: `/student/classes/${class1._id}/grades`,
       },
       {
         recipient: studentDang._id,
@@ -1800,7 +1809,7 @@ const seedDatabase = async () => {
           'Bài tập Writing Task 2: Technology in Education sẽ hết hạn trong 5 ngày tới. Vui lòng nộp bài đúng hạn để được chấm chữa chi tiết.',
         type: 'INFO',
         isRead: false,
-        linkUrl: '/student/assignments',
+        linkUrl: `/student/classes/${class1._id}/assignments`,
       },
       {
         recipient: studentMai._id,
@@ -1809,7 +1818,7 @@ const seedDatabase = async () => {
           'Thầy Alex Nguyễn đã chấm bài viết của bạn đạt 7.5/9.0 kèm nhận xét chi tiết 4 tiêu chí Task Achievement, Coherence, Lexical, Grammar.',
         type: 'SUCCESS',
         isRead: false,
-        linkUrl: '/student/assignments',
+        linkUrl: `/student/classes/${class1._id}/assignments`,
       },
       {
         recipient: studentKiet._id,
@@ -1818,7 +1827,7 @@ const seedDatabase = async () => {
           'EduCenter đã nhận được thanh toán 7.500.000 VNĐ cho khóa học IELTS Foundation qua cổng VNPAY. Chúc bạn học tập tốt!',
         type: 'SUCCESS',
         isRead: true,
-        linkUrl: '/student/profile',
+        linkUrl: '/student/tuition',
       },
       {
         recipient: teacherAlex._id,
@@ -1827,7 +1836,7 @@ const seedDatabase = async () => {
           'Học viên Phạm Hải Đăng vừa nộp bài tập Writing Task 2: Technology in Education. Vui lòng vào chấm điểm.',
         type: 'INFO',
         isRead: false,
-        linkUrl: '/teacher/submissions',
+        linkUrl: '/teacher/dashboard?tab=assignments_grading',
       },
       {
         recipient: staffUser1._id,

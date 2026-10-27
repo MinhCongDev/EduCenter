@@ -854,3 +854,202 @@
   from { transform: translateY(20px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
+
+/* ==========================================================================
+   TABS (Hồ sơ cá nhân / Cài đặt) + SETTINGS SWITCHES
+   ========================================================================== */
+
+.dash-tabs {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--dash-border);
+  padding-bottom: 0.6rem;
+}
+
+.dash-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 1.1rem;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--dash-text-muted);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.dash-tab:hover {
+  background: var(--dash-card-subtle);
+  color: var(--dash-text-title);
+}
+
+.dash-tab.is-active {
+  background: var(--dash-card-bg);
+  border-color: var(--dash-border);
+  color: var(--dash-text-title);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.dash-settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.dash-settings-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.dash-settings-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.dash-settings-block-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--dash-text-title) !important;
+}
+
+.dash-settings-block-desc {
+  margin: 0;
+  font-size: 0.825rem;
+  color: var(--dash-text-muted) !important;
+  line-height: 1.5;
+}
+
+.dash-settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding-top: 0.25rem;
+}
+
+.dash-settings-row {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--dash-border);
+  border-radius: 10px;
+  background: var(--dash-card-bg);
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.dash-settings-row:hover {
+  border-color: var(--dash-btn-border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.dash-settings-row-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--dash-card-subtle);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.dash-settings-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.dash-settings-row-text strong {
+  color: var(--dash-text-title);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.dash-settings-row-text small {
+  color: var(--dash-text-muted);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+/* ── Toggle switch ── */
+.dash-switch {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  width: 42px;
+  height: 24px;
+}
+
+/* Checkbox tự vẽ: vẫn là input thật (a11y + click được) nhưng không bị ẩn
+   bằng opacity nên công cụ kiểm thử tự động vẫn bấm được. */
+.dash-switch input {
+  appearance: none;
+  -webkit-appearance: none;
+  margin: 0;
+  width: 42px;
+  height: 24px;
+  border-radius: 999px;
+  background: #d7e3d9;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  border: none;
+}
+
+.dash-switch input::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s ease;
+}
+
+.dash-switch input:checked {
+  background: var(--primary-600, #26743d);
+}
+
+.dash-switch input:checked::after {
+  transform: translateX(18px);
+}
+
+.dash-switch input:focus-visible {
+  outline: 2px solid var(--primary-500, #32894b);
+  outline-offset: 2px;
+}
+
+/* ── Compact mode (Cài đặt → Hiển thị) ── */
+body.dash-compact-mode .dash-card {
+  padding: 1.1rem;
+}
+
+body.dash-compact-mode .dash-subcard {
+  padding: 0.85rem;
+}
+
+body.dash-compact-mode .dash-card-header {
+  margin-bottom: 0.85rem;
+  padding-bottom: 0.6rem;
+}
+
+body.dash-compact-mode .dash-content-inner,
+body.dash-compact-mode .dash-main-content {
+  font-size: 0.92rem;
+}
+

@@ -4,6 +4,7 @@ import { studentService } from '../../services/student.service';
 import { useToast } from '../../contexts/ToastContext';
 import type { ClassSchedule } from '../../types';
 import { EmptyState, SkeletonPage } from '../../components/Skeleton';
+import { canonicalDay, dayIndex, normalizeDay } from '../../utils/schedule';
 
 const DAY_COLORS: Record<string, string> = {
   'Thứ 2': '#3b82f6',
@@ -12,38 +13,15 @@ const DAY_COLORS: Record<string, string> = {
   'Thứ 5': '#8b5cf6',
   'Thứ 6': '#ec4899',
   'Thứ 7': '#f97316',
-  'Chủ nhật': '#ef4444',
+  'Chủ Nhật': '#ef4444',
 };
 
-/** Thứ tự chuẩn các ngày trong tuần (dùng chữ thường để so khớp không phân biệt hoa/thường). */
-const WEEK_ORDER = [
-  'thứ 2',
-  'thứ 3',
-  'thứ 4',
-  'thứ 5',
-  'thứ 6',
-  'thứ 7',
-  'chủ nhật',
-];
-
-/** Chuẩn hoá chuỗi ngày: bỏ khoảng trắng thừa, ép NFC (chuẩn Unicode), chuyển chữ thường. */
-const normalizeDay = (day?: string | null): string =>
-  (day || '').trim().normalize('NFC').toLowerCase();
-
-/** Tra màu theo ngày, không phân biệt hoa/thường ('Chủ Nhật' vs 'Chủ nhật'). */
+/** Tra màu theo ngày, không phân biệt hoa/thường ('Chủ Nhật' vs 'chủ nhật'). */
 const dayColor = (day: string): string => {
   const found = Object.keys(DAY_COLORS).find(
     (k) => normalizeDay(k) === normalizeDay(day)
   );
   return (found && DAY_COLORS[found]) || '#64748b';
-};
-
-/** Tìm nhãn chuẩn (đúng hoa/thường) cho một ngày trong tuần. */
-const canonicalDay = (day: string): string => {
-  const found = Object.keys(DAY_COLORS).find(
-    (k) => normalizeDay(k) === normalizeDay(day)
-  );
-  return found || day;
 };
 
 const SchedulePage: React.FC = () => {
@@ -54,6 +32,7 @@ const SchedulePage: React.FC = () => {
 
   useEffect(() => {
     if (id) fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const fetchData = async () => {
@@ -73,7 +52,7 @@ const SchedulePage: React.FC = () => {
   const grouped = useMemo(() => {
     const map: Record<string, ClassSchedule[]> = {};
     schedules.forEach((s) => {
-      // Gom theo ngày đã chuẩn hoá để 'Chủ Nhật' và 'Chủ nhật' là một nhóm.
+      // Gom theo ngày đã chuẩn hoá để 'Chủ Nhật' và 'chủ nhật' là một nhóm.
       const key = canonicalDay(s.dayOfWeek);
       if (!map[key]) map[key] = [];
       map[key].push(s);
@@ -85,14 +64,17 @@ const SchedulePage: React.FC = () => {
     // Sắp xếp theo thứ tự trong tuần, không phụ thuộc hoa/thường.
     // Ngày lạ (không nằm trong danh sách) đưa xuống cuối.
     return Object.keys(grouped).sort((a, b) => {
-      const ia = WEEK_ORDER.indexOf(normalizeDay(a));
-      const ib = WEEK_ORDER.indexOf(normalizeDay(b));
+      const ia = dayIndex(a);
+      const ib = dayIndex(b);
       if (ia === -1 && ib === -1) return a.localeCompare(b);
       if (ia === -1) return 1;
       if (ib === -1) return -1;
       return ia - ib;
     });
   }, [grouped]);
+
+  // Thông tin lớp để hiển thị mã lớp thay vì MongoDB ID
+  const classInfo = (schedules[0] as any)?.class;
 
   if (isLoading) return <SkeletonPage message="Đang tải lịch học..." />;
 
@@ -111,7 +93,9 @@ const SchedulePage: React.FC = () => {
         <div className="dash-banner-right">
           <div className="dash-date-pill">
             <div>🗓️ {orderedDays.length} ngày học/tuần</div>
-            <div className="sub">Lớp ID: {id}</div>
+            <div className="sub">
+              Mã lớp: {classInfo?.classCode || '—'}
+            </div>
           </div>
         </div>
       </div>
@@ -154,7 +138,9 @@ const SchedulePage: React.FC = () => {
           <div className="dash-metric-card">
             <div className="dash-metric-info">
               <span className="dash-metric-label">Phòng học</span>
-              <span className="dash-metric-val">{schedules[0]?.room || '—'}</span>
+              <span className="dash-metric-val">
+                {schedules[0]?.room || schedules[0]?.classroom || '—'}
+              </span>
               <span className="dash-metric-trend">
                 {schedules.length > 0 ? 'Cố định phòng' : 'Chưa có thông tin'}
               </span>
@@ -199,14 +185,14 @@ const SchedulePage: React.FC = () => {
                       background: 'var(--dash-card-subtle)',
                       borderRadius: '10px',
                       padding: '0.75rem 1rem',
-                        borderLeft: `3px solid ${dayColor(day)}`,
+                      borderLeft: `3px solid ${dayColor(day)}`,
                     }}
                   >
                     <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '0.25rem' }}>
                       🕐 {item.startTime} — {item.endTime}
                     </div>
                     <div style={{ fontSize: '0.82rem', color: '#64748b' }}>
-                      🏫 Phòng: {item.room}
+                      🏫 Phòng: {item.room || item.classroom || '—'}
                     </div>
                   </div>
                 ))}

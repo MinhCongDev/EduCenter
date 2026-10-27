@@ -19,6 +19,7 @@ export interface User {
   status: UserStatus;
   isVerified?: boolean;
   avatarUrl?: string;
+  preferences?: Partial<UserPreferences>;
   createdAt: string;
   updatedAt: string;
   currentClass?: {
@@ -32,14 +33,17 @@ export interface StudentProfile {
   studentCode: string;
   dob?: string;
   currentBand?: number;
-  targetBand?: number;
+  /** `null` khi học viên đã xoá band mục tiêu. */
+  targetBand?: number | null;
   learningGoal?: string;
   emergencyContact?: {
     name: string;
     relationship: string;
     phone: string;
   };
-  status: 'ACTIVE' | 'INACTIVE' | 'GRADUATED' | 'SUSPENDED';
+  // Trạng thái học viên — khớp enum `Student.status` ở backend
+  // (ACTIVE | GRADUATED | RESERVED | DROPPED).
+  status: 'ACTIVE' | 'GRADUATED' | 'RESERVED' | 'DROPPED';
 }
 
 export interface AuthState {
@@ -70,6 +74,30 @@ export interface UpdateProfileData {
   dob?: string;
   avatarUrl?: string;
 }
+
+/**
+ * Tùy chọn hiển thị & thông báo (tab "Cài đặt" trong Hồ sơ cá nhân).
+ * Khớp với `IUserPreferences` ở backend.
+ */
+export interface UserPreferences {
+  inAppNotifications: boolean;
+  emailNotifications: boolean;
+  notifyGrades: boolean;
+  notifyAttendance: boolean;
+  notifyAnnouncements: boolean;
+  notifyPayments: boolean;
+  compactMode: boolean;
+}
+
+export const DEFAULT_PREFERENCES: UserPreferences = {
+  inAppNotifications: true,
+  emailNotifications: true,
+  notifyGrades: true,
+  notifyAttendance: true,
+  notifyAnnouncements: true,
+  notifyPayments: true,
+  compactMode: false,
+};
 
 export interface ChangePasswordData {
   currentPassword: string;
@@ -360,14 +388,41 @@ export interface Class {
   status: ClassStatus;
 }
 
+// ─── Lớp đang MỞ (học viên tự ghi danh) ───
+export interface OpenClass {
+  _id: string;
+  classCode: string;
+  name?: string;
+  room: string;
+  scheduleDays: string[];
+  timeSlot: string;
+  startDate: string;
+  endDate: string;
+  capacity: number;
+  currentStudents: number;
+  currentEnrollment: number;
+  seatsLeft: number;
+  status: ClassStatus;
+  course: Partial<Course> & { _id: string };
+  teacher?: Pick<User, '_id' | 'fullName' | 'email' | 'phone' | 'avatarUrl'>;
+  /** Trạng thái enrollment hiện có của học viên với lớp này (nếu có). */
+  myEnrollmentStatus?: EnrollmentStatus | null;
+  /** Lớp còn chỗ và học viên chưa đăng ký → có thể ghi danh trực tiếp. */
+  canEnroll: boolean;
+}
+
 // Class Schedule (datlt)
 export interface ClassSchedule {
   _id: string;
-  class: string;
+  class: string | { _id: string; classCode?: string; room?: string; course?: { code?: string; title?: string } };
   dayOfWeek: string;
   startTime: string;
   endTime: string;
   room: string;
+  /** Alias của `room` — backend fallback sinh cả hai trường. */
+  classroom?: string;
+  topic?: string;
+  status?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -461,6 +516,9 @@ export interface AttendanceStats {
   absent: number;
   late: number;
   excused: number;
+  /** Số buổi có mặt = present + late (khớp định nghĩa "có mặt" của giảng viên). */
+  attended?: number;
+  /** Tỷ lệ có mặt (%), đã tính cả buổi đi trễ. */
   rate: number;
 }
 
@@ -616,6 +674,32 @@ export interface DashboardData {
   stats: DashboardStats;
   currentClass: (Enrollment & { _id: string }) | null;
   myClasses: Enrollment[];
+}
+
+// ─── Feedback / Đánh giá lớp học ───
+export interface ClassFeedback {
+  _id: string;
+  sender?: string | PopulatedUser;
+  class?: string | PopulatedClassRef;
+  course?: string | { _id: string; code?: string; title?: string };
+  content: string;
+  rating: number;
+  tags?: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PopulatedUser {
+  _id: string;
+  fullName?: string;
+  email?: string;
+  avatarUrl?: string;
+}
+
+export interface PopulatedClassRef {
+  _id: string;
+  classCode?: string;
+  name?: string;
 }
 
 // ─── Notifications (M4) – aligned with main's schema: recipient, isRead, content ───

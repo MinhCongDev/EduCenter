@@ -4,6 +4,8 @@ import {
   register,
   getMe,
   updateProfile,
+  getPreferences,
+  updatePreferences,
   changePassword,
   forgotPassword,
   resetPassword,
@@ -35,6 +37,10 @@ router.get('/me', authenticate, getMe);
 
 // UC07: Update Personal Information
 router.put('/profile', authenticate, updateProfile);
+
+// Cài đặt (tùy chọn hiển thị & thông báo) — tích hợp trong Hồ sơ cá nhân
+router.get('/preferences', authenticate, getPreferences);
+router.put('/preferences', authenticate, updatePreferences);
 
 // UC07: Upload Avatar (multipart/form-data)
 router.post(

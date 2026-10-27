@@ -18,6 +18,7 @@ import '../models/class.model';
 import '../models/course.model';
 import '../models/enrollment.model';
 import '../models/assignment.model';
+import { ACTIVE_ENROLLMENT_STATUSES } from '../utils/enrollment';
 
 async function main() {
   await mongoose.connect(config.mongodbUri);
@@ -33,7 +34,7 @@ async function main() {
   for (const cls of classes) {
     const real = await Enrollment.countDocuments({
       class: cls._id,
-      status: 'ENROLLED',
+      status: { $in: [...ACTIVE_ENROLLMENT_STATUSES] },
     });
     if (cls.currentEnrollment !== real) {
       console.log(
@@ -65,7 +66,7 @@ async function main() {
   for (const cls of await Class.find({}).select('classCode capacity currentEnrollment')) {
     const real = await Enrollment.countDocuments({
       class: cls._id,
-      status: 'ENROLLED',
+      status: { $in: [...ACTIVE_ENROLLMENT_STATUSES] },
     });
     const flag = cls.currentEnrollment === real ? '✅' : '⚠️ ';
     console.log(

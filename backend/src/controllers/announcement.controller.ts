@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import { Announcement } from '../models/announcement.model';
 import { AuthRequest } from '../middlewares/auth.middleware';
+import { User } from '../models/user.model';
+import { notifyMany } from '../services/notification.service';
 
 /**
  * UC06: View Announcements
@@ -120,6 +122,39 @@ export const createAnnouncement = async (req: AuthRequest, res: Response): Promi
       status: 'PUBLISHED',
       publicationDate: new Date(),
     });
+
+    // ── Gửi thông báo tới người nhận phù hợp ──
+    // Thông báo trên trang public chỉ hiện khi học viên chủ động vào xem —
+    // học viên không biết thông báo mới đã có. Gửi qua hệ thống Notification
+    // để chuông thông báo hiện ngay cho đúng nhóm đối tượng.
+    const audience = announcement.targetAudience;
+    const roleMap: Record<string, string[]> = {
+      ALL: ['STUDENT', 'TEACHER', 'TRAINING_STAFF', 'DIRECTOR'],
+      STUDENTS: ['STUDENT'],
+      TEACHERS: ['TEACHER'],
+      STAFF: ['TRAINING_STAFF', 'DIRECTOR'],
+    };
+    const roles = roleMap[audience] || roleMap.ALL;
+
+    const recipients = await User.find({
+      role: { $in: roles },
+      status: 'ACTIVE',
+    }).select('_id');
+
+    if (recipients.length) {
+      await notifyMany(
+        recipients.map((u) => u._id),
+        {
+          type: 'CLASS_ANNOUNCEMENT',
+          title: `📢 ${announcement.title}`,
+          message:
+            announcement.summary ||
+            announcement.content?.slice(0, 200) ||
+            'Trung tâm vừa đăng thông báo mới.',
+          link: '/announcements',
+        }
+      );
+    }
 
     res.status(201).json({
       success: true,

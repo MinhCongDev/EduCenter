@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { studentService } from '../../services/student.service';
+import { announcementService } from '../../services/announcement.service';
 import { SkeletonPage } from '../../components/Skeleton';
 import { EmptyState } from '../../components/Skeleton';
-import { formatDate, formatVND, bandColor, bandLabel } from '../../utils/format';
+import { formatDate, formatVND, bandColor, bandLabel, isPast } from '../../utils/format';
+import { computeAggregateBand } from '../../utils/band';
+import { minutesUntilSession, sortByWeekOrder } from '../../utils/schedule';
 import type {
   DashboardData,
   Assignment,
@@ -13,6 +16,7 @@ import type {
   Grade,
   ClassSchedule,
   TuitionStats,
+  Announcement,
 } from '../../types';
 
 export type StudentTab = 'overview' | 'courses' | 'schedule' | 'assignments' | 'grades';
@@ -25,6 +29,10 @@ interface DashAssignment {
   status: 'PENDING' | 'SUBMITTED' | 'GRADED' | 'LATE';
   score?: string;
   classId: string;
+  /** Bài tập đã đóng (CLOSED) — không nộp/nộp lại được nhưng vẫn xem được. */
+  closed?: boolean;
+  /** Đã quá hạn nộp (chưa nộp mà dueDate đã qua). */
+  overdue?: boolean;
 }
 
 const StudentDashboard: React.FC = () => {
@@ -40,6 +48,7 @@ const StudentDashboard: React.FC = () => {
   const [grades, setGrades] = useState<Grade[]>([]);
   const [schedule, setSchedule] = useState<ClassSchedule[]>([]);
   const [tuitionStats, setTuitionStats] = useState<TuitionStats | null>(null);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -102,6 +111,8 @@ const StudentDashboard: React.FC = () => {
                 ? `${a.grade} / ${a.maxScore ?? '—'}`
                 : undefined,
             classId: cls?._id || '',
+            closed: a.status === 'CLOSED',
+            overdue: !a.submissionStatus && isPast(a.dueDate),
           });
         });
       });
@@ -130,6 +141,13 @@ const StudentDashboard: React.FC = () => {
       // Thống kê học phí (đã/chưa thanh toán)
       const tuitionRes = await studentService.getTuition().catch(() => null);
       if (tuitionRes?.data?.stats) setTuitionStats(tuitionRes.data.stats);
+
+      // Thông báo chung từ trung tâm (audience dành cho học viên).
+      // Trước đây 2 thẻ này hardcode nên không khớp dữ liệu thật.
+      const annRes = await announcementService
+        .getAnnouncements({ audience: 'STUDENTS', limit: 3 })
+        .catch(() => null);
+      if (annRes?.data) setAnnouncements(annRes.data as Announcement[]);
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Không thể tải dữ liệu dashboard');
     } finally {
@@ -142,22 +160,30 @@ const StudentDashboard: React.FC = () => {
   }, [fetchAll]);
 
   const stats = dashboard?.stats;
-  const currentClass = dashboard?.currentClass;
-  const currentClassData = currentClass?.class as any;
   const myClasses = dashboard?.myClasses || [];
 
   const graded = grades.filter((g) => g.overallBand !== undefined && g.overallBand !== null);
-  const avgBand = graded.length
-    ? (graded.reduce((s, g) => s + (g.overallBand || 0), 0) / graded.length).toFixed(1)
-    : null;
+  // Band tổng hợp theo chuẩn IELTS: trung bình có trọng số rồi làm tròn về
+  // bội số 0.5 (thay vì trung bình cộng đơn giản).
+  const overallBand = computeAggregateBand(grades);
+  const avgBand = overallBand !== null ? overallBand.toFixed(1) : null;
 
+  // "Buổi học kế tiếp" = buổi sắp diễn ra gần nhất, xét theo THỨ trong tuần
+  // rồi tới giờ bắt đầu. Trước đây chỉ sort theo startTime nên lớp 18:30
+  // luôn được chọn dù buổi đó đã qua.
   const nextSession = schedule.length
-    ? [...schedule].sort((a: any, b: any) =>
-        (a.startTime || '').localeCompare(b.startTime || '')
-      )[0]
+    ? sortByWeekOrder(schedule as any[]).reduce((best, current) =>
+        minutesUntilSession(current.dayOfWeek, current.startTime) <
+        minutesUntilSession(best.dayOfWeek, best.startTime)
+          ? current
+          : best
+      )
     : null;
 
+  // Số bài chưa nộp: dùng chung một nguồn với backend (stats.pendingAssignments)
+  // để tránh lệch số liệu giữa 2 nơi.
   const pendingAssignments = assignments.filter((a) => a.status === 'PENDING');
+  const pendingAssignmentCount = stats?.pendingAssignments ?? pendingAssignments.length;
 
   if (isLoading) return <SkeletonPage message="Đang tải bảng điều khiển..." />;
 
@@ -277,7 +303,7 @@ const StudentDashboard: React.FC = () => {
             <div className="dash-metric-card" onClick={() => handleTabChange('assignments')} style={{ cursor: 'pointer' }}>
               <div className="dash-metric-info">
                 <span className="dash-metric-label">Bài tập chưa nộp</span>
-                <span className="dash-metric-val">{pendingAssignments.length} bài</span>
+                <span className="dash-metric-val">{pendingAssignmentCount} bài</span>
                 <span className="dash-metric-trend neutral">
                   {pendingAssignments[0]
                     ? `Hạn: ${pendingAssignments[0].deadline} ➔`
@@ -285,6 +311,30 @@ const StudentDashboard: React.FC = () => {
                 </span>
               </div>
               <div className="dash-metric-icon icon-purple">⏰</div>
+            </div>
+
+            {/* Yêu cầu đang chờ phòng giáo vụ xử lý — backend đã đếm sẵn
+                (stats.pendingRequests), trước đây số liệu này bị bỏ lãng. */}
+            <div
+              className="dash-metric-card"
+              onClick={() => navigate('/student/requests')}
+              style={{ cursor: 'pointer' }}
+            >
+              <div className="dash-metric-info">
+                <span className="dash-metric-label">Yêu cầu chờ duyệt</span>
+                <span
+                  className="dash-metric-val"
+                  style={{ color: stats?.pendingRequests ? '#f59e0b' : '#10b981' }}
+                >
+                  {stats?.pendingRequests || 0} yêu cầu
+                </span>
+                <span className="dash-metric-trend neutral">
+                  {stats?.pendingRequests
+                    ? 'Đang chờ phòng giáo vụ ➔'
+                    : 'Không có yêu cầu nào chờ'}
+                </span>
+              </div>
+              <div className="dash-metric-icon icon-blue">🔄</div>
             </div>
 
             <div
@@ -339,9 +389,13 @@ const StudentDashboard: React.FC = () => {
                           </h3>
                           <div className="dash-subcard-meta" style={{ marginTop: '0.25rem' }}>
                             Mã lớp: <strong>{(nextSession as any).class?.classCode || '—'}</strong>
-                            {currentClassData?.teacher?.fullName && (
+                            {/* Giảng viên phải lấy theo LỚP CỦA BUỔI HỌC, không phải
+                                "lớp hiện tại" — nếu không, học viên học nhiều lớp sẽ
+                                thấy sai tên giảng viên. */}
+                            {(nextSession as any).class?.teacher?.fullName && (
                               <>
-                                {' '}• Giảng viên: <strong>{currentClassData.teacher.fullName}</strong>
+                                {' '}• Giảng viên:{' '}
+                                <strong>{(nextSession as any).class.teacher.fullName}</strong>
                               </>
                             )}
                           </div>
@@ -451,7 +505,7 @@ const StudentDashboard: React.FC = () => {
                     <span>📝</span> Bài Tập Về Nhà
                   </h2>
                   <span className="badge-pill badge-amber">
-                    {assignments.filter((a) => a.status === 'PENDING').length} cần nộp
+                    {pendingAssignmentCount} cần nộp
                   </span>
                 </div>
 
@@ -481,16 +535,22 @@ const StudentDashboard: React.FC = () => {
 
                         <div>
                           {item.status === 'PENDING' ? (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                navigate(`/student/classes/${item.classId}/assignments`)
-                              }
-                              className="dash-quick-btn primary"
-                              style={{ padding: '0.35rem 0.85rem', fontSize: '0.775rem' }}
-                            >
-                              Nộp bài
-                            </button>
+                            item.closed || item.overdue ? (
+                              <span className="badge-pill badge-purple">
+                                {item.closed ? '🔒 Đã đóng' : '⏰ Quá hạn'}
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  navigate(`/student/classes/${item.classId}/assignments`)
+                                }
+                                className="dash-quick-btn primary"
+                                style={{ padding: '0.35rem 0.85rem', fontSize: '0.775rem' }}
+                              >
+                                Nộp bài
+                              </button>
+                            )
                           ) : (
                             <span
                               className={`badge-pill ${
@@ -507,31 +567,48 @@ const StudentDashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* Announcements */}
+              {/* Announcements — lấy từ API /announcements (audience: STUDENTS) */}
               <div className="dash-card">
                 <div className="dash-card-header">
                   <h2 className="dash-card-title">
                     <span>📢</span> Thông Báo Từ Trung Tâm
                   </h2>
+                  <Link
+                    to="/announcements"
+                    className="dash-quick-btn"
+                    style={{ padding: '0.3rem 0.75rem', fontSize: '0.75rem', textDecoration: 'none' }}
+                  >
+                    Xem tất cả →
+                  </Link>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  <div className="dash-subcard" style={{ borderLeft: '4px solid #6366f1' }}>
-                    <strong className="dash-subcard-title" style={{ fontSize: '0.9rem' }}>
-                      Khai giảng các lớp chuyên đề công nghệ tháng 11
-                    </strong>
-                    <p className="dash-subcard-meta" style={{ margin: 0, lineHeight: 1.5 }}>
-                      Học viên EduCenter được ưu đãi 20% học phí khi đăng ký thêm khóa thứ 2.
-                    </p>
-                  </div>
-
-                  <div className="dash-subcard" style={{ borderLeft: '4px solid #10b981' }}>
-                    <strong className="dash-subcard-title" style={{ fontSize: '0.9rem' }}>
-                      Hướng dẫn sử dụng hệ thống Portal EduCenter
-                    </strong>
-                    <p className="dash-subcard-meta" style={{ margin: 0, lineHeight: 1.5 }}>
-                      Học viên có thể tra cứu lịch học, xem danh sách bài tập và nộp bài trực tiếp qua đây.
-                    </p>
-                  </div>
+                  {announcements.length === 0 ? (
+                    <div className="dash-subcard-body">Chưa có thông báo mới.</div>
+                  ) : (
+                    announcements.map((a) => (
+                      <div
+                        key={a._id}
+                        className="dash-subcard"
+                        style={{ borderLeft: '4px solid #6366f1' }}
+                      >
+                        <strong className="dash-subcard-title" style={{ fontSize: '0.9rem' }}>
+                          {a.title}
+                        </strong>
+                        <p className="dash-subcard-meta" style={{ margin: 0, lineHeight: 1.5 }}>
+                          {a.summary || a.content}
+                        </p>
+                        <div
+                          style={{
+                            marginTop: '0.35rem',
+                            fontSize: '0.72rem',
+                            color: '#94a3b8',
+                          }}
+                        >
+                          {a.category} • {formatDate(a.publicationDate)}
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </div>
@@ -853,7 +930,9 @@ const StudentDashboard: React.FC = () => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '0.75rem', borderTop: '1px solid #e2e8f0' }}>
                   <div>
                     {item.status === 'PENDING' ? (
-                      <span className="badge-pill badge-amber">Chưa nộp</span>
+                      <span className={`badge-pill ${item.closed || item.overdue ? 'badge-purple' : 'badge-amber'}`}>
+                        {item.closed ? '🔒 Đã đóng' : item.overdue ? '⏰ Quá hạn nộp' : 'Chưa nộp'}
+                      </span>
                     ) : (
                       <span
                         className={`badge-pill ${
@@ -868,7 +947,7 @@ const StudentDashboard: React.FC = () => {
                       </span>
                     )}
                   </div>
-                  {item.status === 'PENDING' ? (
+                  {item.status === 'PENDING' && !item.closed && !item.overdue ? (
                     <button
                       type="button"
                       onClick={() =>
@@ -917,7 +996,7 @@ const StudentDashboard: React.FC = () => {
                   {avgBand ? `⭐ ${bandLabel(parseFloat(avgBand))}` : '⭐ Chưa có điểm'}
                 </span>
                 <h3 style={{ margin: '0.4rem 0 0', fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>
-                  Band Trung Bình:{' '}
+                  Band Tổng Hợp:{' '}
                   <span style={{ color: avgBand ? bandColor(parseFloat(avgBand)) : '#64748b' }}>
                     {avgBand || '—'}
                   </span>

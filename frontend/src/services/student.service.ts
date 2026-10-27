@@ -9,6 +9,7 @@ import type {
   DashboardData,
   Enrollment,
   Grade,
+  OpenClass,
   Payment,
   PaymentMethod,
   PaymentStats,
@@ -47,11 +48,61 @@ export const studentService = {
     return res.data;
   },
 
+  /**
+   * PUT /api/student/profile
+   * Cập nhật phần hồ sơ RIÊNG của học viên (band mục tiêu, mục tiêu học tập,
+   * liên hệ khẩn cấp). Thông tin User (tên, SĐT, địa chỉ) dùng
+   * `authService.updateProfile`.
+   */
+  updateMyProfile: async (data: {
+    /** `null` = xoá band mục tiêu; bỏ trống (undefined) = giữ nguyên. */
+    targetBand?: number | null;
+    learningGoal?: string;
+    emergencyContact?: {
+      name?: string;
+      relationship?: string;
+      phone?: string;
+    };
+  }): Promise<ApiResponse<{ student: StudentProfile }>> => {
+    const res = await api.put<ApiResponse<{ student: StudentProfile }>>(
+      '/student/profile',
+      data
+    );
+    return res.data;
+  },
+
   // ---------------- Classes ----------------
   /** GET /api/student/classes */
   getMyClasses: async (): Promise<ApiResponse<{ classes: Enrollment[]; total: number }>> => {
     const res = await api.get<ApiResponse<{ classes: Enrollment[]; total: number }>>(
       '/student/classes'
+    );
+    return res.data;
+  },
+
+  /** GET /api/student/open-classes — lớp đang MỞ để học viên tự ghi danh */
+  getOpenClasses: async (
+    search?: string
+  ): Promise<
+    ApiResponse<{ classes: import('../types').OpenClass[]; total: number }>
+  > => {
+    const res = await api.get<
+      ApiResponse<{ classes: import('../types').OpenClass[]; total: number }>
+    >('/student/open-classes', { params: search ? { search } : undefined });
+    return res.data;
+  },
+
+  /**
+   * GET /api/student/transfer-target-classes
+   * Lớp ĐÍCH cho yêu cầu đổi lớp — gồm cả lớp `IN_PROGRESS` (đang chạy),
+   * vì chuyển lớp giữa kỳ là tình huống hợp lệ.
+   */
+  getTransferTargetClasses: async (
+    search?: string
+  ): Promise<ApiResponse<{ classes: OpenClass[]; total: number }>> => {
+    const res = await api.get<ApiResponse<{ classes: OpenClass[]; total: number }>>(
+      '/student/transfer-target-classes',
+      { params: search ? { search } : undefined }
     );
     return res.data;
   },
@@ -63,8 +114,10 @@ export const studentService = {
   },
 
   /** GET /api/student/classes/:id/assignments */
-  getAssignments: async (classId: string): Promise<ApiResponse<{ assignments: Assignment[] }>> => {
-    const res = await api.get<ApiResponse<{ assignments: Assignment[] }>>(
+  getAssignments: async (
+    classId: string
+  ): Promise<ApiResponse<{ assignments: Assignment[]; skills: string[] }>> => {
+    const res = await api.get<ApiResponse<{ assignments: Assignment[]; skills: string[] }>>(
       `/student/classes/${classId}/assignments`
     );
     return res.data;
@@ -197,6 +250,55 @@ export const studentService = {
     const res = await api.post<ApiResponse<{ enrollment: import('../types').Enrollment }>>(
       '/student/enrollments',
       { classId }
+    );
+    return res.data;
+  },
+
+  /** DELETE /api/student/enrollments/:enrollmentId — rút khỏi lớp học */
+  dropFromClass: async (
+    enrollmentId: string
+  ): Promise<
+    ApiResponse<{
+      enrollmentId: string;
+      status: 'DROPPED';
+      tuitionStatus: TuitionStatus;
+    }>
+  > => {
+    const res = await api.delete<
+      ApiResponse<{
+        enrollmentId: string;
+        status: 'DROPPED';
+        tuitionStatus: TuitionStatus;
+      }>
+    >(`/student/enrollments/${enrollmentId}`);
+    return res.data;
+  },
+
+  // ---------------- Feedback (đánh giá lớp học) ----------------
+  /**
+   * GET /api/student/classes/:id/feedback
+   * Phản hồi của chính học viên về lớp học.
+   */
+  getMyClassFeedback: async (
+    classId: string
+  ): Promise<ApiResponse<{ items: import('../types').ClassFeedback[] }>> => {
+    const res = await api.get<ApiResponse<{ items: import('../types').ClassFeedback[] }>>(
+      `/student/classes/${classId}/feedback`
+    );
+    return res.data;
+  },
+
+  /**
+   * POST /api/student/classes/:id/feedback
+   * Gửi / cập nhật phản hồi về lớp học (1 phản hồi / 1 lớp).
+   */
+  submitClassFeedback: async (
+    classId: string,
+    payload: { content: string; rating: number; tags?: string[] }
+  ): Promise<ApiResponse<{ feedback: import('../types').ClassFeedback }>> => {
+    const res = await api.post<ApiResponse<{ feedback: import('../types').ClassFeedback }>>(
+      `/student/classes/${classId}/feedback`,
+      payload
     );
     return res.data;
   },

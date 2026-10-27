@@ -8,21 +8,14 @@ import type {
   RequestType,
   CreateChangeRequestInput,
   Enrollment,
+  OpenClass,
 } from '../../types';
 import { Button } from '../../components/Button';
 import { EmptyState, SkeletonPage } from '../../components/Skeleton';
 import { formatDate } from '../../utils/format';
+import { requestStatusMeta } from '../../utils/labels';
 
 type FilterKey = 'ALL' | ChangeRequestStatus;
-
-const statusCfg = (s: ChangeRequestStatus) => {
-  const map: Record<ChangeRequestStatus, { label: string; cls: string; icon: string }> = {
-    PENDING: { label: 'Đang chờ', cls: 'badge-amber', icon: '⏳' },
-    APPROVED: { label: 'Đã duyệt', cls: 'badge-green', icon: '✅' },
-    REJECTED: { label: 'Từ chối', cls: 'badge-purple', icon: '❌' },
-  };
-  return map[s];
-};
 
 const typeCfg = (t: RequestType) => {
   const map: Record<RequestType, { label: string; icon: string }> = {
@@ -37,6 +30,8 @@ const RequestsPage: React.FC = () => {
   const toast = useToast();
   const [requests, setRequests] = useState<ChangeRequest[]>([]);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  /** Danh mục lớp đích — dùng để chọn lớp đích khi yêu cầu đổi lớp. */
+  const [openClasses, setOpenClasses] = useState<OpenClass[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<FilterKey>('ALL');
   const [showForm, setShowForm] = useState(false);
@@ -59,6 +54,21 @@ const RequestsPage: React.FC = () => {
       .getMyClasses()
       .then((res) => {
         if (res.success && res.data) setEnrollments(res.data.classes || []);
+      })
+      .catch(() => {});
+    // Lấy danh mục lớp đích để học viên chọn được lớp muốn chuyển sang.
+    // Trước đây dropdown chỉ có lớp đang học nên không thể gửi yêu cầu đổi
+    // lớp hợp lệ.
+    //
+    // Dùng endpoint `/student/transfer-target-classes` (không phải
+    // `open-classes`): yêu cầu đổi lớp giữa kỳ cần chọn được lớp ĐANG CHẠY
+    // (`IN_PROGRESS`), còn `open-classes` chỉ có lớp chưa bắt đầu.
+    studentService
+      .getTransferTargetClasses()
+      .then((res) => {
+        if (res.success && res.data) {
+          setOpenClasses(res.data.classes || []);
+        }
       })
       .catch(() => {});
   }, []);
@@ -100,6 +110,11 @@ const RequestsPage: React.FC = () => {
     }
     if (form.requestType === 'SCHEDULE_CHANGE' && !form.targetSchedule?.trim()) {
       setFormError('Vui lòng nhập lịch học mong muốn');
+      return;
+    }
+    // Yêu cầu đổi lớp bắt buộc có lớp đích (backend cũng kiểm tra lại).
+    if (form.requestType === 'CLASS_CHANGE' && !form.targetClass) {
+      setFormError('Vui lòng chọn lớp học mong muốn chuyển sang');
       return;
     }
     try {
@@ -182,7 +197,7 @@ const RequestsPage: React.FC = () => {
         <Link to="/student/classes" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
           📚 Lớp Học
         </Link>
-        <Link to="/student/payments" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
+        <Link to="/student/tuition" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
           💳 Thanh Toán
         </Link>
       </div>
@@ -321,21 +336,26 @@ const RequestsPage: React.FC = () => {
                   </div>
                   {showTargetClass && (
                     <div>
-                      <label className="dash-subcard-label">Lớp mong muốn</label>
+                      <label className="dash-subcard-label">Lớp mong muốn *</label>
                       <select
                         value={form.targetClass || ''}
                         onChange={(e) => setForm({ ...form, targetClass: e.target.value })}
                         style={inputStyle}
                       >
-                        <option value="">-- Chọn lớp (không bắt buộc) --</option>
-                        {enrollments
-                          .filter((e2) => e2.class?._id !== form.currentClass)
-                          .map((e2) => (
-                            <option key={e2.class?._id} value={e2.class?._id}>
-                              {e2.class?.classCode} - {e2.class?.course?.code}
+                        <option value="">-- Chọn lớp mong muốn --</option>
+                        {openClasses
+                          .filter((c) => c._id !== form.currentClass)
+                          .map((c) => (
+                            <option key={c._id} value={c._id}>
+                              {c.classCode} - {c.course?.code} - {c.course?.title}
                             </option>
                           ))}
                       </select>
+                      <p style={{ margin: '0.35rem 0 0', color: '#94a3b8', fontSize: '0.72rem' }}>
+                        Hiển thị các lớp còn hoạt động và còn chỗ trống (kể cả lớp
+                        đang chạy). Phòng giáo vụ sẽ xử lý việc chuyển lớp khi duyệt
+                        yêu cầu.
+                      </p>
                     </div>
                   )}
                   {showScheduleFields && (
@@ -413,7 +433,7 @@ const RequestsPage: React.FC = () => {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {filtered.map((r) => {
-            const status = statusCfg(r.status);
+            const status = requestStatusMeta(r.status);
             const type = typeCfg(r.requestType);
             const currentCode = (r.currentClass as any)?.classCode || r.currentClass;
             const targetCode = (r.targetClass as any)?.classCode || r.targetClass;

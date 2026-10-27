@@ -1,6 +1,26 @@
 import mongoose, { Document, Schema, Model, Types } from 'mongoose';
 
-export type NotificationType = 'INFO' | 'ALERT' | 'SUCCESS' | 'WARNING';
+/**
+ * Loại thông báo.
+ *
+ * Gồm 4 type gốc (INFO/ALERT/SUCCESS/WARNING) và các type nghiệp vụ mở rộng
+ * dùng cho module Student. Trước đây model chỉ khai báo 4 type gốc trong
+ * khi `notification.service.ts` đã dùng các type nghiệp vụ (GRADE_PUBLISHED…)
+ * → Mongoose validation reject, `notify()` nuốt lỗi và im lặng không tạo
+ * được thông báo. Frontend cũng đã map sẵn icon/màu cho các type này.
+ */
+export type NotificationType =
+  | 'INFO'
+  | 'ALERT'
+  | 'SUCCESS'
+  | 'WARNING'
+  | 'GRADE_PUBLISHED'
+  | 'ASSIGNMENT_GRADED'
+  | 'REQUEST_APPROVED'
+  | 'REQUEST_REJECTED'
+  | 'PAYMENT_RECEIVED'
+  | 'CLASS_ANNOUNCEMENT'
+  | 'ATTENDANCE_MARKED';
 
 export interface INotification extends Document {
   recipient: Types.ObjectId;
@@ -31,7 +51,19 @@ const notificationSchema = new Schema<INotification>(
     },
     type: {
       type: String,
-      enum: ['INFO', 'ALERT', 'SUCCESS', 'WARNING'],
+      enum: [
+        'INFO',
+        'ALERT',
+        'SUCCESS',
+        'WARNING',
+        'GRADE_PUBLISHED',
+        'ASSIGNMENT_GRADED',
+        'REQUEST_APPROVED',
+        'REQUEST_REJECTED',
+        'PAYMENT_RECEIVED',
+        'CLASS_ANNOUNCEMENT',
+        'ATTENDANCE_MARKED',
+      ],
       default: 'INFO',
     },
     isRead: {
