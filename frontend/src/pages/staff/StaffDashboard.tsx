@@ -107,59 +107,23 @@ const StaffDashboard: React.FC = () => {
       description: 'Tổ chức và quản lý lịch lớp',
       path: '/staff/classes',
     },
+    {
+      id: 'action-manage-students',
+      title: 'Quản lý học viên',
+      description: 'Tra cứu hồ sơ, lớp học và kết quả học tập',
+      path: '/staff/students',
+    },
+    {
+      id: 'action-manage-teachers',
+      title: 'Quản lý giảng viên',
+      description: 'Tra cứu giảng viên và các lớp phụ trách',
+      path: '/staff/teachers',
+    },
   ];
 
   // Get greeting based on current hour
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Chào buổi sáng' : hour < 18 ? 'Chào buổi chiều' : 'Chào buổi tối';
-
-  const [enrollments, setEnrollments] = useState([
-    {
-      id: 'ENR-2041',
-      studentName: 'Phạm Hải Đăng',
-      email: 'student.dang@gmail.com',
-      phone: '0933555666',
-      courseCode: 'WEB-FULLSTACK',
-      classCode: 'WEB-K24-A',
-      tuition: 'PAID',
-      status: 'PENDING',
-      appliedAt: '10 phút trước',
-    },
-    {
-      id: 'ENR-2042',
-      studentName: 'Vũ Ngọc Mai',
-      email: 'student.mai@gmail.com',
-      phone: '0934666777',
-      courseCode: 'WEB-FULLSTACK',
-      classCode: 'WEB-K24-A',
-      tuition: 'PAID',
-      status: 'PENDING',
-      appliedAt: '35 phút trước',
-    },
-    {
-      id: 'ENR-2043',
-      studentName: 'Đỗ Tuấn Kiệt',
-      email: 'student.kiet@gmail.com',
-      phone: '0935777888',
-      courseCode: 'PYTHON-AI',
-      classCode: 'AI-K12-B',
-      tuition: 'UNPAID',
-      status: 'PENDING',
-      appliedAt: 'Hôm qua, 18:20',
-    },
-  ]);
-
-  const handleApproveEnrollment = (id: string) => {
-    setEnrollments((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, status: 'APPROVED' } : e))
-    );
-  };
-
-  const handleRejectEnrollment = (id: string) => {
-    setEnrollments((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, status: 'REJECTED' } : e))
-    );
-  };
 
   return (
 
@@ -195,15 +159,6 @@ const StaffDashboard: React.FC = () => {
       <div className="dash-metrics-grid">
         <div className="dash-metric-card">
           <div className="dash-metric-info">
-            <span className="dash-metric-label">Hồ sơ chờ duyệt</span>
-            <span className="dash-metric-val">{enrollments.filter((e) => e.status === 'PENDING').length}</span>
-            <span className="dash-metric-trend up">Cần kiểm tra học phí</span>
-          </div>
-          <div className="dash-metric-icon icon-amber">📋</div>
-        </div>
-
-        <div className="dash-metric-card">
-          <div className="dash-metric-info">
             <span className="dash-metric-label">Lớp đang mở tuyển</span>
             <span className="dash-metric-val">4 lớp</span>
             <span className="dash-metric-trend up">Sắp đủ sĩ số</span>
@@ -215,7 +170,7 @@ const StaffDashboard: React.FC = () => {
           <div className="dash-metric-info">
             <span className="dash-metric-label">Tổng học viên quản lý</span>
             <span className="dash-metric-val">186</span>
-            <span className="dash-metric-trend up">14 học viên chờ xếp lớp</span>
+            <span className="dash-metric-trend up">Đang theo học tại trung tâm</span>
           </div>
           <div className="dash-metric-icon icon-emerald">👩‍🎓</div>
         </div>
@@ -234,84 +189,6 @@ const StaffDashboard: React.FC = () => {
       <div className="dash-two-col">
         {/* Left Column */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          {/* Enrollments Approval Table */}
-          <div className="dash-card">
-            <div className="dash-card-header">
-              <h2 className="dash-card-title">
-                <span>📝</span> Đơn Ghi Danh Học Viên Chờ Duyệt
-              </h2>
-              <span className="badge-pill badge-blue">
-                {enrollments.filter((e) => e.status === 'PENDING').length} hồ sơ mới
-              </span>
-            </div>
-
-            <div className="dash-table-wrapper">
-              <table className="dash-table">
-                <thead>
-                  <tr>
-                    <th>Học viên</th>
-                    <th>Lớp đăng ký</th>
-                    <th>Học phí</th>
-                    <th>Trạng thái</th>
-                    <th style={{ textAlign: 'right' }}>Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {enrollments.map((enr) => (
-                    <tr key={enr.id}>
-                      <td>
-                        <strong>{enr.studentName}</strong>
-                        <div className="dash-subcard-meta">
-                          {enr.email} • {enr.phone}
-                        </div>
-                      </td>
-                      <td>
-                        <strong style={{ color: '#6366f1' }}>{enr.classCode}</strong>
-                        <div className="dash-subcard-meta">{enr.courseCode}</div>
-                      </td>
-                      <td>
-                        {enr.tuition === 'PAID' ? (
-                          <span className="badge-pill badge-green">Đã nộp học phí</span>
-                        ) : (
-                          <span className="badge-pill badge-red">Chưa nộp tiền</span>
-                        )}
-                      </td>
-                      <td>
-                        {enr.status === 'PENDING' && <span className="badge-pill badge-amber">Chờ duyệt</span>}
-                        {enr.status === 'APPROVED' && <span className="badge-pill badge-green">Đã vào lớp</span>}
-                        {enr.status === 'REJECTED' && <span className="badge-pill badge-red">Từ chối</span>}
-                      </td>
-                      <td style={{ textAlign: 'right' }}>
-                        {enr.status === 'PENDING' ? (
-                          <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end' }}>
-                            <button
-                              type="button"
-                              onClick={() => handleApproveEnrollment(enr.id)}
-                              className="dash-quick-btn primary"
-                              style={{ padding: '0.3rem 0.7rem', fontSize: '0.75rem' }}
-                            >
-                              Xếp lớp
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleRejectEnrollment(enr.id)}
-                              className="dash-quick-btn"
-                              style={{ padding: '0.3rem 0.7rem', fontSize: '0.75rem', color: '#ef4444' }}
-                            >
-                              Hủy
-                            </button>
-                          </div>
-                        ) : (
-                          <span className="dash-subcard-meta">Xong</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
           {/* Active Classes Management */}
           <div className="dash-card">
             <div className="dash-card-header">

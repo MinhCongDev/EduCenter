@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useSearchParams, useNavigate, Link } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { studentService } from '../../services/student.service';
@@ -199,7 +199,7 @@ const StudentDashboard: React.FC = () => {
           <div className="dash-banner" style={{ background: 'linear-gradient(135deg, #064e3b 0%, #065f46 50%, #047857 100%)' }}>
             <div className="dash-banner-content">
               <div className="dash-banner-badge">
-                Cổng Học Viên • EduCenter Portal
+                🎓 Cổng Học Viên • EduCenter Portal
               </div>
               <h1>{greeting}, {user?.fullName || 'Học viên'}!</h1>
               <p>
@@ -221,6 +221,14 @@ const StudentDashboard: React.FC = () => {
 
           {/* Quick Action Toolbar */}
           <div className="dash-actions-row">
+            <Link
+              to="/student/payments"
+              className="dash-quick-btn primary"
+              style={{ textDecoration: 'none', background: 'linear-gradient(135deg, #1e40af, #3b82f6)', color: '#fff', fontWeight: 700 }}
+            >
+              <span>💳</span>
+              <span>Học Phí & Cổng Thanh Toán</span>
+            </Link>
             <button
               type="button"
               className="dash-quick-btn"
@@ -248,13 +256,6 @@ const StudentDashboard: React.FC = () => {
               onClick={() => handleTabChange('grades')}
             >
               📊 Kết quả học tập
-            </button>
-            <button
-              type="button"
-              className="dash-quick-btn"
-              onClick={() => navigate('/student/tuition')}
-            >
-              💳 Thanh toán khóa học
             </button>
           </div>
 
@@ -339,7 +340,7 @@ const StudentDashboard: React.FC = () => {
 
             <div
               className="dash-metric-card"
-              onClick={() => navigate('/student/tuition')}
+              onClick={() => navigate('/student/payments')}
               style={{ cursor: 'pointer' }}
             >
               <div className="dash-metric-info">
@@ -1063,55 +1064,6 @@ const StudentDashboard: React.FC = () => {
             )}
           </div>
 
-          {/* ── Thanh toán khóa học (đặt dưới phần Kết quả học tập) ── */}
-          <div
-            className="dash-card"
-            style={{
-              padding: '1.25rem 1.5rem',
-              borderRadius: '16px',
-              background: 'linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%)',
-              border: '1px solid #dbeafe',
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                gap: '1rem',
-                flexWrap: 'wrap',
-              }}
-            >
-              <div>
-                <h3
-                  style={{
-                    margin: 0,
-                    fontSize: '1.05rem',
-                    fontWeight: 800,
-                    color: '#0f172a',
-                  }}
-                >
-                  💳 Thanh Toán Khóa Học
-                </h3>
-                <p
-                  style={{
-                    margin: '0.35rem 0 0',
-                    fontSize: '0.85rem',
-                    color: '#64748b',
-                  }}
-                >
-                  Xem các khóa học đã thanh toán và chưa thanh toán, bấm để xem chi tiết.
-                </p>
-              </div>
-              <button
-                type="button"
-                className="dash-quick-btn primary"
-                onClick={() => navigate('/student/tuition')}
-              >
-                💳 Xem Thanh Toán
-              </button>
-            </div>
-          </div>
         </div>
       )}
     </div>

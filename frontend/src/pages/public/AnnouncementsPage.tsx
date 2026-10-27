@@ -94,10 +94,10 @@ export const AnnouncementsPage: React.FC = () => {
           >
             BẢN TIN HỌC THUẬT &amp; SỰ KIỆN KHẢO THÍ
           </div>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: 800, margin: '0 0 1rem' }}>
-            Thông Báo Từ Trung Tâm (UC06)
+          <h1 style={{ fontSize: '2.5rem', fontWeight: 800, margin: '0 0 1rem', color: '#FFFFFF' }}>
+            Thông Báo Từ Trung Tâm
           </h1>
-          <p style={{ fontSize: '1.05rem', color: '#E2E8F0', maxWidth: '650px', margin: '0 auto' }}>
+          <p style={{ fontSize: '1.05rem', color: '#E2E8F0', maxWidth: '650px', margin: '0 auto', lineHeight: 1.6 }}>
             Cập nhật lịch thi thử IELTS trên máy tính, workshop cùng giáo viên 8.5+ - 9.0 và các thông báo học vụ quan trọng.
           </p>
         </div>

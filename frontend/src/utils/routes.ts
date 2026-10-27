@@ -22,6 +22,9 @@ const STATIC_ROUTES = [
   '/student/dashboard',
   '/student/classes',
   '/student/tuition',
+  // Trang thanh toán tổng hợp + lịch sử thanh toán (từ nhánh main)
+  '/student/payments',
+  '/student/payment-history',
   '/student/requests',
   '/student/notifications',
   '/student/profile',
@@ -32,6 +35,11 @@ const STATIC_ROUTES = [
   '/staff/classes',
   '/staff/requests',
   '/staff/feedback',
+  // Các màn hình quản lý của phòng giáo vụ (từ nhánh main)
+  '/staff/enrollments',
+  '/staff/timetable',
+  '/staff/students',
+  '/staff/teachers',
   '/director/dashboard',
 ];
 
@@ -39,6 +47,8 @@ const STATIC_ROUTES = [
 const DYNAMIC_ROUTE_PATTERNS: RegExp[] = [
   /^\/student\/classes\/[A-Za-z0-9]+$/,
   /^\/student\/classes\/[A-Za-z0-9]+\/(assignments|attendance|grades|schedule)$/,
+  /^\/staff\/students\/[A-Za-z0-9]+$/,
+  /^\/staff\/teachers\/[A-Za-z0-9]+$/,
 ];
 
 /**

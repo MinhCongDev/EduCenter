@@ -13,10 +13,15 @@ import { classRouter } from './routes/class.routes';
 import { teacherRouter } from './routes/teacher.routes';
 // Phòng giáo vụ (TRAINING_STAFF) — duyệt yêu cầu thay đổi của học viên
 import { staffRouter } from './routes/staff.routes';
+// Cổng thanh toán (VietQR / VNPay / biên lai điện tử) — từ nhánh main
+import { paymentRouter } from './routes/payment.routes';
 // Student module (datlt)
 import { studentRouter } from './routes/student.routes';
 import { publicRouter } from './routes/public.routes';
 import { directorRouter } from './routes/director.routes';
+import { enrollmentRouter } from './routes/enrollment.routes';
+import { classScheduleRouter } from './routes/classSchedule.routes';
+import { staffManagementRouter } from './routes/staffManagement.routes';
 import { errorHandler } from './middlewares/error.middleware';
 import { notFound } from './middlewares/notFound.middleware';
 
@@ -39,6 +44,7 @@ import './models/changeRequest.model';
 import './models/announcement.model';
 import './models/notification.model';
 import './models/feedback.model';
+import './models/proposal.model';
 
 const app: Application = express();
 
@@ -97,8 +103,12 @@ app.use('/api/center', centerRouter);
 app.use('/api/courses', courseRouter);
 app.use('/api/announcements', announcementRouter);
 app.use('/api/classes', classRouter);
+app.use('/api/enrollments', enrollmentRouter);
+app.use('/api/schedules', classScheduleRouter);
+app.use('/api/staff-management', staffManagementRouter);
 app.use('/api/teacher', teacherRouter);
 app.use('/api/staff', staffRouter);
+app.use('/api/payments', paymentRouter);
 // Student module (datlt)
 app.use('/api/public', publicRouter);
 app.use('/api/student', studentRouter);

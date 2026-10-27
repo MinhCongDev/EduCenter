@@ -21,7 +21,7 @@ const EMPTY_FORM: CourseFormData = {
   title: '',
   description: '',
   category: COURSE_CATEGORIES[0],
-  durationWeeks: 8,
+  sessions: 24,
   tuitionFee: 0,
   status: 'ACTIVE',
   syllabus: [],
@@ -87,7 +87,7 @@ const CourseFormModal: React.FC<CourseFormModalProps> = ({ course, onSave, onClo
           title: course.title,
           description: course.description,
           category: course.category,
-          durationWeeks: course.durationWeeks,
+          sessions: course.sessions,
           tuitionFee: course.tuitionFee,
           status: course.status,
           syllabus: course.syllabus ?? [],
@@ -100,7 +100,7 @@ const CourseFormModal: React.FC<CourseFormModalProps> = ({ course, onSave, onClo
     const { name, value } = e.target;
     setForm((prev) => ({
       ...prev,
-      [name]: name === 'durationWeeks' || name === 'tuitionFee' ? Number(value) : value,
+      [name]: name === 'sessions' || name === 'tuitionFee' ? Number(value) : value,
     }));
   };
 
@@ -200,16 +200,16 @@ const CourseFormModal: React.FC<CourseFormModalProps> = ({ course, onSave, onClo
           <div className="form-row">
             <div className="form-group">
               <label className="form-label" htmlFor="course-duration">
-                Thời lượng (tuần) <span className="required">*</span>
+                Số buổi học <span className="required">*</span>
               </label>
               <input
                 id="course-duration"
-                name="durationWeeks"
+                name="sessions"
                 type="number"
                 min={1}
-                max={104}
+                max={500}
                 className="form-input"
-                value={form.durationWeeks}
+                value={form.sessions}
                 onChange={handleChange}
                 required
               />
@@ -497,7 +497,7 @@ const CoursesManagementPage: React.FC = () => {
                   <td>
                     <span className="course-category-chip">{course.category}</span>
                   </td>
-                  <td>{course.durationWeeks} tuần</td>
+                  <td>{course.sessions} buổi</td>
                   <td className="course-fee">{formatCurrency(course.tuitionFee)}</td>
                   <td>
                     <StatusBadge status={course.status} />

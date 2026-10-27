@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { classService } from '../../services/class.service';
 import type { ClassOptions } from '../../services/class.service';
-import type { ClassFormData, ClassStatus, TrainingClass } from '../../types';
+import type { ClassDetail, ClassFormData, ClassStatus, TrainingClass } from '../../types';
 
 const WEEK_DAYS = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
 const EMPTY_FORM: ClassFormData = {
@@ -13,7 +13,6 @@ const EMPTY_FORM: ClassFormData = {
   scheduleDays: [],
   timeSlot: '',
   startDate: '',
-  endDate: '',
   capacity: 20,
   status: 'OPEN',
 };
@@ -47,7 +46,6 @@ const ClassFormModal: React.FC<ClassFormModalProps> = ({ classItem, options, onS
           scheduleDays: classItem.scheduleDays,
           timeSlot: classItem.timeSlot,
           startDate: classItem.startDate.slice(0, 10),
-          endDate: classItem.endDate.slice(0, 10),
           capacity: classItem.capacity,
           status: classItem.status,
         }
@@ -73,9 +71,9 @@ const ClassFormModal: React.FC<ClassFormModalProps> = ({ classItem, options, onS
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    if (form.endDate < form.startDate) return;
     void onSave(form);
   };
+  const selectedCourse = options.courses.find((course) => course._id === form.course);
 
   return (
     <div className="modal-overlay" role="dialog" aria-modal="true" aria-label={classItem ? 'Chỉnh sửa lớp học' : 'Thêm lớp học'}>
@@ -127,6 +125,11 @@ const ClassFormModal: React.FC<ClassFormModalProps> = ({ classItem, options, onS
               ))}
             </div>
           </fieldset>
+          {selectedCourse && (
+            <div className="form-hint" role="status">
+              Khóa học gồm <strong>{selectedCourse.sessions} buổi</strong>. Hệ thống tự xếp đủ số buổi theo các ngày đã chọn và tính ngày kết thúc.
+            </div>
+          )}
 
           <div className="form-row">
             <div className="form-group">
@@ -139,15 +142,9 @@ const ClassFormModal: React.FC<ClassFormModalProps> = ({ classItem, options, onS
             </div>
           </div>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label" htmlFor="class-start-date">Ngày bắt đầu <span className="required">*</span></label>
-              <input id="class-start-date" name="startDate" type="date" className="form-input" value={form.startDate} onChange={handleChange} required />
-            </div>
-            <div className="form-group">
-              <label className="form-label" htmlFor="class-end-date">Ngày kết thúc <span className="required">*</span></label>
-              <input id="class-end-date" name="endDate" type="date" min={form.startDate || undefined} className="form-input" value={form.endDate} onChange={handleChange} required />
-            </div>
+          <div className="form-group">
+            <label className="form-label" htmlFor="class-start-date">Ngày bắt đầu <span className="required">*</span></label>
+            <input id="class-start-date" name="startDate" type="date" className="form-input" value={form.startDate} onChange={handleChange} required />
           </div>
 
           <div className="form-group">
@@ -157,7 +154,6 @@ const ClassFormModal: React.FC<ClassFormModalProps> = ({ classItem, options, onS
             </select>
           </div>
 
-          {form.endDate < form.startDate && <div className="form-error-banner" role="alert">Ngày kết thúc phải sau ngày bắt đầu.</div>}
           <div className="modal-footer">
             <button type="button" className="btn btn-outline" onClick={onClose} disabled={saving}>Hủy</button>
             <button type="submit" className="btn btn-primary" disabled={saving || options.courses.length === 0 || options.teachers.length === 0}>
@@ -165,6 +161,83 @@ const ClassFormModal: React.FC<ClassFormModalProps> = ({ classItem, options, onS
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+};
+
+const ClassDetailModal: React.FC<{ detail: ClassDetail; onClose: () => void }> = ({ detail, onClose }) => {
+  const { classroom, students } = detail;
+  return (
+    <div className="modal-overlay" role="dialog" aria-modal="true" aria-label={`Chi tiết lớp ${classroom.classCode}`}>
+      <div className="modal-box modal-lg">
+        <div className="modal-header">
+          <div>
+            <h2 className="modal-title">Chi tiết lớp {classroom.classCode}</h2>
+            <p className="modal-subtitle">{classroom.course.code} - {classroom.course.title}</p>
+          </div>
+          <button type="button" className="modal-close-btn" onClick={onClose} aria-label="Đóng">✕</button>
+        </div>
+
+        <div className="enrollment-detail-grid">
+          <div><span>Giảng viên đứng lớp</span><strong>{classroom.teacher.fullName}</strong></div>
+          <div><span>Email giảng viên</span><strong>{classroom.teacher.email}</strong></div>
+          <div><span>Phòng học</span><strong>{classroom.room || '—'}</strong></div>
+          <div><span>Lịch học</span><strong>{classroom.scheduleDays.join(', ') || 'Chưa xếp lịch'} · {classroom.timeSlot}</strong></div>
+          <div><span>Thời gian</span><strong>{formatDate(classroom.startDate)} – {formatDate(classroom.endDate)}</strong></div>
+          <div><span>Sĩ số</span><strong>{students.length}/{classroom.capacity}</strong></div>
+        </div>
+
+        <h3 className="enrollment-payment-heading">Danh sách học viên ({students.length})</h3>
+        {students.length === 0 ? (
+          <div className="enrollment-no-payment">Lớp chưa có học viên được xếp.</div>
+        ) : (
+          <div className="courses-table-wrap class-table-wrap">
+            <table className="courses-table" aria-label={`Danh sách học viên lớp ${classroom.classCode}`}>
+              <thead>
+                <tr><th>Mã HV</th><th>Học viên</th><th>Liên hệ</th><th>Band hiện tại / mục tiêu</th><th>Điểm trong lớp</th></tr>
+              </thead>
+              <tbody>
+                {students.map((student) => (
+                  <tr key={student.enrollmentId} className="courses-table-row">
+                    <td>{student.profile?.studentCode ?? '—'}</td>
+                    <td>
+                      <div className="course-title-cell">
+                        <strong>{student.student.fullName}</strong>
+                        <span className="course-desc-preview">{student.profile?.learningGoal || 'Chưa có mục tiêu học tập'}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="course-title-cell">
+                        <strong>{student.student.email}</strong>
+                        <span className="course-desc-preview">{student.student.phone || 'Chưa có số điện thoại'}</span>
+                      </div>
+                    </td>
+                    <td>{student.profile?.currentBand ?? '—'} / {student.profile?.targetBand ?? '—'}</td>
+                    <td>
+                      {student.grades.length ? (
+                        <details>
+                          <summary>{student.grades.length} bài đánh giá</summary>
+                          <div className="course-title-cell">
+                            {student.grades.map((grade) => (
+                              <span key={grade._id} className="course-desc-preview">
+                                {grade.title}: {grade.overallBand} điểm ({formatDate(grade.testDate)})
+                              </span>
+                            ))}
+                          </div>
+                        </details>
+                      ) : <span className="course-desc-preview">Chưa có điểm</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <div className="modal-footer">
+          <button type="button" className="btn btn-outline" onClick={onClose}>Đóng</button>
+        </div>
       </div>
     </div>
   );
@@ -184,6 +257,9 @@ const ClassesManagementPage: React.FC = () => {
   const [editingClass, setEditingClass] = useState<TrainingClass | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [deletingClass, setDeletingClass] = useState<TrainingClass | null>(null);
+  const [classDetail, setClassDetail] = useState<ClassDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState('');
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
   const [toast, setToast] = useState('');
@@ -276,6 +352,21 @@ const ClassesManagementPage: React.FC = () => {
     }
   };
 
+  const openClassDetail = async (id: string) => {
+    setDetailLoading(true);
+    setDetailError('');
+    try {
+      const response = await classService.getClass(id);
+      if (!response.data) throw new Error('Không nhận được dữ liệu chi tiết lớp học.');
+      setClassDetail(response.data);
+    } catch (error) {
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setDetailError(message ?? (error instanceof Error ? error.message : 'Không thể tải chi tiết lớp học.'));
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
   const totalPages = Math.ceil(total / limit);
 
   return (
@@ -324,6 +415,7 @@ const ClassesManagementPage: React.FC = () => {
           <button className="btn btn-ghost" style={{ marginLeft: '1rem' }} onClick={() => void fetchClasses()}>Thử lại</button>
         </div>
       )}
+      {detailError && <div className="form-error-banner" role="alert">{detailError}</div>}
 
       <div className="courses-table-wrap class-table-wrap">
         {loading ? (
@@ -343,10 +435,11 @@ const ClassesManagementPage: React.FC = () => {
                   <td>{classItem.teacher.fullName}</td>
                   <td><div className="course-title-cell"><strong>{classItem.scheduleDays.join(', ') || 'Chưa xếp lịch'}</strong><span className="course-desc-preview">{classItem.timeSlot || 'Chưa có khung giờ'}</span></div></td>
                   <td>{formatDate(classItem.startDate)} – {formatDate(classItem.endDate)}</td>
-                  <td>{classItem.capacity}</td>
+                  <td>{classItem.currentEnrollment ?? 0}/{classItem.capacity}</td>
                   <td><span className={`course-status-badge class-status-${classItem.status.toLowerCase()}`}>{STATUS_LABELS[classItem.status]}</span></td>
                   <td>
                     <div className="courses-actions">
+                      <button className="btn btn-outline btn-sm" onClick={() => void openClassDetail(classItem._id)}>Chi tiết</button>
                       <button className="btn btn-outline btn-sm" onClick={() => { setEditingClass(classItem); setFormError(''); setShowForm(true); }}>Sửa</button>
                       <button className="btn btn-danger-outline btn-sm" onClick={() => setDeletingClass(classItem)}>Xóa</button>
                     </div>
@@ -367,6 +460,8 @@ const ClassesManagementPage: React.FC = () => {
       )}
 
       {showForm && <ClassFormModal classItem={editingClass} options={options} onSave={handleSave} onClose={() => setShowForm(false)} saving={saving} error={formError} />}
+      {detailLoading && <div className="courses-loading"><div className="loading-spinner" /><p>Đang tải chi tiết lớp…</p></div>}
+      {classDetail && <ClassDetailModal detail={classDetail} onClose={() => setClassDetail(null)} />}
       {deletingClass && (
         <div className="modal-overlay" role="dialog" aria-modal="true" aria-label="Xác nhận xóa lớp học">
           <div className="modal-box modal-sm">

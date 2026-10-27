@@ -2,6 +2,8 @@ import mongoose, { Document, Schema, Model, Types } from 'mongoose';
 
 export interface IClassSchedule extends Document {
   class: Types.ObjectId;
+  sessionDate?: Date;
+  excludedDates: Date[];
   dayOfWeek: string;
   startTime: string;
   endTime: string;
@@ -19,6 +21,14 @@ const classScheduleSchema = new Schema<IClassSchedule>(
       type: Schema.Types.ObjectId,
       ref: 'Class',
       required: [true, 'Lớp học là bắt buộc'],
+    },
+    sessionDate: {
+      type: Date,
+      index: true,
+    },
+    excludedDates: {
+      type: [Date],
+      default: [],
     },
     dayOfWeek: {
       type: String,

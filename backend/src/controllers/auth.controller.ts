@@ -56,7 +56,7 @@ const toUserResponse = (user: IUser) => ({
 });
 
 /**
- * UC08: Register Account
+ * Register Account
  * POST /api/auth/register
  */
 export const register = async (req: Request, res: Response): Promise<void> => {
@@ -174,7 +174,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 };
 
 /**
- * UC09: Log In
+ * Log In
  * POST /api/auth/login
  */
 export const login = async (req: Request, res: Response): Promise<void> => {
@@ -595,7 +595,7 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
 };
 
 /**
- * UC07: Upload Avatar (multipart)
+ * Upload Avatar (multipart)
  * POST /api/auth/avatar
  * FormData: avatar=<file>
  */
@@ -660,7 +660,7 @@ export const uploadAvatar = async (req: AuthRequest, res: Response): Promise<voi
 };
 
 /**
- * UC07: Update Personal Information
+ * Update Personal Information
  * PUT /api/auth/profile
  */
 export const updateProfile = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -877,7 +877,7 @@ export const changePassword = async (req: AuthRequest, res: Response): Promise<v
 };
 
 /**
- * UC11: Forgot Password - Request Reset Code / Token
+ * Forgot Password - Request Reset Code / Token
  * POST /api/auth/forgot-password
  */
 export const forgotPassword = async (req: Request, res: Response): Promise<void> => {
@@ -961,7 +961,7 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
 };
 
 /**
- * UC11: Reset Password - Verify Code and Update Password
+ * Reset Password - Verify Code and Update Password
  * POST /api/auth/reset-password
  */
 export const resetPassword = async (req: Request, res: Response): Promise<void> => {

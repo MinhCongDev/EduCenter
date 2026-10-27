@@ -2,6 +2,7 @@ import api from './api';
 import type {
   ApiResponse,
   ClassFormData,
+  ClassDetail,
   ClassCourseOption,
   ClassTeacherOption,
   PaginatedResponse,
@@ -33,6 +34,11 @@ export const classService = {
 
   async getOptions(): Promise<ApiResponse<ClassOptions>> {
     const response = await api.get<ApiResponse<ClassOptions>>('/classes/options');
+    return response.data;
+  },
+
+  async getClass(id: string): Promise<ApiResponse<ClassDetail>> {
+    const response = await api.get<ApiResponse<ClassDetail>>(`/classes/${id}`);
     return response.data;
   },
 

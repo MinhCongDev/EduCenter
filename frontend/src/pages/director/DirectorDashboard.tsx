@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { directorService } from '../../services/director.service';
+import { announcementService } from '../../services/announcement.service';
 import type {
   DirectorSummary,
   StaffAccount,
@@ -14,9 +15,11 @@ import type {
   ClassAndCourseReportsData,
   RevenueReportsData,
 } from '../../services/director.service';
+import type { ProposalItem, Announcement } from '../../types';
 
 export type DirectorTab =
   | 'overview'
+  | 'announcements'
   | 'staff_accounts'
   | 'monitoring'
   | 'student_reports'
@@ -36,6 +39,7 @@ export const DirectorDashboard: React.FC = () => {
       tabParam &&
       [
         'overview',
+        'announcements',
         'staff_accounts',
         'monitoring',
         'student_reports',
@@ -67,18 +71,19 @@ export const DirectorDashboard: React.FC = () => {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  // ── Data States ──
+  // ── Data States (Init with 0 – strictly NO hardcoded 168.5M static data) ──
   const [summary, setSummary] = useState<DirectorSummary>({
-    totalRevenue: 168500000,
-    studentsCount: 186,
-    classesCount: 12,
-    activeClassesCount: 9,
-    staffCount: 5,
-    teachersCount: 8,
-    graduationRate: 96.2,
-    averageSatisfaction: 4.88,
+    totalRevenue: 0,
+    studentsCount: 0,
+    classesCount: 0,
+    activeClassesCount: 0,
+    staffCount: 0,
+    teachersCount: 0,
+    graduationRate: 0,
+    averageSatisfaction: 0,
   });
 
+  const [courseRevenueList, setCourseRevenueList] = useState<Array<{ name: string; revenue: number; count: number }>>([]);
   const [staffAccounts, setStaffAccounts] = useState<StaffAccount[]>([]);
   const [staffFilterRole, setStaffFilterRole] = useState<'ALL' | 'TRAINING_STAFF' | 'TEACHER'>('ALL');
   const [staffSearch, setStaffSearch] = useState<string>('');
@@ -112,46 +117,66 @@ export const DirectorDashboard: React.FC = () => {
   const [classCourseSubTab, setClassCourseSubTab] = useState<'classes' | 'courses'>('classes');
   const [revenueReports, setRevenueReports] = useState<RevenueReportsData | null>(null);
 
-  // Approvals on overview
-  const [approvals, setApprovals] = useState([
-    {
-      id: 'AP-101',
-      title: 'Mở thêm lớp cấp tốc IELTS 7.0+ (IELTS-K27-Exp)',
-      proposer: 'Trần Thị Thu Thảo (Trưởng ban Giáo vụ)',
-      date: 'Hôm nay, 09:30',
-      status: 'PENDING',
-    },
-    {
-      id: 'AP-102',
-      title: 'Học bổng khuyến học 20% cho học viên khó khăn (Vũ Ngọc Mai)',
-      proposer: 'Phòng Đào tạo',
-      date: 'Hôm qua, 15:45',
-      status: 'PENDING',
-    },
-    {
-      id: 'AP-103',
-      title: 'Duyệt bảng điểm thi thử IELTS Mock Test Lần 3',
-      proposer: 'ThS. Nguyễn Hoàng Nam (Giảng viên)',
-      date: '06/10/2026',
-      status: 'APPROVED',
-    },
-  ]);
+  // ── Approvals & Proposals (Real DB Model) ──
+  const [approvals, setApprovals] = useState<ProposalItem[]>([]);
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+  const [isAddProposalModalOpen, setIsAddProposalModalOpen] = useState<boolean>(false);
+  const [isSubmittingProposal, setIsSubmittingProposal] = useState<boolean>(false);
+  const [newProposalForm, setNewProposalForm] = useState({
+    title: '',
+    description: '',
+    category: 'Mở lớp mới',
+    proposerName: '',
+    proposerRole: 'Giáo vụ',
+  });
 
-  const handleApprove = (id: string) => {
-    setApprovals((prev) => prev.map((item) => (item.id === id ? { ...item, status: 'APPROVED' } : item)));
-    showToast('✅ Đã phê duyệt đề xuất thành công!');
-  };
+  // ── Announcements Management ──
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [announcementsLoading, setAnnouncementsLoading] = useState<boolean>(false);
+  const [announcementSearch, setAnnouncementSearch] = useState<string>('');
+  const [announcementCategory, setAnnouncementCategory] = useState<string>('ALL');
+  const [announcementAudience, setAnnouncementAudience] = useState<string>('ALL');
+  const [announcementStatus, setAnnouncementStatus] = useState<string>('ALL');
+  const [isAnnouncementModalOpen, setIsAnnouncementModalOpen] = useState<boolean>(false);
+  const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
+  const [isSubmittingAnnouncement, setIsSubmittingAnnouncement] = useState<boolean>(false);
+  const [announcementForm, setAnnouncementForm] = useState({
+    title: '',
+    summary: '',
+    content: '',
+    category: 'Thông báo học vụ',
+    targetAudience: 'ALL' as 'ALL' | 'STUDENTS' | 'TEACHERS' | 'STAFF',
+    isPinned: false,
+    status: 'PUBLISHED' as 'PUBLISHED' | 'DRAFT',
+    imageUrl: '',
+  });
 
-  const handleReject = (id: string) => {
-    setApprovals((prev) => prev.map((item) => (item.id === id ? { ...item, status: 'REJECTED' } : item)));
-    showToast('⚠️ Đã từ chối đề xuất.');
-  };
+  // ── Fetch Announcements ──
+  const fetchAnnouncementsList = useCallback(async () => {
+    try {
+      setAnnouncementsLoading(true);
+      const res = await announcementService.getAnnouncements({
+        search: announcementSearch.trim() || undefined,
+        category: announcementCategory !== 'ALL' ? announcementCategory : undefined,
+        audience: announcementAudience !== 'ALL' ? announcementAudience : undefined,
+        status: announcementStatus !== 'ALL' ? announcementStatus : undefined,
+        limit: 100,
+      });
+      if (res?.success && res.data) {
+        setAnnouncements(res.data);
+      }
+    } catch (err: any) {
+      console.error('Lỗi tải danh sách thông báo:', err);
+    } finally {
+      setAnnouncementsLoading(false);
+    }
+  }, [announcementSearch, announcementCategory, announcementAudience, announcementStatus]);
 
   // ── Load All Data ──
   const loadDirectorData = async () => {
     try {
       setLoading(true);
-      const [statsRes, staffRes, opsRes, stuActRes, teaActRes, stuRepRes, teaRepRes, clsRepRes, revRepRes] =
+      const [statsRes, staffRes, opsRes, stuActRes, teaActRes, stuRepRes, teaRepRes, clsRepRes, revRepRes, appRes] =
         await Promise.all([
           directorService.getDashboardStats().catch(() => null),
           directorService.getStaffAccounts().catch(() => null),
@@ -162,11 +187,21 @@ export const DirectorDashboard: React.FC = () => {
           directorService.getTeacherReports().catch(() => null),
           directorService.getClassAndCourseReports().catch(() => null),
           directorService.getRevenueReports().catch(() => null),
+          directorService.getApprovals().catch(() => null),
         ]);
 
       if (statsRes?.data?.data?.summary) {
         setSummary(statsRes.data.data.summary);
       }
+      if (statsRes?.data?.data?.courseRevenue) {
+        setCourseRevenueList(statsRes.data.data.courseRevenue);
+      }
+      if (appRes?.data?.data) {
+        setApprovals(appRes.data.data);
+      } else if (statsRes?.data?.data?.recentApprovals) {
+        setApprovals(statsRes.data.data.recentApprovals);
+      }
+
       if (staffRes?.data?.data?.accounts) {
         setStaffAccounts(staffRes.data.data.accounts);
       }
@@ -191,6 +226,9 @@ export const DirectorDashboard: React.FC = () => {
       if (revRepRes?.data?.data) {
         setRevenueReports(revRepRes.data.data);
       }
+
+      // Also fetch announcements
+      fetchAnnouncementsList();
     } catch (err: any) {
       showToast('⚠️ Lỗi đồng bộ dữ liệu giám đốc: ' + (err?.message || 'Lỗi mạng'));
     } finally {
@@ -201,6 +239,156 @@ export const DirectorDashboard: React.FC = () => {
   useEffect(() => {
     loadDirectorData();
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'announcements') {
+      fetchAnnouncementsList();
+    }
+  }, [activeTab, fetchAnnouncementsList]);
+
+  // ── Approvals Action Handlers (Calling Real Backend API) ──
+  const handleApprove = async (id: string) => {
+    try {
+      setActionLoadingId(id);
+      const res = await directorService.reviewApproval(id, 'APPROVED');
+      setApprovals((prev) =>
+        prev.map((item) => (item._id === id || item.code === id ? res.data.data : item))
+      );
+      showToast('✅ Đã phê duyệt đề xuất thành công!');
+    } catch (err: any) {
+      showToast('❌ Lỗi phê duyệt: ' + (err?.response?.data?.message || err.message));
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleReject = async (id: string) => {
+    try {
+      setActionLoadingId(id);
+      const res = await directorService.reviewApproval(id, 'REJECTED');
+      setApprovals((prev) =>
+        prev.map((item) => (item._id === id || item.code === id ? res.data.data : item))
+      );
+      showToast('⚠️ Đã từ chối đề xuất.');
+    } catch (err: any) {
+      showToast('❌ Lỗi từ chối: ' + (err?.response?.data?.message || err.message));
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleCreateProposal = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newProposalForm.title.trim()) {
+      showToast('Vui lòng điền tiêu đề đề xuất');
+      return;
+    }
+    setIsSubmittingProposal(true);
+    try {
+      const res = await directorService.createApproval({
+        ...newProposalForm,
+        proposerName: newProposalForm.proposerName.trim() || user?.fullName || 'Ban Giám Đốc',
+      });
+      setApprovals((prev) => [res.data.data, ...prev]);
+      showToast('🎉 Đã tạo đề xuất thành công!');
+      setIsAddProposalModalOpen(false);
+      setNewProposalForm({
+        title: '',
+        description: '',
+        category: 'Mở lớp mới',
+        proposerName: '',
+        proposerRole: 'Giáo vụ',
+      });
+    } catch (err: any) {
+      showToast('❌ Lỗi tạo đề xuất: ' + (err?.response?.data?.message || err.message));
+    } finally {
+      setIsSubmittingProposal(false);
+    }
+  };
+
+  // ── Announcements Action Handlers (Full CRUD) ──
+  const handleOpenCreateAnnouncement = () => {
+    setEditingAnnouncement(null);
+    setAnnouncementForm({
+      title: '',
+      summary: '',
+      content: '',
+      category: 'Thông báo học vụ',
+      targetAudience: 'ALL',
+      isPinned: false,
+      status: 'PUBLISHED',
+      imageUrl: '',
+    });
+    setIsAnnouncementModalOpen(true);
+  };
+
+  const handleOpenEditAnnouncement = (item: Announcement) => {
+    setEditingAnnouncement(item);
+    setAnnouncementForm({
+      title: item.title,
+      summary: item.summary || '',
+      content: item.content,
+      category: item.category || 'Thông báo học vụ',
+      targetAudience: item.targetAudience,
+      isPinned: item.isPinned,
+      status: item.status === 'ARCHIVED' ? 'DRAFT' : item.status,
+      imageUrl: item.imageUrl || '',
+    });
+    setIsAnnouncementModalOpen(true);
+  };
+
+  const handleSaveAnnouncement = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!announcementForm.title.trim() || !announcementForm.content.trim()) {
+      showToast('Vui lòng điền tiêu đề và nội dung thông báo');
+      return;
+    }
+    setIsSubmittingAnnouncement(true);
+    try {
+      if (editingAnnouncement) {
+        const res = await announcementService.updateAnnouncement(editingAnnouncement._id, announcementForm);
+        showToast('🎉 Cập nhật bài thông báo thành công!');
+        setAnnouncements((prev) =>
+          prev.map((a) => (a._id === editingAnnouncement._id && res.data ? res.data : a))
+        );
+      } else {
+        await announcementService.createAnnouncement(announcementForm);
+        showToast('🎉 Đăng bài thông báo mới thành công!');
+      }
+      setIsAnnouncementModalOpen(false);
+      fetchAnnouncementsList();
+    } catch (err: any) {
+      showToast('❌ Lỗi lưu thông báo: ' + (err?.response?.data?.message || err.message));
+    } finally {
+      setIsSubmittingAnnouncement(false);
+    }
+  };
+
+  const handleDeleteAnnouncement = async (id: string, title: string) => {
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa bài thông báo "${title}" không?`)) {
+      return;
+    }
+    try {
+      await announcementService.deleteAnnouncement(id);
+      showToast('🗑️ Đã xóa bài thông báo thành công!');
+      setAnnouncements((prev) => prev.filter((a) => a._id !== id));
+    } catch (err: any) {
+      showToast('❌ Lỗi xóa thông báo: ' + (err?.response?.data?.message || err.message));
+    }
+  };
+
+  const handleTogglePinAnnouncement = async (item: Announcement) => {
+    try {
+      const nextPin = !item.isPinned;
+      await announcementService.updateAnnouncement(item._id, { isPinned: nextPin });
+      showToast(nextPin ? '📌 Đã ghim thông báo lên đầu trang!' : 'Đã bỏ ghim thông báo.');
+      setAnnouncements((prev) =>
+        prev.map((a) => (a._id === item._id ? { ...a, isPinned: nextPin } : a))
+      );
+    } catch (err: any) {
+      showToast('❌ Lỗi cập nhật trạng thái ghim: ' + (err?.response?.data?.message || err.message));
+    }
+  };
 
   // ── Handler: Add Staff Account ──
   const handleCreateStaff = async (e: React.FormEvent) => {
@@ -359,6 +547,13 @@ export const DirectorDashboard: React.FC = () => {
             <button
               type="button"
               className="dash-quick-btn"
+              onClick={() => handleTabChange('announcements')}
+            >
+              📢 Quản lý thông báo ({announcements.length})
+            </button>
+            <button
+              type="button"
+              className="dash-quick-btn"
               onClick={() => handleTabChange('revenue_reports')}
             >
               💰 Báo cáo tài chính
@@ -377,8 +572,12 @@ export const DirectorDashboard: React.FC = () => {
             <div className="dash-metric-card" onClick={() => handleTabChange('revenue_reports')} style={{ cursor: 'pointer' }}>
               <div className="dash-metric-info">
                 <span className="dash-metric-label">Doanh thu quý hiện tại</span>
-                <span className="dash-metric-val">{summary.totalRevenue.toLocaleString('vi-VN')} đ</span>
-                <span className="dash-metric-trend up">↗ +16.4% so với quý trước</span>
+                <span className="dash-metric-val">
+                  {loading ? 'Đang tải...' : `${summary.totalRevenue.toLocaleString('vi-VN')} đ`}
+                </span>
+                <span className="dash-metric-trend up">
+                  {summary.totalRevenue > 0 ? '↗ Ghi nhận từ giao dịch học phí thực tế' : 'Chưa phát sinh doanh thu'}
+                </span>
               </div>
               <div className="dash-metric-icon icon-emerald">💰</div>
             </div>
@@ -386,8 +585,10 @@ export const DirectorDashboard: React.FC = () => {
             <div className="dash-metric-card" onClick={() => handleTabChange('student_reports')} style={{ cursor: 'pointer' }}>
               <div className="dash-metric-info">
                 <span className="dash-metric-label">Tổng học viên đang học</span>
-                <span className="dash-metric-val">{summary.studentsCount} học viên</span>
-                <span className="dash-metric-trend up">↗ +28 học viên mới</span>
+                <span className="dash-metric-val">
+                  {loading ? 'Đang tải...' : `${summary.studentsCount} học viên`}
+                </span>
+                <span className="dash-metric-trend up">Học viên ghi danh thực tế</span>
               </div>
               <div className="dash-metric-icon icon-blue">🎓</div>
             </div>
@@ -395,8 +596,10 @@ export const DirectorDashboard: React.FC = () => {
             <div className="dash-metric-card" onClick={() => handleTabChange('class_course_reports')} style={{ cursor: 'pointer' }}>
               <div className="dash-metric-info">
                 <span className="dash-metric-label">Lớp học đang vận hành</span>
-                <span className="dash-metric-val">{summary.classesCount} lớp</span>
-                <span className="dash-metric-trend up">↗ 88.5% công suất phòng</span>
+                <span className="dash-metric-val">
+                  {loading ? 'Đang tải...' : `${summary.classesCount} lớp`}
+                </span>
+                <span className="dash-metric-trend up">{summary.activeClassesCount} lớp đang diễn ra</span>
               </div>
               <div className="dash-metric-icon icon-purple">🏫</div>
             </div>
@@ -404,7 +607,9 @@ export const DirectorDashboard: React.FC = () => {
             <div className="dash-metric-card" onClick={() => handleTabChange('staff_accounts')} style={{ cursor: 'pointer' }}>
               <div className="dash-metric-info">
                 <span className="dash-metric-label">Đội ngũ nhân sự &amp; GV</span>
-                <span className="dash-metric-val">{staffAccounts.length || summary.staffCount + summary.teachersCount} thành viên</span>
+                <span className="dash-metric-val">
+                  {loading ? 'Đang tải...' : `${staffAccounts.length || summary.staffCount + summary.teachersCount} thành viên`}
+                </span>
                 <span className="dash-metric-trend neutral">⭐ Đánh giá 4.88 / 5.0</span>
               </div>
               <div className="dash-metric-icon icon-amber">🏆</div>
@@ -431,47 +636,54 @@ export const DirectorDashboard: React.FC = () => {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '0.5rem' }}>
-                  <div className="dash-subcard">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', fontWeight: 700 }}>
-                      <span>IELTS Intensive Academic 7.5+ (12.500.000 đ/HV)</span>
-                      <span style={{ color: '#047857' }}>76.500.000 đ (45%)</span>
+                  {loading ? (
+                    <div style={{ textAlign: 'center', padding: '1.5rem', color: '#64748b', fontSize: '0.85rem' }}>
+                      Đang đồng bộ số liệu doanh thu khóa học...
                     </div>
-                    <div className="dash-progress">
-                      <div className="dash-progress-fill" style={{ width: '45%' }} />
+                  ) : courseRevenueList.length > 0 && courseRevenueList.some((c) => c.revenue > 0) ? (
+                    courseRevenueList.map((item, idx) => {
+                      const pct = summary.totalRevenue > 0 ? Math.round((item.revenue / summary.totalRevenue) * 100) : 0;
+                      const colors = ['#047857', '#06b6d4', '#f59e0b', '#ec4899', '#8b5cf6'];
+                      const color = colors[idx % colors.length];
+                      return (
+                        <div key={item.name} className="dash-subcard">
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', fontWeight: 700 }}>
+                            <span>{item.name} ({item.count} lượt đăng ký)</span>
+                            <span style={{ color }}>{item.revenue.toLocaleString('vi-VN')} đ ({pct}%)</span>
+                          </div>
+                          <div className="dash-progress">
+                            <div className="dash-progress-fill" style={{ width: `${Math.max(5, pct)}%`, background: color }} />
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div style={{ textAlign: 'center', padding: '1.5rem', color: '#64748b', fontSize: '0.875rem' }}>
+                      Chưa ghi nhận doanh thu phát sinh theo khóa học trong kỳ này.
                     </div>
-                  </div>
-
-                  <div className="dash-subcard">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', fontWeight: 700 }}>
-                      <span>IELTS Master Speaking &amp; Writing 7.0+ (9.800.000 đ/HV)</span>
-                      <span style={{ color: '#06b6d4' }}>54.600.000 đ (32%)</span>
-                    </div>
-                    <div className="dash-progress">
-                      <div className="dash-progress-fill" style={{ width: '32%', background: 'linear-gradient(90deg, #06b6d4, #10b981)' }} />
-                    </div>
-                  </div>
-
-                  <div className="dash-subcard">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', fontWeight: 700 }}>
-                      <span>IELTS Foundation &amp; Pre-IELTS (7.500.000 đ/HV)</span>
-                      <span style={{ color: '#f59e0b' }}>29.250.000 đ (18%)</span>
-                    </div>
-                    <div className="dash-progress">
-                      <div className="dash-progress-fill" style={{ width: '18%', background: 'linear-gradient(90deg, #f59e0b, #ec4899)' }} />
-                    </div>
-                  </div>
+                  )}
                 </div>
               </div>
 
-              {/* Pending Approvals */}
+              {/* Real Pending Approvals */}
               <div className="dash-card">
                 <div className="dash-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <h2 className="dash-card-title">
                     <span>📑</span> Đề Xuất &amp; Phê Duyệt Của Ban Giám Đốc
                   </h2>
-                  <span className="badge-pill badge-amber">
-                    {approvals.filter((a) => a.status === 'PENDING').length} cần xử lý
-                  </span>
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <span className="badge-pill badge-amber">
+                      {approvals.filter((a) => a.status === 'PENDING').length} cần xử lý
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsAddProposalModalOpen(true)}
+                      className="dash-quick-btn primary"
+                      style={{ padding: '0.35rem 0.75rem', fontSize: '0.78rem' }}
+                    >
+                      ➕ Tạo đề xuất
+                    </button>
+                  </div>
                 </div>
 
                 <div className="dash-table-wrapper" style={{ marginTop: '0.5rem' }}>
@@ -486,45 +698,84 @@ export const DirectorDashboard: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {approvals.map((item) => (
-                        <tr key={item.id}>
-                          <td style={{ fontWeight: 700, color: '#047857' }}>{item.id}</td>
-                          <td>
-                            <strong>{item.title}</strong>
-                            <div className="dash-subcard-meta">{item.date}</div>
-                          </td>
-                          <td>{item.proposer}</td>
-                          <td>
-                            {item.status === 'PENDING' && <span className="badge-pill badge-amber">Chờ duyệt</span>}
-                            {item.status === 'APPROVED' && <span className="badge-pill badge-green">Đã duyệt</span>}
-                            {item.status === 'REJECTED' && <span className="badge-pill badge-red">Từ chối</span>}
-                          </td>
-                          <td style={{ textAlign: 'right' }}>
-                            {item.status === 'PENDING' ? (
-                              <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end' }}>
-                                <button
-                                  type="button"
-                                  onClick={() => handleApprove(item.id)}
-                                  className="dash-quick-btn primary"
-                                  style={{ padding: '0.3rem 0.7rem', fontSize: '0.75rem' }}
-                                >
-                                  Duyệt
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleReject(item.id)}
-                                  className="dash-quick-btn"
-                                  style={{ padding: '0.3rem 0.7rem', fontSize: '0.75rem', color: '#ef4444' }}
-                                >
-                                  Bác
-                                </button>
-                              </div>
-                            ) : (
-                              <span className="dash-subcard-meta">Đã hoàn tất</span>
-                            )}
+                      {approvals.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
+                            {loading ? 'Đang tải danh sách đề xuất...' : 'Hiện không có đề xuất nào trong hệ thống.'}
                           </td>
                         </tr>
-                      ))}
+                      ) : (
+                        approvals.map((item) => {
+                          const itemId = item._id || item.code;
+                          const isActing = actionLoadingId === itemId;
+                          return (
+                            <tr key={itemId}>
+                              <td style={{ fontWeight: 700, color: '#047857' }}>{item.code}</td>
+                              <td>
+                                <strong>{item.title}</strong>
+                                {item.description && (
+                                  <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '2px' }}>
+                                    {item.description}
+                                  </div>
+                                )}
+                                <div className="dash-subcard-meta">
+                                  {item.createdAt
+                                    ? new Date(item.createdAt).toLocaleDateString('vi-VN', {
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                        day: '2-digit',
+                                        month: '2-digit',
+                                        year: 'numeric',
+                                      })
+                                    : 'Hôm nay'}
+                                  {item.category && ` • ${item.category}`}
+                                </div>
+                              </td>
+                              <td>
+                                <div>{item.proposerName}</div>
+                                {item.proposerRole && (
+                                  <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                                    ({item.proposerRole})
+                                  </div>
+                                )}
+                              </td>
+                              <td>
+                                {item.status === 'PENDING' && <span className="badge-pill badge-amber">Chờ duyệt</span>}
+                                {item.status === 'APPROVED' && <span className="badge-pill badge-green">Đã duyệt</span>}
+                                {item.status === 'REJECTED' && <span className="badge-pill badge-red">Từ chối</span>}
+                              </td>
+                              <td style={{ textAlign: 'right' }}>
+                                {item.status === 'PENDING' ? (
+                                  <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end' }}>
+                                    <button
+                                      type="button"
+                                      disabled={isActing}
+                                      onClick={() => handleApprove(itemId)}
+                                      className="dash-quick-btn primary"
+                                      style={{ padding: '0.35rem 0.8rem', fontSize: '0.78rem', cursor: 'pointer' }}
+                                    >
+                                      {isActing ? '...' : 'Duyệt'}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      disabled={isActing}
+                                      onClick={() => handleReject(itemId)}
+                                      className="dash-quick-btn"
+                                      style={{ padding: '0.35rem 0.8rem', fontSize: '0.78rem', color: '#ef4444', cursor: 'pointer' }}
+                                    >
+                                      {isActing ? '...' : 'Bác'}
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <span className="dash-subcard-meta" style={{ fontWeight: 600 }}>
+                                    {item.status === 'APPROVED' ? 'Đã hoàn tất' : 'Đã từ chối'}
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -548,6 +799,14 @@ export const DirectorDashboard: React.FC = () => {
                   >
                     <span>👥</span>
                     <span>Quản Lý Danh Sách Nhân Sự &amp; Giảng Viên</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="dash-quick-btn"
+                    onClick={() => handleTabChange('announcements')}
+                  >
+                    <span>📢</span>
+                    <span>Quản Lý &amp; Đăng Thông Báo Trung Tâm</span>
                   </button>
                   <button
                     type="button"
@@ -654,6 +913,259 @@ export const DirectorDashboard: React.FC = () => {
             <span>⬅</span>
             <span>Quay lại Bảng điều khiển Tổng quan</span>
           </button>
+        </div>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────
+          ANNOUNCEMENTS MANAGEMENT (QUẢN LÝ THÔNG BÁO)
+          ───────────────────────────────────────────────────────────── */}
+      {activeTab === 'announcements' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+            <div>
+              <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>
+                📢 Quản Lý Thông Báo Trung Tâm
+              </h2>
+              <span style={{ fontSize: '0.82rem', color: '#64748b' }}>
+                Thêm, sửa, xóa, ghim nổi bật và xuất bản các bài thông báo hiển thị cho học viên, phụ huynh &amp; giảng viên.
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <a
+                href="/announcements"
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  backgroundColor: '#ffffff',
+                  color: '#059669',
+                  border: '1px solid #a7f3d0',
+                  padding: '0.6rem 1rem',
+                  borderRadius: '10px',
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                <span>🌐</span>
+                <span>Xem Trang Công Khai ↗</span>
+              </a>
+
+              <button
+                type="button"
+                onClick={handleOpenCreateAnnouncement}
+                style={{
+                  backgroundColor: '#059669',
+                  color: '#ffffff',
+                  border: 'none',
+                  padding: '0.6rem 1.25rem',
+                  borderRadius: '10px',
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  boxShadow: '0 2px 6px rgba(5, 150, 105, 0.25)',
+                }}
+              >
+                <span>➕</span>
+                <span>Viết Thông Báo Mới</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Search & Filter Bar */}
+          <div className="dash-card" style={{ padding: '1rem', borderRadius: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flex: 1, minWidth: '220px' }}>
+              <input
+                type="text"
+                placeholder="🔍 Tìm kiếm thông báo theo tiêu đề, nội dung..."
+                value={announcementSearch}
+                onChange={(e) => setAnnouncementSearch(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.55rem 0.85rem',
+                  borderRadius: '8px',
+                  border: '1px solid #cbd5e1',
+                  fontSize: '0.85rem',
+                }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <select
+                value={announcementCategory}
+                onChange={(e) => setAnnouncementCategory(e.target.value)}
+                style={{ padding: '0.55rem 0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+              >
+                <option value="ALL">Tất cả danh mục</option>
+                <option value="Thông báo học vụ">Thông báo học vụ</option>
+                <option value="Workshop">Workshop 8.0+</option>
+                <option value="Thi thử IELTS">Thi thử IELTS</option>
+                <option value="Vinh danh">Vinh danh học viên</option>
+                <option value="Lịch nghỉ lễ">Lịch nghỉ lễ</option>
+                <option value="Chung">Chung</option>
+              </select>
+
+              <select
+                value={announcementAudience}
+                onChange={(e) => setAnnouncementAudience(e.target.value)}
+                style={{ padding: '0.55rem 0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+              >
+                <option value="ALL">Tất cả đối tượng</option>
+                <option value="STUDENTS">Học viên</option>
+                <option value="TEACHERS">Giảng viên</option>
+                <option value="STAFF">Nhân sự / Giáo vụ</option>
+              </select>
+
+              <select
+                value={announcementStatus}
+                onChange={(e) => setAnnouncementStatus(e.target.value)}
+                style={{ padding: '0.55rem 0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+              >
+                <option value="ALL">Tất cả trạng thái</option>
+                <option value="PUBLISHED">Đã xuất bản</option>
+                <option value="DRAFT">Bản nháp</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Announcements Table */}
+          <div className="dash-card">
+            <div className="dash-table-wrapper">
+              <table className="dash-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: '40%' }}>Tiêu đề &amp; Nội dung</th>
+                    <th>Danh mục</th>
+                    <th>Đối tượng</th>
+                    <th>Trạng thái</th>
+                    <th>Lượt xem</th>
+                    <th style={{ textAlign: 'right' }}>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {announcementsLoading ? (
+                    <tr>
+                      <td colSpan={6} style={{ textAlign: 'center', padding: '2.5rem', color: '#64748b' }}>
+                        Đang tải danh sách thông báo...
+                      </td>
+                    </tr>
+                  ) : announcements.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} style={{ textAlign: 'center', padding: '2.5rem', color: '#64748b' }}>
+                        Không tìm thấy thông báo nào phù hợp với bộ lọc.
+                      </td>
+                    </tr>
+                  ) : (
+                    announcements.map((item) => (
+                      <tr key={item._id}>
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
+                            {item.isPinned && (
+                              <span
+                                title="Đang được ghim nổi bật"
+                                style={{
+                                  backgroundColor: '#fef3c7',
+                                  color: '#b45309',
+                                  fontSize: '0.72rem',
+                                  fontWeight: 800,
+                                  padding: '2px 6px',
+                                  borderRadius: '6px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '2px',
+                                  whiteSpace: 'nowrap',
+                                }}
+                              >
+                                📌 Ghim
+                              </span>
+                            )}
+                            <div>
+                              <strong style={{ fontSize: '0.92rem', color: '#0f172a' }}>{item.title}</strong>
+                              {item.summary && (
+                                <p style={{ margin: '3px 0 0', fontSize: '0.8rem', color: '#64748b', lineHeight: 1.4 }}>
+                                  {item.summary}
+                                </p>
+                              )}
+                              <div className="dash-subcard-meta" style={{ marginTop: '4px' }}>
+                                📅 {new Date(item.publicationDate || item.createdAt).toLocaleDateString('vi-VN')} • Tác giả: {item.author?.fullName || 'Ban Giám Đốc'}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <span
+                            style={{
+                              backgroundColor: '#ecfdf5',
+                              color: '#047857',
+                              padding: '3px 8px',
+                              borderRadius: '6px',
+                              fontSize: '0.75rem',
+                              fontWeight: 700,
+                            }}
+                          >
+                            {item.category || 'Chung'}
+                          </span>
+                        </td>
+                        <td>
+                          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#334155' }}>
+                            {item.targetAudience === 'ALL' && '🌐 Tất cả'}
+                            {item.targetAudience === 'STUDENTS' && '🎓 Học viên'}
+                            {item.targetAudience === 'TEACHERS' && '👨‍🏫 Giảng viên'}
+                            {item.targetAudience === 'STAFF' && '👥 Nhân sự'}
+                          </span>
+                        </td>
+                        <td>
+                          {item.status === 'PUBLISHED' ? (
+                            <span className="badge-pill badge-green">Đã xuất bản</span>
+                          ) : (
+                            <span className="badge-pill badge-amber">Bản nháp</span>
+                          )}
+                        </td>
+                        <td>
+                          <span style={{ fontSize: '0.82rem', color: '#64748b' }}>👁️ {item.views || 0}</span>
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end' }}>
+                            <button
+                              type="button"
+                              title={item.isPinned ? 'Bỏ ghim' : 'Ghim bài lên đầu'}
+                              onClick={() => handleTogglePinAnnouncement(item)}
+                              className="dash-quick-btn"
+                              style={{ padding: '0.35rem 0.65rem', fontSize: '0.78rem' }}
+                            >
+                              {item.isPinned ? 'Bỏ ghim' : '📌 Ghim'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditAnnouncement(item)}
+                              className="dash-quick-btn primary"
+                              style={{ padding: '0.35rem 0.65rem', fontSize: '0.78rem' }}
+                            >
+                              ✏️ Sửa
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteAnnouncement(item._id, item.title)}
+                              className="dash-quick-btn"
+                              style={{ padding: '0.35rem 0.65rem', fontSize: '0.78rem', color: '#ef4444' }}
+                            >
+                              🗑️ Xóa
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       )}
 
@@ -1523,183 +2035,1231 @@ export const DirectorDashboard: React.FC = () => {
           MODAL: THÊM TÀI KHOẢN NHÂN SỰ MỚI
           ───────────────────────────────────────────────────────────── */}
       {isAddStaffModalOpen && (
-        <div className="dmr-modal-overlay" onClick={() => setIsAddStaffModalOpen(false)}>
-          <div className="dmr-modal-content" style={{ maxWidth: '600px' }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem' }}>
-              <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>
-                ➕ Cấp Tài Khoản Nhân Sự / Giảng Viên Mới
-              </h3>
+        <div
+          className="dmr-modal-backdrop"
+          onClick={() => setIsAddStaffModalOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '1rem',
+          }}
+        >
+          <div
+            style={{
+              maxWidth: '640px',
+              width: '94%',
+              maxHeight: '92vh',
+              overflowY: 'auto',
+              borderRadius: '20px',
+              backgroundColor: '#FFFFFF',
+              boxShadow: '0 25px 60px -15px rgba(15, 23, 42, 0.28)',
+              border: '1px solid #E2E8F0',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div
+              style={{
+                padding: '1.35rem 1.65rem',
+                background: 'linear-gradient(135deg, #064E3B 0%, #065F46 50%, #047857 100%)',
+                color: '#FFFFFF',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                position: 'sticky',
+                top: 0,
+                zIndex: 10,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div
+                  style={{
+                    width: '42px',
+                    height: '42px',
+                    borderRadius: '12px',
+                    background: 'rgba(255, 255, 255, 0.16)',
+                    backdropFilter: 'blur(6px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '1.3rem',
+                    border: '1px solid rgba(255, 255, 255, 0.25)',
+                    flexShrink: 0,
+                  }}
+                >
+                  ➕
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.18rem', fontWeight: 800, color: '#FFFFFF', letterSpacing: '-0.01em' }}>
+                    Cấp Tài Khoản Nhân Sự Mới
+                  </h3>
+                  <p style={{ margin: '2px 0 0', fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.85)' }}>
+                    Khởi tạo thông tin, phân quyền và thiết lập mật khẩu truy cập hệ thống
+                  </p>
+                </div>
+              </div>
               <button
                 type="button"
                 onClick={() => setIsAddStaffModalOpen(false)}
-                style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  border: 'none',
+                  background: 'rgba(255, 255, 255, 0.15)',
+                  color: '#FFFFFF',
+                  fontSize: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  transition: 'background 0.2s',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)')}
               >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleCreateStaff} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.3rem' }}>
-                  Họ và tên nhân sự:
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ví dụ: ThS. Lê Hoàng Bách"
-                  value={newStaffForm.fullName}
-                  onChange={(e) => setNewStaffForm({ ...newStaffForm, fullName: e.target.value })}
-                  style={{ width: '100%', padding: '0.55rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}
-                  required
-                />
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+            {/* Form Content */}
+            <form onSubmit={handleCreateStaff} style={{ display: 'flex', flexDirection: 'column' }}>
+              <div style={{ padding: '1.5rem 1.65rem', display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.3rem' }}>
-                    Email đăng nhập:
-                  </label>
-                  <input
-                    type="email"
-                    placeholder="bach.le@educenter.edu.vn"
-                    value={newStaffForm.email}
-                    onChange={(e) => setNewStaffForm({ ...newStaffForm, email: e.target.value })}
-                    style={{ width: '100%', padding: '0.55rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}
-                    required
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.3rem' }}>
-                    Số điện thoại:
-                  </label>
-                  <input
-                    type="tel"
-                    placeholder="0988 123 456"
-                    value={newStaffForm.phone}
-                    onChange={(e) => setNewStaffForm({ ...newStaffForm, phone: e.target.value })}
-                    style={{ width: '100%', padding: '0.55rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.3rem' }}>
-                    Vai trò:
-                  </label>
-                  <select
-                    value={newStaffForm.role}
-                    onChange={(e) => setNewStaffForm({ ...newStaffForm, role: e.target.value as any })}
-                    style={{ width: '100%', padding: '0.55rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 600 }}
-                  >
-                    <option value="TRAINING_STAFF">💼 Chuyên viên Giáo vụ (TRAINING_STAFF)</option>
-                    <option value="TEACHER">👨‍🏫 Giảng viên IELTS (TEACHER)</option>
-                  </select>
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.3rem' }}>
-                    Mật khẩu khởi tạo:
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.84rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.35rem' }}>
+                    <span>👤</span>
+                    <span>Họ và tên nhân sự</span>
+                    <span style={{ color: '#EF4444' }}>*</span>
                   </label>
                   <input
                     type="text"
-                    value={newStaffForm.password}
-                    onChange={(e) => setNewStaffForm({ ...newStaffForm, password: e.target.value })}
-                    style={{ width: '100%', padding: '0.55rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}
                     required
+                    placeholder="Ví dụ: ThS. Lê Hoàng Bách"
+                    value={newStaffForm.fullName}
+                    onChange={(e) => setNewStaffForm({ ...newStaffForm, fullName: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '0.7rem 0.95rem',
+                      borderRadius: '10px',
+                      border: '1.5px solid #E2E8F0',
+                      fontSize: '0.9rem',
+                      fontWeight: 600,
+                      color: '#0F172A',
+                      outline: 'none',
+                      backgroundColor: '#F8FAFC',
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#059669';
+                      e.target.style.backgroundColor = '#FFFFFF';
+                      e.target.style.boxShadow = '0 0 0 3px rgba(5, 150, 105, 0.12)';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = '#E2E8F0';
+                      e.target.style.backgroundColor = '#F8FAFC';
+                      e.target.style.boxShadow = 'none';
+                    }}
                   />
                 </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.85rem' }}>
+                  <div>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
+                      <span>✉️</span>
+                      <span>Email đăng nhập</span>
+                      <span style={{ color: '#EF4444' }}>*</span>
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      placeholder="bach.le@educenter.edu.vn"
+                      value={newStaffForm.email}
+                      onChange={(e) => setNewStaffForm({ ...newStaffForm, email: e.target.value })}
+                      style={{
+                        width: '100%',
+                        padding: '0.65rem 0.95rem',
+                        borderRadius: '10px',
+                        border: '1.5px solid #E2E8F0',
+                        fontSize: '0.86rem',
+                        color: '#334155',
+                        outline: 'none',
+                        backgroundColor: '#F8FAFC',
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = '#059669';
+                        e.target.style.backgroundColor = '#FFFFFF';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = '#E2E8F0';
+                        e.target.style.backgroundColor = '#F8FAFC';
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
+                      <span>📱</span>
+                      <span>Số điện thoại:</span>
+                    </label>
+                    <input
+                      type="tel"
+                      placeholder="0988 123 456"
+                      value={newStaffForm.phone}
+                      onChange={(e) => setNewStaffForm({ ...newStaffForm, phone: e.target.value })}
+                      style={{
+                        width: '100%',
+                        padding: '0.65rem 0.95rem',
+                        borderRadius: '10px',
+                        border: '1.5px solid #E2E8F0',
+                        fontSize: '0.86rem',
+                        color: '#334155',
+                        outline: 'none',
+                        backgroundColor: '#F8FAFC',
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = '#059669';
+                        e.target.style.backgroundColor = '#FFFFFF';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = '#E2E8F0';
+                        e.target.style.backgroundColor = '#F8FAFC';
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.85rem' }}>
+                  <div>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
+                      <span>💼</span>
+                      <span>Vai trò công việc:</span>
+                    </label>
+                    <select
+                      value={newStaffForm.role}
+                      onChange={(e) => setNewStaffForm({ ...newStaffForm, role: e.target.value as any })}
+                      style={{
+                        width: '100%',
+                        padding: '0.65rem 0.85rem',
+                        borderRadius: '10px',
+                        border: '1.5px solid #E2E8F0',
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                        color: '#0F172A',
+                        backgroundColor: '#F8FAFC',
+                        cursor: 'pointer',
+                        outline: 'none',
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = '#059669';
+                        e.target.style.backgroundColor = '#FFFFFF';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = '#E2E8F0';
+                        e.target.style.backgroundColor = '#F8FAFC';
+                      }}
+                    >
+                      <option value="TRAINING_STAFF">💼 Chuyên viên Giáo vụ (TRAINING_STAFF)</option>
+                      <option value="TEACHER">👨‍🏫 Giảng viên IELTS (TEACHER)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
+                      <span>🔑</span>
+                      <span>Mật khẩu khởi tạo</span>
+                      <span style={{ color: '#EF4444' }}>*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={newStaffForm.password}
+                      onChange={(e) => setNewStaffForm({ ...newStaffForm, password: e.target.value })}
+                      style={{
+                        width: '100%',
+                        padding: '0.65rem 0.95rem',
+                        borderRadius: '10px',
+                        border: '1.5px solid #E2E8F0',
+                        fontSize: '0.86rem',
+                        color: '#334155',
+                        outline: 'none',
+                        backgroundColor: '#F8FAFC',
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = '#059669';
+                        e.target.style.backgroundColor = '#FFFFFF';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = '#E2E8F0';
+                        e.target.style.backgroundColor = '#F8FAFC';
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {newStaffForm.role === 'TRAINING_STAFF' ? (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.85rem' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
+                        Phòng ban:
+                      </label>
+                      <input
+                        type="text"
+                        value={newStaffForm.department}
+                        onChange={(e) => setNewStaffForm({ ...newStaffForm, department: e.target.value })}
+                        style={{
+                          width: '100%',
+                          padding: '0.65rem 0.95rem',
+                          borderRadius: '10px',
+                          border: '1.5px solid #E2E8F0',
+                          fontSize: '0.86rem',
+                          color: '#334155',
+                          outline: 'none',
+                          backgroundColor: '#F8FAFC',
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
+                        Chức danh:
+                      </label>
+                      <input
+                        type="text"
+                        value={newStaffForm.position}
+                        onChange={(e) => setNewStaffForm({ ...newStaffForm, position: e.target.value })}
+                        style={{
+                          width: '100%',
+                          padding: '0.65rem 0.95rem',
+                          borderRadius: '10px',
+                          border: '1.5px solid #E2E8F0',
+                          fontSize: '0.86rem',
+                          color: '#334155',
+                          outline: 'none',
+                          backgroundColor: '#F8FAFC',
+                        }}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.85rem' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
+                        Chuyên môn chính:
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Writing / Speaking"
+                        value={newStaffForm.specialization}
+                        onChange={(e) => setNewStaffForm({ ...newStaffForm, specialization: e.target.value })}
+                        style={{
+                          width: '100%',
+                          padding: '0.65rem 0.95rem',
+                          borderRadius: '10px',
+                          border: '1.5px solid #E2E8F0',
+                          fontSize: '0.86rem',
+                          color: '#334155',
+                          outline: 'none',
+                          backgroundColor: '#F8FAFC',
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
+                        IELTS Band:
+                      </label>
+                      <input
+                        type="number"
+                        step="0.5"
+                        min="7.0"
+                        max="9.0"
+                        value={newStaffForm.ieltsBand}
+                        onChange={(e) => setNewStaffForm({ ...newStaffForm, ieltsBand: Number(e.target.value) })}
+                        style={{
+                          width: '100%',
+                          padding: '0.65rem 0.95rem',
+                          borderRadius: '10px',
+                          border: '1.5px solid #E2E8F0',
+                          fontSize: '0.86rem',
+                          color: '#334155',
+                          outline: 'none',
+                          backgroundColor: '#F8FAFC',
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
+                        Kinh nghiệm (năm):
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="30"
+                        value={newStaffForm.yearsOfExperience}
+                        onChange={(e) => setNewStaffForm({ ...newStaffForm, yearsOfExperience: Number(e.target.value) })}
+                        style={{
+                          width: '100%',
+                          padding: '0.65rem 0.95rem',
+                          borderRadius: '10px',
+                          border: '1.5px solid #E2E8F0',
+                          fontSize: '0.86rem',
+                          color: '#334155',
+                          outline: 'none',
+                          backgroundColor: '#F8FAFC',
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {newStaffForm.role === 'TRAINING_STAFF' ? (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.3rem' }}>
-                      Phòng ban:
-                    </label>
-                    <input
-                      type="text"
-                      value={newStaffForm.department}
-                      onChange={(e) => setNewStaffForm({ ...newStaffForm, department: e.target.value })}
-                      style={{ width: '100%', padding: '0.55rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.3rem' }}>
-                      Chức danh:
-                    </label>
-                    <input
-                      type="text"
-                      value={newStaffForm.position}
-                      onChange={(e) => setNewStaffForm({ ...newStaffForm, position: e.target.value })}
-                      style={{ width: '100%', padding: '0.55rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}
-                    />
-                  </div>
-                </div>
-              ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.3rem' }}>
-                      Chuyên môn:
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Writing / Speaking"
-                      value={newStaffForm.specialization}
-                      onChange={(e) => setNewStaffForm({ ...newStaffForm, specialization: e.target.value })}
-                      style={{ width: '100%', padding: '0.55rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.3rem' }}>
-                      IELTS Band:
-                    </label>
-                    <input
-                      type="number"
-                      step="0.5"
-                      min="7.0"
-                      max="9.0"
-                      value={newStaffForm.ieltsBand}
-                      onChange={(e) => setNewStaffForm({ ...newStaffForm, ieltsBand: Number(e.target.value) })}
-                      style={{ width: '100%', padding: '0.55rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.3rem' }}>
-                      Kinh nghiệm (năm):
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="30"
-                      value={newStaffForm.yearsOfExperience}
-                      onChange={(e) => setNewStaffForm({ ...newStaffForm, yearsOfExperience: Number(e.target.value) })}
-                      style={{ width: '100%', padding: '0.55rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.75rem' }}>
+              {/* Modal Footer */}
+              <div
+                style={{
+                  padding: '1rem 1.65rem',
+                  borderTop: '1px solid #E2E8F0',
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: '0.75rem',
+                  backgroundColor: '#F8FAFC',
+                  borderBottomLeftRadius: '20px',
+                  borderBottomRightRadius: '20px',
+                }}
+              >
                 <button
                   type="button"
                   onClick={() => setIsAddStaffModalOpen(false)}
-                  style={{ padding: '0.55rem 1rem', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer' }}
+                  style={{
+                    padding: '0.65rem 1.35rem',
+                    borderRadius: '10px',
+                    border: '1.5px solid #E2E8F0',
+                    background: '#FFFFFF',
+                    color: '#64748B',
+                    fontWeight: 700,
+                    fontSize: '0.88rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F1F5F9')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#FFFFFF')}
                 >
-                  Hủy
+                  Hủy bỏ
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmittingStaff}
                   style={{
-                    padding: '0.55rem 1.25rem',
-                    borderRadius: '8px',
+                    padding: '0.65rem 1.55rem',
+                    borderRadius: '10px',
                     border: 'none',
-                    backgroundColor: '#059669',
-                    color: '#fff',
-                    fontWeight: 700,
-                    cursor: 'pointer',
+                    background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                    color: '#FFFFFF',
+                    fontWeight: 800,
+                    fontSize: '0.88rem',
+                    cursor: isSubmittingStaff ? 'not-allowed' : 'pointer',
+                    boxShadow: '0 4px 14px rgba(5, 150, 105, 0.35)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    transition: 'all 0.2s ease',
+                    opacity: isSubmittingStaff ? 0.75 : 1,
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isSubmittingStaff) e.currentTarget.style.transform = 'translateY(-1px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSubmittingStaff) e.currentTarget.style.transform = 'translateY(0)';
                   }}
                 >
                   {isSubmittingStaff ? 'Đang tạo...' : '💾 Cấp Tài Khoản'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────
+          MODAL: THÊM / SỬA BÀI THÔNG BÁO
+          ───────────────────────────────────────────────────────────── */}
+      {isAnnouncementModalOpen && (
+        <div className="dmr-modal-backdrop" onClick={() => setIsAnnouncementModalOpen(false)}>
+          <div
+            style={{
+              maxWidth: '700px',
+              width: '92%',
+              maxHeight: '92vh',
+              overflowY: 'auto',
+              borderRadius: '20px',
+              backgroundColor: '#FFFFFF',
+              boxShadow: '0 25px 60px -15px rgba(15, 23, 42, 0.28)',
+              border: '1px solid #E2E8F0',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div
+              style={{
+                padding: '1.35rem 1.65rem',
+                background: 'linear-gradient(135deg, #064E3B 0%, #065F46 50%, #047857 100%)',
+                color: '#FFFFFF',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                position: 'sticky',
+                top: 0,
+                zIndex: 10,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div
+                  style={{
+                    width: '42px',
+                    height: '42px',
+                    borderRadius: '12px',
+                    background: 'rgba(255, 255, 255, 0.16)',
+                    backdropFilter: 'blur(6px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '1.3rem',
+                    border: '1px solid rgba(255, 255, 255, 0.25)',
+                    flexShrink: 0,
+                  }}
+                >
+                  {editingAnnouncement ? '✏️' : '📢'}
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.18rem', fontWeight: 800, color: '#FFFFFF', letterSpacing: '-0.01em' }}>
+                    {editingAnnouncement ? 'Chỉnh Sửa Bài Thông Báo' : 'Tạo Bài Thông Báo Mới'}
+                  </h3>
+                  <p style={{ margin: '2px 0 0', fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.85)' }}>
+                    {editingAnnouncement
+                      ? 'Cập nhật nội dung hiển thị trên cổng thông tin EduCenter'
+                      : 'Xuất bản thông báo mới gửi tới học viên, giảng viên và nhân sự'}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAnnouncementModalOpen(false)}
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  border: 'none',
+                  background: 'rgba(255, 255, 255, 0.15)',
+                  color: '#FFFFFF',
+                  fontSize: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  transition: 'background 0.2s',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)')}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Form Content */}
+            <form onSubmit={handleSaveAnnouncement} style={{ display: 'flex', flexDirection: 'column' }}>
+              <div style={{ padding: '1.5rem 1.65rem', display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
+                {/* Title */}
+                <div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.84rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.35rem' }}>
+                    <span>🏷️</span>
+                    <span>Tiêu đề thông báo</span>
+                    <span style={{ color: '#EF4444' }}>*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ví dụ: Lịch thi thử Mock IELTS tháng 11, Workshop Speaking..."
+                    value={announcementForm.title}
+                    onChange={(e) => setAnnouncementForm({ ...announcementForm, title: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '0.7rem 0.95rem',
+                      borderRadius: '10px',
+                      border: '1.5px solid #E2E8F0',
+                      fontSize: '0.9rem',
+                      fontWeight: 600,
+                      color: '#0F172A',
+                      outline: 'none',
+                      backgroundColor: '#F8FAFC',
+                      transition: 'all 0.2s ease',
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#059669';
+                      e.target.style.backgroundColor = '#FFFFFF';
+                      e.target.style.boxShadow = '0 0 0 3px rgba(5, 150, 105, 0.12)';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = '#E2E8F0';
+                      e.target.style.backgroundColor = '#F8FAFC';
+                      e.target.style.boxShadow = 'none';
+                    }}
+                  />
+                </div>
+
+                {/* Summary */}
+                <div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.84rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.35rem' }}>
+                    <span>📝</span>
+                    <span>Tóm tắt ngắn gọn</span>
+                    <span style={{ fontSize: '0.76rem', fontWeight: 500, color: '#64748B' }}>(Hiển thị xem trước ở danh sách)</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Tóm tắt 1-2 câu để người xem nắm thông tin chính nhanh chóng..."
+                    value={announcementForm.summary}
+                    onChange={(e) => setAnnouncementForm({ ...announcementForm, summary: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '0.65rem 0.95rem',
+                      borderRadius: '10px',
+                      border: '1.5px solid #E2E8F0',
+                      fontSize: '0.86rem',
+                      color: '#334155',
+                      outline: 'none',
+                      backgroundColor: '#F8FAFC',
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#059669';
+                      e.target.style.backgroundColor = '#FFFFFF';
+                      e.target.style.boxShadow = '0 0 0 3px rgba(5, 150, 105, 0.12)';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = '#E2E8F0';
+                      e.target.style.backgroundColor = '#F8FAFC';
+                      e.target.style.boxShadow = 'none';
+                    }}
+                  />
+                </div>
+
+                {/* Grid 3 Selects */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.85rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
+                      📁 Danh mục:
+                    </label>
+                    <select
+                      value={announcementForm.category}
+                      onChange={(e) => setAnnouncementForm({ ...announcementForm, category: e.target.value })}
+                      style={{
+                        width: '100%',
+                        padding: '0.65rem 0.85rem',
+                        borderRadius: '10px',
+                        border: '1.5px solid #E2E8F0',
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                        color: '#0F172A',
+                        backgroundColor: '#F8FAFC',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <option value="Thông báo học vụ">Thông báo học vụ</option>
+                      <option value="Workshop">Workshop 8.0+</option>
+                      <option value="Thi thử IELTS">Thi thử IELTS</option>
+                      <option value="Vinh danh">Vinh danh học viên</option>
+                      <option value="Lịch nghỉ lễ">Lịch nghỉ lễ</option>
+                      <option value="Chung">Chung</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
+                      👥 Đối tượng nhận tin:
+                    </label>
+                    <select
+                      value={announcementForm.targetAudience}
+                      onChange={(e) => setAnnouncementForm({ ...announcementForm, targetAudience: e.target.value as any })}
+                      style={{
+                        width: '100%',
+                        padding: '0.65rem 0.85rem',
+                        borderRadius: '10px',
+                        border: '1.5px solid #E2E8F0',
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                        color: '#0F172A',
+                        backgroundColor: '#F8FAFC',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <option value="ALL">🌐 Tất cả (Công khai)</option>
+                      <option value="STUDENTS">🎓 Học viên</option>
+                      <option value="TEACHERS">👨‍🏫 Giảng viên</option>
+                      <option value="STAFF">👥 Nhân sự / Giáo vụ</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
+                      👁️ Trạng thái hiển thị:
+                    </label>
+                    <select
+                      value={announcementForm.status}
+                      onChange={(e) => setAnnouncementForm({ ...announcementForm, status: e.target.value as any })}
+                      style={{
+                        width: '100%',
+                        padding: '0.65rem 0.85rem',
+                        borderRadius: '10px',
+                        border: '1.5px solid #E2E8F0',
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                        color: '#0F172A',
+                        backgroundColor: '#F8FAFC',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <option value="PUBLISHED">✅ Xuất bản ngay</option>
+                      <option value="DRAFT">📋 Lưu bản nháp</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Interactive Pin Toggle Card */}
+                <div
+                  onClick={() => setAnnouncementForm((prev) => ({ ...prev, isPinned: !prev.isPinned }))}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '0.85rem 1.15rem',
+                    borderRadius: '12px',
+                    border: `1.5px solid ${announcementForm.isPinned ? '#10B981' : '#E2E8F0'}`,
+                    backgroundColor: announcementForm.isPinned ? '#ECFDF5' : '#F8FAFC',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    boxShadow: announcementForm.isPinned ? '0 2px 8px rgba(16, 185, 129, 0.12)' : 'none',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ fontSize: '1.25rem' }}>📌</span>
+                    <div>
+                      <div style={{ fontSize: '0.88rem', fontWeight: 700, color: announcementForm.isPinned ? '#065F46' : '#1E293B' }}>
+                        Ghim bài viết này lên vị trí nổi bật
+                      </div>
+                      <div style={{ fontSize: '0.76rem', color: announcementForm.isPinned ? '#047857' : '#64748B' }}>
+                        Bài viết sẽ luôn nằm ở đầu danh sách thông báo và kèm huy hiệu ghim màu vàng kim
+                      </div>
+                    </div>
+                  </div>
+                  {/* Custom switch indicator */}
+                  <div
+                    style={{
+                      width: '44px',
+                      height: '24px',
+                      borderRadius: '999px',
+                      backgroundColor: announcementForm.isPinned ? '#059669' : '#CBD5E1',
+                      position: 'relative',
+                      transition: 'background-color 0.2s ease',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: '18px',
+                        height: '18px',
+                        borderRadius: '50%',
+                        backgroundColor: '#FFFFFF',
+                        position: 'absolute',
+                        top: '3px',
+                        left: announcementForm.isPinned ? '23px' : '3px',
+                        transition: 'left 0.2s ease',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Banner image URL */}
+                <div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
+                    <span>🖼️</span>
+                    <span>Link ảnh bìa / banner minh họa (tùy chọn):</span>
+                  </label>
+                  <input
+                    type="url"
+                    placeholder="https://example.com/banner.jpg"
+                    value={announcementForm.imageUrl}
+                    onChange={(e) => setAnnouncementForm({ ...announcementForm, imageUrl: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '0.65rem 0.95rem',
+                      borderRadius: '10px',
+                      border: '1.5px solid #E2E8F0',
+                      fontSize: '0.85rem',
+                      color: '#334155',
+                      outline: 'none',
+                      backgroundColor: '#F8FAFC',
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#059669';
+                      e.target.style.backgroundColor = '#FFFFFF';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = '#E2E8F0';
+                      e.target.style.backgroundColor = '#F8FAFC';
+                    }}
+                  />
+                </div>
+
+                {/* Content textarea */}
+                <div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.84rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.35rem' }}>
+                    <span>📄</span>
+                    <span>Nội dung chi tiết bài viết</span>
+                    <span style={{ color: '#EF4444' }}>*</span>
+                  </label>
+                  <textarea
+                    required
+                    rows={6}
+                    placeholder="Nhập nội dung đầy đủ của bài thông báo..."
+                    value={announcementForm.content}
+                    onChange={(e) => setAnnouncementForm({ ...announcementForm, content: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem 0.95rem',
+                      borderRadius: '10px',
+                      border: '1.5px solid #E2E8F0',
+                      fontSize: '0.88rem',
+                      lineHeight: 1.6,
+                      color: '#0F172A',
+                      outline: 'none',
+                      backgroundColor: '#F8FAFC',
+                      fontFamily: 'inherit',
+                      resize: 'vertical',
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#059669';
+                      e.target.style.backgroundColor = '#FFFFFF';
+                      e.target.style.boxShadow = '0 0 0 3px rgba(5, 150, 105, 0.12)';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = '#E2E8F0';
+                      e.target.style.backgroundColor = '#F8FAFC';
+                      e.target.style.boxShadow = 'none';
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div
+                style={{
+                  padding: '1rem 1.65rem',
+                  borderTop: '1px solid #E2E8F0',
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: '0.75rem',
+                  backgroundColor: '#F8FAFC',
+                  borderBottomLeftRadius: '20px',
+                  borderBottomRightRadius: '20px',
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setIsAnnouncementModalOpen(false)}
+                  style={{
+                    padding: '0.65rem 1.35rem',
+                    borderRadius: '10px',
+                    border: '1.5px solid #E2E8F0',
+                    background: '#FFFFFF',
+                    color: '#64748B',
+                    fontWeight: 700,
+                    fontSize: '0.88rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F1F5F9')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#FFFFFF')}
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingAnnouncement}
+                  style={{
+                    padding: '0.65rem 1.55rem',
+                    borderRadius: '10px',
+                    border: 'none',
+                    background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                    color: '#FFFFFF',
+                    fontWeight: 800,
+                    fontSize: '0.88rem',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 14px rgba(5, 150, 105, 0.35)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-1px)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
+                >
+                  {isSubmittingAnnouncement ? 'Đang lưu...' : editingAnnouncement ? '💾 Cập Nhật Thông Báo' : '🚀 Xuất Bản Thông Báo'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────
+          MODAL: TẠO ĐỀ XUẤT MỚI (APPROVALS)
+          ───────────────────────────────────────────────────────────── */}
+      {isAddProposalModalOpen && (
+        <div
+          className="dmr-modal-backdrop"
+          onClick={() => setIsAddProposalModalOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '1rem',
+          }}
+        >
+          <div
+            style={{
+              maxWidth: '620px',
+              width: '94%',
+              maxHeight: '92vh',
+              overflowY: 'auto',
+              borderRadius: '20px',
+              backgroundColor: '#FFFFFF',
+              boxShadow: '0 25px 60px -15px rgba(15, 23, 42, 0.28)',
+              border: '1px solid #E2E8F0',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div
+              style={{
+                padding: '1.35rem 1.65rem',
+                background: 'linear-gradient(135deg, #064E3B 0%, #065F46 50%, #047857 100%)',
+                color: '#FFFFFF',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                position: 'sticky',
+                top: 0,
+                zIndex: 10,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div
+                  style={{
+                    width: '42px',
+                    height: '42px',
+                    borderRadius: '12px',
+                    background: 'rgba(255, 255, 255, 0.16)',
+                    backdropFilter: 'blur(6px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '1.3rem',
+                    border: '1px solid rgba(255, 255, 255, 0.25)',
+                    flexShrink: 0,
+                  }}
+                >
+                  📑
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.18rem', fontWeight: 800, color: '#FFFFFF', letterSpacing: '-0.01em' }}>
+                    Tạo Đề Xuất Trình Ban Giám Đốc
+                  </h3>
+                  <p style={{ margin: '2px 0 0', fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.85)' }}>
+                    Gửi tờ trình phê duyệt mở lớp mới, học bổng hoặc đề xuất vận hành trung tâm
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAddProposalModalOpen(false)}
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  border: 'none',
+                  background: 'rgba(255, 255, 255, 0.15)',
+                  color: '#FFFFFF',
+                  fontSize: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  transition: 'background 0.2s',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)')}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Form Content */}
+            <form onSubmit={handleCreateProposal} style={{ display: 'flex', flexDirection: 'column' }}>
+              <div style={{ padding: '1.5rem 1.65rem', display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
+                {/* Title */}
+                <div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.84rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.35rem' }}>
+                    <span>🏷️</span>
+                    <span>Tiêu đề đề xuất</span>
+                    <span style={{ color: '#EF4444' }}>*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ví dụ: Mở thêm lớp cấp tốc IELTS 7.0+, Đề xuất cấp học bổng tài năng..."
+                    value={newProposalForm.title}
+                    onChange={(e) => setNewProposalForm({ ...newProposalForm, title: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '0.7rem 0.95rem',
+                      borderRadius: '10px',
+                      border: '1.5px solid #E2E8F0',
+                      fontSize: '0.9rem',
+                      fontWeight: 600,
+                      color: '#0F172A',
+                      outline: 'none',
+                      backgroundColor: '#F8FAFC',
+                      transition: 'all 0.2s ease',
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#059669';
+                      e.target.style.backgroundColor = '#FFFFFF';
+                      e.target.style.boxShadow = '0 0 0 3px rgba(5, 150, 105, 0.12)';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = '#E2E8F0';
+                      e.target.style.backgroundColor = '#F8FAFC';
+                      e.target.style.boxShadow = 'none';
+                    }}
+                  />
+                </div>
+
+                {/* Grid Category & Proposer Role */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.85rem' }}>
+                  <div>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
+                      <span>📁</span>
+                      <span>Lĩnh vực phân loại:</span>
+                    </label>
+                    <select
+                      value={newProposalForm.category}
+                      onChange={(e) => setNewProposalForm({ ...newProposalForm, category: e.target.value })}
+                      style={{
+                        width: '100%',
+                        padding: '0.65rem 0.85rem',
+                        borderRadius: '10px',
+                        border: '1.5px solid #E2E8F0',
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                        color: '#0F172A',
+                        backgroundColor: '#F8FAFC',
+                        cursor: 'pointer',
+                        outline: 'none',
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = '#059669';
+                        e.target.style.backgroundColor = '#FFFFFF';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = '#E2E8F0';
+                        e.target.style.backgroundColor = '#F8FAFC';
+                      }}
+                    >
+                      <option value="Mở lớp mới">🏢 Mở lớp học mới</option>
+                      <option value="Học bổng">🎓 Học bổng &amp; Ưu đãi học phí</option>
+                      <option value="Khảo thí & Điểm">📊 Khảo thí &amp; Điểm thi</option>
+                      <option value="Cơ sở vật chất">🏛️ Cơ sở vật chất &amp; Thiết bị</option>
+                      <option value="Chương trình học">📚 Giáo trình &amp; Học liệu</option>
+                      <option value="Khác">📌 Đề xuất vận hành khác</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
+                      <span>💼</span>
+                      <span>Chức vụ / Bộ phận người gửi:</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ví dụ: Trưởng ban Giáo vụ, Phòng Đào tạo..."
+                      value={newProposalForm.proposerRole}
+                      onChange={(e) => setNewProposalForm({ ...newProposalForm, proposerRole: e.target.value })}
+                      style={{
+                        width: '100%',
+                        padding: '0.65rem 0.95rem',
+                        borderRadius: '10px',
+                        border: '1.5px solid #E2E8F0',
+                        fontSize: '0.86rem',
+                        color: '#334155',
+                        outline: 'none',
+                        backgroundColor: '#F8FAFC',
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = '#059669';
+                        e.target.style.backgroundColor = '#FFFFFF';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = '#E2E8F0';
+                        e.target.style.backgroundColor = '#F8FAFC';
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Proposer Name */}
+                <div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
+                    <span>👤</span>
+                    <span>Họ tên người đề xuất:</span>
+                    <span style={{ fontSize: '0.76rem', fontWeight: 500, color: '#64748B' }}>(Mặc định lấy theo tài khoản đang đăng nhập)</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder={user?.fullName ? `Mặc định: ${user.fullName}` : 'Để trống nếu lấy theo tài khoản đang đăng nhập'}
+                    value={newProposalForm.proposerName}
+                    onChange={(e) => setNewProposalForm({ ...newProposalForm, proposerName: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '0.65rem 0.95rem',
+                      borderRadius: '10px',
+                      border: '1.5px solid #E2E8F0',
+                      fontSize: '0.86rem',
+                      color: '#334155',
+                      outline: 'none',
+                      backgroundColor: '#F8FAFC',
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#059669';
+                      e.target.style.backgroundColor = '#FFFFFF';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = '#E2E8F0';
+                      e.target.style.backgroundColor = '#F8FAFC';
+                    }}
+                  />
+                </div>
+
+                {/* Description Textarea */}
+                <div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.84rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.35rem' }}>
+                    <span>📝</span>
+                    <span>Nội dung chi tiết &amp; Lý do trình Ban Giám Đốc</span>
+                    <span style={{ color: '#EF4444' }}>*</span>
+                  </label>
+                  <textarea
+                    required
+                    rows={5}
+                    placeholder="Mô tả mục đích đề xuất, căn cứ thực tế, dự trù kinh phí/nhân sự (nếu có) và kế hoạch triển khai cụ thể để Ban Giám Đốc xem xét..."
+                    value={newProposalForm.description}
+                    onChange={(e) => setNewProposalForm({ ...newProposalForm, description: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem 0.95rem',
+                      borderRadius: '10px',
+                      border: '1.5px solid #E2E8F0',
+                      fontSize: '0.88rem',
+                      lineHeight: 1.6,
+                      color: '#0F172A',
+                      outline: 'none',
+                      backgroundColor: '#F8FAFC',
+                      fontFamily: 'inherit',
+                      resize: 'vertical',
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#059669';
+                      e.target.style.backgroundColor = '#FFFFFF';
+                      e.target.style.boxShadow = '0 0 0 3px rgba(5, 150, 105, 0.12)';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = '#E2E8F0';
+                      e.target.style.backgroundColor = '#F8FAFC';
+                      e.target.style.boxShadow = 'none';
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div
+                style={{
+                  padding: '1rem 1.65rem',
+                  borderTop: '1px solid #E2E8F0',
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: '0.75rem',
+                  backgroundColor: '#F8FAFC',
+                  borderBottomLeftRadius: '20px',
+                  borderBottomRightRadius: '20px',
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setIsAddProposalModalOpen(false)}
+                  style={{
+                    padding: '0.65rem 1.35rem',
+                    borderRadius: '10px',
+                    border: '1.5px solid #E2E8F0',
+                    background: '#FFFFFF',
+                    color: '#64748B',
+                    fontWeight: 700,
+                    fontSize: '0.88rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F1F5F9')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#FFFFFF')}
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingProposal}
+                  style={{
+                    padding: '0.65rem 1.55rem',
+                    borderRadius: '10px',
+                    border: 'none',
+                    background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                    color: '#FFFFFF',
+                    fontWeight: 800,
+                    fontSize: '0.88rem',
+                    cursor: isSubmittingProposal ? 'not-allowed' : 'pointer',
+                    boxShadow: '0 4px 14px rgba(5, 150, 105, 0.35)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    transition: 'all 0.2s ease',
+                    opacity: isSubmittingProposal ? 0.75 : 1,
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isSubmittingProposal) e.currentTarget.style.transform = 'translateY(-1px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSubmittingProposal) e.currentTarget.style.transform = 'translateY(0)';
+                  }}
+                >
+                  {isSubmittingProposal ? 'Đang gửi...' : '📤 Gửi Đề Xuất Ban Giám Đốc'}
                 </button>
               </div>
             </form>

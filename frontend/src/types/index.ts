@@ -135,7 +135,7 @@ export interface RegisterResponse {
   data: RegisterResult;
 }
 
-// Center Information types (UC01)
+// Center Information types
 export interface Branch {
   _id?: string;
   branchName: string;
@@ -173,7 +173,7 @@ export interface CenterInfo {
   };
 }
 
-// ─── Course types (UC02, UC03, UC04, UC05) ──────────────────────────
+// ─── Course types ──────────────────────────
 export type CourseFormat = 'ONLINE' | 'OFFLINE' | 'BLENDED';
 export type CourseStatus = 'ACTIVE' | 'INACTIVE' | 'DRAFT';
 
@@ -216,7 +216,6 @@ export interface Course {
   category: string;
   entryLevel: string;
   targetLevel?: string;
-  durationWeeks: number;
   sessions: number;
   tuitionFee: number;
   price?: number;
@@ -239,7 +238,7 @@ export interface CourseFormData {
   category: string;
   entryLevel?: string;
   targetLevel?: string;
-  durationWeeks: number;
+  sessions: number;
   tuitionFee: number;
   status: CourseStatus;
   syllabus: string[];
@@ -258,7 +257,7 @@ export interface CourseQueryParams {
   limit?: number;
 }
 
-// ─── Announcement types (UC06) ──────────────────────────
+// ─── Announcement types ──────────────────────────
 export interface Announcement {
   _id: string;
   title: string;
@@ -285,8 +284,29 @@ export interface AnnouncementQueryParams {
   search?: string;
   category?: string;
   audience?: string;
+  status?: string;
   page?: number;
   limit?: number;
+}
+
+export interface ProposalItem {
+  _id: string;
+  code: string;
+  title: string;
+  description?: string;
+  proposerName: string;
+  proposerRole?: string;
+  category: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  reviewedBy?: {
+    _id: string;
+    fullName: string;
+    email: string;
+  };
+  reviewNote?: string;
+  reviewedAt?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // ─── API Wrapper ──────────────────────────
@@ -328,6 +348,7 @@ export interface ClassCourseOption {
   _id: string;
   code: string;
   title: string;
+  sessions: number;
 }
 
 export interface ClassTeacherOption {
@@ -339,6 +360,7 @@ export interface ClassTeacherOption {
 export interface TrainingClass {
   _id: string;
   classCode: string;
+  name?: string;
   course: ClassCourseOption;
   teacher: ClassTeacherOption;
   room: string;
@@ -347,9 +369,142 @@ export interface TrainingClass {
   startDate: string;
   endDate: string;
   capacity: number;
+  currentEnrollment?: number;
   status: ClassStatus;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ClassGradeSummary {
+  _id: string;
+  evaluationType: string;
+  title: string;
+  testDate: string;
+  overallBand: number;
+  listening?: number;
+  reading?: number;
+  writing?: number;
+  speaking?: number;
+  feedback?: string;
+  status: 'DRAFT' | 'PUBLISHED';
+}
+
+export interface ClassRosterStudent {
+  enrollmentId: string;
+  registrationDate: string;
+  tuitionStatus: TuitionStatus;
+  student: {
+    _id: string;
+    fullName: string;
+    email: string;
+    phone?: string;
+    status: string;
+  };
+  profile: {
+    studentCode: string;
+    currentBand?: number;
+    targetBand?: number;
+    learningGoal?: string;
+    status: string;
+  } | null;
+  grades: ClassGradeSummary[];
+}
+
+export interface ClassDetail {
+  classroom: TrainingClass;
+  students: ClassRosterStudent[];
+}
+
+export interface ManagedStudent {
+  _id: string;
+  fullName: string;
+  email: string;
+  phone?: string;
+  status: UserStatus;
+  createdAt: string;
+  profile: {
+    studentCode: string;
+    status: string;
+    currentBand?: number;
+    targetBand?: number;
+  } | null;
+  activeClasses: number;
+  completedClasses: number;
+}
+
+export interface ManagedStudentGrade {
+  _id: string;
+  title: string;
+  evaluationType: string;
+  testDate: string;
+  overallBand: number;
+  listening?: number;
+  reading?: number;
+  writing?: number;
+  speaking?: number;
+  feedback?: string;
+  status: 'DRAFT' | 'PUBLISHED';
+  teacher: { _id: string; fullName: string } | string;
+}
+
+export interface ManagedStudentEnrollment {
+  _id: string;
+  status: EnrollmentStatus;
+  tuitionStatus: TuitionStatus;
+  registrationDate: string;
+  enrollmentDate: string;
+  course?: Pick<Course, '_id' | 'code' | 'title' | 'sessions'>;
+  class: (Pick<TrainingClass, '_id' | 'classCode' | 'name' | 'scheduleDays' | 'timeSlot' | 'startDate' | 'endDate' | 'status'> & {
+    course: Pick<Course, '_id' | 'code' | 'title' | 'sessions'> | null;
+    teacher: Pick<User, '_id' | 'fullName' | 'email'> | null;
+    room: string;
+  }) | null;
+  grades: ManagedStudentGrade[];
+}
+
+export interface ManagedStudentDetail {
+  user: Pick<User, '_id' | 'fullName' | 'email' | 'phone' | 'address' | 'dob' | 'status' | 'createdAt'>;
+  profile: {
+    studentCode: string;
+    dob?: string;
+    currentBand?: number;
+    targetBand?: number;
+    learningGoal?: string;
+    emergencyContact?: { name: string; relationship: string; phone: string };
+    status: string;
+  } | null;
+  enrollments: ManagedStudentEnrollment[];
+}
+
+export interface ManagedTeacher {
+  _id: string;
+  fullName: string;
+  email: string;
+  phone?: string;
+  status: UserStatus;
+  createdAt: string;
+  profile: {
+    teacherCode: string;
+    specialization: string[];
+    yearsOfExperience: number;
+  } | null;
+  assignedClasses: number;
+}
+
+export interface ManagedTeacherDetail {
+  user: Pick<User, '_id' | 'fullName' | 'email' | 'phone' | 'address' | 'dob' | 'status' | 'createdAt'>;
+  profile: {
+    teacherCode: string;
+    specialization: string[];
+    bio: string;
+    qualifications: string[];
+    ieltsBand?: number;
+    yearsOfExperience: number;
+    status: 'ACTIVE' | 'INACTIVE';
+  } | null;
+  classes: (Pick<TrainingClass, '_id' | 'classCode' | 'name' | 'startDate' | 'endDate' | 'status'> & {
+    course: Pick<Course, '_id' | 'code' | 'title'> | null;
+  })[];
 }
 
 export interface ClassFormData {
@@ -360,9 +515,107 @@ export interface ClassFormData {
   scheduleDays: string[];
   timeSlot: string;
   startDate: string;
-  endDate: string;
   capacity: number;
   status: ClassStatus;
+}
+
+// ── Payment Types ────────────────────────────
+export type PaymentMethod = 'VNPAY' | 'BANK_TRANSFER' | 'CASH' | 'CREDIT_CARD';
+export type PaymentStatus = 'PENDING' | 'SUCCESS' | 'FAILED' | 'REFUNDED';
+
+export interface PaymentCourseInfo {
+  _id: string;
+  title: string;
+  code: string;
+  tuitionFee: number;
+  durationWeeks?: number;
+  level?: string;
+  category?: string;
+}
+
+export interface PaymentClassInfo {
+  _id: string;
+  classCode: string;
+  room?: string;
+  scheduleDays?: string[];
+  timeSlot?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+export interface PaymentEnrollmentInfo {
+  _id: string;
+  status: string;
+  tuitionStatus: string;
+  registrationDate?: string;
+  enrollmentDate?: string;
+  class?: PaymentClassInfo;
+}
+
+export interface Payment {
+  _id: string;
+  student: string | User;
+  enrollment?: PaymentEnrollmentInfo;
+  class?: PaymentClassInfo | any;
+  course?: PaymentCourseInfo;
+  amount: number;
+  method: PaymentMethod;
+  transactionCode?: string;
+  paymentDate?: string;
+  dueDate?: string;
+  status: PaymentStatus;
+  note?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PaymentSummary {
+  totalPaid: number;
+  successCount: number;
+  pendingCount: number;
+  pendingTuitionCount: number;
+  totalPendingTuitionAmount: number;
+}
+
+export interface PendingTuitionItem {
+  _id: string;
+  student: string;
+  course: {
+    _id: string;
+    title: string;
+    code: string;
+    description?: string;
+    tuitionFee: number;
+    originalPrice?: number;
+    durationWeeks?: number;
+    level?: string;
+    format?: string;
+  };
+  class?: {
+    _id: string;
+    classCode: string;
+    room?: string;
+    scheduleDays?: string[];
+    timeSlot?: string;
+    startDate?: string;
+    endDate?: string;
+    status?: string;
+  };
+  registrationDate: string;
+  enrollmentDate: string;
+  status: string;
+  tuitionStatus: 'PENDING' | 'PAID' | 'REFUNDED';
+}
+
+export interface PaymentReceiptData {
+  payment: Payment;
+  center: {
+    name: string;
+    hotline: string;
+    email: string;
+    address: string;
+    slogan?: string;
+  };
 }
 
 // ============================================
@@ -522,34 +775,6 @@ export interface AttendanceStats {
   rate: number;
 }
 
-// Payment (datlt – aligned with main's schema: course ref, transactionCode, SUCCESS status)
-export type PaymentStatus = 'PENDING' | 'SUCCESS' | 'FAILED' | 'REFUNDED';
-export type PaymentMethod = 'VNPAY' | 'BANK_TRANSFER' | 'CASH' | 'CREDIT_CARD';
-
-export interface Payment {
-  _id: string;
-  student: string;
-  enrollment?: string;
-  // class may be populated: { classCode, room, course: { code, title } }
-  // or just an ObjectId string
-  class?: string | {
-    classCode: string;
-    room?: string;
-    course?: { code: string; title: string };
-  };
-  // course may be populated: { code, title } or just an ObjectId string
-  course?: string | { code: string; title: string };
-  amount: number;
-  method: PaymentMethod;
-  transactionCode?: string;
-  paymentDate?: string;
-  dueDate?: string;
-  status: PaymentStatus;
-  note?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
 export interface PaymentStats {
   total: number;
   paidCount: number;
@@ -703,11 +928,9 @@ export interface PopulatedClassRef {
 }
 
 // ─── Notifications (M4) – aligned with main's schema: recipient, isRead, content ───
-// Supports both main's generic types (INFO/ALERT/SUCCESS/WARNING) and
-// student-specific semantic types for rich rendering in the bell UI.
 export type NotificationType =
-  | 'INFO' | 'ALERT' | 'SUCCESS' | 'WARNING'  // main schema
-  | 'GRADE_PUBLISHED' | 'ASSIGNMENT_GRADED'   // student-specific
+  | 'INFO' | 'ALERT' | 'SUCCESS' | 'WARNING'
+  | 'GRADE_PUBLISHED' | 'ASSIGNMENT_GRADED'
   | 'REQUEST_APPROVED' | 'REQUEST_REJECTED'
   | 'PAYMENT_RECEIVED' | 'CLASS_ANNOUNCEMENT'
   | 'ATTENDANCE_MARKED';
@@ -716,15 +939,14 @@ export interface NotificationItem {
   _id: string;
   recipient: string;
   title: string;
-  content: string;   // main uses 'content' (not 'message')
+  content: string;
   type: NotificationType;
-  isRead: boolean;  // main uses 'isRead' (not 'read')
-  linkUrl?: string; // main uses 'linkUrl' (not 'link')
+  isRead: boolean;
+  linkUrl?: string;
   createdAt: string;
   updatedAt: string;
 }
 
-// Notification type metadata for NotificationBell rendering
 export const NOTIFICATION_META: Record<NotificationType, { icon: string; color: string; label: string }> = {
   INFO:               { icon: 'ℹ️',  color: '#3b82f6', label: 'Thông tin' },
   ALERT:              { icon: '🚨',  color: '#f59e0b', label: 'Cảnh báo' },
@@ -747,4 +969,116 @@ export interface Toast {
   title?: string;
   message: string;
   duration?: number;
+}
+
+export type PaymentRecordStatus = 'PENDING' | 'SUCCESS' | 'FAILED' | 'REFUNDED';
+
+export interface EnrollmentPayment {
+  _id: string;
+  amount: number;
+  method: string;
+  transactionCode: string;
+  status: PaymentRecordStatus;
+  paymentDate: string;
+}
+
+export interface EnrollmentRecord {
+  _id: string;
+  student: {
+    _id: string;
+    fullName: string;
+    email: string;
+    phone?: string;
+  };
+  studentProfile?: {
+    studentCode?: string;
+    status?: string;
+  };
+  course?: {
+    _id: string;
+    code: string;
+    title: string;
+    tuitionFee: number;
+  } | null;
+  class?: {
+    _id: string;
+    classCode: string;
+    name?: string;
+    startDate: string;
+    endDate: string;
+  } | null;
+  registrationDate: string;
+  status: EnrollmentStatus;
+  payments: EnrollmentPayment[];
+  createdAt: string;
+}
+
+export interface EnrollmentOptions {
+  courses: Pick<Course, '_id' | 'code' | 'title'>[];
+  classes: (
+    Pick<ClassItem, '_id' | 'classCode' | 'name' | 'status' | 'capacity' | 'currentEnrollment' | 'startDate' | 'endDate'> & {
+      course: Pick<Course, '_id' | 'code' | 'title'> | null;
+    }
+  )[];
+}
+
+export interface TimetableTeacher {
+  _id: string;
+  fullName: string;
+  email: string;
+}
+
+export interface TimetableClass {
+  _id: string;
+  classCode: string;
+  name?: string;
+  startDate: string;
+  endDate: string;
+  course: Pick<Course, '_id' | 'code' | 'title'>;
+}
+
+export interface TimetableEvent {
+  _id: string;
+  date: string;
+  dayOfWeek: string;
+  startTime: string;
+  endTime: string;
+  classroom: string;
+  topic?: string;
+  status: 'ACTIVE' | 'CANCELLED';
+  class: TimetableClass;
+  teachers: TimetableTeacher[];
+}
+
+export interface TimetableScheduleRecord {
+  _id: string;
+  sessionDate?: string;
+  dayOfWeek: string;
+  startTime: string;
+  endTime: string;
+  classroom: string;
+  topic?: string;
+  status: 'ACTIVE' | 'CANCELLED';
+  class: TimetableClass & { teacher: TimetableTeacher };
+  teachers: TimetableTeacher[];
+}
+
+export interface TimetableOptions {
+  classes: (Pick<ClassItem, '_id' | 'classCode' | 'name'> & { teachers: TimetableTeacher[] })[];
+  teachers: TimetableTeacher[];
+  rooms: string[];
+}
+
+export interface TimetableWeek {
+  weekStart: string;
+  weekEnd: string;
+  events: TimetableEvent[];
+}
+
+export interface TimetableFormData {
+  sessionDate: string;
+  startTime: string;
+  endTime: string;
+  classroom: string;
+  topic: string;
 }

@@ -19,10 +19,10 @@ import { uploadAvatar as uploadAvatarMiddleware, handleUploadError } from '../mi
 
 const router = Router();
 
-// UC08: Register Account
+// Register Account
 router.post('/register', register);
 
-// UC09: Log In
+// Log In
 router.post('/login', login);
 
 // Sign in / sign up with Google
@@ -35,7 +35,7 @@ router.post('/resend-email-verify', resendVerificationEmail);
 // Get authenticated user
 router.get('/me', authenticate, getMe);
 
-// UC07: Update Personal Information
+// Update Personal Information
 router.put('/profile', authenticate, updateProfile);
 
 // Cài đặt (tùy chọn hiển thị & thông báo) — tích hợp trong Hồ sơ cá nhân
@@ -51,10 +51,10 @@ router.post(
   uploadAvatar
 );
 
-// UC10: Change Password
+// Change Password
 router.post('/change-password', authenticate, changePassword);
 
-// UC11: Forgot Password
+// Forgot Password
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);
 

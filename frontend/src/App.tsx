@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
 import GuestLayout from './layouts/GuestLayout';
@@ -21,13 +21,17 @@ const ResendVerificationPage = lazy(() => import('./pages/public/ResendVerificat
 
 // Dashboard pages
 const StudentDashboard = lazy(() => import('./pages/student/StudentDashboard'));
+const StudentPaymentsPage = lazy(() => import('./pages/student/StudentPaymentsPage'));
 const MyClassesPage = lazy(() => import('./pages/student/MyClassesPage'));
 const ClassDetailsPage = lazy(() => import('./pages/student/ClassDetailsPage'));
 const AssignmentsPage = lazy(() => import('./pages/student/AssignmentsPage'));
 const AttendancePage = lazy(() => import('./pages/student/AttendancePage'));
 const GradesPage = lazy(() => import('./pages/student/GradesPage'));
 const SchedulePage = lazy(() => import('./pages/student/SchedulePage'));
+// Trang học phí (datlt) — hiển thị theo từng lớp, có trạng thái đã hoàn tiền
 const TuitionPage = lazy(() => import('./pages/student/TuitionPage'));
+// Lịch sử thanh toán (main) — tách riêng khỏi trang học phí
+const PaymentsPage = lazy(() => import('./pages/student/PaymentsPage'));
 const RequestsPage = lazy(() => import('./pages/student/RequestsPage'));
 const ProfilePage = lazy(() => import('./pages/student/ProfilePage'));
 const CombinedSchedulePage = lazy(() => import('./pages/student/CombinedSchedulePage'));
@@ -38,6 +42,12 @@ const CoursesManagementPage = lazy(() => import('./pages/staff/CoursesManagement
 const ClassesManagementPage = lazy(() => import('./pages/staff/ClassesManagementPage'));
 const RequestsManagementPage = lazy(() => import('./pages/staff/RequestsManagementPage'));
 const FeedbackManagementPage = lazy(() => import('./pages/staff/FeedbackManagementPage'));
+const EnrollmentsManagementPage = lazy(() => import('./pages/staff/EnrollmentsManagementPage'));
+const TimetableManagementPage = lazy(() => import('./pages/staff/TimetableManagementPage'));
+const StudentsManagementPage = lazy(() => import('./pages/staff/StudentsManagementPage'));
+const StudentDetailPage = lazy(() => import('./pages/staff/StudentDetailPage'));
+const TeachersManagementPage = lazy(() => import('./pages/staff/TeachersManagementPage'));
+const TeacherDetailPage = lazy(() => import('./pages/staff/TeacherDetailPage'));
 const DirectorDashboard = lazy(() => import('./pages/director/DirectorDashboard'));
 
 // Error pages
@@ -200,11 +210,30 @@ const AppRouter: React.FC = () => {
           }
         />
         {/* Đã gộp "Lịch sử thanh toán" vào trang Thanh toán khóa học */}
+        {/* ── Thanh toán: hợp nhất 2 nguồn, không mất chức năng của main ──
+            • /student/payments      → StudentPaymentsPage (main): trang thanh toán
+              tổng hợp có VietQR / VNPay + tiến trình thanh toán
+            • /student/tuition       → TuitionPage (datlt): học phí theo từng lớp,
+              có trạng thái "Đã hoàn tiền"
+            • /student/payment-history→ PaymentsPage (main): lịch sử thanh toán
+        */}
         <Route
           path="/student/payments"
           element={
             <ProtectedRoute allowedRoles={['STUDENT']}>
-              <Navigate to="/student/tuition" replace />
+              <DashboardLayout>
+                <StudentPaymentsPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/payment-history"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <DashboardLayout>
+                <PaymentsPage />
+              </DashboardLayout>
             </ProtectedRoute>
           }
         />
@@ -258,7 +287,6 @@ const AppRouter: React.FC = () => {
             </ProtectedRoute>
           }
         />
-
         {/* ── Teacher Routes ───────────────────────── */}
         <Route
           path="/teacher/dashboard"
@@ -313,11 +341,71 @@ const AppRouter: React.FC = () => {
           }
         />
         <Route
+          path="/staff/enrollments"
+          element={
+            <ProtectedRoute allowedRoles={['TRAINING_STAFF']}>
+              <DashboardLayout>
+                <EnrollmentsManagementPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/staff/feedback"
           element={
             <ProtectedRoute allowedRoles={['TRAINING_STAFF', 'DIRECTOR']}>
               <DashboardLayout>
                 <FeedbackManagementPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/staff/timetable"
+          element={
+            <ProtectedRoute allowedRoles={['TRAINING_STAFF']}>
+              <DashboardLayout>
+                <TimetableManagementPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/staff/students"
+          element={
+            <ProtectedRoute allowedRoles={['TRAINING_STAFF']}>
+              <DashboardLayout>
+                <StudentsManagementPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/staff/students/:id"
+          element={
+            <ProtectedRoute allowedRoles={['TRAINING_STAFF']}>
+              <DashboardLayout>
+                <StudentDetailPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/staff/teachers"
+          element={
+            <ProtectedRoute allowedRoles={['TRAINING_STAFF']}>
+              <DashboardLayout>
+                <TeachersManagementPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/staff/teachers/:id"
+          element={
+            <ProtectedRoute allowedRoles={['TRAINING_STAFF']}>
+              <DashboardLayout>
+                <TeacherDetailPage />
               </DashboardLayout>
             </ProtectedRoute>
           }
