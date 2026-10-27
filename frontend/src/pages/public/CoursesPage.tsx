@@ -15,14 +15,14 @@ export const CoursesPage: React.FC = () => {
   const navigate = useNavigate();
   const [enrollingClassId, setEnrollingClassId] = useState<string | null>(null);
 
-  // Search & Filter state (UC04, UC05)
+  // Search & Filter state
   const [search, setSearch] = useState<string>('');
   const [selectedLevel, setSelectedLevel] = useState<string>('ALL');
   const [selectedFormat, setSelectedFormat] = useState<string>('ALL');
   const [priceRange, setPriceRange] = useState<string>('ALL');
   const [sortBy, setSortBy] = useState<'newest' | 'price_asc' | 'price_desc' | 'duration'>('newest');
 
-  // Detail Modal state (UC03)
+  // Detail Modal state
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [registrationNotice, setRegistrationNotice] = useState<string | null>(null);
 
@@ -79,7 +79,7 @@ export const CoursesPage: React.FC = () => {
     fetchCourses();
   }, [fetchCourses]);
 
-  // UC03: View Courses Detail
+  // View Courses Detail
   const handleOpenDetail = async (courseId: string) => {
     setRegistrationNotice(null);
     try {
@@ -166,7 +166,7 @@ export const CoursesPage: React.FC = () => {
             LỘ TRÌNH ĐÀO TẠO IELTS CHUẨN KHẢO THÍ IDP &amp; BC
           </div>
           <h1 style={{ fontSize: '2.5rem', fontWeight: 800, margin: '0 0 1rem 0' }}>
-            Danh Sách Khóa Học IELTS (UC02)
+            Danh Sách Khóa Học IELTS
           </h1>
           <p style={{ fontSize: '1.05rem', color: '#E2E8F0', maxWidth: '700px', margin: '0 auto' }}>
             Tìm kiếm và lựa chọn khóa học phù hợp với trình độ đầu vào và mục tiêu Band điểm mong muốn. 
@@ -176,7 +176,7 @@ export const CoursesPage: React.FC = () => {
       </div>
 
       <div style={{ maxWidth: '1240px', margin: '0 auto', padding: '2rem 1rem' }}>
-        {/* Search & Filter Toolbar (UC04, UC05) */}
+        {/* Search & Filter Toolbar */}
         <div
           style={{
             backgroundColor: '#FFFFFF',
@@ -193,7 +193,7 @@ export const CoursesPage: React.FC = () => {
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="🔍 Tìm kiếm khóa học theo tên, mã khóa, từ khóa... (UC04)"
+                placeholder="🔍 Tìm kiếm khóa học theo tên, mã khóa, từ khóa..."
                 style={{
                   width: '100%',
                   padding: '0.75rem 1rem',
@@ -264,10 +264,10 @@ export const CoursesPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Row 2: Level Filter Pills (UC05) */}
+          {/* Row 2: Level Filter Pills */}
           <div style={{ marginBottom: '1rem' }}>
             <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', marginRight: '0.75rem' }}>
-              Trình độ đầu vào (UC05):
+              Trình độ đầu vào:
             </span>
             <div style={{ display: 'inline-flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.35rem' }}>
               {levelOptions.map((opt) => (
@@ -340,7 +340,7 @@ export const CoursesPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Course Cards Grid (UC02) */}
+        {/* Course Cards Grid */}
         {isLoading ? (
           <div style={{ textAlign: 'center', padding: '4rem 1rem' }}>
             <div className="loading-spinner" style={{ margin: '0 auto 1rem' }} />
@@ -548,7 +548,7 @@ export const CoursesPage: React.FC = () => {
                         e.currentTarget.style.backgroundColor = '#07403F';
                       }}
                     >
-                      Xem chi tiết (UC03)
+                      Xem chi tiết
                     </button>
                   </div>
                 </div>
@@ -558,7 +558,7 @@ export const CoursesPage: React.FC = () => {
         )}
       </div>
 
-      {/* UC03: Course Detail Modal */}
+      {/* Course Detail Modal */}
       {selectedCourse && (
         <div
           style={{

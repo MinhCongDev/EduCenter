@@ -21,7 +21,7 @@ const USER_KEY = 'educenter_user';
 
 export const authService = {
   /**
-   * UC09: Login with email and password
+   * Login with email and password
    */
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
     const response = await api.post<AuthResponse>('/auth/login', credentials);
@@ -33,7 +33,7 @@ export const authService = {
   },
 
   /**
-   * UC08: Register a new account (Guest -> Student).
+   * Register a new account (Guest -> Student).
    * The account must verify its email before it can log in, so no token is stored.
    */
   register: async (data: RegisterData): Promise<RegisterResponse> => {
@@ -88,7 +88,7 @@ export const authService = {
   },
 
   /**
-   * UC07: Update Personal Information
+   * Update Personal Information
    */
   updateProfile: async (data: UpdateProfileData): Promise<ApiResponse<{ user: User }>> => {
     const response = await api.put<ApiResponse<{ user: User }>>('/auth/profile', data);
@@ -99,7 +99,7 @@ export const authService = {
   },
 
   /**
-   * UC10: Change Password
+   * Change Password
    */
   changePassword: async (data: ChangePasswordData): Promise<ApiResponse> => {
     const response = await api.post<ApiResponse>('/auth/change-password', data);
@@ -107,7 +107,7 @@ export const authService = {
   },
 
   /**
-   * UC11: Forgot Password - request a code sent to the registered email
+   * Forgot Password - request a code sent to the registered email
    */
   forgotPassword: async (
     data: ForgotPasswordData
@@ -120,7 +120,7 @@ export const authService = {
   },
 
   /**
-   * UC11: Reset Password - Verify code and set new password
+   * Reset Password - Verify code and set new password
    */
   resetPassword: async (data: ResetPasswordData): Promise<ApiResponse> => {
     const response = await api.post<ApiResponse>('/auth/reset-password', data);

@@ -158,7 +158,7 @@
 .dashboard-account {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
   margin-top: auto;
   padding: 14px 4px 0;
   border-top: 1px solid #e8eee9;
@@ -169,68 +169,123 @@
   align-items: center;
   gap: 10px;
   min-width: 0;
-  padding: 0 6px 12px;
+  padding: 0 4px 4px;
 }
 
 .dashboard-user-avatar {
   display: grid;
-  width: 37px;
-  height: 37px;
-  flex: 0 0 37px;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
   place-items: center;
   border-radius: 50%;
   background: #eaf5ec;
   color: #26743d;
   font-size: 0.95rem;
   font-weight: 750;
+  overflow: hidden;
 }
 
 .dashboard-user-info {
   display: flex;
   min-width: 0;
   flex-direction: column;
-  line-height: 1.4;
+  line-height: 1.35;
 }
 
 .dashboard-user-info strong {
   overflow: hidden;
-  color: #26372a;
-  font-size: 0.82rem;
+  color: #1c2b20;
+  font-size: 0.83rem;
+  font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .dashboard-user-info > span {
-  color: #7b887e;
+  color: #607064;
   font-size: 0.74rem;
+  font-weight: 550;
 }
 
-.dashboard-account-action {
+.dashboard-account-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.dashboard-account-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   width: 100%;
+  min-height: 38px;
   padding: 8px 10px;
   border: 0;
-  border-radius: 7px;
+  border-radius: 8px;
   background: transparent;
-  color: #647268;
+  color: #405145;
   font: inherit;
-  font-size: 0.82rem;
-  font-weight: 550;
+  font-size: 0.86rem;
+  font-weight: 600;
   text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+  user-select: none;
+  box-sizing: border-box;
 }
 
-.dashboard-account-action:hover {
+.dashboard-account-nav-item:hover {
   background: #f3f8f4;
   color: #205d34;
 }
 
-.dashboard-account-action.is-logout {
-  margin-top: 3px;
-  color: #a74747;
+.dashboard-account-nav-item:focus-visible {
+  outline: none;
+  background: #f3f8f4;
+  color: #205d34;
 }
 
-.dashboard-account-action.is-logout:hover {
-  background: #fff2f1;
-  color: #922f2f;
+.dashboard-account-nav-item.is-active {
+  background: #eaf5ec;
+  color: #205d34;
+  font-weight: 700;
+}
+
+.dashboard-account-nav-icon {
+  flex: 0 0 18px;
+  color: inherit;
+  opacity: 0.85;
+}
+
+.dashboard-account-divider {
+  height: 1px;
+  margin: 6px 4px;
+  background: #e8eee9;
+}
+
+.dashboard-account-nav-item.is-logout {
+  color: #dc2626;
+}
+
+.dashboard-account-nav-item.is-logout:hover {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.dashboard-account-nav-item.is-logout:focus-visible {
+  outline: none;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.dashboard-account-nav-item.is-logout .dashboard-account-nav-icon {
+  color: #dc2626;
+}
+
+.dashboard-account-nav-item.is-logout:hover .dashboard-account-nav-icon {
+  color: #b91c1c;
 }
 
 .dashboard-main {
@@ -665,25 +720,27 @@
   }
 
   .dashboard-account {
-    flex-direction: row;
-    align-items: center;
-    gap: 3px;
-    margin-top: 8px;
-    overflow-x: auto;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    margin-top: 10px;
+    overflow-x: visible;
     border-top: 1px solid #e8eee9;
-    padding: 8px 0 0;
+    padding: 10px 0 0;
   }
 
   .dashboard-user {
-    flex: 1 1 auto;
-    padding: 0 6px 0 2px;
+    padding: 0 4px 6px;
   }
 
-  .dashboard-account-action {
-    width: auto;
-    flex: 0 0 auto;
-    padding: 8px;
-    white-space: nowrap;
+  .dashboard-account-nav {
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .dashboard-account-nav-item {
+    width: 100%;
+    padding: 9px 12px;
   }
 
   .dashboard-topbar {
@@ -723,7 +780,7 @@
     align-items: stretch;
   }
 
-  .dashboard-shell .courses-page-header > .btn {
+  .dashboard-shell .courses-page-header>.btn {
     width: 100%;
   }
 
@@ -740,7 +797,6 @@
   .dashboard-shell .courses-total-badge {
     align-self: flex-start;
   }
-
   .placement-question-section-heading,
   .placement-question-heading {
     align-items: flex-start;

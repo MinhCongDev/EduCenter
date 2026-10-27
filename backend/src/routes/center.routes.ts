@@ -4,7 +4,7 @@ import { authenticate, authorize } from '../middlewares/auth.middleware';
 
 const router = Router();
 
-// UC01: View Center Information (Public)
+// View Center Information (Public)
 router.get('/', getCenterInfo);
 
 // Update Center Information (Director/Staff)

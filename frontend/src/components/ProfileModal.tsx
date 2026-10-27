@@ -119,7 +119,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <div>
               <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700 }}>
-                Thông Tin Cá Nhân (UC07)
+                Thông Tin Cá Nhân
               </h3>
               <span style={{ fontSize: '0.8rem', color: '#A0EC1D' }}>
                 Vai trò: {user.role} • Trạng thái: {user.status}

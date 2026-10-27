@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { centerService } from '../../services/center.service';
 import { announcementService } from '../../services/announcement.service';
@@ -162,6 +162,7 @@ const partnerLogos = [
 
 const HomePage: React.FC = () => {
   const { isAuthenticated } = useAuth();
+  const location = useLocation();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [couponCode, setCouponCode] = useState('');
   const [couponMessage, setCouponMessage] = useState<string | null>(null);
@@ -169,6 +170,20 @@ const HomePage: React.FC = () => {
   const [centerInfo, setCenterInfo] = useState<CenterInfo | null>(null);
   const [dynamicAnnouncements, setDynamicAnnouncements] = useState<Announcement[]>([]);
   const [centerTab, setCenterTab] = useState<'branches' | 'facilities' | 'mission'>('branches');
+
+  // Smooth scroll to hash anchor on load or hash change
+  useEffect(() => {
+    if (location.hash) {
+      const targetId = location.hash.replace('#', '');
+      const timer = setTimeout(() => {
+        const el = document.getElementById(targetId);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [location.hash, location.pathname]);
 
   // Auto slide interval
   useEffect(() => {
@@ -178,7 +193,7 @@ const HomePage: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // UC01 & UC06: Fetch Center Info & Announcements
+  // Fetch Center Info & Announcements
   useEffect(() => {
     const loadCenterAndNews = async () => {
       try {
@@ -912,7 +927,7 @@ const HomePage: React.FC = () => {
           </div>
         </section>
 
-        {/* SECTION: THÔNG BÁO TỪ TRUNG TÂM (UC06) */}
+        {/* SECTION: THÔNG BÁO TỪ TRUNG TÂM */}
         <section className="dmr-section" id="news">
           <div className="dmr-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
             <div>
@@ -920,7 +935,7 @@ const HomePage: React.FC = () => {
                 BẢN TIN KHẢO THÍ &amp; SỰ KIỆN MỚI NHẤT
               </div>
               <h2 className="dmr-main-title" style={{ margin: 0 }}>
-                Thông Báo &amp; Sự Kiện Từ EduCenter (UC06)
+                Thông Báo &amp; Sự Kiện Từ EduCenter
               </h2>
             </div>
             <Link
@@ -995,14 +1010,14 @@ const HomePage: React.FC = () => {
           </div>
         </section>
 
-        {/* SECTION: THÔNG TIN TRUNG TÂM EDUCENTER (UC01) */}
+        {/* SECTION: THÔNG TIN TRUNG TÂM EDUCENTER */}
         <section className="dmr-section" id="about">
           <div className="dmr-section-header" style={{ textAlign: 'center' }}>
             <div style={{ color: '#07403F', fontWeight: 800, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px' }}>
               GIỚI THIỆU TỔ CHỨC ĐÀO TẠO
             </div>
             <h2 className="dmr-main-title" style={{ justifyContent: 'center' }}>
-              Thông Tin Trung Tâm EduCenter (UC01)
+              Thông Tin Trung Tâm EduCenter
             </h2>
             <p style={{ color: '#64748B', fontSize: '1.05rem', maxWidth: '750px', margin: '8px auto 0' }}>
               {centerInfo?.slogan || 'Học viện Luyện thi IELTS 8.0+ Chuẩn Khảo thí Quốc tế'}

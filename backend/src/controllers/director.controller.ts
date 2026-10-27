@@ -8,9 +8,63 @@ import {
   Payment,
   Attendance,
   Submission,
-  ChangeRequest,
   Grade,
+  Proposal,
 } from '../models';
+import { AuthRequest } from '../middlewares/auth.middleware';
+
+/**
+ * Ensure default proposals exist so Director has initial data to review
+ */
+const ensureDefaultProposals = async () => {
+  try {
+    const count = await Proposal.countDocuments();
+    if (count === 0) {
+      await Proposal.insertMany([
+        {
+          code: 'AP-101',
+          title: 'Mở thêm lớp cấp tốc IELTS 7.0+ (IELTS-K27-Exp)',
+          description: 'Đề xuất mở lớp cấp tốc 4 tuần đáp ứng nhu cầu học viên thi cuối quý 4.',
+          proposerName: 'Trần Thị Thu Thảo (Trưởng ban Giáo vụ)',
+          proposerRole: 'Trưởng ban Giáo vụ',
+          category: 'Mở lớp mới',
+          status: 'PENDING',
+        },
+        {
+          code: 'AP-102',
+          title: 'Học bổng khuyến học 20% cho học viên khó khăn (Vũ Ngọc Mai)',
+          description: 'Học viên có thành tích xuất sắc tại trường ĐH, gia cảnh khó khăn xin hỗ trợ 20% học phí khóa 7.5+.',
+          proposerName: 'Phòng Đào tạo',
+          proposerRole: 'Giáo vụ',
+          category: 'Học bổng',
+          status: 'PENDING',
+        },
+        {
+          code: 'AP-103',
+          title: 'Duyệt bảng điểm thi thử IELTS Mock Test Lần 3',
+          description: 'Bảng điểm 4 kỹ năng đợt thi ngày 05/10/2026 của 42 thí sinh.',
+          proposerName: 'ThS. Nguyễn Hoàng Nam (Giảng viên)',
+          proposerRole: 'Giảng viên',
+          category: 'Khảo thí & Điểm',
+          status: 'APPROVED',
+          reviewNote: 'Đã duyệt công bố điểm cho học viên.',
+          reviewedAt: new Date('2026-10-06T10:00:00Z'),
+        },
+        {
+          code: 'AP-104',
+          title: 'Nâng cấp dàn tai nghe phòng Lab 202 phục vụ thi Listening',
+          description: 'Thay thế 20 bộ tai nghe chống ồn đã hao mòn sau 2 năm sử dụng.',
+          proposerName: 'Lê Tuấn Dũng (Quản trị thiết bị)',
+          proposerRole: 'Quản trị thiết bị',
+          category: 'Cơ sở vật chất',
+          status: 'PENDING',
+        },
+      ]);
+    }
+  } catch (e) {
+    console.error('Lỗi khởi tạo đề xuất mẫu:', e);
+  }
+};
 
 /**
  * 1. View Dashboard Stats
@@ -18,6 +72,8 @@ import {
  */
 export const getDashboardStats = async (_req: Request, res: Response): Promise<void> => {
   try {
+    await ensureDefaultProposals();
+
     const [
       payments,
       studentsCount,
@@ -25,7 +81,7 @@ export const getDashboardStats = async (_req: Request, res: Response): Promise<v
       courses,
       staffCount,
       teachersCount,
-      changeRequests,
+      proposals,
     ] = await Promise.all([
       Payment.find({ status: 'SUCCESS' }).lean(),
       User.countDocuments({ role: 'STUDENT' }),
@@ -33,10 +89,10 @@ export const getDashboardStats = async (_req: Request, res: Response): Promise<v
       Course.find().lean(),
       Staff.countDocuments(),
       Teacher.countDocuments(),
-      ChangeRequest.find().sort({ createdAt: -1 }).limit(5).lean(),
+      Proposal.find().sort({ createdAt: -1 }).limit(10).lean(),
     ]);
 
-    // Calculate total revenue
+    // Calculate total revenue from actual payments
     const totalRevenue = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
 
     // Active classes
@@ -60,23 +116,151 @@ export const getDashboardStats = async (_req: Request, res: Response): Promise<v
       message: 'Lấy dữ liệu bảng điều khiển giám đốc thành công',
       data: {
         summary: {
-          totalRevenue: totalRevenue > 0 ? totalRevenue : 168500000,
-          studentsCount: studentsCount > 0 ? studentsCount : 186,
-          classesCount: classes.length > 0 ? classes.length : 12,
-          activeClassesCount: activeClassesCount > 0 ? activeClassesCount : 9,
-          staffCount: staffCount > 0 ? staffCount : 5,
-          teachersCount: teachersCount > 0 ? teachersCount : 8,
+          totalRevenue: totalRevenue,
+          studentsCount: studentsCount,
+          classesCount: classes.length,
+          activeClassesCount: activeClassesCount,
+          staffCount: staffCount,
+          teachersCount: teachersCount,
           graduationRate: 96.2,
           averageSatisfaction: 4.88,
         },
         courseRevenue: Object.values(courseRevenueMap),
-        recentApprovals: changeRequests,
+        recentApprovals: proposals,
       },
     });
   } catch (err: any) {
     res.status(500).json({
       success: false,
       message: 'Lỗi máy chủ khi lấy dữ liệu tổng quan giám đốc: ' + err.message,
+    });
+  }
+};
+
+/**
+ * Get Proposals / Approvals List
+ * GET /api/director/approvals
+ */
+export const getApprovals = async (req: Request, res: Response): Promise<void> => {
+  try {
+    await ensureDefaultProposals();
+    const { status, search } = req.query;
+    const query: any = {};
+    if (status && status !== 'ALL') {
+      query.status = status;
+    }
+    if (search && typeof search === 'string' && search.trim() !== '') {
+      const regex = new RegExp(search.trim(), 'i');
+      query.$or = [{ code: regex }, { title: regex }, { proposerName: regex }, { category: regex }];
+    }
+
+    const proposals = await Proposal.find(query)
+      .populate('reviewedBy', 'fullName email')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.status(200).json({
+      success: true,
+      message: 'Lấy danh sách đề xuất phê duyệt thành công',
+      data: proposals,
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi tải danh sách đề xuất: ' + err.message,
+    });
+  }
+};
+
+/**
+ * Review Proposal (Approve / Reject)
+ * PATCH /api/director/approvals/:id/review
+ */
+export const reviewApproval = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { status, reviewNote } = req.body;
+
+    if (!['APPROVED', 'REJECTED'].includes(status)) {
+      res.status(400).json({
+        success: false,
+        message: 'Trạng thái phê duyệt không hợp lệ. Chỉ chấp nhận APPROVED hoặc REJECTED.',
+      });
+      return;
+    }
+
+    let proposal = await Proposal.findById(id);
+    if (!proposal) {
+      // Check if user passed code like AP-101 instead of MongoDB _id
+      proposal = await Proposal.findOne({ code: id });
+    }
+
+    if (!proposal) {
+      res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy đề xuất cần phê duyệt.',
+      });
+      return;
+    }
+
+    proposal.status = status;
+    proposal.reviewNote = reviewNote || (status === 'APPROVED' ? 'Đã được Ban Giám Đốc phê duyệt' : 'Ban Giám Đốc từ chối đề xuất');
+    proposal.reviewedBy = req.user?._id;
+    proposal.reviewedAt = new Date();
+    await proposal.save();
+
+    res.status(200).json({
+      success: true,
+      message: status === 'APPROVED' ? 'Đã phê duyệt đề xuất thành công!' : 'Đã từ chối đề xuất!',
+      data: proposal,
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi xử lý phê duyệt đề xuất: ' + err.message,
+    });
+  }
+};
+
+/**
+ * Create New Proposal
+ * POST /api/director/approvals
+ */
+export const createProposal = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { title, description, category, proposerName, proposerRole } = req.body;
+
+    if (!title || !title.trim()) {
+      res.status(400).json({
+        success: false,
+        message: 'Tiêu đề đề xuất là bắt buộc.',
+      });
+      return;
+    }
+
+    const count = await Proposal.countDocuments();
+    const code = `AP-${101 + count}`;
+
+    const newProposal = await Proposal.create({
+      code,
+      title: title.trim(),
+      description: description?.trim() || '',
+      category: category || 'Khác',
+      proposerName: proposerName || req.user?.fullName || 'Ban Quản trị',
+      proposerRole: proposerRole || (req.user?.role === 'DIRECTOR' ? 'Ban Giám Đốc' : 'Giáo vụ'),
+      proposer: req.user?._id,
+      status: 'PENDING',
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Tạo đề xuất mới thành công!',
+      data: newProposal,
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi tạo đề xuất: ' + err.message,
     });
   }
 };
@@ -530,9 +714,9 @@ export const getClassAndCourseReports = async (_req: Request, res: Response): Pr
       success: true,
       message: 'Lấy báo cáo lớp học và khóa học thành công',
       data: {
-        totalClasses: classes.length > 0 ? classes.length : 12,
-        totalCourses: courses.length > 0 ? courses.length : 4,
-        averageClassFillRate: '88.5%',
+        totalClasses: classes.length,
+        totalCourses: courses.length,
+        averageClassFillRate: classes.length > 0 ? '88.5%' : '0%',
         classes: classReports,
         courses: courseReports,
       },
@@ -559,7 +743,7 @@ export const getRevenueReports = async (_req: Request, res: Response): Promise<v
       success: true,
       message: 'Lấy báo cáo tài chính và doanh thu thành công',
       data: {
-        totalRevenue: totalRealRevenue > 0 ? totalRealRevenue : 168500000,
+        totalRevenue: totalRealRevenue,
         monthlyRevenue: [
           { month: 'T05/2026', amount: 112000000 },
           { month: 'T06/2026', amount: 128500000 },
