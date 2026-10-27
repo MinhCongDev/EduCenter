@@ -32,6 +32,7 @@ const PaymentsPage = lazy(() => import('./pages/student/PaymentsPage'));
 const RequestsPage = lazy(() => import('./pages/student/RequestsPage'));
 const ProfilePage = lazy(() => import('./pages/student/ProfilePage'));
 const CombinedSchedulePage = lazy(() => import('./pages/student/CombinedSchedulePage'));
+const ProgressPage = lazy(() => import('./pages/student/ProgressPage'));
 const TeacherDashboard = lazy(() => import('./pages/teacher/TeacherDashboard'));
 const StaffDashboard = lazy(() => import('./pages/staff/StaffDashboard'));
 const CoursesManagementPage = lazy(() => import('./pages/staff/CoursesManagementPage'));
@@ -257,6 +258,16 @@ const AppRouter: React.FC = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/student/progress"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <DashboardLayout>
+                <ProgressPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
         {/* ── Teacher Routes ───────────────────────── */}
         <Route
           path="/teacher/dashboard"
@@ -400,7 +411,7 @@ const AppRouter: React.FC = () => {
 // ===========================
 const App: React.FC = () => {
   return (
-<ErrorBoundary>
+    <ErrorBoundary>
       <BrowserRouter>
         <ToastProvider>
           <AuthProvider>

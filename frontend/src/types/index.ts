@@ -909,12 +909,19 @@ export interface EnrollmentRecord {
   studentProfile?: {
     studentCode?: string;
     status?: string;
+    currentBand?: number;
+    targetBand?: number;
+    placementTestScore?: number;
+    placementTestDate?: string;
+    placementNotes?: string;
   };
   course?: {
     _id: string;
     code: string;
     title: string;
     tuitionFee: number;
+    entryLevel?: string;
+    targetLevel?: string;
   } | null;
   class?: {
     _id: string;

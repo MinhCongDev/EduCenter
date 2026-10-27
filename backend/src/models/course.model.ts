@@ -17,10 +17,27 @@ export interface ICourse extends Document {
   status: CourseStatus;
   learningObjectives: string[];
   syllabus: string[];
+  milestones?: ICourseMilestone[];
   bannerUrl?: string;
   featured?: boolean;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export type MilestoneType =
+  | 'LESSON_COMPLETION'
+  | 'ASSIGNMENT'
+  | 'MOCK_TEST'
+  | 'SKILL_CHECK'
+  | 'CHECKPOINT';
+
+export interface ICourseMilestone {
+  milestoneId: string;
+  title: string;
+  description?: string;
+  order: number;
+  type?: MilestoneType;
+  targetSession?: number;
 }
 
 const courseSchema = new Schema<ICourse>(
@@ -86,6 +103,20 @@ const courseSchema = new Schema<ICourse>(
       type: [String],
       default: [],
     },
+    milestones: [
+      {
+        milestoneId: { type: String, required: true },
+        title: { type: String, required: true },
+        description: { type: String, default: '' },
+        order: { type: Number, default: 1 },
+        type: {
+          type: String,
+          enum: ['LESSON_COMPLETION', 'ASSIGNMENT', 'MOCK_TEST', 'SKILL_CHECK', 'CHECKPOINT'],
+          default: 'CHECKPOINT',
+        },
+        targetSession: { type: Number, default: 0 },
+      },
+    ],
     bannerUrl: {
       type: String,
       default: '',

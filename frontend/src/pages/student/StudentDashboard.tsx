@@ -93,10 +93,10 @@ const StudentDashboard: React.FC = () => {
               a.submissionStatus === 'GRADED'
                 ? 'GRADED'
                 : a.submissionStatus === 'LATE'
-                ? 'LATE'
-                : a.submissionStatus
-                ? 'SUBMITTED'
-                : 'PENDING',
+                  ? 'LATE'
+                  : a.submissionStatus
+                    ? 'SUBMITTED'
+                    : 'PENDING',
             score:
               a.submissionStatus === 'GRADED' && a.grade !== undefined
                 ? `${a.grade} / ${a.maxScore ?? '—'}`
@@ -153,8 +153,8 @@ const StudentDashboard: React.FC = () => {
 
   const nextSession = schedule.length
     ? [...schedule].sort((a: any, b: any) =>
-        (a.startTime || '').localeCompare(b.startTime || '')
-      )[0]
+      (a.startTime || '').localeCompare(b.startTime || '')
+    )[0]
     : null;
 
   const pendingAssignments = assignments.filter((a) => a.status === 'PENDING');
@@ -231,6 +231,13 @@ const StudentDashboard: React.FC = () => {
             >
               📊 Kết quả học tập
             </button>
+            <Link
+              to="/student/progress"
+              className="dash-quick-btn"
+              style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
+            >
+              🎯 Tiến độ khóa học
+            </Link>
           </div>
 
           {/* Key Metrics */}
@@ -467,10 +474,10 @@ const StudentDashboard: React.FC = () => {
                             {item.status === 'PENDING'
                               ? '⏳'
                               : item.status === 'GRADED'
-                              ? '🏆'
-                              : item.status === 'LATE'
-                              ? '⏰'
-                              : '✅'}
+                                ? '🏆'
+                                : item.status === 'LATE'
+                                  ? '⏰'
+                                  : '✅'}
                           </div>
                           <div>
                             <div className="dash-item-title">{item.title}</div>
@@ -494,9 +501,8 @@ const StudentDashboard: React.FC = () => {
                             </button>
                           ) : (
                             <span
-                              className={`badge-pill ${
-                                item.status === 'GRADED' ? 'badge-blue' : 'badge-green'
-                              }`}
+                              className={`badge-pill ${item.status === 'GRADED' ? 'badge-blue' : 'badge-green'
+                                }`}
                             >
                               {item.score || 'Đã nộp'}
                             </span>
@@ -626,9 +632,8 @@ const StudentDashboard: React.FC = () => {
                     >
                       <div>
                         <span
-                          className={`badge-pill ${
-                            e.tuitionStatus === 'PAID' ? 'badge-green' : 'badge-amber'
-                          }`}
+                          className={`badge-pill ${e.tuitionStatus === 'PAID' ? 'badge-green' : 'badge-amber'
+                            }`}
                         >
                           {e.tuitionStatus === 'PAID' ? '✅ Đã thanh toán' : '⏳ Chưa thanh toán'}
                         </span>
@@ -857,15 +862,14 @@ const StudentDashboard: React.FC = () => {
                       <span className="badge-pill badge-amber">Chưa nộp</span>
                     ) : (
                       <span
-                        className={`badge-pill ${
-                          item.status === 'GRADED' ? 'badge-blue' : 'badge-green'
-                        }`}
+                        className={`badge-pill ${item.status === 'GRADED' ? 'badge-blue' : 'badge-green'
+                          }`}
                       >
                         {item.status === 'GRADED'
                           ? `Đã chấm • ${item.score || ''}`
                           : item.status === 'LATE'
-                          ? 'Đã nộp (trễ hạn)'
-                          : 'Đã nộp • Chờ chấm'}
+                            ? 'Đã nộp (trễ hạn)'
+                            : 'Đã nộp • Chờ chấm'}
                       </span>
                     )}
                   </div>
@@ -967,9 +971,8 @@ const StudentDashboard: React.FC = () => {
                         </td>
                         <td style={{ padding: '12px 14px' }}>
                           <span
-                            className={`badge-pill ${
-                              g.status === 'PUBLISHED' ? 'badge-green' : 'badge-amber'
-                            }`}
+                            className={`badge-pill ${g.status === 'PUBLISHED' ? 'badge-green' : 'badge-amber'
+                              }`}
                           >
                             {g.status === 'PUBLISHED' ? 'Đã công bố' : 'Nháp'}
                           </span>

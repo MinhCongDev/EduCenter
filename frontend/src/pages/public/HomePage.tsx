@@ -497,7 +497,7 @@ const HomePage: React.FC = () => {
           </div>
 
           <div className="dmr-cards-row">
-            {/* Card: Online VIP */}
+            {/* Card: Offline Center Class */}
             <div className="dmr-tier-card">
               <div>
                 <div className="dmr-tier-header">
@@ -514,13 +514,13 @@ const HomePage: React.FC = () => {
                       flexShrink: 0,
                     }}
                   >
-                    💻
+                    🏫
                   </div>
                   <div>
-                    <div className="dmr-tier-name">IELTS VIP Zoom ⭐</div>
-                    <div className="dmr-tier-tagline">Học trực tiếp với giảng viên 8.5+ IELTS</div>
+                    <div className="dmr-tier-name">Lớp Học Trực Tiếp Tại Trung Tâm ⭐</div>
+                    <div className="dmr-tier-tagline">Học trực tiếp cùng Giảng viên 8.5+ IELTS</div>
                     <div className="dmr-tier-desc">
-                      Lớp học quy mô nhỏ (tối đa 8 học viên), tương tác 2 chiều liên tục. Có trợ giảng hỗ trợ chữa bài tập và giải đáp thắc mắc 24/7 suốt khóa học.
+                      Phòng học hiện đại tiêu chuẩn quốc tế, tương tác thực hành 2 chiều liên tục. Giáo viên chỉnh âm Speaking và sửa bài Writing trực tiếp trên lớp.
                     </div>
                   </div>
                 </div>
@@ -540,7 +540,7 @@ const HomePage: React.FC = () => {
               </div>
             </div>
 
-            {/* Card: Online Basic */}
+            {/* Card: Blended Learning & Center Operations */}
             <div className="dmr-tier-card">
               <div>
                 <div className="dmr-tier-header">
@@ -557,13 +557,13 @@ const HomePage: React.FC = () => {
                       flexShrink: 0,
                     }}
                   >
-                    📱
+                    🎯
                   </div>
                   <div>
-                    <div className="dmr-tier-name">IELTS Self-Study 🚀</div>
-                    <div className="dmr-tier-tagline">Học online qua video bài giảng &amp; Ngân hàng đề thi</div>
+                    <div className="dmr-tier-name">Mô Hình Blended Learning 🚀</div>
+                    <div className="dmr-tier-tagline">Đào tạo bài bản theo tiến độ &amp; Khảo thí định kỳ</div>
                     <div className="dmr-tier-desc">
-                      Hơn 500+ bài giảng video chuyên sâu từ cựu giám khảo, tích hợp kho đề Cambridge 10-19 có chấm điểm tự động và phân tích giải thích cặn kẽ.
+                      Lộ trình học theo từng mốc hoàn thành rõ ràng, điểm danh chuyên cần, kiểm tra đầu vào xếp lớp và thi thử Mock Test 4 kỹ năng như thi thật.
                     </div>
                   </div>
                 </div>

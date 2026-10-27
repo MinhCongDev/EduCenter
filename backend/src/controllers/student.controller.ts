@@ -39,7 +39,7 @@ export const enrollIntoClass = async (req: AuthRequest, res: Response): Promise<
     // Import models here to avoid circular import at top-level
     const { Class } = await import('../models/class.model');
 
-    const cls = await Class.findById(classId);
+    const cls = await Class.findById(classId).populate('course');
     if (!cls) {
       throw createError('Không tìm thấy lớp học', 404);
     }
@@ -49,6 +49,23 @@ export const enrollIntoClass = async (req: AuthRequest, res: Response): Promise<
     const currentCount = cls.currentEnrollment ?? 0;
     if (typeof cls.capacity === 'number' && currentCount >= cls.capacity) {
       throw createError('Lớp học đã đầy, không thể đăng ký', 400);
+    }
+
+    // Xếp lớp theo trình độ: Kiểm tra trình độ học viên so với yêu cầu đầu vào của khóa học
+    const { Student } = await import('../models/student.model');
+    const studentProfile = await Student.findOne({ user: user._id });
+    const course: any = cls.course;
+    if (course && course.entryLevel) {
+      const match = String(course.entryLevel).match(/(\d+(\.\d+)?)/);
+      const minRequiredBand = match ? parseFloat(match[1]) : 0;
+      const studentBand = studentProfile?.currentBand ?? 0;
+
+      if (minRequiredBand >= 5.0 && studentBand > 0 && studentBand < minRequiredBand - 0.5) {
+        throw createError(
+          `Khóa học này yêu cầu trình độ đầu vào tối thiểu ${course.entryLevel}. Band điểm hiện tại của bạn là ${studentBand}. Vui lòng liên hệ phòng Giáo vụ để được tư vấn kiểm tra đầu vào (Placement Test) hoặc chọn lớp phù hợp.`,
+          400
+        );
+      }
     }
 
     // Already enrolled?

@@ -12,6 +12,9 @@ export interface IStudent extends Document {
     relationship: string;
     phone: string;
   };
+  placementTestScore?: number;
+  placementTestDate?: Date;
+  placementNotes?: string;
   status: 'ACTIVE' | 'GRADUATED' | 'RESERVED' | 'DROPPED';
   createdAt: Date;
   updatedAt: Date;
@@ -46,6 +49,18 @@ const studentSchema = new Schema<IStudent>(
       min: 0,
       max: 9.0,
       default: 7.0,
+    },
+    placementTestScore: {
+      type: Number,
+      min: 0,
+      max: 9.0,
+    },
+    placementTestDate: {
+      type: Date,
+    },
+    placementNotes: {
+      type: String,
+      default: '',
     },
     learningGoal: {
       type: String,

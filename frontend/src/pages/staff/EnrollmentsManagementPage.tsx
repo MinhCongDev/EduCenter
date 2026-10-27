@@ -80,6 +80,8 @@ const EnrollmentDetailModal: React.FC<{
         <div><span>Email</span><strong>{enrollment.student?.email ?? '—'}</strong></div>
         <div><span>Số điện thoại</span><strong>{enrollment.student?.phone || '—'}</strong></div>
         <div><span>Khóa học</span><strong>{enrollment.course?.title ?? 'Chưa có thông tin khóa học'}</strong></div>
+        <div><span>Chuẩn đầu vào</span><strong>{enrollment.course?.entryLevel || '—'}</strong></div>
+        <div><span>Trình độ học viên</span><strong>{enrollment.studentProfile?.currentBand ? `Band ${enrollment.studentProfile.currentBand}` : 'Chưa có điểm Band'}</strong></div>
         <div><span>Học phí khóa học</span><strong>{enrollment.course ? formatCurrency(enrollment.course.tuitionFee) : '—'}</strong></div>
         <div><span>Lớp học</span><strong>{enrollment.class?.classCode ?? 'Chưa được xếp lớp'}</strong></div>
         <div><span>Ngày ghi danh</span><strong>{formatDate(enrollment.registrationDate)}</strong></div>
@@ -90,7 +92,47 @@ const EnrollmentDetailModal: React.FC<{
       </div>
 
       <section className="enrollment-class-assignment">
-        <h3 className="enrollment-payment-heading">Xếp lớp cho học viên</h3>
+        <h3 className="enrollment-payment-heading">Xếp lớp theo trình độ</h3>
+
+        {/* Level matching advisory */}
+        {enrollment.course?.entryLevel && (
+          <div
+            style={{
+              padding: '10px 14px',
+              borderRadius: '8px',
+              marginBottom: '14px',
+              fontSize: '0.85rem',
+              backgroundColor:
+                (enrollment.studentProfile?.currentBand ?? 0) >= 5.0
+                  ? '#f0fdf4'
+                  : enrollment.studentProfile?.currentBand
+                  ? '#fffbeb'
+                  : '#f8fafc',
+              border:
+                (enrollment.studentProfile?.currentBand ?? 0) >= 5.0
+                  ? '1px solid #bbf7d0'
+                  : enrollment.studentProfile?.currentBand
+                  ? '1px solid #fde68a'
+                  : '1px solid #e2e8f0',
+              color:
+                (enrollment.studentProfile?.currentBand ?? 0) >= 5.0
+                  ? '#166534'
+                  : enrollment.studentProfile?.currentBand
+                  ? '#92400e'
+                  : '#475569',
+            }}
+          >
+            <strong>🎯 Đánh giá trình độ xếp lớp:</strong>
+            <div style={{ marginTop: '4px', lineHeight: 1.4 }}>
+              • Chuẩn đầu vào khóa học: <strong>{enrollment.course.entryLevel}</strong>
+              <br />
+              • Band điểm học viên: <strong>{enrollment.studentProfile?.currentBand ? `Band ${enrollment.studentProfile.currentBand}` : 'Chưa kiểm tra đầu vào'}</strong>
+              {enrollment.studentProfile?.placementTestScore !== undefined && (
+                <span> (Điểm Test: Band {enrollment.studentProfile.placementTestScore})</span>
+              )}
+            </div>
+          </div>
+        )}
         {enrollment.course ? (
           <>
             <label className="form-label" htmlFor="enrollment-class-select">Lớp thuộc khóa học {enrollment.course.code}</label>
@@ -354,7 +396,7 @@ const EnrollmentsManagementPage: React.FC = () => {
           <div className="courses-empty"><h3>Không có ghi danh phù hợp</h3><p>Thử thay đổi điều kiện tìm kiếm hoặc bộ lọc.</p></div>
         ) : (
           <table className="courses-table enrollment-table" aria-label="Danh sách ghi danh">
-            <thead><tr><th>Mã ghi danh</th><th>Học viên</th><th>Khóa học</th><th>Học phí</th><th>Lớp</th><th>Ngày đăng ký</th><th>Trạng thái ghi danh</th><th>Thanh toán gần nhất</th><th>Thao tác</th></tr></thead>
+            <thead><tr><th>Mã ghi danh</th><th>Học viên</th><th>Khóa học</th><th>Trình độ / Chuẩn</th><th>Học phí</th><th>Lớp</th><th>Ngày đăng ký</th><th>Trạng thái ghi danh</th><th>Thanh toán gần nhất</th><th>Thao tác</th></tr></thead>
             <tbody>
               {enrollments.map((enrollment) => {
                 const latestPayment = enrollment.payments[0];
@@ -363,6 +405,12 @@ const EnrollmentsManagementPage: React.FC = () => {
                     <td><span className="course-code-chip">{enrollment._id}</span></td>
                     <td><div className="course-title-cell"><strong>{enrollment.student?.fullName ?? 'Không có dữ liệu'}</strong><span className="course-desc-preview">{enrollment.studentProfile?.studentCode ?? enrollment.student?.email ?? '—'}</span></div></td>
                     <td>{enrollment.course?.title ?? 'Chưa có thông tin'}</td>
+                    <td>
+                      <div style={{ fontSize: '0.82rem' }}>
+                        <div>Band: <strong>{enrollment.studentProfile?.currentBand ?? '—'}</strong></div>
+                        <div style={{ fontSize: '0.74rem', color: '#64748b' }}>Y/c: {enrollment.course?.entryLevel ?? '—'}</div>
+                      </div>
+                    </td>
                     <td>{enrollment.course ? formatCurrency(enrollment.course.tuitionFee) : '—'}</td>
                     <td>{enrollment.class?.classCode ?? 'Chưa xếp lớp'}</td>
                     <td>{formatDate(enrollment.registrationDate)}</td>

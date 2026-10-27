@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { teacherService } from '../../services/teacher.service';
+import { progressService, type ClassProgressData } from '../../services/progress.service';
 import type {
   AssignedClass,
   TeacherStudent,
@@ -13,19 +14,35 @@ import type {
   AttendanceRecord,
 } from '../../services/teacher.service';
 
-export type TeacherTab = 'overview' | 'classes_students' | 'schedule_attendance' | 'assignments_grading' | 'academic_grades';
+export type TeacherTab =
+  | 'overview'
+  | 'classes_students'
+  | 'schedule_attendance'
+  | 'assignments_grading'
+  | 'academic_grades'
+  | 'course_progress';
 
 export const TeacherDashboard: React.FC = () => {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // 5 Primary Functional Tabs (covering all 14 features + overview)
+  // Primary Functional Tabs
   const [activeTab, setActiveTab] = useState<TeacherTab>('overview');
 
   // Synchronize activeTab with URL ?tab=...
   useEffect(() => {
     const tabParam = searchParams.get('tab') as TeacherTab | null;
-    if (tabParam && ['overview', 'schedule_attendance', 'assignments_grading', 'classes_students', 'academic_grades'].includes(tabParam)) {
+    if (
+      tabParam &&
+      [
+        'overview',
+        'schedule_attendance',
+        'assignments_grading',
+        'classes_students',
+        'academic_grades',
+        'course_progress',
+      ].includes(tabParam)
+    ) {
       setActiveTab(tabParam);
     } else {
       setActiveTab('overview');
@@ -64,6 +81,43 @@ export const TeacherDashboard: React.FC = () => {
   const [attendanceDate, setAttendanceDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [attendanceForm, setAttendanceForm] = useState<Record<string, { status: 'PRESENT' | 'LATE' | 'ABSENT' | 'EXCUSED'; notes: string }>>({});
   const [attendanceViewMode, setAttendanceViewMode] = useState<'check' | 'history'>('check');
+
+  // ── Course Progress States ──
+  const [progressClassId, setProgressClassId] = useState<string>('');
+  const [classProgressData, setClassProgressData] = useState<ClassProgressData | null>(null);
+  const [loadingProgress, setLoadingProgress] = useState<boolean>(false);
+
+  const fetchClassProgress = async (cid: string) => {
+    if (!cid) return;
+    setLoadingProgress(true);
+    try {
+      const res = await progressService.getClassProgress(cid);
+      if (res.success && res.data) {
+        setClassProgressData(res.data);
+      }
+    } catch (err: any) {
+      showToast('Lỗi khi tải tiến độ: ' + (err?.response?.data?.message || err.message));
+    } finally {
+      setLoadingProgress(false);
+    }
+  };
+
+  const handleToggleStudentMilestone = async (studentId: string, milestoneId: string, currentlyCompleted: boolean) => {
+    if (!progressClassId) return;
+    try {
+      await progressService.markMilestone({
+        studentId,
+        classId: progressClassId,
+        milestoneId,
+        completed: !currentlyCompleted,
+      });
+      showToast(currentlyCompleted ? 'Đã hủy đánh dấu hoàn thành' : '🎉 Đã cập nhật mốc tiến độ cho học viên!');
+      await fetchClassProgress(progressClassId);
+    } catch (err: any) {
+      showToast('❌ Lỗi khi cập nhật tiến độ: ' + (err?.response?.data?.message || err.message));
+    }
+  };
+
 
   // ── Modals State ──
   // 1. Schedule Change Modal (Submit & Track)
@@ -138,6 +192,8 @@ export const TeacherDashboard: React.FC = () => {
       setClasses(loadedClasses);
       if (loadedClasses.length > 0 && !selectedClassId) {
         setSelectedClassId(loadedClasses[0]._id);
+        setProgressClassId(loadedClasses[0]._id);
+        fetchClassProgress(loadedClasses[0]._id);
         setReqClassId(loadedClasses[0]._id);
         setAssClassId(loadedClasses[0]._id);
         setGradeFormClassId(loadedClasses[0]._id);
@@ -476,6 +532,13 @@ export const TeacherDashboard: React.FC = () => {
             <button
               type="button"
               className="dash-quick-btn"
+              onClick={() => handleTabChange('course_progress')}
+            >
+              🎯 Tiến độ khóa học
+            </button>
+            <button
+              type="button"
+              className="dash-quick-btn"
               onClick={() => {
                 setIsScheduleRequestOpen(true);
                 setRequestTab('submit');
@@ -775,7 +838,7 @@ export const TeacherDashboard: React.FC = () => {
 
       {/* ── CÁC PHẦN CHUYÊN BIỆT: CHỈ HIỂN THỊ NỘI DUNG CỦA PHẦN ĐÓ ── */}
       {activeTab !== 'overview' && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem', flexWrap: 'wrap', gap: '8px' }}>
           <button
             type="button"
             onClick={() => handleTabChange('overview')}
@@ -795,8 +858,51 @@ export const TeacherDashboard: React.FC = () => {
             }}
           >
             <span>⬅</span>
-            <span>Quay lại Bảng điều khiển Tổng quan</span>
+            <span>Bảng điều khiển Tổng quan</span>
           </button>
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className={`dash-quick-btn ${activeTab === 'classes_students' ? 'active' : ''}`}
+              onClick={() => handleTabChange('classes_students')}
+              style={{ fontSize: '0.8rem', padding: '6px 12px' }}
+            >
+              🏫 Lớp học &amp; Học viên
+            </button>
+            <button
+              type="button"
+              className={`dash-quick-btn ${activeTab === 'schedule_attendance' ? 'active' : ''}`}
+              onClick={() => handleTabChange('schedule_attendance')}
+              style={{ fontSize: '0.8rem', padding: '6px 12px' }}
+            >
+              🗓️ Lịch dạy &amp; Điểm danh
+            </button>
+            <button
+              type="button"
+              className={`dash-quick-btn ${activeTab === 'assignments_grading' ? 'active' : ''}`}
+              onClick={() => handleTabChange('assignments_grading')}
+              style={{ fontSize: '0.8rem', padding: '6px 12px' }}
+            >
+              ✍️ Bài tập &amp; Chấm bài
+            </button>
+            <button
+              type="button"
+              className={`dash-quick-btn ${activeTab === 'academic_grades' ? 'active' : ''}`}
+              onClick={() => handleTabChange('academic_grades')}
+              style={{ fontSize: '0.8rem', padding: '6px 12px' }}
+            >
+              📊 Bảng điểm
+            </button>
+            <button
+              type="button"
+              className={`dash-quick-btn ${activeTab === 'course_progress' ? 'active' : ''}`}
+              onClick={() => handleTabChange('course_progress')}
+              style={{ fontSize: '0.8rem', padding: '6px 12px' }}
+            >
+              🎯 Tiến độ khóa học
+            </button>
+          </div>
         </div>
       )}
 
@@ -1708,6 +1814,222 @@ export const TeacherDashboard: React.FC = () => {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* TAB 5: TIẾN ĐỘ KHÓA HỌC & CÁC MỐC HOÀN THÀNH */}
+      {activeTab === 'course_progress' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          {/* Header Bar */}
+          <div
+            className="dash-card"
+            style={{
+              padding: '1.25rem 1.5rem',
+              borderRadius: '16px',
+              backgroundColor: '#ffffff',
+              border: '1px solid #e2e8f0',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '12px',
+            }}
+          >
+            <div>
+              <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>
+                🎯 Theo Dõi Tiến Độ Khóa Học &amp; Đánh Dấu Cột Mốc
+              </h2>
+              <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#64748b' }}>
+                Đánh dấu các mốc hoàn thành nội dung, bài thi định kỳ hoặc nghiệm thu chuẩn đầu ra cho từng học viên trong lớp
+              </p>
+            </div>
+
+            {/* Class Selector */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155' }}>Chọn lớp:</label>
+              <select
+                value={progressClassId}
+                onChange={(e) => {
+                  setProgressClassId(e.target.value);
+                  fetchClassProgress(e.target.value);
+                }}
+                style={{
+                  padding: '8px 14px',
+                  borderRadius: '10px',
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#f8fafc',
+                  fontSize: '0.88rem',
+                  fontWeight: 600,
+                  color: '#0f172a',
+                  cursor: 'pointer',
+                }}
+              >
+                {classes.map((c) => (
+                  <option key={c._id} value={c._id}>
+                    {c.classCode} — {c.course?.title || c.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={() => fetchClassProgress(progressClassId)}
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: '8px',
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#ffffff',
+                  cursor: 'pointer',
+                  fontSize: '0.85rem',
+                }}
+                title="Làm mới tiến độ"
+              >
+                🔄
+              </button>
+            </div>
+          </div>
+
+          {loadingProgress ? (
+            <div style={{ textAlign: 'center', padding: '3rem', backgroundColor: '#ffffff', borderRadius: '16px' }}>
+              ⏳ Đang tải dữ liệu tiến độ lớp học...
+            </div>
+          ) : classProgressData ? (
+            <>
+              {/* Course Milestones Legend */}
+              <div
+                style={{
+                  backgroundColor: '#ffffff',
+                  borderRadius: '14px',
+                  padding: '16px 20px',
+                  border: '1px solid #e2e8f0',
+                }}
+              >
+                <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', marginBottom: '8px' }}>
+                  Danh sách {classProgressData.milestones.length} cột mốc của khóa {classProgressData.courseInfo.title}:
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '10px' }}>
+                  {classProgressData.milestones.map((m) => (
+                    <div
+                      key={m.milestoneId}
+                      style={{
+                        padding: '10px 14px',
+                        backgroundColor: '#f8fafc',
+                        borderRadius: '8px',
+                        border: '1px solid #e2e8f0',
+                        fontSize: '0.82rem',
+                      }}
+                    >
+                      <div style={{ fontWeight: 700, color: '#1e293b' }}>
+                        Mốc {m.order}: {m.title}
+                      </div>
+                      <div style={{ color: '#64748b', fontSize: '0.78rem', marginTop: '2px' }}>
+                        {m.description}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Students Progress Table */}
+              <div
+                className="dash-card"
+                style={{
+                  padding: '1rem',
+                  borderRadius: '16px',
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #e2e8f0',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
+                  overflowX: 'auto',
+                }}
+              >
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#f8fafc', borderBottom: '2px solid #e2e8f0', textAlign: 'left', color: '#475569' }}>
+                      <th style={{ padding: '12px 14px', width: '220px' }}>Học Viên</th>
+                      <th style={{ padding: '12px 14px', width: '120px' }}>Band Hiện Tại / Mục Tiêu</th>
+                      <th style={{ padding: '12px 14px', width: '160px' }}>Tiến Độ Tổng</th>
+                      {classProgressData.milestones.map((m) => (
+                        <th key={m.milestoneId} style={{ padding: '12px 10px', textAlign: 'center', minWidth: '100px' }}>
+                          Mốc {m.order}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {classProgressData.students.length === 0 ? (
+                      <tr>
+                        <td colSpan={3 + classProgressData.milestones.length} style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
+                          Lớp học này hiện chưa có học viên nào ghi danh.
+                        </td>
+                      </tr>
+                    ) : (
+                      classProgressData.students.map((stu) => (
+                        <tr key={stu.studentId} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                          <td style={{ padding: '12px 14px' }}>
+                            <div style={{ fontWeight: 800, color: '#0f172a' }}>{stu.fullName}</div>
+                            <div style={{ fontSize: '0.75rem', color: '#059669', fontWeight: 600 }}>{stu.studentCode}</div>
+                          </td>
+                          <td style={{ padding: '12px 14px', fontSize: '0.82rem' }}>
+                            <span style={{ fontWeight: 700, color: '#1e293b' }}>Band {stu.currentBand || '—'}</span>
+                            <span style={{ color: '#94a3b8' }}> / {stu.targetBand || '—'}</span>
+                          </td>
+                          <td style={{ padding: '12px 14px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <div style={{ flex: 1, height: '8px', backgroundColor: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
+                                <div
+                                  style={{
+                                    width: `${stu.progressPercentage}%`,
+                                    height: '100%',
+                                    backgroundColor: stu.progressPercentage >= 80 ? '#10b981' : '#3b82f6',
+                                    borderRadius: '4px',
+                                  }}
+                                />
+                              </div>
+                              <span style={{ fontSize: '0.78rem', fontWeight: 700, minWidth: '35px' }}>
+                                {stu.progressPercentage}%
+                              </span>
+                            </div>
+                            <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '2px' }}>
+                              {stu.completedCount}/{stu.totalMilestones} mốc hoàn thành
+                            </div>
+                          </td>
+                          {classProgressData.milestones.map((m) => {
+                            const isCompleted = stu.completedMilestoneIds.includes(m.milestoneId);
+                            return (
+                              <td key={m.milestoneId} style={{ padding: '12px 10px', textAlign: 'center' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleStudentMilestone(stu.studentId, m.milestoneId, isCompleted)}
+                                  style={{
+                                    padding: '6px 12px',
+                                    borderRadius: '8px',
+                                    border: isCompleted ? '1px solid #86efac' : '1px solid #cbd5e1',
+                                    backgroundColor: isCompleted ? '#dcfce7' : '#ffffff',
+                                    color: isCompleted ? '#166534' : '#64748b',
+                                    fontWeight: 700,
+                                    fontSize: '0.78rem',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s ease',
+                                  }}
+                                  title={isCompleted ? 'Bấm để hủy hoàn thành' : 'Bấm để đánh dấu hoàn thành mốc'}
+                                >
+                                  {isCompleted ? '✓ Đạt' : '○ Chưa'}
+                                </button>
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
+              Vui lòng chọn lớp học để xem tiến độ.
+            </div>
+          )}
         </div>
       )}
 
