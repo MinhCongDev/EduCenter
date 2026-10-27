@@ -51,6 +51,7 @@ const getMenuItems = (role: UserRole): DashboardItem[] => {
       { label: 'Lịch dạy & Điểm danh', path: '/teacher/dashboard?tab=schedule_attendance' },
       { label: 'Bài tập & Chấm bài', path: '/teacher/dashboard?tab=assignments_grading' },
       { label: 'Kết quả học tập', path: '/teacher/dashboard?tab=academic_grades' },
+      { label: 'Tiến độ & Mốc hoàn thành', path: '/teacher/dashboard?tab=course_progress' },
       { label: 'Báo cáo' },
     ];
   }
