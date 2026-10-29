@@ -4,13 +4,12 @@ import { paymentService } from '../services/payment.service';
 export interface VietQRData {
   amount: number;
   description: string; // Nội dung chuyển khoản tự động
-  invoiceCode?: string; // Mã hóa đơn / mã giao dịch
+  invoiceCode?: string; // Mã hóa đơn / mã đơn hàng
   courseTitle?: string; // Tên khóa học
   courseId?: string; // ID khóa học
   studentName?: string; // Tên học viên
   classCode?: string; // Mã lớp học
   enrollmentId?: string; // ID lượt đăng ký (dùng cho xác nhận thanh toán tự động)
-  gateway?: 'VIETQR' | 'VNPAY'; // Mặc định mở tab nào
   paymentId?: string; // ID giao dịch nếu có sẵn
 }
 
@@ -45,7 +44,6 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
   data,
   onPaymentSuccess,
 }) => {
-  const [activeGateway, setActiveGateway] = useState<'VIETQR' | 'VNPAY'>('VIETQR');
   const [selectedBank, setSelectedBank] = useState<BankOption>(SUPPORTED_BANKS[0]);
   const [template, setTemplate] = useState<'compact2' | 'qr_only'>('compact2');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -73,24 +71,13 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
     data?.description ||
     (data?.invoiceCode ? `EDUPAY ${data.invoiceCode}` : 'HOCPHI EDUCENTER');
 
-  // Tạo URL VietQR chuẩn
-  const vietQrUrl =
-    `https://img.vietqr.io/image/${selectedBank.id}-${ACCOUNT_NO}-${template}.png?amount=${effectiveAmount}&addInfo=${encodeURIComponent(
-      transferContent
-    )}&accountName=${encodeURIComponent(ACCOUNT_NAME)}`;
-
-  // Tạo URL VNPay-QR mô phỏng chuẩn EMVCo
-  const vnpayQrUrl =
-    activeGateway === 'VNPAY'
-      ? `https://img.vietqr.io/image/MB-${ACCOUNT_NO}-compact2.png?amount=${effectiveAmount}&addInfo=${encodeURIComponent(
-          `VNPAY ${transferContent}`
-        )}&accountName=${encodeURIComponent(ACCOUNT_NAME)}`
-      : vietQrUrl;
-
-  const currentQrUrl = activeGateway === 'VNPAY' ? vnpayQrUrl : vietQrUrl;
+  // Tạo URL VietQR chuẩn Napas 24/7
+  const vietQrUrl = `https://img.vietqr.io/image/${selectedBank.id}-${ACCOUNT_NO}-${template}.png?amount=${effectiveAmount}&addInfo=${encodeURIComponent(
+    transferContent
+  )}&accountName=${encodeURIComponent(ACCOUNT_NAME)}`;
 
   // Gọi POST /api/payments để tạo bản ghi giao dịch PENDING trên database
-  const initPendingPayment = async (amountToPay: number, gatewayChoice: 'VIETQR' | 'VNPAY') => {
+  const initPendingPayment = async (amountToPay: number) => {
     if (amountToPay <= 0) return;
     try {
       setIsInitiating(true);
@@ -98,8 +85,10 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
         enrollmentId: data?.enrollmentId,
         courseId: data?.courseId,
         amount: amountToPay,
-        paymentMethod: gatewayChoice === 'VNPAY' ? 'VNPAY' : 'VIETQR',
-        note: data?.description || (data?.invoiceCode ? `EDUPAY ${data.invoiceCode}` : 'HOCPHI EDUCENTER'),
+        paymentMethod: 'VIETQR',
+        note:
+          data?.description ||
+          (data?.invoiceCode ? `EDUPAY ${data.invoiceCode}` : `HOCPHI ${data?.courseTitle || 'EDUCENTER'}`),
         transactionCode: data?.invoiceCode,
         invoiceId: data?.invoiceCode,
       });
@@ -124,22 +113,19 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
       setActiveTxnCode('');
       setToastMessage(null);
     } else {
-      const initialGateway = data?.gateway || 'VIETQR';
-      setActiveGateway(initialGateway);
-
       const initialAmount = data?.amount && data.amount > 0 ? data.amount : 5000000;
       if (!data?.amount || data.amount <= 0) {
         setCustomAmount(initialAmount);
       }
 
       // Khởi tạo bản ghi giao dịch PENDING ngay khi mở popup
-      initPendingPayment(initialAmount, initialGateway);
+      initPendingPayment(initialAmount);
     }
   }, [isOpen, data]);
 
   useEffect(() => {
     setImageLoading(true);
-  }, [currentQrUrl, activeGateway, selectedBank, template, effectiveAmount]);
+  }, [vietQrUrl, selectedBank, template, effectiveAmount]);
 
   // Đóng modal khi bấm phím ESC
   useEffect(() => {
@@ -168,18 +154,18 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
   // Tải ảnh mã QR về máy
   const handleDownloadQR = async () => {
     try {
-      const response = await fetch(currentQrUrl);
+      const response = await fetch(vietQrUrl);
       const blob = await response.blob();
       const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = blobUrl;
-      link.download = `${activeGateway}_EduCenter_${activeTxnCode || data.invoiceCode || 'Payment'}.png`;
+      link.download = `VietQR_EduCenter_${activeTxnCode || data.invoiceCode || 'Payment'}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(blobUrl);
     } catch {
-      window.open(currentQrUrl, '_blank');
+      window.open(vietQrUrl, '_blank');
     }
   };
 
@@ -193,16 +179,18 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
       const paymentIdToConfirm = pendingPayment?._id || data.paymentId;
       if (paymentIdToConfirm) {
         paymentResult = await paymentService.confirmPayment(paymentIdToConfirm, {
-          paymentMethod: activeGateway === 'VNPAY' ? 'VNPAY' : 'VIETQR',
-          note: `Học viên quét mã và xác nhận chuyển khoản ${formatVND(effectiveAmount)}. Mã GD: ${activeTxnCode || transferContent}`,
+          paymentMethod: 'VIETQR',
+          note: `Học viên quét mã và xác nhận chuyển khoản VietQR ${formatVND(effectiveAmount)}. Mã GD: ${
+            activeTxnCode || transferContent
+          }`,
           transactionCode: activeTxnCode || undefined,
         });
       } else if (data.enrollmentId) {
         // Fallback an toàn: nếu chưa có paymentId thì dùng processPayment
         paymentResult = await paymentService.processPayment({
           enrollmentId: data.enrollmentId,
-          method: activeGateway === 'VNPAY' ? 'VNPAY' : 'BANK_TRANSFER',
-          note: `Học viên quét mã ${activeGateway === 'VNPAY' ? 'VNPAY-QR' : 'VietQR'}. Nội dung: ${transferContent}`,
+          method: 'BANK_TRANSFER',
+          note: `Học viên quét mã VietQR. Nội dung: ${transferContent}`,
         });
       }
 
@@ -219,7 +207,9 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
         onClose();
       }, 1800);
     } catch (err: any) {
-      alert(err?.response?.data?.message || err?.message || 'Xác nhận thanh toán chưa thành công. Vui lòng kiểm tra lại!');
+      alert(
+        err?.response?.data?.message || err?.message || 'Xác nhận thanh toán chưa thành công. Vui lòng kiểm tra lại!'
+      );
     } finally {
       setIsConfirming(false);
     }
@@ -286,17 +276,13 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
         {/* ── Header ── */}
         <div
           style={{
-            background:
-              activeGateway === 'VNPAY'
-                ? 'linear-gradient(135deg, #991b1b 0%, #dc2626 50%, #005baa 100%)'
-                : 'linear-gradient(135deg, #064e3b 0%, #047857 50%, #059669 100%)',
+            background: 'linear-gradient(135deg, #064e3b 0%, #047857 50%, #059669 100%)',
             padding: '1.25rem 1.75rem',
             color: '#ffffff',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
             borderBottom: '1px solid rgba(255, 255, 255, 0.15)',
-            transition: 'background 0.3s ease',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
@@ -313,19 +299,17 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                 backdropFilter: 'blur(4px)',
               }}
             >
-              {activeGateway === 'VNPAY' ? '🔴' : '📱'}
+              📱
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <h2 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#ffffff' }}>
-                  {activeGateway === 'VNPAY'
-                    ? 'Cổng Thanh Toán VNPAY QR'
-                    : 'Thanh Toán Chuyển Khoản VietQR'}
+                  Thanh Toán Chuyển Khoản VietQR
                 </h2>
                 <span
                   style={{
-                    backgroundColor: activeGateway === 'VNPAY' ? '#ffffff' : '#10b981',
-                    color: activeGateway === 'VNPAY' ? '#dc2626' : '#ffffff',
+                    backgroundColor: '#10b981',
+                    color: '#ffffff',
                     fontSize: '0.7rem',
                     fontWeight: 800,
                     padding: '2px 8px',
@@ -377,82 +361,51 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
             gap: '1.25rem',
           }}
         >
-          {/* Tab Selector: VietQR vs VNPay */}
+          {/* Thanh thông báo cổng thanh toán VietQR Napas 24/7 (gọn gàng, loại bỏ tab VNPay) */}
           <div
             style={{
               display: 'flex',
-              gap: '0.5rem',
-              padding: '0.35rem',
-              backgroundColor: '#f1f5f9',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '0.75rem 1.15rem',
+              backgroundColor: '#ecfdf5',
               borderRadius: '12px',
-              border: '1px solid #e2e8f0',
+              border: '1px solid #a7f3d0',
+              flexWrap: 'wrap',
+              gap: '0.5rem',
             }}
           >
-            <button
-              type="button"
-              onClick={() => {
-                setActiveGateway('VIETQR');
-                initPendingPayment(effectiveAmount, 'VIETQR');
-              }}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+              <span style={{ fontSize: '1.3rem' }}>🏦</span>
+              <div>
+                <div style={{ fontSize: '0.875rem', fontWeight: 800, color: '#065f46' }}>
+                  Cổng Chuyển Khoản VietQR (Napas 24/7)
+                </div>
+                <div style={{ fontSize: '0.75rem', color: '#047857' }}>
+                  Tự động điền số tài khoản, số tiền và nội dung thanh toán học phí
+                </div>
+              </div>
+            </div>
+            <span
               style={{
-                flex: 1,
-                padding: '0.65rem 1rem',
-                borderRadius: '9px',
-                border: 'none',
-                fontWeight: 700,
-                fontSize: '0.875rem',
-                cursor: 'pointer',
-                backgroundColor: activeGateway === 'VIETQR' ? '#059669' : 'transparent',
-                color: activeGateway === 'VIETQR' ? '#ffffff' : '#64748b',
-                boxShadow:
-                  activeGateway === 'VIETQR' ? '0 2px 8px rgba(5, 150, 105, 0.25)' : 'none',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem',
-                transition: 'all 0.2s ease',
+                backgroundColor: '#059669',
+                color: '#ffffff',
+                fontSize: '0.72rem',
+                fontWeight: 800,
+                padding: '3px 10px',
+                borderRadius: '999px',
+                letterSpacing: '0.5px',
               }}
             >
-              <span>🏦</span>
-              <span>VietQR (Chuyển khoản Napas 24/7)</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setActiveGateway('VNPAY');
-                initPendingPayment(effectiveAmount, 'VNPAY');
-              }}
-              style={{
-                flex: 1,
-                padding: '0.65rem 1rem',
-                borderRadius: '9px',
-                border: 'none',
-                fontWeight: 700,
-                fontSize: '0.875rem',
-                cursor: 'pointer',
-                backgroundColor: activeGateway === 'VNPAY' ? '#dc2626' : 'transparent',
-                color: activeGateway === 'VNPAY' ? '#ffffff' : '#64748b',
-                boxShadow:
-                  activeGateway === 'VNPAY' ? '0 2px 8px rgba(220, 38, 38, 0.25)' : 'none',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              <span>🔴</span>
-              <span>VNPAY QR (Cổng VNPAY)</span>
-            </button>
+              CHUẨN EMVCO QUỐC TẾ
+            </span>
           </div>
 
-          {/* Thông tin gói học phí / hóa đơn thanh toán */}
+          {/* Thông tin gói học phí / khóa học được truyền động */}
           <div
             style={{
-              backgroundColor: activeGateway === 'VNPAY' ? '#fff5f5' : '#ecfdf5',
-              border:
-                activeGateway === 'VNPAY' ? '1px solid #fecaca' : '1px solid #a7f3d0',
+              backgroundColor: '#f0fdf4',
+              border: '1px solid #bbf7d0',
               borderRadius: '14px',
               padding: '1rem 1.25rem',
               display: 'flex',
@@ -467,17 +420,17 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                 style={{
                   fontSize: '0.75rem',
                   fontWeight: 700,
-                  color: activeGateway === 'VNPAY' ? '#b91c1c' : '#047857',
+                  color: '#047857',
                   textTransform: 'uppercase',
                 }}
               >
-                Khóa học & Hóa đơn thanh toán
+                Khóa học & Đơn đăng ký học
               </div>
               <div
                 style={{
-                  fontSize: '1.05rem',
+                  fontSize: '1.1rem',
                   fontWeight: 800,
-                  color: activeGateway === 'VNPAY' ? '#7f1d1d' : '#064e3b',
+                  color: '#064e3b',
                   marginTop: '0.2rem',
                 }}
               >
@@ -486,7 +439,7 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
               <div
                 style={{
                   fontSize: '0.8rem',
-                  color: activeGateway === 'VNPAY' ? '#991b1b' : '#047857',
+                  color: '#047857',
                   marginTop: '0.2rem',
                   display: 'flex',
                   alignItems: 'center',
@@ -501,7 +454,7 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                 )}
                 {(activeTxnCode || data.invoiceCode) && (
                   <span>
-                    Mã GD: <strong>{activeTxnCode || data.invoiceCode}</strong> •{' '}
+                    Mã đơn: <strong>{activeTxnCode || data.invoiceCode}</strong> •{' '}
                   </span>
                 )}
                 <span>
@@ -519,7 +472,7 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                       borderRadius: '999px',
                     }}
                   >
-                    ⏳ Đang tạo GD trên database...
+                    ⏳ Đang khởi tạo đơn trên DB...
                   </span>
                 )}
                 {pendingPayment && !isInitiating && (
@@ -544,7 +497,7 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
               <div
                 style={{
                   fontSize: '0.75rem',
-                  color: activeGateway === 'VNPAY' ? '#991b1b' : '#047857',
+                  color: '#047857',
                   fontWeight: 600,
                 }}
               >
@@ -554,7 +507,7 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                 style={{
                   fontSize: '1.45rem',
                   fontWeight: 900,
-                  color: activeGateway === 'VNPAY' ? '#dc2626' : '#059669',
+                  color: '#059669',
                   letterSpacing: '-0.5px',
                 }}
               >
@@ -588,7 +541,7 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                 onChange={(e) => setCustomAmount(Number(e.target.value) || 0)}
                 onBlur={() => {
                   if (customAmount > 0) {
-                    initPendingPayment(customAmount, activeGateway);
+                    initPendingPayment(customAmount);
                   }
                 }}
                 style={{
@@ -608,7 +561,7 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                     type="button"
                     onClick={() => {
                       setCustomAmount(amt);
-                      initPendingPayment(amt, activeGateway);
+                      initPendingPayment(amt);
                     }}
                     style={{
                       padding: '0.3rem 0.6rem',
@@ -637,7 +590,7 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
               alignItems: 'start',
             }}
           >
-            {/* Cột Trái: Mã QR */}
+            {/* Cột Trái: Mã QR VietQR */}
             <div
               style={{
                 display: 'flex',
@@ -653,20 +606,13 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                   width: '100%',
                   minHeight: template === 'compact2' ? '320px' : '280px',
                   backgroundColor: '#ffffff',
-                  border:
-                    activeGateway === 'VNPAY'
-                      ? '2px solid #dc2626'
-                      : '2px solid #10b981',
+                  border: '2px solid #10b981',
                   borderRadius: '16px',
                   padding: '12px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow:
-                    activeGateway === 'VNPAY'
-                      ? '0 10px 25px -5px rgba(220, 38, 38, 0.15)'
-                      : '0 10px 25px -5px rgba(16, 185, 129, 0.15)',
-                  transition: 'border-color 0.3s ease',
+                  boxShadow: '0 10px 25px -5px rgba(16, 185, 129, 0.15)',
                 }}
               >
                 {imageLoading && (
@@ -688,7 +634,7 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                         width: '36px',
                         height: '36px',
                         border: '3px solid #d1fae5',
-                        borderTopColor: activeGateway === 'VNPAY' ? '#dc2626' : '#059669',
+                        borderTopColor: '#059669',
                         borderRadius: '50%',
                         animation: 'spin 0.8s linear infinite',
                       }}
@@ -696,19 +642,19 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                     <span
                       style={{
                         fontSize: '0.8rem',
-                        color: activeGateway === 'VNPAY' ? '#b91c1c' : '#047857',
+                        color: '#047857',
                         marginTop: '0.5rem',
                         fontWeight: 600,
                       }}
                     >
-                      Đang tạo mã QR thanh toán...
+                      Đang tạo mã VietQR thanh toán...
                     </span>
                   </div>
                 )}
 
                 <img
-                  src={currentQrUrl}
-                  alt={`Mã QR ${activeGateway} thanh toán học phí`}
+                  src={vietQrUrl}
+                  alt="Mã QR VietQR thanh toán học phí"
                   onLoad={() => setImageLoading(false)}
                   onError={() => setImageLoading(false)}
                   style={{
@@ -723,43 +669,40 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
 
               {/* Tùy chọn giao diện QR & Tải ảnh */}
               <div style={{ display: 'flex', gap: '0.5rem', width: '100%' }}>
-                {activeGateway === 'VIETQR' && (
-                  <button
-                    type="button"
-                    onClick={() => setTemplate(template === 'compact2' ? 'qr_only' : 'compact2')}
-                    style={{
-                      flex: 1,
-                      padding: '0.5rem',
-                      fontSize: '0.78rem',
-                      fontWeight: 700,
-                      borderRadius: '8px',
-                      border: '1px solid #d1fae5',
-                      backgroundColor: '#f0fdf4',
-                      color: '#047857',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '4px',
-                    }}
-                  >
-                    <span>🔄</span>
-                    <span>{template === 'compact2' ? 'Dạng Đơn giản' : 'Dạng Chi tiết'}</span>
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => setTemplate(template === 'compact2' ? 'qr_only' : 'compact2')}
+                  style={{
+                    flex: 1,
+                    padding: '0.5rem',
+                    fontSize: '0.78rem',
+                    fontWeight: 700,
+                    borderRadius: '8px',
+                    border: '1px solid #d1fae5',
+                    backgroundColor: '#f0fdf4',
+                    color: '#047857',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '4px',
+                  }}
+                >
+                  <span>🔄</span>
+                  <span>{template === 'compact2' ? 'Dạng Đơn giản' : 'Dạng Chi tiết'}</span>
+                </button>
 
                 <button
                   type="button"
                   onClick={handleDownloadQR}
                   style={{
-                    flex: activeGateway === 'VNPAY' ? 1 : 'unset',
+                    flex: 1,
                     padding: '0.5rem 0.85rem',
                     fontSize: '0.78rem',
                     fontWeight: 700,
                     borderRadius: '8px',
-                    border:
-                      activeGateway === 'VNPAY' ? '1px solid #dc2626' : '1px solid #059669',
-                    backgroundColor: activeGateway === 'VNPAY' ? '#dc2626' : '#059669',
+                    border: '1px solid #059669',
+                    backgroundColor: '#059669',
                     color: '#ffffff',
                     cursor: 'pointer',
                     display: 'flex',
@@ -774,91 +717,50 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
               </div>
 
               <div style={{ fontSize: '0.75rem', color: '#64748b', textAlign: 'center' }}>
-                {activeGateway === 'VNPAY'
-                  ? '🔴 Quét bằng ứng dụng Ví VNPAY hoặc hơn 40 Mobile Banking hỗ trợ VNPAY-QR'
-                  : '💡 Quét bằng mọi app Mobile Banking, MoMo, ZaloPay, ViettelMoney'}
+                💡 Quét bằng mọi app Mobile Banking (MB, VCB, TCB, ACB, VPB,...) hoặc Ví điện tử (MoMo, ZaloPay, ViettelMoney)
               </div>
             </div>
 
             {/* Cột Phải: Thông tin chuyển khoản chi tiết */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-              {activeGateway === 'VIETQR' && (
-                <div>
-                  <label
-                    style={{
-                      display: 'block',
-                      fontSize: '0.78rem',
-                      fontWeight: 700,
-                      color: '#334155',
-                      marginBottom: '0.35rem',
-                    }}
-                  >
-                    Ngân hàng thụ hưởng:
-                  </label>
-                  <select
-                    value={selectedBank.id}
-                    onChange={(e) => {
-                      const b = SUPPORTED_BANKS.find((x) => x.id === e.target.value);
-                      if (b) setSelectedBank(b);
-                    }}
-                    style={{
-                      width: '100%',
-                      padding: '0.55rem 0.75rem',
-                      fontSize: '0.875rem',
-                      fontWeight: 600,
-                      borderRadius: '10px',
-                      border: '1px solid #cbd5e1',
-                      backgroundColor: '#ffffff',
-                      color: '#0f172a',
-                      outline: 'none',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {SUPPORTED_BANKS.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.shortName} — {b.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {activeGateway === 'VNPAY' && (
-                <div
+              <div>
+                <label
                   style={{
-                    backgroundColor: '#eff6ff',
-                    border: '1px solid #bfdbfe',
-                    borderRadius: '12px',
-                    padding: '0.85rem 1rem',
+                    display: 'block',
+                    fontSize: '0.78rem',
+                    fontWeight: 700,
+                    color: '#334155',
+                    marginBottom: '0.35rem',
                   }}
                 >
-                  <div
-                    style={{
-                      fontSize: '0.82rem',
-                      fontWeight: 700,
-                      color: '#1d4ed8',
-                      marginBottom: '0.35rem',
-                    }}
-                  >
-                    🚀 Hướng dẫn thanh toán qua VNPAY-QR:
-                  </div>
-                  <ol
-                    style={{
-                      margin: 0,
-                      paddingLeft: '1.2rem',
-                      fontSize: '0.78rem',
-                      color: '#334155',
-                      lineHeight: '1.5',
-                    }}
-                  >
-                    <li>Mở App Mobile Banking hoặc ứng dụng Ví điện tử VNPAY.</li>
-                    <li>
-                      Chọn tính năng <strong>Quét mã QR</strong> hoặc <strong>VNPAY-QR</strong>.
-                    </li>
-                    <li>Quét mã QR bên cạnh và xác nhận số tiền cùng nội dung chuyển khoản.</li>
-                  </ol>
-                </div>
-              )}
+                  Ngân hàng thụ hưởng:
+                </label>
+                <select
+                  value={selectedBank.id}
+                  onChange={(e) => {
+                    const b = SUPPORTED_BANKS.find((x) => x.id === e.target.value);
+                    if (b) setSelectedBank(b);
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '0.55rem 0.75rem',
+                    fontSize: '0.875rem',
+                    fontWeight: 600,
+                    borderRadius: '10px',
+                    border: '1px solid #cbd5e1',
+                    backgroundColor: '#ffffff',
+                    color: '#0f172a',
+                    outline: 'none',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {SUPPORTED_BANKS.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.shortName} — {b.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
               {/* Các trường thông tin có nút Copy */}
               <div
@@ -959,7 +861,7 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                       style={{
                         fontSize: '1.15rem',
                         fontWeight: 900,
-                        color: activeGateway === 'VNPAY' ? '#dc2626' : '#059669',
+                        color: '#059669',
                       }}
                     >
                       {formatVND(effectiveAmount)}
@@ -999,7 +901,7 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                       style={{
                         fontSize: '0.95rem',
                         fontWeight: 800,
-                        color: '#b91c1c',
+                        color: '#047857',
                         letterSpacing: '0.5px',
                         wordBreak: 'break-all',
                       }}
@@ -1015,9 +917,9 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                       fontSize: '0.75rem',
                       fontWeight: 700,
                       borderRadius: '6px',
-                      border: '1px solid #fca5a5',
-                      backgroundColor: copiedKey === 'syntax' ? '#fee2e2' : '#ffffff',
-                      color: copiedKey === 'syntax' ? '#dc2626' : '#b91c1c',
+                      border: '1px solid #a7f3d0',
+                      backgroundColor: copiedKey === 'syntax' ? '#dcfce7' : '#ffffff',
+                      color: copiedKey === 'syntax' ? '#047857' : '#065f46',
                       cursor: 'pointer',
                     }}
                   >
@@ -1039,7 +941,7 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                 }}
               >
                 ⚠️ <strong>Lưu ý:</strong> Vui lòng giữ nguyên nội dung chuyển khoản để hệ thống tự
-                động gạch nợ hóa đơn và kích hoạt lớp học trong vòng 1-3 phút.
+                động gạch nợ hóa đơn và kích hoạt khóa học trong vòng 1-3 phút.
               </div>
             </div>
           </div>

@@ -133,6 +133,32 @@ export const CoursesPage: React.FC = () => {
     }
   };
 
+  // Đăng kí học và truyền trực tiếp thông tin khóa học (Tên, Học phí chính xác, Mã) sang trang thanh toán (payments)
+  const handleRegisterCourse = (course: Course) => {
+    setSelectedCourse(null);
+
+    const coursePayload = {
+      _id: course._id,
+      title: course.title,
+      code: course.code,
+      tuitionFee: course.tuitionFee,
+      format: course.format,
+      sessions: course.sessions,
+    };
+
+    if (isAuthenticated) {
+      navigate('/student/payments', { state: { course: coursePayload } });
+    } else {
+      toast.info('Vui lòng đăng nhập tài khoản học viên để tiến hành thanh toán học phí');
+      navigate('/login', {
+        state: {
+          redirect: '/student/payments',
+          course: coursePayload,
+        },
+      });
+    }
+  };
+
   const formatVND = (amount: number) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
   };
@@ -527,29 +553,54 @@ export const CoursesPage: React.FC = () => {
                       </strong>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => handleOpenDetail(course._id)}
-                      style={{
-                        padding: '0.55rem 1.1rem',
-                        borderRadius: '8px',
-                        border: 'none',
-                        backgroundColor: '#07403F',
-                        color: '#FFFFFF',
-                        fontWeight: 700,
-                        fontSize: '0.85rem',
-                        cursor: 'pointer',
-                        transition: 'background-color 0.15s ease',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#052F2E';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = '#07403F';
-                      }}
-                    >
-                      Xem chi tiết
-                    </button>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenDetail(course._id)}
+                        style={{
+                          padding: '0.5rem 0.85rem',
+                          borderRadius: '8px',
+                          border: '1px solid #CBD5E1',
+                          backgroundColor: '#FFFFFF',
+                          color: '#334155',
+                          fontWeight: 700,
+                          fontSize: '0.82rem',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        Chi tiết
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleRegisterCourse(course)}
+                        style={{
+                          padding: '0.5rem 1.15rem',
+                          borderRadius: '8px',
+                          border: 'none',
+                          backgroundColor: '#07403F',
+                          color: '#FFFFFF',
+                          fontWeight: 700,
+                          fontSize: '0.85rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.35rem',
+                          boxShadow: '0 2px 6px rgba(7, 64, 63, 0.25)',
+                          transition: 'all 0.15s ease',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#052F2E';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = '#07403F';
+                        }}
+                      >
+                        <span>✍️</span>
+                        <span>Đăng kí học</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -807,11 +858,9 @@ export const CoursesPage: React.FC = () => {
 
                   <button
                     type="button"
-                    onClick={() => {
-                      setRegistrationNotice('Đã ghi nhận yêu cầu tư vấn & ghi danh cho khóa học ' + selectedCourse.title + '! Chuyên viên khảo thí sẽ liên hệ với bạn trong 15 phút.');
-                    }}
+                    onClick={() => handleRegisterCourse(selectedCourse)}
                     style={{
-                      padding: '0.65rem 1.5rem',
+                      padding: '0.65rem 1.75rem',
                       borderRadius: '8px',
                       border: 'none',
                       backgroundColor: '#EC6E23',
@@ -820,9 +869,20 @@ export const CoursesPage: React.FC = () => {
                       cursor: 'pointer',
                       fontSize: '0.95rem',
                       boxShadow: '0 4px 12px rgba(236, 110, 35, 0.3)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.45rem',
+                      transition: 'all 0.15s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#d35b15';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#EC6E23';
                     }}
                   >
-                    Đăng Ký Tư Vấn &amp; Giữ Chỗ
+                    <span>✍️</span>
+                    <span>Đăng kí học</span>
                   </button>
                 </div>
               </div>

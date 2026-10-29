@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useId } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { paymentService } from '../../services/payment.service';
 import { VietQRModal, type VietQRData } from '../../components/VietQRModal';
@@ -12,6 +13,7 @@ import type {
 
 export const StudentPaymentsPage: React.FC = () => {
   const { user } = useAuth();
+  const location = useLocation();
 
   // State dữ liệu chính
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -32,7 +34,7 @@ export const StudentPaymentsPage: React.FC = () => {
 
   // Modal thanh toán
   const [selectedTuition, setSelectedTuition] = useState<PendingTuitionItem | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('VNPAY');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('BANK_TRANSFER');
   const [note, setNote] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [paymentSuccess, setPaymentSuccess] = useState<Payment | null>(null);
@@ -43,6 +45,31 @@ export const StudentPaymentsPage: React.FC = () => {
 
   // Toast thông báo nổi khi thanh toán / thao tác thành công
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Tự động nhận diện dữ liệu khóa học chuyển từ trang Khóa học sang và mở popup VietQR
+  useEffect(() => {
+    const passedCourse = (location.state as any)?.course;
+    if (passedCourse) {
+      const studentLastName = user?.fullName ? user.fullName.trim().split(' ').pop()?.toUpperCase() : 'HV';
+      const courseCode = passedCourse.code || 'IELTS';
+      const invoiceCode = `HP-${courseCode}-${Date.now().toString().slice(-4)}`;
+      const transferContent = `HP ${studentLastName} ${courseCode}`;
+
+      setVietQRData({
+        amount: passedCourse.tuitionFee || 0,
+        description: transferContent,
+        invoiceCode,
+        courseTitle: passedCourse.title,
+        courseId: passedCourse._id,
+        studentName: user?.fullName,
+        gateway: 'VIETQR',
+      });
+      setIsVietQRModalOpen(true);
+
+      // Xóa state để tránh mở lại khi reload trang
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state, user]);
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 4500);
@@ -82,12 +109,12 @@ export const StudentPaymentsPage: React.FC = () => {
       studentName: user?.fullName,
       classCode: payment.enrollment?.class?.classCode,
       enrollmentId: payment.enrollment?._id,
-      gateway: payment.method === 'VNPAY' ? 'VNPAY' : 'VIETQR',
+      gateway: 'VIETQR',
     });
     setIsVietQRModalOpen(true);
   };
 
-  // Mở Cổng thanh toán quét mã QR (VietQR / VNPay) trực tiếp từ thẻ hoặc nút Cổng thanh toán
+  // Mở Cổng thanh toán quét mã VietQR (Napas 24/7) trực tiếp từ thẻ hoặc nút Cổng thanh toán
   const handleOpenGatewayQR = () => {
     if (pendingTuitions.length > 0) {
       handleOpenVietQRForTuition(pendingTuitions[0]);
@@ -227,7 +254,7 @@ export const StudentPaymentsPage: React.FC = () => {
             Cổng Thanh Toán & Hóa Đơn Điện Tử
           </h1>
           <p style={{ color: 'rgba(255, 255, 255, 0.9)', maxWidth: '650px', margin: 0 }}>
-            Học viên: <strong>{user?.fullName}</strong> ({user?.email}) • Quản lý các khoản học phí, thanh toán trực tuyến qua VNPAY, mã VietQR ngân hàng và tra cứu biên lai đóng tiền điện tử.
+            Học viên: <strong>{user?.fullName}</strong> ({user?.email}) • Quản lý các khoản học phí, thanh toán trực tuyến qua mã VietQR (Napas 24/7) và tra cứu biên lai đóng tiền điện tử.
           </p>
         </div>
         <div className="dash-banner-right" style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
@@ -318,14 +345,14 @@ export const StudentPaymentsPage: React.FC = () => {
             transition: 'all 0.2s ease',
             backgroundColor: '#f0fdf4',
           }}
-          title="Bấm để quét mã QR thanh toán học phí (VietQR / VNPay)"
+          title="Bấm để quét mã QR thanh toán học phí (VietQR Napas 24/7)"
         >
           <div className="dash-metric-info">
             <span className="dash-metric-label" style={{ color: '#047857' }}>
               Cổng thanh toán trực tuyến
             </span>
             <span className="dash-metric-val" style={{ fontSize: '1.25rem', color: '#065f46' }}>
-              VietQR / VNPAY
+              VietQR Napas 24/7
             </span>
             <span
               className="dash-metric-trend up"
@@ -442,7 +469,7 @@ export const StudentPaymentsPage: React.FC = () => {
                       onClick={() => handleOpenVietQRForTuition(item)}
                     >
                       <span>📱</span>
-                      <span>Quét QR (VietQR / VNPay)</span>
+                      <span>Quét mã VietQR</span>
                     </button>
 
                     <button
@@ -948,43 +975,24 @@ export const StudentPaymentsPage: React.FC = () => {
                     Chọn phương thức thanh toán:
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.65rem' }}>
-                    {/* Option VNPAY */}
-                    <button
-                      type="button"
-                      onClick={() => setPaymentMethod('VNPAY')}
-                      style={{
-                        padding: '0.75rem 0.5rem',
-                        borderRadius: '10px',
-                        border: paymentMethod === 'VNPAY' ? '2px solid #ef4444' : '1px solid #cbd5e1',
-                        backgroundColor: paymentMethod === 'VNPAY' ? '#fff5f5' : '#ffffff',
-                        cursor: 'pointer',
-                        textAlign: 'center',
-                        transition: 'all 0.2s ease',
-                      }}
-                    >
-                      <div style={{ fontSize: '1.3rem', marginBottom: '0.2rem' }}>🔴</div>
-                      <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#b91c1c' }}>VNPAY QR</div>
-                      <div style={{ fontSize: '0.675rem', color: '#64748b' }}>Quét mã tự động</div>
-                    </button>
-
-                    {/* Option Chuyển khoản */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.65rem' }}>
+                    {/* Option Chuyển khoản VietQR */}
                     <button
                       type="button"
                       onClick={() => setPaymentMethod('BANK_TRANSFER')}
                       style={{
                         padding: '0.75rem 0.5rem',
                         borderRadius: '10px',
-                        border: paymentMethod === 'BANK_TRANSFER' ? '2px solid #2563eb' : '1px solid #cbd5e1',
-                        backgroundColor: paymentMethod === 'BANK_TRANSFER' ? '#eff6ff' : '#ffffff',
+                        border: paymentMethod === 'BANK_TRANSFER' ? '2px solid #059669' : '1px solid #cbd5e1',
+                        backgroundColor: paymentMethod === 'BANK_TRANSFER' ? '#ecfdf5' : '#ffffff',
                         cursor: 'pointer',
                         textAlign: 'center',
                         transition: 'all 0.2s ease',
                       }}
                     >
-                      <div style={{ fontSize: '1.3rem', marginBottom: '0.2rem' }}>🏦</div>
-                      <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#1e40af' }}>VietQR / MB</div>
-                      <div style={{ fontSize: '0.675rem', color: '#64748b' }}>Ngân hàng 24/7</div>
+                      <div style={{ fontSize: '1.3rem', marginBottom: '0.2rem' }}>⚡</div>
+                      <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#065f46' }}>VietQR (Napas 24/7)</div>
+                      <div style={{ fontSize: '0.675rem', color: '#059669' }}>Quét mã & Chuyển khoản tự động</div>
                     </button>
 
                     {/* Option Thẻ */}
@@ -1003,95 +1011,12 @@ export const StudentPaymentsPage: React.FC = () => {
                     >
                       <div style={{ fontSize: '1.3rem', marginBottom: '0.2rem' }}>💳</div>
                       <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#6d28d9' }}>Visa / Master</div>
-                      <div style={{ fontSize: '0.675rem', color: '#64748b' }}>Thẻ quốc tế</div>
+                      <div style={{ fontSize: '0.675rem', color: '#64748b' }}>Thẻ thanh toán quốc tế</div>
                     </button>
                   </div>
                 </div>
 
                 {/* Chi tiết từng phương thức */}
-                {paymentMethod === 'VNPAY' && (
-                  <div
-                    style={{
-                      border: '1px dashed #ef4444',
-                      backgroundColor: '#fffaf0',
-                      borderRadius: '12px',
-                      padding: '1.25rem',
-                      textAlign: 'center',
-                      marginBottom: '1.25rem',
-                    }}
-                  >
-                    <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#9a3412', marginBottom: '0.5rem' }}>
-                      QUÉT MÃ VNPAY-QR ĐỂ THANH TOÁN
-                    </div>
-
-                    {/* Dynamic QR Code simulation */}
-                    <div
-                      style={{
-                        width: '180px',
-                        height: '180px',
-                        margin: '0 auto 0.75rem',
-                        backgroundColor: '#ffffff',
-                        border: '2px solid #ef4444',
-                        borderRadius: '12px',
-                        padding: '8px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        boxShadow: '0 4px 12px rgba(239, 68, 68, 0.15)',
-                      }}
-                    >
-                      <img
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=2|99|0988123456|EDUCENTER|${selectedTuition.course?.tuitionFee}|HOCPHI_${user?._id?.slice(-4)}`}
-                        alt="VNPAY QR Code"
-                        style={{ width: '100%', height: '100%', borderRadius: '6px' }}
-                      />
-                    </div>
-
-                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#475569' }}>
-                      Sử dụng App Mobile Banking quét mã QR để thanh toán chính xác số tiền{' '}
-                      <strong style={{ color: '#ef4444' }}>
-                        {formatCurrency(selectedTuition.course?.tuitionFee)}
-                      </strong>
-                    </p>
-
-                    <div style={{ marginTop: '0.75rem' }}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const item = selectedTuition;
-                          setSelectedTuition(null);
-                          setVietQRData({
-                            amount: item.course?.tuitionFee || 0,
-                            description: `HP ${user?.fullName?.trim().split(' ').pop()?.toUpperCase() || 'HV'} ${item.course?.code || 'IELTS'}`,
-                            courseTitle: item.course?.title,
-                            studentName: user?.fullName,
-                            classCode: item.class?.classCode,
-                            enrollmentId: item._id,
-                            gateway: 'VNPAY',
-                          });
-                          setIsVietQRModalOpen(true);
-                        }}
-                        style={{
-                          backgroundColor: '#dc2626',
-                          border: 'none',
-                          color: '#ffffff',
-                          padding: '0.45rem 1rem',
-                          borderRadius: '8px',
-                          fontSize: '0.82rem',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '0.4rem',
-                        }}
-                      >
-                        <span>🔍</span>
-                        <span>Mở toàn màn hình VNPAY-QR & Tải ảnh</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
 
                 {paymentMethod === 'BANK_TRANSFER' && (
                   <div
