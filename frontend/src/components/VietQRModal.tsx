@@ -6,10 +6,12 @@ export interface VietQRData {
   description: string; // Nội dung chuyển khoản tự động
   invoiceCode?: string; // Mã hóa đơn / mã giao dịch
   courseTitle?: string; // Tên khóa học
+  courseId?: string; // ID khóa học
   studentName?: string; // Tên học viên
   classCode?: string; // Mã lớp học
   enrollmentId?: string; // ID lượt đăng ký (dùng cho xác nhận thanh toán tự động)
   gateway?: 'VIETQR' | 'VNPAY'; // Mặc định mở tab nào
+  paymentId?: string; // ID giao dịch nếu có sẵn
 }
 
 export interface VietQRModalProps {
@@ -52,6 +54,12 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
   const [imageLoading, setImageLoading] = useState(true);
   const [customAmount, setCustomAmount] = useState<number>(0);
 
+  // Quản lý bản ghi giao dịch thanh toán trên cơ sở dữ liệu
+  const [pendingPayment, setPendingPayment] = useState<any>(null);
+  const [isInitiating, setIsInitiating] = useState<boolean>(false);
+  const [activeTxnCode, setActiveTxnCode] = useState<string>('');
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
   // Thông tin tài khoản thụ hưởng của trung tâm
   const ACCOUNT_NO = '988866889999';
   const ACCOUNT_NAME = 'CONG TY CO PHAN GIAO DUC EDUCENTER';
@@ -59,8 +67,9 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
   // Số tiền hiệu lực
   const effectiveAmount = data?.amount && data.amount > 0 ? data.amount : customAmount;
 
-  // Lấy nội dung chuyển khoản tự động
+  // Lấy nội dung chuyển khoản tự động (ưu tiên mã giao dịch do server sinh ra)
   const transferContent =
+    activeTxnCode ||
     data?.description ||
     (data?.invoiceCode ? `EDUPAY ${data.invoiceCode}` : 'HOCPHI EDUCENTER');
 
@@ -80,21 +89,51 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
 
   const currentQrUrl = activeGateway === 'VNPAY' ? vnpayQrUrl : vietQrUrl;
 
+  // Gọi POST /api/payments để tạo bản ghi giao dịch PENDING trên database
+  const initPendingPayment = async (amountToPay: number, gatewayChoice: 'VIETQR' | 'VNPAY') => {
+    if (amountToPay <= 0) return;
+    try {
+      setIsInitiating(true);
+      const res = await paymentService.createPayment({
+        enrollmentId: data?.enrollmentId,
+        courseId: data?.courseId,
+        amount: amountToPay,
+        paymentMethod: gatewayChoice === 'VNPAY' ? 'VNPAY' : 'VIETQR',
+        note: data?.description || (data?.invoiceCode ? `EDUPAY ${data.invoiceCode}` : 'HOCPHI EDUCENTER'),
+        transactionCode: data?.invoiceCode,
+        invoiceId: data?.invoiceCode,
+      });
+      setPendingPayment(res);
+      if (res.transactionCode) {
+        setActiveTxnCode(res.transactionCode);
+      }
+    } catch (err: any) {
+      console.warn('Không thể khởi tạo giao dịch pending:', err);
+    } finally {
+      setIsInitiating(false);
+    }
+  };
+
   useEffect(() => {
     if (!isOpen) {
       setConfirmSuccess(false);
       setIsConfirming(false);
       setCopiedKey(null);
       setImageLoading(true);
+      setPendingPayment(null);
+      setActiveTxnCode('');
+      setToastMessage(null);
     } else {
-      if (data?.gateway) {
-        setActiveGateway(data.gateway);
+      const initialGateway = data?.gateway || 'VIETQR';
+      setActiveGateway(initialGateway);
+
+      const initialAmount = data?.amount && data.amount > 0 ? data.amount : 5000000;
+      if (!data?.amount || data.amount <= 0) {
+        setCustomAmount(initialAmount);
       }
-      if (data?.amount && data.amount > 0) {
-        setCustomAmount(data.amount);
-      } else {
-        setCustomAmount(5000000); // Mặc định 5 triệu nếu nạp tự do
-      }
+
+      // Khởi tạo bản ghi giao dịch PENDING ngay khi mở popup
+      initPendingPayment(initialAmount, initialGateway);
     }
   }, [isOpen, data]);
 
@@ -134,7 +173,7 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
       const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = blobUrl;
-      link.download = `${activeGateway}_EduCenter_${data.invoiceCode || 'Payment'}.png`;
+      link.download = `${activeGateway}_EduCenter_${activeTxnCode || data.invoiceCode || 'Payment'}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -144,32 +183,43 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
     }
   };
 
-  // Xác nhận đã chuyển khoản
+  // Xác nhận đã chuyển khoản -> Gọi PUT /api/payments/:id/confirm
   const handleConfirmTransfer = async () => {
-    if (!data.enrollmentId) {
-      setConfirmSuccess(true);
-      setTimeout(() => {
-        onClose();
-      }, 1500);
-      return;
-    }
-
     try {
       setIsConfirming(true);
-      const payment = await paymentService.processPayment({
-        enrollmentId: data.enrollmentId,
-        method: activeGateway === 'VNPAY' ? 'VNPAY' : 'BANK_TRANSFER',
-        note: `Học viên quét mã ${activeGateway === 'VNPAY' ? 'VNPAY-QR' : 'VietQR'}. Nội dung: ${transferContent}`,
-      });
-      setConfirmSuccess(true);
-      if (onPaymentSuccess) {
-        onPaymentSuccess(payment);
+      let paymentResult: any = null;
+
+      // Ưu tiên gọi PUT /api/payments/:id/confirm với _id của bản ghi PENDING đã tạo trên DB
+      const paymentIdToConfirm = pendingPayment?._id || data.paymentId;
+      if (paymentIdToConfirm) {
+        paymentResult = await paymentService.confirmPayment(paymentIdToConfirm, {
+          paymentMethod: activeGateway === 'VNPAY' ? 'VNPAY' : 'VIETQR',
+          note: `Học viên quét mã và xác nhận chuyển khoản ${formatVND(effectiveAmount)}. Mã GD: ${activeTxnCode || transferContent}`,
+          transactionCode: activeTxnCode || undefined,
+        });
+      } else if (data.enrollmentId) {
+        // Fallback an toàn: nếu chưa có paymentId thì dùng processPayment
+        paymentResult = await paymentService.processPayment({
+          enrollmentId: data.enrollmentId,
+          method: activeGateway === 'VNPAY' ? 'VNPAY' : 'BANK_TRANSFER',
+          note: `Học viên quét mã ${activeGateway === 'VNPAY' ? 'VNPAY-QR' : 'VietQR'}. Nội dung: ${transferContent}`,
+        });
       }
+
+      setConfirmSuccess(true);
+      setToastMessage('🎉 Xác nhận thanh toán thành công! Giao dịch đã được ghi nhận.');
+
+      // Báo cho component cha biết thanh toán đã thành công để refresh data & toast
+      if (onPaymentSuccess) {
+        onPaymentSuccess(paymentResult || pendingPayment);
+      }
+
+      // Tự động đóng modal sau 1.8s
       setTimeout(() => {
         onClose();
       }, 1800);
     } catch (err: any) {
-      alert(err.message || 'Xác nhận thanh toán chưa thành công. Vui lòng kiểm tra lại!');
+      alert(err?.response?.data?.message || err?.message || 'Xác nhận thanh toán chưa thành công. Vui lòng kiểm tra lại!');
     } finally {
       setIsConfirming(false);
     }
@@ -190,6 +240,34 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
         animation: 'dashFadeIn 0.2s ease-out',
       }}
     >
+      {/* Toast thông báo nổi khi xác nhận thành công */}
+      {toastMessage && (
+        <div
+          style={{
+            position: 'fixed',
+            top: '24px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            backgroundColor: '#064e3b',
+            color: '#ffffff',
+            padding: '12px 24px',
+            borderRadius: '999px',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3)',
+            fontWeight: 800,
+            fontSize: '0.92rem',
+            zIndex: 100000,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            border: '1px solid #34d399',
+            animation: 'dashFadeIn 0.25s ease-out',
+          }}
+        >
+          <span>✅</span>
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
       <div
         role="dialog"
         aria-modal="true"
@@ -312,7 +390,10 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
           >
             <button
               type="button"
-              onClick={() => setActiveGateway('VIETQR')}
+              onClick={() => {
+                setActiveGateway('VIETQR');
+                initPendingPayment(effectiveAmount, 'VIETQR');
+              }}
               style={{
                 flex: 1,
                 padding: '0.65rem 1rem',
@@ -338,7 +419,10 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
 
             <button
               type="button"
-              onClick={() => setActiveGateway('VNPAY')}
+              onClick={() => {
+                setActiveGateway('VNPAY');
+                initPendingPayment(effectiveAmount, 'VNPAY');
+              }}
               style={{
                 flex: 1,
                 padding: '0.65rem 1rem',
@@ -404,6 +488,10 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                   fontSize: '0.8rem',
                   color: activeGateway === 'VNPAY' ? '#991b1b' : '#047857',
                   marginTop: '0.2rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '4px',
                 }}
               >
                 {data.classCode && (
@@ -411,14 +499,44 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                     Lớp: <strong>{data.classCode}</strong> •{' '}
                   </span>
                 )}
-                {data.invoiceCode && (
+                {(activeTxnCode || data.invoiceCode) && (
                   <span>
-                    Mã HĐ: <strong>{data.invoiceCode}</strong> •{' '}
+                    Mã GD: <strong>{activeTxnCode || data.invoiceCode}</strong> •{' '}
                   </span>
                 )}
                 <span>
                   Học viên: <strong>{data.studentName || 'Học viên EduCenter'}</strong>
                 </span>
+                {isInitiating && (
+                  <span
+                    style={{
+                      marginLeft: '6px',
+                      fontSize: '0.72rem',
+                      fontWeight: 600,
+                      color: '#b45309',
+                      backgroundColor: '#fef3c7',
+                      padding: '2px 8px',
+                      borderRadius: '999px',
+                    }}
+                  >
+                    ⏳ Đang tạo GD trên database...
+                  </span>
+                )}
+                {pendingPayment && !isInitiating && (
+                  <span
+                    style={{
+                      marginLeft: '6px',
+                      fontSize: '0.72rem',
+                      fontWeight: 700,
+                      color: '#047857',
+                      backgroundColor: '#d1fae5',
+                      padding: '2px 8px',
+                      borderRadius: '999px',
+                    }}
+                  >
+                    ⚡ Đã lưu DB (PENDING)
+                  </span>
+                )}
               </div>
             </div>
 
@@ -468,6 +586,11 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                 step="50000"
                 value={customAmount || ''}
                 onChange={(e) => setCustomAmount(Number(e.target.value) || 0)}
+                onBlur={() => {
+                  if (customAmount > 0) {
+                    initPendingPayment(customAmount, activeGateway);
+                  }
+                }}
                 style={{
                   padding: '0.45rem 0.75rem',
                   borderRadius: '8px',
@@ -483,7 +606,10 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                   <button
                     key={amt}
                     type="button"
-                    onClick={() => setCustomAmount(amt)}
+                    onClick={() => {
+                      setCustomAmount(amt);
+                      initPendingPayment(amt, activeGateway);
+                    }}
                     style={{
                       padding: '0.3rem 0.6rem',
                       fontSize: '0.75rem',

@@ -41,6 +41,13 @@ export const StudentPaymentsPage: React.FC = () => {
   const [vietQRData, setVietQRData] = useState<VietQRData | null>(null);
   const [isVietQRModalOpen, setIsVietQRModalOpen] = useState<boolean>(false);
 
+  // Toast thông báo nổi khi thanh toán / thao tác thành công
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 4500);
+  };
+
   // Mở modal VietQR cho gói học phí cần đóng
   const handleOpenVietQRForTuition = (tuition: PendingTuitionItem) => {
     const studentLastName = user?.fullName ? user.fullName.trim().split(' ').pop()?.toUpperCase() : 'HV';
@@ -55,6 +62,7 @@ export const StudentPaymentsPage: React.FC = () => {
       description: transferCode,
       invoiceCode,
       courseTitle: tuition.course?.title,
+      courseId: tuition.course?._id,
       studentName: user?.fullName,
       classCode: tuition.class?.classCode,
       enrollmentId: tuition._id,
@@ -69,6 +77,8 @@ export const StudentPaymentsPage: React.FC = () => {
       description: `EDUPAY ${payment.transactionCode || payment._id}`,
       invoiceCode: payment.transactionCode,
       courseTitle: payment.course?.title,
+      courseId: payment.course?._id,
+      paymentId: payment._id,
       studentName: user?.fullName,
       classCode: payment.enrollment?.class?.classCode,
       enrollmentId: payment.enrollment?._id,
@@ -1604,13 +1614,60 @@ export const StudentPaymentsPage: React.FC = () => {
           </div>
         </div>
       )}
+      {/* ── Toast Thông Báo Nổi ── */}
+      {toastMessage && (
+        <div
+          style={{
+            position: 'fixed',
+            top: '24px',
+            right: '24px',
+            backgroundColor: '#047857',
+            color: '#ffffff',
+            padding: '14px 22px',
+            borderRadius: '12px',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.25)',
+            fontWeight: 700,
+            fontSize: '0.9rem',
+            zIndex: 99999,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            border: '1px solid #10b981',
+            animation: 'dashFadeIn 0.3s ease-out',
+          }}
+        >
+          <span>🎉</span>
+          <span>{toastMessage}</span>
+          <button
+            type="button"
+            onClick={() => setToastMessage(null)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#ffffff',
+              fontSize: '1rem',
+              cursor: 'pointer',
+              marginLeft: '8px',
+              opacity: 0.8,
+            }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* ── Modal VietQR Chuyển Khoản Tự Động ── */}
       <VietQRModal
         isOpen={isVietQRModalOpen}
         onClose={() => setIsVietQRModalOpen(false)}
         data={vietQRData}
-        onPaymentSuccess={() => {
+        onPaymentSuccess={(payment) => {
           fetchData();
+          showToast(
+            `Thanh toán học phí ${
+              payment?.amount ? payment.amount.toLocaleString('vi-VN') + ' đ ' : ''
+            }thành công! Lịch sử và trạng thái học phí đã được cập nhật.`
+          );
         }}
       />
     </div>
