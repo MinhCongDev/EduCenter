@@ -141,7 +141,18 @@ export const processPayment = async (req: AuthRequest, res: Response): Promise<v
       return;
     }
 
-    const validMethods: PaymentMethod[] = ['VNPAY', 'BANK_TRANSFER', 'CASH', 'CREDIT_CARD'];
+    const validMethods: PaymentMethod[] = [
+      'VIETQR',
+      'VietQR',
+      'VNPAY',
+      'VNPay',
+      'BANK_TRANSFER',
+      'CASH',
+      'CREDIT_CARD',
+      'MOMO',
+      'ZALOPAY',
+      'OTHER',
+    ];
     if (!validMethods.includes(method)) {
       res.status(400).json({
         success: false,
@@ -176,10 +187,16 @@ export const processPayment = async (req: AuthRequest, res: Response): Promise<v
 
     // Sinh mã giao dịch duy nhất
     const prefixMap: Record<PaymentMethod, string> = {
+      VIETQR: 'VQR',
+      VietQR: 'VQR',
       VNPAY: 'VNP',
+      VNPay: 'VNP',
       BANK_TRANSFER: 'MBB',
       CREDIT_CARD: 'CRD',
       CASH: 'CSH',
+      MOMO: 'MOM',
+      ZALOPAY: 'ZAL',
+      OTHER: 'OTH',
     };
     const prefix = prefixMap[method as PaymentMethod] || 'PAY';
     const timestamp = Date.now().toString().slice(-6);

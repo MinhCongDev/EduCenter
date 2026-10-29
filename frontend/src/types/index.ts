@@ -534,7 +534,7 @@ export interface ClassFormData {
 }
 
 // ── Payment Types ────────────────────────────
-export type PaymentMethod = 'VNPAY' | 'BANK_TRANSFER' | 'CASH' | 'CREDIT_CARD';
+export type PaymentMethod = 'VIETQR' | 'VNPAY' | 'BANK_TRANSFER' | 'CASH' | 'CREDIT_CARD';
 export type PaymentStatus = 'PENDING' | 'SUCCESS' | 'FAILED' | 'REFUNDED';
 
 export interface PaymentCourseInfo {
