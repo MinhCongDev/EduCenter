@@ -1,7 +1,9 @@
 import { Response } from 'express';
+import { Types } from 'mongoose';
 import { AuthRequest } from '../middlewares/auth.middleware';
 import { Payment, PaymentMethod, PaymentStatus } from '../models/payment.model';
 import { Enrollment } from '../models/enrollment.model';
+import { Course } from '../models/course.model';
 import { Center } from '../models/center.model';
 import { Notification } from '../models/notification.model';
 
@@ -306,3 +308,272 @@ export const getPaymentReceipt = async (req: AuthRequest, res: Response): Promis
     });
   }
 };
+
+/**
+ * POST /api/payments
+ * Nhận dữ liệu từ client để tạo mới một bản ghi thanh toán ở trạng thái PENDING khi học viên mở mã QR
+ */
+export const createPayment = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const currentUserId = req.user?._id;
+    if (!currentUserId) {
+      res.status(401).json({ success: false, message: 'Chưa xác thực người dùng' });
+      return;
+    }
+
+    const {
+      studentId,
+      amount,
+      courseId,
+      invoiceId,
+      enrollmentId,
+      paymentMethod = 'VIETQR',
+      method,
+      note,
+      transactionCode,
+    } = req.body;
+
+    // Xác định học viên: ưu tiên studentId từ body, fallback về user đang đăng nhập
+    const targetStudentId = studentId || currentUserId;
+
+    // Phương thức thanh toán chuẩn hóa
+    const finalMethod: PaymentMethod = (paymentMethod || method || 'VIETQR') as PaymentMethod;
+
+    let finalAmount = Number(amount);
+    let targetCourseId = courseId;
+    let targetEnrollment: any = null;
+
+    // Nếu có enrollmentId, kiểm tra và lấy thông tin khóa học / học phí nếu client chưa truyền amount
+    if (enrollmentId && Types.ObjectId.isValid(enrollmentId)) {
+      targetEnrollment = await Enrollment.findOne({
+        _id: enrollmentId,
+        student: targetStudentId,
+      }).populate('course', 'title code tuitionFee');
+
+      if (targetEnrollment) {
+        if (!finalAmount || finalAmount <= 0) {
+          finalAmount = (targetEnrollment.course as any)?.tuitionFee || 0;
+        }
+        if (!targetCourseId && targetEnrollment.course) {
+          targetCourseId = (targetEnrollment.course as any)._id;
+        }
+      }
+    }
+
+    // Nếu có courseId nhưng chưa có amount, lấy từ bảng Course
+    if ((!finalAmount || finalAmount <= 0) && targetCourseId && Types.ObjectId.isValid(targetCourseId)) {
+      const course = await Course.findById(targetCourseId).select('tuitionFee title');
+      if (course) {
+        finalAmount = course.tuitionFee || 0;
+      }
+    }
+
+    if (!finalAmount || finalAmount <= 0) {
+      res.status(400).json({
+        success: false,
+        message: 'Số tiền thanh toán (amount) phải lớn hơn 0',
+      });
+      return;
+    }
+
+    // Sinh mã hóa đơn / mã giao dịch nếu chưa có
+    const prefixMap: Record<string, string> = {
+      VIETQR: 'VQR',
+      VietQR: 'VQR',
+      VNPAY: 'VNP',
+      VNPay: 'VNP',
+      BANK_TRANSFER: 'MBB',
+      CREDIT_CARD: 'CRD',
+      CASH: 'CSH',
+      MOMO: 'MOM',
+      ZALOPAY: 'ZAL',
+    };
+    const prefix = prefixMap[finalMethod] || 'PAY';
+    const timestamp = Date.now().toString().slice(-6);
+    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+
+    const genTransactionCode =
+      transactionCode ||
+      invoiceId ||
+      `${prefix}-${timestamp}${randomSuffix}`;
+
+    const genInvoiceId =
+      invoiceId ||
+      `INV-${timestamp}${randomSuffix}`;
+
+    // Kiểm tra xem đã có bản ghi PENDING cho enrollment này chưa để tái sử dụng
+    let payment = null;
+    if (enrollmentId && Types.ObjectId.isValid(enrollmentId)) {
+      const existingPending = await Payment.findOne({
+        enrollment: enrollmentId,
+        student: targetStudentId,
+        status: 'PENDING',
+      });
+
+      if (existingPending) {
+        existingPending.amount = finalAmount;
+        existingPending.method = finalMethod;
+        existingPending.invoiceId = genInvoiceId;
+        existingPending.transactionCode = genTransactionCode;
+        if (targetCourseId) existingPending.course = targetCourseId;
+        if (note) existingPending.note = note;
+        await existingPending.save();
+        payment = existingPending;
+      }
+    }
+
+    if (!payment) {
+      payment = await Payment.create({
+        student: targetStudentId,
+        amount: finalAmount,
+        course: targetCourseId,
+        enrollment: enrollmentId,
+        invoiceId: genInvoiceId,
+        transactionCode: genTransactionCode,
+        method: finalMethod,
+        status: 'PENDING',
+        paymentDate: new Date(),
+        note: note || `Tạo yêu cầu thanh toán qua cổng ${finalMethod}`,
+      });
+    }
+
+    // Populate dữ liệu liên quan để trả về client
+    const populated = await Payment.findById(payment._id)
+      .populate('student', 'fullName email phone studentCode')
+      .populate('course', 'title code tuitionFee level durationWeeks')
+      .populate({
+        path: 'enrollment',
+        select: 'status tuitionStatus class',
+        populate: { path: 'class', select: 'classCode room scheduleDays timeSlot' },
+      });
+
+    res.status(201).json({
+      success: true,
+      message: 'Khởi tạo yêu cầu thanh toán thành công (Pending)',
+      data: populated,
+    });
+  } catch (error: any) {
+    console.error('Lỗi khi tạo giao dịch thanh toán:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Không thể khởi tạo giao dịch thanh toán',
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * PUT /api/payments/:id/confirm
+ * Cập nhật trạng thái giao dịch từ pending sang success khi học viên xác nhận đã chuyển khoản
+ */
+export const confirmPayment = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const currentUserId = req.user?._id;
+    if (!currentUserId) {
+      res.status(401).json({ success: false, message: 'Chưa xác thực người dùng' });
+      return;
+    }
+
+    const { id } = req.params;
+    const { note, paymentMethod, method, transactionCode } = req.body;
+
+    // Tìm bản ghi payment theo ID, hoặc fallback theo transactionCode / invoiceId
+    let payment = null;
+    if (Types.ObjectId.isValid(id)) {
+      payment = await Payment.findById(id);
+    }
+
+    if (!payment) {
+      payment = await Payment.findOne({
+        $or: [{ transactionCode: id }, { invoiceId: id }],
+      });
+    }
+
+    if (!payment) {
+      res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy thông tin giao dịch thanh toán',
+      });
+      return;
+    }
+
+    // Kiểm tra quyền: nếu là học viên thì chỉ được xác nhận giao dịch của chính mình
+    const isStudent = req.user?.role === 'STUDENT';
+    if (isStudent && payment.student.toString() !== currentUserId.toString()) {
+      res.status(403).json({
+        success: false,
+        message: 'Bạn không có quyền thao tác trên giao dịch của học viên khác',
+      });
+      return;
+    }
+
+    // Nếu giao dịch đã hoàn tất trước đó (idempotency)
+    if (payment.status === 'SUCCESS') {
+      res.status(200).json({
+        success: true,
+        message: 'Giao dịch này đã được xác nhận thành công trước đó',
+        data: payment,
+      });
+      return;
+    }
+
+    // Cập nhật trạng thái sang SUCCESS
+    payment.status = 'SUCCESS';
+    payment.paymentDate = new Date();
+    if (paymentMethod || method) {
+      payment.method = (paymentMethod || method) as PaymentMethod;
+    }
+    if (transactionCode) {
+      payment.transactionCode = transactionCode;
+    }
+    if (note) {
+      payment.note = note;
+    }
+    await payment.save();
+
+    // Nếu giao dịch gắn với lượt đăng ký học (Enrollment), cập nhật trạng thái học phí
+    if (payment.enrollment) {
+      await Enrollment.findByIdAndUpdate(payment.enrollment, {
+        tuitionStatus: 'PAID',
+      });
+    }
+
+    // Lấy thông tin khóa học để gửi thông báo chi tiết
+    let courseTitle = '';
+    if (payment.course) {
+      const course = await Course.findById(payment.course).select('title');
+      if (course) courseTitle = course.title;
+    }
+
+    // Tạo thông báo xác nhận thành công cho học viên
+    await Notification.create({
+      recipient: payment.student,
+      title: '💳 Xác nhận thanh toán học phí thành công',
+      content: `Giao dịch ${payment.transactionCode || payment.invoiceId} trị giá ${payment.amount.toLocaleString('vi-VN')} VNĐ${courseTitle ? ` cho khóa học ${courseTitle}` : ''} đã được xác nhận thành công. Chúc bạn học tập tốt!`,
+      type: 'SUCCESS',
+      linkUrl: '/student/payments',
+    });
+
+    const populatedPayment = await Payment.findById(payment._id)
+      .populate('student', 'fullName email phone studentCode')
+      .populate('course', 'title code tuitionFee')
+      .populate({
+        path: 'enrollment',
+        populate: { path: 'class', select: 'classCode room scheduleDays timeSlot' },
+      });
+
+    res.status(200).json({
+      success: true,
+      message: 'Xác nhận thanh toán học phí thành công!',
+      data: populatedPayment,
+    });
+  } catch (error: any) {
+    console.error('Lỗi khi xác nhận thanh toán:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Xác nhận thanh toán thất bại, vui lòng thử lại sau',
+      error: error.message,
+    });
+  }
+};
+

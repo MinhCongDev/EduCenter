@@ -19,6 +19,25 @@ export interface ProcessPaymentPayload {
   note?: string;
 }
 
+export interface CreatePaymentPayload {
+  studentId?: string;
+  amount: number;
+  courseId?: string;
+  invoiceId?: string;
+  enrollmentId?: string;
+  paymentMethod?: PaymentMethod;
+  method?: PaymentMethod;
+  note?: string;
+  transactionCode?: string;
+}
+
+export interface ConfirmPaymentPayload {
+  paymentMethod?: PaymentMethod;
+  method?: PaymentMethod;
+  note?: string;
+  transactionCode?: string;
+}
+
 export const paymentService = {
   /**
    * Lấy lịch sử giao dịch và tóm tắt tài chính của học viên
@@ -49,6 +68,30 @@ export const paymentService = {
   },
 
   /**
+   * Tạo bản ghi thanh toán ở trạng thái PENDING khi mở mã QR
+   * POST /api/payments
+   */
+  createPayment: async (payload: CreatePaymentPayload): Promise<Payment> => {
+    const response = await api.post<ApiResponse<Payment>>('/payments', payload);
+    if (!response.data.data) {
+      throw new Error(response.data.message || 'Không thể khởi tạo giao dịch thanh toán');
+    }
+    return response.data.data;
+  },
+
+  /**
+   * Cập nhật trạng thái giao dịch từ PENDING sang SUCCESS khi học viên xác nhận đã chuyển khoản
+   * PUT /api/payments/:id/confirm
+   */
+  confirmPayment: async (paymentId: string, payload?: ConfirmPaymentPayload): Promise<Payment> => {
+    const response = await api.put<ApiResponse<Payment>>(`/payments/${paymentId}/confirm`, payload || {});
+    if (!response.data.data) {
+      throw new Error(response.data.message || 'Xác nhận thanh toán không thành công');
+    }
+    return response.data.data;
+  },
+
+  /**
    * Thực hiện thanh toán học phí trực tuyến
    */
   processPayment: async (payload: ProcessPaymentPayload): Promise<Payment> => {
@@ -70,3 +113,4 @@ export const paymentService = {
     return response.data.data;
   },
 };
+
