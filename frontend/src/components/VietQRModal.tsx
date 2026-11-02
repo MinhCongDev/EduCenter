@@ -11,6 +11,7 @@ export interface VietQRData {
   classCode?: string; // Mã lớp học
   enrollmentId?: string; // ID lượt đăng ký (dùng cho xác nhận thanh toán tự động)
   paymentId?: string; // ID giao dịch nếu có sẵn
+  gateway?: string;
 }
 
 export interface VietQRModalProps {
@@ -112,14 +113,15 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
       setPendingPayment(null);
       setActiveTxnCode('');
       setToastMessage(null);
+      setCustomAmount(0);
     } else {
-      const initialAmount = data?.amount && data.amount > 0 ? data.amount : 5000000;
-      if (!data?.amount || data.amount <= 0) {
-        setCustomAmount(initialAmount);
-      }
+      const initialAmount = data?.amount && data.amount > 0 ? data.amount : 0;
+      setCustomAmount(initialAmount);
 
-      // Khởi tạo bản ghi giao dịch PENDING ngay khi mở popup
-      initPendingPayment(initialAmount);
+      // Khởi tạo bản ghi giao dịch PENDING ngay khi mở popup nếu số tiền hợp lệ (> 0)
+      if (initialAmount > 0) {
+        initPendingPayment(initialAmount);
+      }
     }
   }, [isOpen, data]);
 
@@ -137,7 +139,7 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  if (!isOpen || !data) return null;
+  if (!isOpen || !data || !data.amount || data.amount <= 0) return null;
 
   const handleCopy = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
@@ -192,6 +194,25 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
           method: 'BANK_TRANSFER',
           note: `Học viên quét mã VietQR. Nội dung: ${transferContent}`,
         });
+      } else {
+        // Fallback an toàn cho lượt thanh toán từ trang khóa học
+        paymentResult = await paymentService.createPayment({
+          courseId: data.courseId,
+          amount: effectiveAmount,
+          paymentMethod: 'VIETQR',
+          note: `Học viên xác nhận chuyển khoản VietQR: ${transferContent}`,
+          transactionCode: activeTxnCode || data.invoiceCode,
+        });
+        if (paymentResult?._id) {
+          try {
+            await paymentService.confirmPayment(paymentResult._id, {
+              paymentMethod: 'VIETQR',
+              transactionCode: activeTxnCode || data.invoiceCode,
+            });
+          } catch (e) {
+            console.warn('Lỗi confirmPayment fallback:', e);
+          }
+        }
       }
 
       setConfirmSuccess(true);
@@ -515,71 +536,6 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
               </div>
             </div>
           </div>
-
-          {/* Ô nhập số tiền tùy chọn nếu nạp tiền học phí tự do */}
-          {(!data.amount || data.amount <= 0) && (
-            <div
-              style={{
-                backgroundColor: '#f8fafc',
-                border: '1px solid #cbd5e1',
-                borderRadius: '12px',
-                padding: '0.85rem 1rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '1rem',
-                flexWrap: 'wrap',
-              }}
-            >
-              <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155' }}>
-                Số tiền nạp (VNĐ):
-              </label>
-              <input
-                type="number"
-                min="50000"
-                step="50000"
-                value={customAmount || ''}
-                onChange={(e) => setCustomAmount(Number(e.target.value) || 0)}
-                onBlur={() => {
-                  if (customAmount > 0) {
-                    initPendingPayment(customAmount);
-                  }
-                }}
-                style={{
-                  padding: '0.45rem 0.75rem',
-                  borderRadius: '8px',
-                  border: '1px solid #94a3b8',
-                  fontSize: '0.95rem',
-                  fontWeight: 700,
-                  color: '#0f172a',
-                  width: '180px',
-                }}
-              />
-              <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
-                {[1000000, 2000000, 5000000, 10000000].map((amt) => (
-                  <button
-                    key={amt}
-                    type="button"
-                    onClick={() => {
-                      setCustomAmount(amt);
-                      initPendingPayment(amt);
-                    }}
-                    style={{
-                      padding: '0.3rem 0.6rem',
-                      fontSize: '0.75rem',
-                      fontWeight: 600,
-                      borderRadius: '6px',
-                      border: '1px solid #cbd5e1',
-                      backgroundColor: customAmount === amt ? '#059669' : '#ffffff',
-                      color: customAmount === amt ? '#ffffff' : '#475569',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {amt >= 1000000 ? `${amt / 1000000} triệu` : `${amt / 1000}k`}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Grid chính: QR Code bên trái & Thông tin bên phải */}
           <div
