@@ -1,4 +1,5 @@
 import api from './api';
+import type { EvaluationRating, GradeEvaluationType } from '../types';
 
 export interface AssignedClass {
   _id: string;
@@ -19,9 +20,11 @@ export interface AssignedClass {
     tuitionFee: number;
     targetLevel: string;
     bannerUrl?: string;
+    sessions?: number;
   };
   schedules?: Array<{
     _id: string;
+    sessionDate?: string;
     dayOfWeek: string;
     startTime: string;
     endTime: string;
@@ -57,7 +60,8 @@ export interface TeacherStudent {
   };
   latestGrade?: {
     title: string;
-    overallBand: number;
+    overallBand?: number;
+    evaluationType?: GradeEvaluationType;
     testDate: string;
   } | null;
 }
@@ -67,11 +71,11 @@ export interface StudentDetailData {
   enrollments: any[];
   grades: AcademicGrade[];
   attendance: any[];
-  submissions: any[];
 }
 
 export interface TeachingScheduleItem {
   _id: string;
+  sessionDate?: string;
   class: {
     _id: string;
     classCode: string;
@@ -80,6 +84,12 @@ export interface TeachingScheduleItem {
     timeSlot: string;
     capacity: number;
     currentEnrollment: number;
+    status?: string;
+    course?: {
+      _id: string;
+      code: string;
+      title: string;
+    };
   };
   dayOfWeek: string;
   startTime: string;
@@ -87,54 +97,6 @@ export interface TeachingScheduleItem {
   classroom: string;
   topic?: string;
   status: 'ACTIVE' | 'CANCELLED';
-}
-
-export interface TeacherAssignment {
-  _id: string;
-  title: string;
-  description: string;
-  skill: string;
-  dueDate: string;
-  maxScore: number;
-  attachments?: string[];
-  status: 'DRAFT' | 'PUBLISHED' | 'CLOSED';
-  class: {
-    _id: string;
-    classCode: string;
-    name: string;
-    room?: string;
-  };
-  stats: {
-    totalStudents: number;
-    submittedCount: number;
-    gradedCount: number;
-    pendingCount: number;
-  };
-  createdAt: string;
-}
-
-export interface AssignmentSubmission {
-  _id: string;
-  assignment: any;
-  student: {
-    _id: string;
-    fullName: string;
-    email: string;
-    phone?: string;
-    avatarUrl?: string;
-  };
-  content: string;
-  attachments?: string[];
-  submissionTime: string;
-  grade?: number;
-  feedback?: string;
-  criteria?: {
-    taskAchievement?: number;
-    coherenceCohesion?: number;
-    lexicalResource?: number;
-    grammaticalAccuracy?: number;
-  };
-  status: 'SUBMITTED' | 'GRADED' | 'LATE' | 'PENDING';
 }
 
 export interface AcademicGrade {
@@ -150,10 +112,12 @@ export interface AcademicGrade {
     classCode: string;
     name: string;
   };
-  evaluationType: 'MOCK_TEST' | 'MID_TERM' | 'FINAL_TEST' | 'ASSIGNMENT' | 'SPEAKING_ASSESSMENT' | 'WRITING_ASSESSMENT';
+  evaluationType: GradeEvaluationType;
   title: string;
+  period?: string;
+  rating?: EvaluationRating;
   testDate: string;
-  overallBand: number;
+  overallBand?: number;
   listening?: number;
   reading?: number;
   writing?: number;
@@ -192,6 +156,7 @@ export interface AttendanceRecord {
     classCode: string;
     name: string;
   };
+  classSchedule?: string;
   student: {
     _id: string;
     fullName: string;
@@ -224,69 +189,30 @@ export const teacherService = {
   },
 
   // 3. Teaching Schedule (Timetable)
-  getTeachingSchedule: async () => {
-    const res = await api.get('/teacher/schedule');
+  getTeachingSchedule: async (params?: { classId?: string }) => {
+    const res = await api.get('/teacher/schedule', { params });
     return res.data;
   },
 
-  // 4. Assignments & Grading
-  getAssignments: async (params?: { classId?: string }) => {
-    const res = await api.get('/teacher/assignments', { params });
-    return res.data;
-  },
-  createAssignment: async (data: {
-    classId: string;
-    title: string;
-    description?: string;
-    skill?: string;
-    dueDate: string;
-    maxScore?: number;
-    status?: string;
+  // 4. Periodic Grades & General Evaluations (Monthly / Course)
+  getStudentAcademicResults: async (params?: {
+    classId?: string;
+    studentId?: string;
+    evaluationType?: string;
+    category?: 'TESTS' | 'EVALUATIONS';
   }) => {
-    const res = await api.post('/teacher/assignments', data);
-    return res.data;
-  },
-  updateAssignment: async (assignmentId: string, data: any) => {
-    const res = await api.put(`/teacher/assignments/${assignmentId}`, data);
-    return res.data;
-  },
-  deleteAssignment: async (assignmentId: string) => {
-    const res = await api.delete(`/teacher/assignments/${assignmentId}`);
-    return res.data;
-  },
-  getAssignmentSubmissions: async (assignmentId: string) => {
-    const res = await api.get(`/teacher/assignments/${assignmentId}/submissions`);
-    return res.data;
-  },
-  gradeSubmission: async (
-    submissionId: string,
-    data: {
-      grade: number;
-      feedback?: string;
-      criteria?: {
-        taskAchievement?: number;
-        coherenceCohesion?: number;
-        lexicalResource?: number;
-        grammaticalAccuracy?: number;
-      };
-    }
-  ) => {
-    const res = await api.post(`/teacher/submissions/${submissionId}/grade`, data);
-    return res.data;
-  },
-
-  // 5. Academic Results & Grade Updating
-  getStudentAcademicResults: async (params?: { classId?: string; studentId?: string; evaluationType?: string }) => {
     const res = await api.get('/teacher/grades', { params });
     return res.data;
   },
   createGrade: async (data: {
     studentId: string;
     classId: string;
-    evaluationType: string;
+    evaluationType: GradeEvaluationType;
     title: string;
+    period?: string;
+    rating?: EvaluationRating;
     testDate?: string;
-    overallBand: number;
+    overallBand?: number;
     listening?: number;
     reading?: number;
     writing?: number;
@@ -305,7 +231,7 @@ export const teacherService = {
     return res.data;
   },
 
-  // 6. Schedule Change Requests & Tracking
+  // 5. Schedule Change Requests & Tracking
   submitScheduleChangeRequest: async (data: {
     currentClassId: string;
     currentSchedule?: string;
@@ -322,14 +248,15 @@ export const teacherService = {
     return res.data;
   },
 
-  // 7. Attendance
-  getAttendance: async (params?: { classId?: string; sessionDate?: string }) => {
+  // 6. Session Attendance
+  getAttendance: async (params?: { classId?: string; sessionDate?: string; classScheduleId?: string }) => {
     const res = await api.get('/teacher/attendance', { params });
     return res.data;
   },
   checkAttendance: async (data: {
     classId: string;
     sessionDate?: string;
+    classScheduleId?: string;
     records: Array<{
       studentId: string;
       status: 'PRESENT' | 'LATE' | 'ABSENT' | 'EXCUSED';

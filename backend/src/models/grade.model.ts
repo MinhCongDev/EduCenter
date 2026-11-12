@@ -1,12 +1,17 @@
 import mongoose, { Document, Schema, Model, Types } from 'mongoose';
 
 export type EvaluationType =
-  | 'MOCK_TEST'
+  | 'ENTRY_TEST'
   | 'MID_TERM'
   | 'FINAL_TEST'
+  | 'MONTHLY_EVALUATION'
+  | 'COURSE_EVALUATION'
+  | 'MOCK_TEST'
   | 'ASSIGNMENT'
   | 'SPEAKING_ASSESSMENT'
   | 'WRITING_ASSESSMENT';
+
+export type EvaluationRating = 'EXCELLENT' | 'GOOD' | 'SATISFACTORY' | 'NEEDS_IMPROVEMENT';
 
 export interface IGrade extends Document {
   student: Types.ObjectId;
@@ -14,8 +19,10 @@ export interface IGrade extends Document {
   teacher: Types.ObjectId;
   evaluationType: EvaluationType;
   title: string;
+  period?: string;
+  rating?: EvaluationRating;
   testDate: Date;
-  overallBand: number;
+  overallBand?: number;
   listening?: number;
   reading?: number;
   writing?: number;
@@ -46,19 +53,31 @@ const gradeSchema = new Schema<IGrade>(
     evaluationType: {
       type: String,
       enum: [
-        'MOCK_TEST',
+        'ENTRY_TEST',
         'MID_TERM',
         'FINAL_TEST',
+        'MONTHLY_EVALUATION',
+        'COURSE_EVALUATION',
+        'MOCK_TEST',
         'ASSIGNMENT',
         'SPEAKING_ASSESSMENT',
         'WRITING_ASSESSMENT',
       ],
-      default: 'MOCK_TEST',
+      default: 'MID_TERM',
     },
     title: {
       type: String,
-      required: [true, 'Tiêu đề kỳ thi/bài đánh giá là bắt buộc'],
+      required: [true, 'Tiêu đề kỳ thi/đánh giá là bắt buộc'],
       trim: true,
+    },
+    period: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    rating: {
+      type: String,
+      enum: ['EXCELLENT', 'GOOD', 'SATISFACTORY', 'NEEDS_IMPROVEMENT'],
     },
     testDate: {
       type: Date,
@@ -66,7 +85,6 @@ const gradeSchema = new Schema<IGrade>(
     },
     overallBand: {
       type: Number,
-      required: [true, 'Điểm Overall Band là bắt buộc'],
       min: 0,
       max: 9.0,
     },

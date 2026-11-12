@@ -7,23 +7,64 @@ import {
   User,
   Student,
   ClassSchedule,
-  Assignment,
-  Submission,
   Attendance,
   ChangeRequest,
   Grade,
 } from '../models';
+import { ClassTeacher } from '../models/classTeacher.model';
+
+const EVALUATION_TYPES = [
+  'ENTRY_TEST',
+  'MID_TERM',
+  'FINAL_TEST',
+  'MONTHLY_EVALUATION',
+  'COURSE_EVALUATION',
+  'MOCK_TEST',
+  'ASSIGNMENT',
+  'SPEAKING_ASSESSMENT',
+  'WRITING_ASSESSMENT',
+] as const;
+
+const GENERAL_EVALUATION_TYPES = new Set(['MONTHLY_EVALUATION', 'COURSE_EVALUATION']);
 
 /**
- * Helper to get list of class IDs assigned to teacher (or fallback to classes if none explicitly assigned)
+ * Normalize a YYYY-MM-DD string or Date into UTC day start/end bounds
+ */
+const getDayBounds = (value?: string | Date): { date: Date; start: Date; end: Date } => {
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value.trim())) {
+    const clean = value.trim();
+    const start = new Date(`${clean}T00:00:00.000Z`);
+    const end = new Date(`${clean}T23:59:59.999Z`);
+    return { date: start, start, end };
+  }
+  const base = value ? new Date(value) : new Date();
+  const isoDay = base.toISOString().slice(0, 10);
+  const start = new Date(`${isoDay}T00:00:00.000Z`);
+  const end = new Date(`${isoDay}T23:59:59.999Z`);
+  return { date: start, start, end };
+};
+
+/**
+ * Helper to get classes assigned to teacher (primary or co-teacher)
  */
 const getTeacherClassIds = async (teacherUserId: any) => {
-  let classes = await Class.find({ teacher: teacherUserId });
+  const coTeachings = await ClassTeacher.find({ teacher: teacherUserId, status: 'ACTIVE' })
+    .select('class')
+    .lean();
+  const coClassIds = coTeachings.map((ct) => ct.class);
+
+  let classes = await Class.find({
+    $or: [{ teacher: teacherUserId }, ...(coClassIds.length ? [{ _id: { $in: coClassIds } }] : [])],
+  });
+
   if (classes.length === 0) {
-    // If not explicitly assigned, link teacher to available classes for seamless demo
+    // Fallback for demo teacher accounts without explicit class assignments
     const available = await Class.find({});
     if (available.length > 0) {
-      await Class.updateMany({ _id: { $in: available.slice(0, 3).map((c) => c._id) } }, { teacher: teacherUserId });
+      await Class.updateMany(
+        { _id: { $in: available.slice(0, 3).map((c) => c._id) } },
+        { teacher: teacherUserId }
+      );
       classes = await Class.find({ teacher: teacherUserId });
     }
   }
@@ -41,12 +82,11 @@ export const getAssignedClasses = async (req: AuthRequest, res: Response): Promi
 
     const classList = await Promise.all(
       classes.map(async (cls) => {
-        const course = await Course.findById(cls.course).select('title code tuitionFee targetLevel bannerUrl');
-        const studentCount = await Enrollment.countDocuments({
-          class: cls._id,
-          status: 'ENROLLED',
-        });
-        const schedules = await ClassSchedule.find({ class: cls._id, status: 'ACTIVE' });
+        const [course, studentCount, schedules] = await Promise.all([
+          Course.findById(cls.course).select('title code tuitionFee targetLevel bannerUrl sessions'),
+          Enrollment.countDocuments({ class: cls._id, status: 'ENROLLED' }),
+          ClassSchedule.find({ class: cls._id, status: 'ACTIVE' }).sort({ sessionDate: 1, startTime: 1 }),
+        ]);
 
         return {
           _id: cls._id,
@@ -63,6 +103,7 @@ export const getAssignedClasses = async (req: AuthRequest, res: Response): Promi
           course: course || null,
           schedules: schedules.map((s) => ({
             _id: s._id,
+            sessionDate: s.sessionDate,
             dayOfWeek: s.dayOfWeek,
             startTime: s.startTime,
             endTime: s.endTime,
@@ -98,9 +139,10 @@ export const getClassDetail = async (req: AuthRequest, res: Response): Promise<v
       return;
     }
 
-    const enrollments = await Enrollment.find({ class: classId, status: 'ENROLLED' }).populate('student');
-    const schedules = await ClassSchedule.find({ class: classId, status: 'ACTIVE' });
-    const assignments = await Assignment.find({ class: classId }).sort({ createdAt: -1 });
+    const [enrollments, schedules] = await Promise.all([
+      Enrollment.find({ class: classId, status: 'ENROLLED' }).populate('student'),
+      ClassSchedule.find({ class: classId, status: 'ACTIVE' }).sort({ sessionDate: 1, startTime: 1 }),
+    ]);
 
     res.status(200).json({
       success: true,
@@ -108,7 +150,6 @@ export const getClassDetail = async (req: AuthRequest, res: Response): Promise<v
         class: cls,
         students: enrollments.map((e) => e.student),
         schedules,
-        assignments,
       },
     });
   } catch (error: any) {
@@ -145,25 +186,22 @@ export const getStudentList = async (req: AuthRequest, res: Response): Promise<v
 
       const studentId = studentUser._id.toString();
       if (!studentMap.has(studentId)) {
-        // Query student profile
-        const studentProfile = await Student.findOne({ user: studentUser._id });
-
-        // Query attendance rate in this teacher's classes
-        const totalSessions = await Attendance.countDocuments({
-          student: studentUser._id,
-          class: { $in: targetClassIds },
-        });
-        const presentSessions = await Attendance.countDocuments({
-          student: studentUser._id,
-          class: { $in: targetClassIds },
-          status: { $in: ['PRESENT', 'LATE'] },
-        });
-
-        // Latest grade
-        const latestGrade = await Grade.findOne({
-          student: studentUser._id,
-          class: { $in: targetClassIds },
-        }).sort({ testDate: -1 });
+        const [studentProfile, totalSessions, presentSessions, latestGrade] = await Promise.all([
+          Student.findOne({ user: studentUser._id }),
+          Attendance.countDocuments({
+            student: studentUser._id,
+            class: { $in: targetClassIds },
+          }),
+          Attendance.countDocuments({
+            student: studentUser._id,
+            class: { $in: targetClassIds },
+            status: { $in: ['PRESENT', 'LATE'] },
+          }),
+          Grade.findOne({
+            student: studentUser._id,
+            class: { $in: targetClassIds },
+          }).sort({ testDate: -1 }),
+        ]);
 
         studentMap.set(studentId, {
           _id: studentUser._id,
@@ -171,21 +209,27 @@ export const getStudentList = async (req: AuthRequest, res: Response): Promise<v
           email: studentUser.email,
           phone: studentUser.phone || '0988 123 456',
           avatarUrl: studentUser.avatarUrl || '',
-          studentCode: studentProfile?.studentCode || `STU-${studentUser._id.toString().slice(-4).toUpperCase()}`,
+          studentCode:
+            studentProfile?.studentCode || `STU-${studentUser._id.toString().slice(-4).toUpperCase()}`,
           currentBand: studentProfile?.currentBand ?? 5.5,
           targetBand: studentProfile?.targetBand ?? 7.0,
           learningGoal: studentProfile?.learningGoal || 'Du học & Xét tuyển ĐH',
-          emergencyContact: studentProfile?.emergencyContact || { name: 'Phụ huynh', phone: studentUser.phone || '', relationship: 'Bố/Mẹ' },
+          emergencyContact: studentProfile?.emergencyContact || {
+            name: 'Phụ huynh',
+            phone: studentUser.phone || '',
+            relationship: 'Bố/Mẹ',
+          },
           classes: [],
           attendanceStats: {
-            total: totalSessions || 10,
-            present: presentSessions || 9,
-            attendanceRate: totalSessions > 0 ? Math.round((presentSessions / totalSessions) * 100) : 92,
+            total: totalSessions,
+            present: presentSessions,
+            attendanceRate: totalSessions > 0 ? Math.round((presentSessions / totalSessions) * 100) : 100,
           },
           latestGrade: latestGrade
             ? {
                 title: latestGrade.title,
                 overallBand: latestGrade.overallBand,
+                evaluationType: latestGrade.evaluationType,
                 testDate: latestGrade.testDate,
               }
             : null,
@@ -228,7 +272,7 @@ export const getStudentList = async (req: AuthRequest, res: Response): Promise<v
 };
 
 /**
- * 4. View Student Information / Student Detail (Student Information)
+ * 2b. View Student Detail
  * GET /api/teacher/students/:studentId
  */
 export const getStudentDetail = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -242,28 +286,17 @@ export const getStudentDetail = async (req: AuthRequest, res: Response): Promise
       return;
     }
 
-    const studentProfile = await Student.findOne({ user: studentId });
     const teacherClasses = await getTeacherClassIds(teacherId);
     const classIds = teacherClasses.map((c) => c._id);
 
-    const enrollments = await Enrollment.find({
-      student: studentId,
-      class: { $in: classIds },
-    }).populate('class course');
-
-    const grades = await Grade.find({
-      student: studentId,
-      class: { $in: classIds },
-    }).sort({ testDate: -1 });
-
-    const attendanceRecords = await Attendance.find({
-      student: studentId,
-      class: { $in: classIds },
-    }).populate('class', 'classCode name').sort({ sessionDate: -1 });
-
-    const submissions = await Submission.find({
-      student: studentId,
-    }).populate('assignment').sort({ submissionTime: -1 });
+    const [studentProfile, enrollments, grades, attendanceRecords] = await Promise.all([
+      Student.findOne({ user: studentId }),
+      Enrollment.find({ student: studentId, class: { $in: classIds } }).populate('class course'),
+      Grade.find({ student: studentId, class: { $in: classIds } }).sort({ testDate: -1 }),
+      Attendance.find({ student: studentId, class: { $in: classIds } })
+        .populate('class', 'classCode name')
+        .sort({ sessionDate: -1 }),
+    ]);
 
     res.status(200).json({
       success: true,
@@ -275,7 +308,8 @@ export const getStudentDetail = async (req: AuthRequest, res: Response): Promise
           phone: studentUser.phone,
           address: studentUser.address,
           avatarUrl: studentUser.avatarUrl,
-          studentCode: studentProfile?.studentCode || `STU-${studentUser._id.toString().slice(-4).toUpperCase()}`,
+          studentCode:
+            studentProfile?.studentCode || `STU-${studentUser._id.toString().slice(-4).toUpperCase()}`,
           currentBand: studentProfile?.currentBand ?? 5.5,
           targetBand: studentProfile?.targetBand ?? 7.0,
           learningGoal: studentProfile?.learningGoal || 'Du học & Định cư',
@@ -284,7 +318,6 @@ export const getStudentDetail = async (req: AuthRequest, res: Response): Promise
         enrollments,
         grades,
         attendance: attendanceRecords,
-        submissions,
       },
     });
   } catch (error: any) {
@@ -296,288 +329,88 @@ export const getStudentDetail = async (req: AuthRequest, res: Response): Promise
 };
 
 /**
- * 3. View Teaching Schedule (Timetable / Teaching Schedule)
+ * 3. View Teaching Schedule (Timetable)
  * GET /api/teacher/schedule
  */
 export const getTeachingSchedule = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const teacherId = req.user?._id;
+    const { classId } = req.query;
     const classes = await getTeacherClassIds(teacherId);
-    const classIds = classes.map((c) => c._id);
 
-    const schedules = await ClassSchedule.find({
+    let targetClasses = classes.filter((c) => c.status !== 'CANCELLED');
+    if (classId && typeof classId === 'string') {
+      targetClasses = targetClasses.filter((c) => c._id.toString() === classId);
+    }
+
+    const classIds = targetClasses.map((c) => c._id);
+
+    const dbSchedules = await ClassSchedule.find({
       class: { $in: classIds },
       status: 'ACTIVE',
-    }).populate({
-      path: 'class',
-      select: 'classCode name room timeSlot capacity currentEnrollment',
-    });
-
-    res.status(200).json({
-      success: true,
-      data: { schedules },
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error?.message || 'Lỗi khi tải thời khóa biểu ca dạy',
-    });
-  }
-};
-
-/**
- * 6. View Assignments (Assignment Management)
- * GET /api/teacher/assignments
- */
-export const getAssignments = async (req: AuthRequest, res: Response): Promise<void> => {
-  try {
-    const teacherId = req.user?._id;
-    const { classId } = req.query;
-
-    const classes = await getTeacherClassIds(teacherId);
-    let classIds = classes.map((c) => c._id);
-
-    if (classId && typeof classId === 'string') {
-      classIds = classIds.filter((id) => id.toString() === classId);
-    }
-
-    const assignments = await Assignment.find({
-      class: { $in: classIds },
     })
-      .populate('class', 'classCode name room')
-      .sort({ createdAt: -1 });
-
-    const result = await Promise.all(
-      assignments.map(async (ass) => {
-        const clsId = ass.class?._id || ass.class;
-        const totalStudents = await Enrollment.countDocuments({
-          class: clsId,
-          status: 'ENROLLED',
-        });
-        const submittedCount = await Submission.countDocuments({
-          assignment: ass._id,
-        });
-        const gradedCount = await Submission.countDocuments({
-          assignment: ass._id,
-          status: 'GRADED',
-        });
-
-        return {
-          _id: ass._id,
-          title: ass.title,
-          description: ass.description,
-          skill: ass.skill || 'IELTS Writing',
-          dueDate: ass.dueDate,
-          maxScore: ass.maxScore,
-          attachments: ass.attachments,
-          status: ass.status,
-          class: ass.class,
-          stats: {
-            totalStudents: totalStudents || 16,
-            submittedCount,
-            gradedCount,
-            pendingCount: submittedCount - gradedCount,
-          },
-          createdAt: ass.createdAt,
-        };
+      .populate({
+        path: 'class',
+        select: 'classCode name room timeSlot capacity currentEnrollment startDate endDate status course',
+        populate: { path: 'course', select: 'code title' },
       })
-    );
+      .sort({ sessionDate: 1, startTime: 1 })
+      .lean();
 
-    res.status(200).json({
-      success: true,
-      data: { assignments: result },
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error?.message || 'Lỗi khi tải danh sách bài tập',
-    });
-  }
-};
+    // Fallback for any assigned class that doesn't yet have ClassSchedule rows
+    const classesWithSchedules = new Set(dbSchedules.map((s: any) => s.class?._id?.toString()).filter(Boolean));
+    const fallbackSchedules: any[] = [];
 
-/**
- * 11 & 12. Create Assignment & Assign Assignment
- * POST /api/teacher/assignments
- */
-export const createAssignment = async (req: AuthRequest, res: Response): Promise<void> => {
-  try {
-    const teacherId = req.user?._id;
-    const { classId, title, description, dueDate, maxScore, skill, attachments, status } = req.body;
-
-    if (!classId || !title || !dueDate) {
-      res.status(400).json({
-        success: false,
-        message: 'Lớp học, tiêu đề bài tập và hạn nộp là bắt buộc',
-      });
-      return;
-    }
-
-    const assignment = await Assignment.create({
-      class: classId,
-      teacher: teacherId,
-      title,
-      description: description || '',
-      dueDate: new Date(dueDate),
-      maxScore: maxScore ? Number(maxScore) : 9.0,
-      skill: skill || 'IELTS Writing',
-      attachments: attachments || [],
-      status: status || 'PUBLISHED',
-    });
-
-    const populated = await Assignment.findById(assignment._id).populate('class', 'classCode name');
-
-    res.status(201).json({
-      success: true,
-      message: 'Tạo và giao bài tập cho lớp thành công!',
-      data: { assignment: populated },
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error?.message || 'Lỗi khi tạo bài tập',
-    });
-  }
-};
-
-/**
- * Update Assignment
- * PUT /api/teacher/assignments/:assignmentId
- */
-export const updateAssignment = async (req: AuthRequest, res: Response): Promise<void> => {
-  try {
-    const { assignmentId } = req.params;
-    const { title, description, dueDate, maxScore, skill, attachments, status } = req.body;
-
-    const assignment = await Assignment.findByIdAndUpdate(
-      assignmentId,
-      {
-        ...(title && { title }),
-        ...(description !== undefined && { description }),
-        ...(dueDate && { dueDate: new Date(dueDate) }),
-        ...(maxScore !== undefined && { maxScore: Number(maxScore) }),
-        ...(skill && { skill }),
-        ...(attachments && { attachments }),
-        ...(status && { status }),
-      },
-      { new: true }
-    ).populate('class', 'classCode name');
-
-    if (!assignment) {
-      res.status(404).json({ success: false, message: 'Không tìm thấy bài tập' });
-      return;
+    for (const cls of targetClasses) {
+      if (classesWithSchedules.has(cls._id.toString())) continue;
+      const [startTime = '18:30', endTime = '20:30'] = (cls.timeSlot || '').split('-').map((t) => t.trim());
+      const populatedCourse = await Course.findById(cls.course).select('code title').lean();
+      for (const day of cls.scheduleDays || []) {
+        fallbackSchedules.push({
+          _id: `${cls._id}-${day}`,
+          class: {
+            _id: cls._id,
+            classCode: cls.classCode,
+            name: cls.name,
+            room: cls.room,
+            timeSlot: cls.timeSlot,
+            capacity: cls.capacity,
+            currentEnrollment: cls.currentEnrollment,
+            startDate: cls.startDate,
+            endDate: cls.endDate,
+            status: cls.status,
+            course: populatedCourse,
+          },
+          dayOfWeek: day,
+          startTime,
+          endTime,
+          classroom: cls.room,
+          topic: '',
+          status: 'ACTIVE',
+        });
+      }
     }
 
     res.status(200).json({
       success: true,
-      message: 'Cập nhật bài tập thành công!',
-      data: { assignment },
+      data: { schedules: [...dbSchedules, ...fallbackSchedules] },
     });
   } catch (error: any) {
     res.status(500).json({
       success: false,
-      message: error?.message || 'Lỗi khi cập nhật bài tập',
+      message: error?.message || 'Lỗi khi tải lịch dạy của giảng viên',
     });
   }
 };
 
 /**
- * Delete Assignment
- * DELETE /api/teacher/assignments/:assignmentId
- */
-export const deleteAssignment = async (req: AuthRequest, res: Response): Promise<void> => {
-  try {
-    const { assignmentId } = req.params;
-    await Assignment.findByIdAndDelete(assignmentId);
-    await Submission.deleteMany({ assignment: assignmentId });
-
-    res.status(200).json({
-      success: true,
-      message: 'Đã xóa bài tập thành công',
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error?.message || 'Lỗi khi xóa bài tập',
-    });
-  }
-};
-
-/**
- * Get Submissions for an Assignment
- * GET /api/teacher/assignments/:assignmentId/submissions
- */
-export const getAssignmentSubmissions = async (req: AuthRequest, res: Response): Promise<void> => {
-  try {
-    const { assignmentId } = req.params;
-    const submissions = await Submission.find({ assignment: assignmentId })
-      .populate('student', 'fullName email phone avatarUrl')
-      .sort({ submissionTime: -1 });
-
-    res.status(200).json({
-      success: true,
-      data: { submissions },
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error?.message || 'Lỗi khi tải danh sách bài nộp',
-    });
-  }
-};
-
-/**
- * 7. Grade Assignments (Assignment Grading)
- * POST /api/teacher/submissions/:submissionId/grade
- */
-export const gradeSubmission = async (req: AuthRequest, res: Response): Promise<void> => {
-  try {
-    const { submissionId } = req.params;
-    const teacherId = req.user?._id;
-    const { grade, feedback, criteria } = req.body;
-
-    if (grade === undefined) {
-      res.status(400).json({ success: false, message: 'Điểm số / Band điểm là bắt buộc' });
-      return;
-    }
-
-    const submission = await Submission.findByIdAndUpdate(
-      submissionId,
-      {
-        grade: Number(grade),
-        feedback: feedback || 'Giảng viên đã chấm và ghi nhận kết quả.',
-        criteria: criteria || undefined,
-        gradedBy: teacherId,
-        status: 'GRADED',
-      },
-      { new: true }
-    ).populate('student', 'fullName email').populate('assignment');
-
-    if (!submission) {
-      res.status(404).json({ success: false, message: 'Không tìm thấy bài nộp' });
-      return;
-    }
-
-    res.status(200).json({
-      success: true,
-      message: 'Chấm bài và phản hồi nhận xét thành công!',
-      data: { submission },
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error?.message || 'Lỗi khi chấm điểm bài nộp',
-    });
-  }
-};
-
-/**
- * 5. View Student Academic Results (Academic Performance)
+ * 4. View Periodic Grades & General Evaluations (Monthly / Course)
  * GET /api/teacher/grades
  */
 export const getStudentAcademicResults = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const teacherId = req.user?._id;
-    const { classId, studentId, evaluationType } = req.query;
+    const { classId, studentId, evaluationType, category } = req.query;
 
     const classes = await getTeacherClassIds(teacherId);
     let classIds = classes.map((c) => c._id);
@@ -593,12 +426,16 @@ export const getStudentAcademicResults = async (req: AuthRequest, res: Response)
     }
     if (evaluationType && typeof evaluationType === 'string') {
       query.evaluationType = evaluationType;
+    } else if (category === 'TESTS') {
+      query.evaluationType = { $in: ['ENTRY_TEST', 'MID_TERM', 'FINAL_TEST', 'MOCK_TEST'] };
+    } else if (category === 'EVALUATIONS') {
+      query.evaluationType = { $in: ['MONTHLY_EVALUATION', 'COURSE_EVALUATION'] };
     }
 
     const grades = await Grade.find(query)
       .populate('student', 'fullName email phone')
       .populate('class', 'classCode name')
-      .sort({ testDate: -1 });
+      .sort({ testDate: -1, createdAt: -1 });
 
     res.status(200).json({
       success: true,
@@ -607,13 +444,13 @@ export const getStudentAcademicResults = async (req: AuthRequest, res: Response)
   } catch (error: any) {
     res.status(500).json({
       success: false,
-      message: error?.message || 'Lỗi khi tải kết quả học tập của học viên',
+      message: error?.message || 'Lỗi khi tải bảng điểm và nhận xét học viên',
     });
   }
 };
 
 /**
- * 8. Update Grades / Enter Grades (Grade Updating / Grade Management)
+ * 4b. Enter Periodic Test Score (Entry/Mid-term/Final) or General Evaluation (Monthly/Course)
  * POST /api/teacher/grades
  */
 export const createOrEnterGrade = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -622,8 +459,10 @@ export const createOrEnterGrade = async (req: AuthRequest, res: Response): Promi
     const {
       studentId,
       classId,
-      evaluationType,
+      evaluationType = 'MID_TERM',
       title,
+      period,
+      rating,
       testDate,
       overallBand,
       listening,
@@ -633,10 +472,37 @@ export const createOrEnterGrade = async (req: AuthRequest, res: Response): Promi
       feedback,
     } = req.body;
 
-    if (!studentId || !classId || !title || overallBand === undefined) {
+    if (!studentId || !classId || !title || !String(title).trim()) {
       res.status(400).json({
         success: false,
-        message: 'Học viên, lớp học, tiêu đề bài thi và Overall Band là bắt buộc',
+        message: 'Học viên, lớp học và tiêu đề đánh giá là bắt buộc',
+      });
+      return;
+    }
+
+    if (!EVALUATION_TYPES.includes(evaluationType)) {
+      res.status(400).json({
+        success: false,
+        message: 'Loại kiểm tra / đánh giá không hợp lệ',
+      });
+      return;
+    }
+
+    const isGeneralEval = GENERAL_EVALUATION_TYPES.has(evaluationType);
+    const hasOverall = overallBand !== undefined && overallBand !== null && overallBand !== '';
+
+    if (!isGeneralEval && !hasOverall) {
+      res.status(400).json({
+        success: false,
+        message: 'Vui lòng nhập điểm Overall Band cho bài kiểm tra định kỳ',
+      });
+      return;
+    }
+
+    if (isGeneralEval && (!feedback || !String(feedback).trim()) && !rating && !hasOverall) {
+      res.status(400).json({
+        success: false,
+        message: 'Vui lòng nhập nội dung nhận xét hoặc xếp loại đánh giá cho học viên',
       });
       return;
     }
@@ -645,15 +511,17 @@ export const createOrEnterGrade = async (req: AuthRequest, res: Response): Promi
       student: studentId,
       class: classId,
       teacher: teacherId,
-      evaluationType: evaluationType || 'MOCK_TEST',
-      title,
+      evaluationType,
+      title: String(title).trim(),
+      period: period ? String(period).trim() : '',
+      ...(rating ? { rating } : {}),
       testDate: testDate ? new Date(testDate) : new Date(),
-      overallBand: Number(overallBand),
-      listening: listening !== undefined ? Number(listening) : undefined,
-      reading: reading !== undefined ? Number(reading) : undefined,
-      writing: writing !== undefined ? Number(writing) : undefined,
-      speaking: speaking !== undefined ? Number(speaking) : undefined,
-      feedback: feedback || '',
+      ...(hasOverall ? { overallBand: Number(overallBand) } : {}),
+      listening: listening !== undefined && listening !== '' ? Number(listening) : undefined,
+      reading: reading !== undefined && reading !== '' ? Number(reading) : undefined,
+      writing: writing !== undefined && writing !== '' ? Number(writing) : undefined,
+      speaking: speaking !== undefined && speaking !== '' ? Number(speaking) : undefined,
+      feedback: feedback ? String(feedback).trim() : '',
       status: 'PUBLISHED',
     });
 
@@ -663,78 +531,119 @@ export const createOrEnterGrade = async (req: AuthRequest, res: Response): Promi
 
     res.status(201).json({
       success: true,
-      message: 'Nhập điểm học viên thành công!',
+      message: isGeneralEval
+        ? 'Đã lưu đánh giá / nhận xét học viên thành công!'
+        : 'Đã nhập điểm kiểm tra định kỳ thành công!',
       data: { grade: populated },
     });
   } catch (error: any) {
     res.status(500).json({
       success: false,
-      message: error?.message || 'Lỗi khi nhập điểm học viên',
+      message: error?.message || 'Lỗi khi lưu điểm / nhận xét học viên',
     });
   }
 };
 
 /**
- * Update an existing Grade
+ * 4c. Update Periodic Grade or General Evaluation
  * PUT /api/teacher/grades/:gradeId
  */
 export const updateGrade = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { gradeId } = req.params;
-    const { overallBand, listening, reading, writing, speaking, feedback, title, testDate, evaluationType } = req.body;
+    const {
+      overallBand,
+      listening,
+      reading,
+      writing,
+      speaking,
+      feedback,
+      title,
+      period,
+      rating,
+      testDate,
+      evaluationType,
+    } = req.body;
 
-    const grade = await Grade.findByIdAndUpdate(
-      gradeId,
-      {
-        ...(overallBand !== undefined && { overallBand: Number(overallBand) }),
-        ...(listening !== undefined && { listening: Number(listening) }),
-        ...(reading !== undefined && { reading: Number(reading) }),
-        ...(writing !== undefined && { writing: Number(writing) }),
-        ...(speaking !== undefined && { speaking: Number(speaking) }),
-        ...(feedback !== undefined && { feedback }),
-        ...(title && { title }),
-        ...(testDate && { testDate: new Date(testDate) }),
-        ...(evaluationType && { evaluationType }),
-      },
-      { new: true }
-    )
+    if (evaluationType && !EVALUATION_TYPES.includes(evaluationType)) {
+      res.status(400).json({
+        success: false,
+        message: 'Loại kiểm tra / đánh giá không hợp lệ',
+      });
+      return;
+    }
+
+    const updatePayload: Record<string, any> = {};
+    const unsetPayload: Record<string, 1> = {};
+
+    if (title !== undefined) updatePayload.title = String(title).trim();
+    if (period !== undefined) updatePayload.period = String(period).trim();
+    if (rating !== undefined) {
+      if (rating === '' || rating === null) unsetPayload.rating = 1;
+      else updatePayload.rating = rating;
+    }
+    if (testDate) updatePayload.testDate = new Date(testDate);
+    if (evaluationType) updatePayload.evaluationType = evaluationType;
+    if (feedback !== undefined) updatePayload.feedback = String(feedback).trim();
+
+    const assignScore = (key: string, val: unknown) => {
+      if (val === undefined) return;
+      if (val === '' || val === null) unsetPayload[key] = 1;
+      else updatePayload[key] = Number(val);
+    };
+
+    assignScore('overallBand', overallBand);
+    assignScore('listening', listening);
+    assignScore('reading', reading);
+    assignScore('writing', writing);
+    assignScore('speaking', speaking);
+
+    const mongoUpdate: Record<string, any> = {};
+    if (Object.keys(updatePayload).length > 0) mongoUpdate.$set = updatePayload;
+    if (Object.keys(unsetPayload).length > 0) mongoUpdate.$unset = unsetPayload;
+
+    const grade = await Grade.findByIdAndUpdate(gradeId, mongoUpdate, { new: true, runValidators: true })
       .populate('student', 'fullName email')
       .populate('class', 'classCode name');
 
     if (!grade) {
-      res.status(404).json({ success: false, message: 'Không tìm thấy bản ghi điểm' });
+      res.status(404).json({ success: false, message: 'Không tìm thấy bản ghi điểm/đánh giá' });
       return;
     }
 
     res.status(200).json({
       success: true,
-      message: 'Cập nhật điểm thành công!',
+      message: 'Cập nhật điểm / nhận xét thành công!',
       data: { grade },
     });
   } catch (error: any) {
     res.status(500).json({
       success: false,
-      message: error?.message || 'Lỗi khi cập nhật điểm học viên',
+      message: error?.message || 'Lỗi khi cập nhật điểm / nhận xét',
     });
   }
 };
 
 /**
- * Delete a Grade
+ * 4d. Delete a Grade / Evaluation
  * DELETE /api/teacher/grades/:gradeId
  */
 export const deleteGrade = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { gradeId } = req.params;
-    await Grade.findByIdAndDelete(gradeId);
-    res.status(200).json({ success: true, message: 'Đã xóa bản ghi điểm' });
+    const deleted = await Grade.findByIdAndDelete(gradeId);
+    if (!deleted) {
+      res.status(404).json({ success: false, message: 'Không tìm thấy bản ghi điểm/đánh giá' });
+      return;
+    }
+    res.status(200).json({ success: true, message: 'Đã xóa bản ghi điểm / nhận xét' });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: error?.message || 'Lỗi khi xóa điểm' });
+    res.status(500).json({ success: false, message: error?.message || 'Lỗi khi xóa điểm / nhận xét' });
   }
 };
 
 /**
- * 9. Submit Schedule Change Request (Schedule Change Request)
+ * 5. Submit Schedule Change Request
  * POST /api/teacher/schedule-requests
  */
 export const submitScheduleChangeRequest = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -779,7 +688,7 @@ export const submitScheduleChangeRequest = async (req: AuthRequest, res: Respons
 };
 
 /**
- * 10. Track Change Requests (Request History / Request Tracking)
+ * 5b. Track Change Requests
  * GET /api/teacher/schedule-requests
  */
 export const getScheduleChangeRequests = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -805,13 +714,13 @@ export const getScheduleChangeRequests = async (req: AuthRequest, res: Response)
 };
 
 /**
- * 13. View Attendance (Attendance History / Records)
+ * 6. View Attendance (Session Records & History)
  * GET /api/teacher/attendance
  */
 export const getAttendance = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const teacherId = req.user?._id;
-    const { classId, sessionDate } = req.query;
+    const { classId, sessionDate, classScheduleId } = req.query;
 
     const classes = await getTeacherClassIds(teacherId);
     let classIds = classes.map((c) => c._id);
@@ -822,18 +731,17 @@ export const getAttendance = async (req: AuthRequest, res: Response): Promise<vo
 
     const query: any = { class: { $in: classIds } };
 
-    if (sessionDate && typeof sessionDate === 'string') {
-      const start = new Date(sessionDate);
-      start.setHours(0, 0, 0, 0);
-      const end = new Date(sessionDate);
-      end.setHours(23, 59, 59, 999);
+    if (classScheduleId && typeof classScheduleId === 'string') {
+      query.classSchedule = classScheduleId;
+    } else if (sessionDate && typeof sessionDate === 'string') {
+      const { start, end } = getDayBounds(sessionDate);
       query.sessionDate = { $gte: start, $lte: end };
     }
 
     const records = await Attendance.find(query)
       .populate('student', 'fullName email')
       .populate('class', 'classCode name')
-      .sort({ sessionDate: -1 });
+      .sort({ sessionDate: -1, updatedAt: -1 });
 
     res.status(200).json({
       success: true,
@@ -848,15 +756,15 @@ export const getAttendance = async (req: AuthRequest, res: Response): Promise<vo
 };
 
 /**
- * 14. Check Attendance / Save Attendance for a Class Session
+ * 6b. Check Attendance / Save Attendance for a Class Session
  * POST /api/teacher/attendance
  */
 export const checkAttendance = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const teacherId = req.user?._id;
-    const { classId, sessionDate, records } = req.body;
+    const { classId, sessionDate, classScheduleId, records } = req.body;
 
-    if (!classId || !records || !Array.isArray(records)) {
+    if (!classId || !records || !Array.isArray(records) || records.length === 0) {
       res.status(400).json({
         success: false,
         message: 'Lớp học và danh sách điểm danh là bắt buộc',
@@ -864,43 +772,56 @@ export const checkAttendance = async (req: AuthRequest, res: Response): Promise<
       return;
     }
 
-    const date = sessionDate ? new Date(sessionDate) : new Date();
+    const validStatuses = new Set(['PRESENT', 'LATE', 'ABSENT', 'EXCUSED']);
+    for (const rec of records) {
+      if (!rec.studentId || !validStatuses.has(rec.status)) {
+        res.status(400).json({
+          success: false,
+          message: 'Dữ liệu trạng thái điểm danh của học viên không hợp lệ',
+        });
+        return;
+      }
+    }
+
+    const { date, start, end } = getDayBounds(sessionDate);
 
     const results = await Promise.all(
-      records.map(async (rec: { studentId: string; status: 'PRESENT' | 'LATE' | 'ABSENT' | 'EXCUSED'; notes?: string }) => {
-        const startOfDay = new Date(date);
-        startOfDay.setHours(0, 0, 0, 0);
-        const endOfDay = new Date(date);
-        endOfDay.setHours(23, 59, 59, 999);
-
-        return Attendance.findOneAndUpdate(
-          {
-            class: classId,
-            student: rec.studentId,
-            sessionDate: { $gte: startOfDay, $lte: endOfDay },
-          },
-          {
-            class: classId,
-            student: rec.studentId,
-            sessionDate: date,
-            status: rec.status,
-            notes: rec.notes || '',
-            recordedBy: teacherId,
-          },
-          { upsert: true, new: true, setDefaultsOnInsert: true }
-        );
-      })
+      records.map(
+        async (rec: {
+          studentId: string;
+          status: 'PRESENT' | 'LATE' | 'ABSENT' | 'EXCUSED';
+          notes?: string;
+        }) => {
+          return Attendance.findOneAndUpdate(
+            {
+              class: classId,
+              student: rec.studentId,
+              sessionDate: { $gte: start, $lte: end },
+            },
+            {
+              class: classId,
+              ...(classScheduleId ? { classSchedule: classScheduleId } : {}),
+              student: rec.studentId,
+              sessionDate: date,
+              status: rec.status,
+              notes: rec.notes || '',
+              recordedBy: teacherId,
+            },
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+          );
+        }
+      )
     );
 
     res.status(200).json({
       success: true,
       message: `Đã lưu điểm danh thành công cho ${results.length} học viên!`,
-      data: { count: results.length },
+      data: { count: results.length, records: results },
     });
   } catch (error: any) {
     res.status(500).json({
       success: false,
-      message: error?.message || 'Lỗi khi lưu điểm danh ca dạy',
+      message: error?.message || 'Lỗi khi lưu điểm danh buổi học',
     });
   }
 };

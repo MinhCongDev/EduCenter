@@ -8,12 +8,15 @@ import { formatDate, bandColor, bandLabel } from '../../utils/format';
 
 const typeCfg = (t: GradeEvaluationType) => {
   const map: Record<GradeEvaluationType, { label: string; color: string; icon: string }> = {
-    MOCK_TEST:            { label: 'Mock Test',      color: '#3b82f6', icon: '🎧' },
-    MID_TERM:             { label: 'Giữa kỳ',       color: '#ec4899', icon: '📋' },
-    FINAL_TEST:           { label: 'Cuối kỳ',       color: '#dc2626', icon: '🎓' },
-    ASSIGNMENT:           { label: 'Bài tập',       color: '#06b6d4', icon: '📝' },
-    SPEAKING_ASSESSMENT:  { label: 'Speaking',       color: '#8b5cf6', icon: '🎙️' },
-    WRITING_ASSESSMENT:  { label: 'Writing',        color: '#f59e0b', icon: '✍️' },
+    ENTRY_TEST: { label: 'Kiểm tra đầu vào', color: '#0ea5e9', icon: '🎯' },
+    MOCK_TEST: { label: 'Mock Test', color: '#3b82f6', icon: '🎧' },
+    MID_TERM: { label: 'Giữa kỳ', color: '#ec4899', icon: '📋' },
+    FINAL_TEST: { label: 'Cuối kỳ', color: '#dc2626', icon: '🎓' },
+    MONTHLY_EVALUATION: { label: 'Nhận xét theo tháng', color: '#10b981', icon: '🗓️' },
+    COURSE_EVALUATION: { label: 'Đánh giá cuối khóa', color: '#6366f1', icon: '🏅' },
+    ASSIGNMENT: { label: 'Bài tập', color: '#06b6d4', icon: '📝' },
+    SPEAKING_ASSESSMENT: { label: 'Speaking', color: '#8b5cf6', icon: '🎙️' },
+    WRITING_ASSESSMENT: { label: 'Writing', color: '#f59e0b', icon: '✍️' },
   };
   return map[t] ?? { label: t, color: '#64748b', icon: '📊' };
 };
@@ -160,9 +163,13 @@ const GradesPage: React.FC = () => {
                       <span className="badge-pill badge-blue">
                         {g.score}/{g.maxScore} ({percent.toFixed(0)}%)
                       </span>
-                    ) : (
+                    ) : g.overallBand !== undefined && g.overallBand !== null ? (
                       <span className="badge-pill badge-purple">
                         Band {g.overallBand.toFixed(1)}
+                      </span>
+                    ) : (
+                      <span className="badge-pill badge-blue">
+                        📝 Nhận xét
                       </span>
                     )}
                   </div>

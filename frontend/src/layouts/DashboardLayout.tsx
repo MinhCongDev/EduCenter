@@ -47,12 +47,10 @@ const getMenuItems = (role: UserRole): DashboardItem[] => {
   if (role === 'TEACHER') {
     return [
       { label: 'Tổng quan', path: '/teacher/dashboard' },
-      { label: 'Quản lý lớp học', path: '/teacher/dashboard?tab=classes_students' },
-      { label: 'Lịch dạy & Điểm danh', path: '/teacher/dashboard?tab=schedule_attendance' },
-      { label: 'Bài tập & Chấm bài', path: '/teacher/dashboard?tab=assignments_grading' },
-      { label: 'Kết quả học tập', path: '/teacher/dashboard?tab=academic_grades' },
-      { label: 'Tiến độ & Mốc hoàn thành', path: '/teacher/dashboard?tab=course_progress' },
-      { label: 'Báo cáo' },
+      { label: 'Lớp học & Học viên', path: '/teacher/dashboard?tab=classes_students' },
+      { label: 'Lịch dạy', path: '/teacher/dashboard?tab=schedule' },
+      { label: 'Điểm danh buổi học', path: '/teacher/dashboard?tab=attendance' },
+      { label: 'Điểm định kỳ & Nhận xét', path: '/teacher/dashboard?tab=grades' },
     ];
   }
 
