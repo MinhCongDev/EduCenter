@@ -401,11 +401,33 @@ export const createPayment = async (req: AuthRequest, res: Response): Promise<vo
       invoiceId ||
       `INV-${timestamp}${randomSuffix}`;
 
+    // Nếu có courseId nhưng chưa có enrollment, tìm hoặc tạo enrollment PENDING (chờ staff xếp lớp)
+    if (!targetEnrollment && targetCourseId && Types.ObjectId.isValid(targetCourseId)) {
+      targetEnrollment = await Enrollment.findOne({
+        student: targetStudentId,
+        course: targetCourseId,
+        status: { $ne: 'DROPPED' },
+      });
+
+      if (!targetEnrollment) {
+        targetEnrollment = await Enrollment.create({
+          student: targetStudentId,
+          course: targetCourseId,
+          status: 'PENDING',
+          tuitionStatus: 'PENDING',
+          registrationDate: new Date(),
+          enrollmentDate: new Date(),
+        });
+      }
+    }
+
+    const linkedEnrollmentId = enrollmentId || targetEnrollment?._id;
+
     // Kiểm tra xem đã có bản ghi PENDING cho enrollment này chưa để tái sử dụng
     let payment = null;
-    if (enrollmentId && Types.ObjectId.isValid(enrollmentId)) {
+    if (linkedEnrollmentId && Types.ObjectId.isValid(linkedEnrollmentId)) {
       const existingPending = await Payment.findOne({
-        enrollment: enrollmentId,
+        enrollment: linkedEnrollmentId,
         student: targetStudentId,
         status: 'PENDING',
       });
@@ -427,7 +449,7 @@ export const createPayment = async (req: AuthRequest, res: Response): Promise<vo
         student: targetStudentId,
         amount: finalAmount,
         course: targetCourseId,
-        enrollment: enrollmentId,
+        enrollment: linkedEnrollmentId,
         invoiceId: genInvoiceId,
         transactionCode: genTransactionCode,
         method: finalMethod,
@@ -531,11 +553,40 @@ export const confirmPayment = async (req: AuthRequest, res: Response): Promise<v
     }
     await payment.save();
 
-    // Nếu giao dịch gắn với lượt đăng ký học (Enrollment), cập nhật trạng thái học phí
+    // Đảm bảo lượt đăng ký học (Enrollment) luôn tồn tại và chuyển sang trạng thái đã thanh toán (PAID)
+    let relatedEnrollment: any = null;
     if (payment.enrollment) {
-      await Enrollment.findByIdAndUpdate(payment.enrollment, {
-        tuitionStatus: 'PAID',
+      relatedEnrollment = await Enrollment.findByIdAndUpdate(
+        payment.enrollment,
+        { tuitionStatus: 'PAID' },
+        { new: true }
+      );
+    }
+
+    // Nếu payment chưa gắn enrollment nhưng có course (học viên thanh toán từ trang Khóa học)
+    if (!relatedEnrollment && payment.course) {
+      relatedEnrollment = await Enrollment.findOne({
+        student: payment.student,
+        course: payment.course,
+        status: { $ne: 'DROPPED' },
       });
+
+      if (!relatedEnrollment) {
+        relatedEnrollment = await Enrollment.create({
+          student: payment.student,
+          course: payment.course,
+          status: 'PENDING',
+          tuitionStatus: 'PAID',
+          registrationDate: new Date(),
+          enrollmentDate: new Date(),
+        });
+      } else {
+        relatedEnrollment.tuitionStatus = 'PAID';
+        await relatedEnrollment.save();
+      }
+
+      payment.enrollment = relatedEnrollment._id as any;
+      await payment.save();
     }
 
     // Lấy thông tin khóa học để gửi thông báo chi tiết

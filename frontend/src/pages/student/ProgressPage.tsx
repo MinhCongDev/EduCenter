@@ -62,11 +62,14 @@ const ProgressPage: React.FC = () => {
           </div>
         </div>
         <EmptyState
-          icon="📚"
-          title="Bạn chưa tham gia lớp học nào"
-          description="Hãy đăng ký khóa học để bắt đầu theo dõi lộ trình và các mốc hoàn thành."
-          action={<Link to="/courses" className="dash-quick-btn primary">Khám phá khóa học</Link>}
-
+          icon="🎯"
+          title="Chưa có dữ liệu tiến độ học tập"
+          description="Hiện tại bạn chưa có tiến độ học tập nào. Nếu bạn vừa đăng ký khóa học, nhân viên giáo vụ (Staff) đang xử lý xếp lớp học cho bạn. Tiến độ và các cột mốc sẽ được kích hoạt ngay khi lớp học bắt đầu."
+          action={
+            <Link to="/student/classes" className="dash-quick-btn primary">
+              📚 Xem khóa học của tôi
+            </Link>
+          }
         />
       </div>
     );

@@ -1850,9 +1850,8 @@ export const StudentPaymentsPage: React.FC = () => {
           handleResetPaymentState();
           fetchData();
           showToast(
-            `Thanh toán học phí ${
-              payment?.amount ? payment.amount.toLocaleString('vi-VN') + ' đ ' : ''
-            }thành công! Lịch sử và trạng thái học phí đã được cập nhật.`
+            `Thanh toán học phí ${payment?.amount ? payment.amount.toLocaleString('vi-VN') + ' đ ' : ''
+            }thành công! Khóa học đã xuất hiện trong 'Khóa học của tôi' (Trạng thái: Đang chờ staff xếp lớp).`
           );
         }}
       />

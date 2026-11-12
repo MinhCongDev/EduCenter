@@ -811,6 +811,9 @@ export interface Enrollment {
   _id: string;
   enrollmentId: string;
   class: Class;
+  course?: Course;
+  isPendingClass?: boolean;
+  registrationDate?: string;
   status: EnrollmentStatus;
   enrollmentStatus: EnrollmentStatus;
   tuitionStatus: TuitionStatus;

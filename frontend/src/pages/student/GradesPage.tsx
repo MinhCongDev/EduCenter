@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { studentService } from '../../services/student.service';
 import { useToast } from '../../contexts/ToastContext';
-import type { Grade, GradeEvaluationType } from '../../types';
+import type { Grade, GradeEvaluationType, Enrollment } from '../../types';
 import { EmptyState, SkeletonPage } from '../../components/Skeleton';
 import { formatDate, bandColor, bandLabel } from '../../utils/format';
 
@@ -21,25 +21,67 @@ const typeCfg = (t: GradeEvaluationType) => {
 const GradesPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const toast = useToast();
+  const [classes, setClasses] = useState<Enrollment[]>([]);
+  const [selectedClassId, setSelectedClassId] = useState<string>(id || '');
   const [grades, setGrades] = useState<Grade[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Load danh sách lớp nếu không có id truyền qua URL
   useEffect(() => {
-    if (id) fetchGrades();
+    const initClasses = async () => {
+      try {
+        setIsLoading(true);
+        if (id) {
+          setSelectedClassId(id);
+          await fetchGrades(id);
+        } else {
+          const res = await studentService.getMyClasses();
+          if (res.success && res.data?.classes) {
+            setClasses(res.data.classes);
+            if (res.data.classes.length > 0) {
+              const firstClassId = (res.data.classes[0].class as any)?._id || '';
+              setSelectedClassId(firstClassId);
+              if (firstClassId) {
+                await fetchGrades(firstClassId);
+              } else {
+                setIsLoading(false);
+              }
+            } else {
+              setIsLoading(false);
+            }
+          } else {
+            setIsLoading(false);
+          }
+        }
+      } catch (err: any) {
+        toast.error(err.response?.data?.message || 'Không thể tải danh sách lớp học');
+        setIsLoading(false);
+      }
+    };
+
+    initClasses();
   }, [id]);
 
-  const fetchGrades = async () => {
-    if (!id) return;
+  const fetchGrades = async (classId: string) => {
+    if (!classId) return;
     try {
       setIsLoading(true);
-      const res = await studentService.getGrades(id);
-      if (res.success && res.data) setGrades(res.data.grades);
-      else toast.error(res.message || 'Không thể tải bảng điểm');
+      const res = await studentService.getGrades(classId);
+      if (res.success && res.data) {
+        setGrades(res.data.grades || []);
+      } else {
+        toast.error(res.message || 'Không thể tải bảng điểm');
+      }
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Không thể tải bảng điểm');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleClassChange = (classId: string) => {
+    setSelectedClassId(classId);
+    fetchGrades(classId);
   };
 
   const withBand = grades.filter((g) => g.overallBand !== undefined && g.overallBand !== null);
@@ -49,18 +91,21 @@ const GradesPage: React.FC = () => {
       : null;
   const maxBand = withBand.length > 0 ? Math.max(...withBand.map((g) => g.overallBand!)).toFixed(1) : null;
 
-  if (isLoading) return <SkeletonPage message="Đang tải bảng điểm..." />;
+  if (isLoading) return <SkeletonPage message="Đang tải dữ liệu điểm số..." />;
+
+  const currentEnrollment = classes.find((c) => (c.class as any)?._id === selectedClassId);
+  const currentClassData = currentEnrollment?.class as any;
 
   return (
     <div className="dash-container">
       <div className="dash-banner">
         <div className="dash-banner-content">
-          <div className="dash-banner-badge">📊 Bảng Điểm</div>
-          <h1>Kết Quả Học Tập</h1>
+          <div className="dash-banner-badge">📊 Điểm Số & Khảo Thí</div>
+          <h1>Bảng Điểm & Đánh Giá Năng Lực</h1>
           <p>
             {grades.length > 0
-              ? `Tổng cộng ${grades.length} bài đánh giá.`
-              : 'Chưa có kết quả đánh giá nào.'}
+              ? `Tổng cộng ${grades.length} bài đánh giá. Band trung bình: ${avgBand || '—'}`
+              : 'Theo dõi điểm số chi tiết từng kỹ năng IELTS (Listening, Reading, Writing, Speaking).'}
           </p>
         </div>
         <div className="dash-banner-right">
@@ -74,29 +119,71 @@ const GradesPage: React.FC = () => {
                 <div className="sub">{bandLabel(parseFloat(avgBand))}</div>
               </>
             ) : (
-              <div>📊 Bảng điểm</div>
+              <div>
+                📊 {currentClassData?.classCode ? `Lớp ${currentClassData.classCode}` : 'Bảng điểm'}
+              </div>
             )}
           </div>
         </div>
       </div>
 
       <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-        <Link to={`/student/classes/${id}`} className="dash-quick-btn" style={{ textDecoration: 'none' }}>
-          ← Chi Tiết Lớp
+        <Link to="/student/dashboard" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
+          ← Dashboard
         </Link>
-        <Link to={`/student/classes/${id}/assignments`} className="dash-quick-btn" style={{ textDecoration: 'none' }}>
-          📝 Bài Tập
+        <Link to="/student/classes" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
+          📚 Khóa Học
         </Link>
-        <Link to={`/student/classes/${id}/attendance`} className="dash-quick-btn" style={{ textDecoration: 'none' }}>
-          📅 Điểm Danh
+        <Link to="/student/schedule" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
+          🗓️ Xem Lịch Học
+        </Link>
+        <Link to="/student/attendance" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
+          📅 Chuyên Cần
+        </Link>
+        <Link to="/student/progress" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
+          🎯 Kết Quả Học Tập
         </Link>
       </div>
+
+      {/* Class Selector Dropdown nếu học viên có nhiều hơn 1 lớp */}
+      {classes.length > 1 && (
+        <div className="dash-card" style={{ marginBottom: '1.25rem', padding: '0.85rem 1.25rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+            <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1e293b' }}>
+              🏫 Chọn lớp học cần xem điểm số:
+            </span>
+            <select
+              value={selectedClassId}
+              onChange={(e) => handleClassChange(e.target.value)}
+              style={{
+                padding: '0.45rem 1rem',
+                borderRadius: '8px',
+                border: '1.5px solid #cbd5e1',
+                fontSize: '0.9rem',
+                fontWeight: 600,
+                color: '#0f172a',
+                backgroundColor: '#ffffff',
+                cursor: 'pointer',
+              }}
+            >
+              {classes.map((item) => {
+                const cls = item.class as any;
+                return (
+                  <option key={cls?._id} value={cls?._id}>
+                    {cls?.classCode} — {cls?.course?.title || cls?.course?.code || 'Khóa học'}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+        </div>
+      )}
 
       {grades.length > 0 && (
         <div className="dash-metrics-grid" style={{ marginBottom: '1.5rem' }}>
           <div className="dash-metric-card">
             <div className="dash-metric-info">
-              <span className="dash-metric-label">Band hiện tại</span>
+              <span className="dash-metric-label">Band trung bình</span>
               <span
                 className="dash-metric-val"
                 style={{ color: bandColor(avgBand ? parseFloat(avgBand) : undefined) }}
@@ -111,58 +198,67 @@ const GradesPage: React.FC = () => {
           </div>
           <div className="dash-metric-card">
             <div className="dash-metric-info">
-              <span className="dash-metric-label">Tổng bài đánh giá</span>
-              <span className="dash-metric-val">{grades.length}</span>
-              <span className="dash-metric-trend">
-                {grades.filter((g) => g.status === 'PUBLISHED').length} đã công bố
+              <span className="dash-metric-label">Band cao nhất</span>
+              <span
+                className="dash-metric-val"
+                style={{ color: bandColor(maxBand ? parseFloat(maxBand) : undefined) }}
+              >
+                {maxBand || '—'}
               </span>
-            </div>
-            <div className="dash-metric-icon icon-blue">📝</div>
-          </div>
-          <div className="dash-metric-card">
-            <div className="dash-metric-info">
-              <span className="dash-metric-label">Điểm cao nhất</span>
-              <span className="dash-metric-val">{maxBand || '—'}</span>
               <span className="dash-metric-trend up">
-                {withBand.filter((g) => (g.overallBand || 0) >= 6.5).length} bài đạt 6.5+
+                {maxBand ? bandLabel(parseFloat(maxBand)) : '—'}
               </span>
             </div>
             <div className="dash-metric-icon icon-amber">⭐</div>
+          </div>
+          <div className="dash-metric-card">
+            <div className="dash-metric-info">
+              <span className="dash-metric-label">Tổng bài đánh giá</span>
+              <span className="dash-metric-val">{grades.length} bài</span>
+              <span className="dash-metric-trend">{withBand.length} đã chấm</span>
+            </div>
+            <div className="dash-metric-icon icon-blue">📋</div>
           </div>
         </div>
       )}
 
       {grades.length === 0 ? (
         <EmptyState
-          icon="📭"
-          title="Chưa có kết quả đánh giá"
-          description="Kết quả học tập sẽ được cập nhật sau mỗi bài kiểm tra."
+          icon="📊"
+          title="Chưa có dữ liệu điểm số"
+          description="Hiện tại chưa có dữ liệu điểm số. Nếu bạn vừa đăng ký khóa học, nhân viên giáo vụ (Staff) đang xử lý xếp lớp cho bạn. Bảng điểm sẽ hiển thị ngay khi lớp bắt đầu và giảng viên nhập điểm các bài kiểm tra."
+          action={
+            <Link to="/student/classes" className="dash-quick-btn primary">
+              📚 Xem khóa học của tôi
+            </Link>
+          }
         />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {grades.map((g) => {
-            const type = typeCfg(g.evaluationType);
-            const isPublished = g.status === 'PUBLISHED';
-            const hasScore = g.score !== undefined && g.maxScore !== undefined && g.maxScore > 0;
-            const percent = hasScore ? ((g.score as number) / (g.maxScore as number)) * 100 : 0;
+          {grades.map((grade) => {
+            const cfg = typeCfg(grade.evaluationType);
             return (
-              <div key={g._id} className="dash-card">
+              <div key={grade._id} className="dash-card">
                 <div className="dash-card-header">
-                  <h2 className="dash-card-title">
-                    <span>{type.icon}</span>
-                    {g.title}
-                  </h2>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <span className={`badge-pill ${isPublished ? 'badge-green' : 'badge-amber'}`}>
-                      {isPublished ? '✅ Đã công bố' : '📝 Nháp'}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                    <span style={{ fontSize: '1.25rem' }}>{cfg.icon}</span>
+                    <h2 className="dash-card-title">{grade.title}</h2>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <span className="badge-pill" style={{ background: `${cfg.color}18`, color: cfg.color }}>
+                      {cfg.label}
                     </span>
-                    {hasScore ? (
-                      <span className="badge-pill badge-blue">
-                        {g.score}/{g.maxScore} ({percent.toFixed(0)}%)
-                      </span>
-                    ) : (
-                      <span className="badge-pill badge-purple">
-                        Band {g.overallBand.toFixed(1)}
+                    {grade.overallBand !== undefined && grade.overallBand !== null && (
+                      <span
+                        className="badge-pill"
+                        style={{
+                          background: `${bandColor(grade.overallBand)}22`,
+                          color: bandColor(grade.overallBand),
+                          fontWeight: 700,
+                          fontSize: '0.85rem',
+                        }}
+                      >
+                        Band {grade.overallBand}
                       </span>
                     )}
                   </div>
@@ -172,49 +268,41 @@ const GradesPage: React.FC = () => {
                   <div
                     style={{
                       display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-                      gap: '0.75rem 1.5rem',
-                      marginBottom: '1rem',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                      gap: '0.75rem 1.25rem',
+                      marginBottom: '0.75rem',
                     }}
                   >
-                    <Field label="Loại đánh giá" value={
-                      <span style={{ color: type.color, fontWeight: 700 }}>{type.label}</span>
-                    } />
-                    <Field label="Ngày thi" value={formatDate(g.testDate)} />
-                    {g.overallBand !== undefined && g.overallBand !== null && (
-                      <Field label="Band điểm" value={
-                        <span style={{ color: bandColor(g.overallBand), fontSize: '1.3rem', fontWeight: 800 }}>
-                          {g.overallBand.toFixed(1)}
+                    <SkillBand label="🎧 Listening" band={grade.listening} />
+                    <SkillBand label="📖 Reading"   band={grade.reading} />
+                    <SkillBand label="✍️ Writing"   band={grade.writing} />
+                    <SkillBand label="🎙️ Speaking"  band={grade.speaking} />
+                    {grade.score !== undefined && (
+                      <div className="dash-field">
+                        <span className="dash-field-label">Điểm số</span>
+                        <span className="dash-field-value" style={{ fontWeight: 700 }}>
+                          {grade.score} / {grade.maxScore || 100}
                         </span>
-                      } />
+                      </div>
                     )}
-                    {g.listening !== undefined && g.listening !== null && (
-                      <Field label="Listening" value={g.listening.toFixed(1)} />
-                    )}
-                    {g.reading !== undefined && g.reading !== null && (
-                      <Field label="Reading" value={g.reading.toFixed(1)} />
-                    )}
-                    {g.writing !== undefined && g.writing !== null && (
-                      <Field label="Writing" value={g.writing.toFixed(1)} />
-                    )}
-                    {g.speaking !== undefined && g.speaking !== null && (
-                      <Field label="Speaking" value={g.speaking.toFixed(1)} />
-                    )}
+                    <div className="dash-field">
+                      <span className="dash-field-label">Ngày đánh giá</span>
+                      <span className="dash-field-value">{formatDate(grade.testDate)}</span>
+                    </div>
                   </div>
 
-                  {g.feedback && (
+                  {grade.feedback && (
                     <div
                       style={{
-                        background: 'rgba(245,158,11,0.08)',
+                        padding: '0.75rem 1rem',
+                        background: 'var(--dash-card-subtle)',
                         borderRadius: '8px',
-                        padding: '0.75rem',
+                        fontSize: '0.85rem',
                         marginTop: '0.5rem',
                       }}
                     >
-                      <div className="dash-subcard-label">📝 Nhận xét của giảng viên</div>
-                      <div style={{ marginTop: '0.25rem', fontSize: '0.9rem', color: '#475569' }}>
-                        {g.feedback}
-                      </div>
+                      <strong style={{ color: '#475569' }}>Nhận xét của giảng viên:</strong>{' '}
+                      <span>{grade.feedback}</span>
                     </div>
                   )}
                 </div>
@@ -227,10 +315,18 @@ const GradesPage: React.FC = () => {
   );
 };
 
-const Field: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => (
-  <div>
-    <div className="dash-subcard-label">{label}</div>
-    <div className="dash-subcard-value">{value || '—'}</div>
+const SkillBand: React.FC<{ label: string; band?: number | null }> = ({ label, band }) => (
+  <div className="dash-field">
+    <span className="dash-field-label">{label}</span>
+    <span
+      className="dash-field-value"
+      style={{
+        fontWeight: 700,
+        color: band ? bandColor(band) : '#94a3b8',
+      }}
+    >
+      {band !== undefined && band !== null ? `Band ${band}` : '—'}
+    </span>
   </div>
 );
 
