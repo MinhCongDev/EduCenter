@@ -79,9 +79,15 @@ export const authService = {
   /**
    * Get current authenticated user
    */
-  getMe: async (): Promise<{ success: boolean; data: { user: User } }> => {
-    const response = await api.get('/auth/me');
-    if (response.data.success && response.data.data?.user) {
+  getMe: async (token?: string): Promise<{ success: boolean; data: { user: User } }> => {
+    const response = await api.get('/auth/me', token
+      ? { headers: { Authorization: `Bearer ${token}` } }
+      : undefined);
+    if (
+      response.data.success
+      && response.data.data?.user
+      && (!token || authService.getToken() === token)
+    ) {
       localStorage.setItem(USER_KEY, JSON.stringify(response.data.data.user));
     }
     return response.data;

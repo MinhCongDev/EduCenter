@@ -299,8 +299,15 @@ export const submitPlacementTest = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    if (!req.user || req.user.role !== 'STUDENT') {
-      throw createError('Học viên cần đăng nhập để lưu kết quả bài kiểm tra', 401);
+    if (!req.user) {
+      throw createError('Vui lòng đăng nhập bằng tài khoản học viên để nộp bài', 401);
+    }
+    const isStudentRole = String(req.user.role).trim().toUpperCase() === 'STUDENT';
+    if (!isStudentRole) {
+      throw createError(
+        `Tài khoản hiện tại (vai trò: ${req.user.role}) không được phép nộp bài kiểm tra đầu vào`,
+        403
+      );
     }
 
     const { id } = req.params;

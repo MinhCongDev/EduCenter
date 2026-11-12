@@ -15,7 +15,7 @@ export const placementTestRouter = Router();
 // Public / Student / Staff: Xem danh sách bài test từ CSDL và làm bài
 placementTestRouter.get('/', optionalAuthenticate, getPlacementTests);
 placementTestRouter.get('/:id', optionalAuthenticate, getPlacementTestById);
-placementTestRouter.post('/:id/submit', authenticate, authorize('STUDENT'), submitPlacementTest);
+placementTestRouter.post('/:id/submit', authenticate, submitPlacementTest);
 
 // Staff / Director: Quản trị, tạo mới, cập nhật, xóa bài test trong CSDL
 placementTestRouter.post('/', authenticate, authorize('TRAINING_STAFF', 'DIRECTOR'), createPlacementTest);
