@@ -6,12 +6,15 @@ export const PlacementTestListPage: React.FC = () => {
   const navigate = useNavigate();
   const [tests, setTests] = useState<PlacementTestSummary[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [history, setHistory] = useState<TestHistoryItem[]>([]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
     const fetchData = async () => {
       setLoading(true);
+      setLoadError(null);
       try {
         const [testList, historyList] = await Promise.all([
           placementTestService.getTests(),
@@ -19,14 +22,15 @@ export const PlacementTestListPage: React.FC = () => {
         ]);
         setTests(testList);
         setHistory(historyList);
-      } catch (err) {
-        console.error('Lỗi tải danh sách bài test:', err);
+      } catch (err: unknown) {
+        setTests([]);
+        setLoadError(err instanceof Error ? err.message : 'Đã xảy ra lỗi không xác định.');
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-  }, []);
+  }, [loadAttempt]);
 
   return (
     <div className="placement-list-page" style={{ backgroundColor: '#f8fafc', minHeight: '100vh', paddingBottom: '4rem' }}>
@@ -66,8 +70,7 @@ export const PlacementTestListPage: React.FC = () => {
               marginBottom: '1.25rem',
             }}
           >
-            <span>🎯</span>
-            <span>HỆ THỐNG KIỂM TRA ĐẦU VÀO CHUẨN KHẢO THÍ IDP &amp; BC</span>
+            <span>BÀI KIỂM TRA ĐẦU VÀO</span>
           </div>
 
           <h1
@@ -79,8 +82,8 @@ export const PlacementTestListPage: React.FC = () => {
               letterSpacing: '-0.02em',
             }}
           >
-            Kiểm Tra Trình Độ IELTS Đầu Vào <br />
-            <span style={{ color: '#fcd34d' }}>Nhận Ngay Lộ Trình &amp; Gợi Ý Khóa Học Cá Nhân Hóa</span>
+            Kiểm Tra Trình Độ Đầu Vào <br />
+            <span style={{ color: '#fcd34d' }}>Chọn bài kiểm tra phù hợp với khóa học</span>
           </h1>
 
           <p
@@ -92,8 +95,7 @@ export const PlacementTestListPage: React.FC = () => {
               lineHeight: 1.6,
             }}
           >
-            Làm 3 bài thi dài chuẩn đề thi thật để đánh giá chính xác năng lực 4 khía cạnh học thuật (Band 0.0 - 8.5+).
-            Hệ thống phân tích điểm số, phát hiện lỗ hổng và đề xuất khóa học EduCenter tối ưu nhất cho bạn.
+            Danh sách dưới đây gồm các bài kiểm tra đã được trung tâm công bố. Chọn bài phù hợp để xem hướng dẫn và bắt đầu làm bài.
           </p>
 
           {/* Quick Metrics Bar */}
@@ -109,19 +111,19 @@ export const PlacementTestListPage: React.FC = () => {
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#f1f5f9', fontSize: '0.9rem', fontWeight: 600 }}>
               <span style={{ color: '#fcd34d', fontSize: '1.2rem' }}>✓</span>
-              <span>100% Đề thi thật Cambridge &amp; Oxford</span>
+              <span>Đề thi được lấy từ hệ thống của trung tâm</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#f1f5f9', fontSize: '0.9rem', fontWeight: 600 }}>
               <span style={{ color: '#fcd34d', fontSize: '1.2rem' }}>✓</span>
-              <span>Chấm điểm &amp; Dự đoán Band ngay sau khi nộp</span>
+              <span>Bài trắc nghiệm được chấm tự động sau khi nộp</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#f1f5f9', fontSize: '0.9rem', fontWeight: 600 }}>
               <span style={{ color: '#fcd34d', fontSize: '1.2rem' }}>✓</span>
-              <span>Gợi ý khóa học sát với trình độ thực tế</span>
+              <span>Hiển thị độ khó và khóa học liên quan</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#f1f5f9', fontSize: '0.9rem', fontWeight: 600 }}>
               <span style={{ color: '#fcd34d', fontSize: '1.2rem' }}>✓</span>
-              <span>Giải thích đáp án chi tiết từng câu tiếng Việt</span>
+              <span>Chỉ hiển thị đề đã được xuất bản</span>
             </div>
           </div>
         </div>
@@ -134,21 +136,36 @@ export const PlacementTestListPage: React.FC = () => {
           {loading ? (
             <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem', backgroundColor: '#ffffff', borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.06)' }}>
               <div className="loading-spinner" style={{ margin: '0 auto 1rem' }} />
-              <p style={{ color: '#64748b', fontWeight: 600 }}>Đang chuẩn bị danh sách 3 bài thi chuẩn quốc tế...</p>
+              <p style={{ color: '#64748b', fontWeight: 600 }}>Đang tải danh sách bài kiểm tra...</p>
+            </div>
+          ) : loadError ? (
+            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '3rem', backgroundColor: '#ffffff', borderRadius: '16px', border: '1px solid #fecaca' }}>
+              <h2 style={{ color: '#b91c1c', marginTop: 0 }}>Không thể tải bài kiểm tra</h2>
+              <p style={{ color: '#64748b' }}>{loadError}</p>
+              <button
+                type="button"
+                onClick={() => setLoadAttempt((attempt) => attempt + 1)}
+                style={{ backgroundColor: '#047857', color: '#ffffff', border: 0, borderRadius: '8px', padding: '0.7rem 1.2rem', fontWeight: 700, cursor: 'pointer' }}
+              >
+                Thử tải lại
+              </button>
+            </div>
+          ) : tests.length === 0 ? (
+            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '3rem', backgroundColor: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+              <h2 style={{ color: '#0f172a', marginTop: 0 }}>Chưa có bài kiểm tra được công bố</h2>
+              <p style={{ color: '#64748b', marginBottom: 0 }}>
+                Bài kiểm tra ở trạng thái Bản nháp chưa hiển thị cho học viên. Vui lòng quay lại sau khi trung tâm xuất bản đề.
+              </p>
             </div>
           ) : (
-            tests.map((test, index) => {
-              const isPopular = index === 1;
-              const isAdvanced = index === 2;
-
-              return (
+            tests.map((test) => (
                 <div
                   key={test.id}
                   style={{
                     backgroundColor: '#ffffff',
                     borderRadius: '20px',
-                    boxShadow: isPopular ? '0 12px 36px rgba(4, 120, 87, 0.16)' : '0 6px 24px rgba(0,0,0,0.06)',
-                    border: isPopular ? '2px solid #059669' : '1px solid #e2e8f0',
+                    boxShadow: '0 6px 24px rgba(0,0,0,0.06)',
+                    border: '1px solid #e2e8f0',
                     display: 'flex',
                     flexDirection: 'column',
                     overflow: 'hidden',
@@ -161,44 +178,9 @@ export const PlacementTestListPage: React.FC = () => {
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = isPopular ? '0 12px 36px rgba(4, 120, 87, 0.16)' : '0 6px 24px rgba(0,0,0,0.06)';
+                    e.currentTarget.style.boxShadow = '0 6px 24px rgba(0,0,0,0.06)';
                   }}
                 >
-                  {/* Top Badge */}
-                  {isPopular && (
-                    <div
-                      style={{
-                        backgroundColor: '#059669',
-                        color: '#ffffff',
-                        textAlign: 'center',
-                        padding: '6px 12px',
-                        fontSize: '0.78rem',
-                        fontWeight: 800,
-                        letterSpacing: '0.04em',
-                        textTransform: 'uppercase',
-                      }}
-                    >
-                      🔥 ĐƯỢC CHỌN NHIỀU NHẤT • CAMBRIDGE REAL TEST
-                    </div>
-                  )}
-
-                  {isAdvanced && (
-                    <div
-                      style={{
-                        backgroundColor: '#1e293b',
-                        color: '#fcd34d',
-                        textAlign: 'center',
-                        padding: '6px 12px',
-                        fontSize: '0.78rem',
-                        fontWeight: 800,
-                        letterSpacing: '0.04em',
-                        textTransform: 'uppercase',
-                      }}
-                    >
-                      ⭐ BÀI TEST CHUYÊN SÂU • DỰ ĐOÁN BAND 8.0+
-                    </div>
-                  )}
-
                   {/* Card Cover Image with Overlay */}
                   <div style={{ height: '170px', position: 'relative', overflow: 'hidden' }}>
                     <img
@@ -245,11 +227,8 @@ export const PlacementTestListPage: React.FC = () => {
                   {/* Card Body */}
                   <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                      <span style={{ fontSize: '1.25rem' }}>
-                        {index === 0 ? '📘' : index === 1 ? '📖' : '🎓'}
-                      </span>
                       <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>
-                        BÀI TEST #{index + 1}
+                        {test.course?.title || test.category}
                       </span>
                     </div>
 
@@ -309,27 +288,9 @@ export const PlacementTestListPage: React.FC = () => {
                         💡 Kỹ năng đánh giá chính:
                       </div>
                       <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.82rem', color: '#64748b', lineHeight: 1.6 }}>
-                        {index === 0 && (
-                          <>
-                            <li>12 chủ điểm ngữ pháp cốt lõi hay gặp trong IELTS</li>
-                            <li>Từ vựng học thuật &amp; Collocations thông dụng</li>
-                            <li>Đọc hiểu đoạn văn khoa học ngắn (True/False/Not Given)</li>
-                          </>
-                        )}
-                        {index === 1 && (
-                          <>
-                            <li>Passage 1: Roman Tunnel Engineering (Lịch sử &amp; Xây dựng)</li>
-                            <li>Passage 2: AI in Healthcare &amp; Ethics (Công nghệ &amp; Y khoa)</li>
-                            <li>Bẫy True/False/Not Given, Matching Headings, Multiple Choice</li>
-                          </>
-                        )}
-                        {index === 2 && (
-                          <>
-                            <li>Vốn từ vựng nâng cao C1-C2 &amp; Academic Collocations</li>
-                            <li>Cấu trúc đảo ngữ, mệnh đề phân từ &amp; câu điều kiện phức</li>
-                            <li>Phản biện luận điểm PEEL &amp; Nhận diện lỗi ngụy biện logic</li>
-                          </>
-                        )}
+                        {test.skills.length > 0
+                          ? test.skills.map((skill) => <li key={skill}>{skill}</li>)
+                          : <li>Bài kiểm tra trắc nghiệm</li>}
                       </ul>
                     </div>
 
@@ -338,7 +299,7 @@ export const PlacementTestListPage: React.FC = () => {
                       type="button"
                       onClick={() => navigate(`/placement-test/${test.id}`)}
                       style={{
-                        backgroundColor: isPopular ? '#059669' : '#047857',
+                        backgroundColor: '#047857',
                         color: '#ffffff',
                         border: 'none',
                         padding: '0.85rem 1.25rem',
@@ -350,7 +311,7 @@ export const PlacementTestListPage: React.FC = () => {
                         alignItems: 'center',
                         justifyContent: 'center',
                         gap: '8px',
-                        boxShadow: isPopular ? '0 4px 14px rgba(5, 150, 105, 0.35)' : 'none',
+                        boxShadow: 'none',
                         transition: 'background-color 0.2s',
                       }}
                     >
@@ -359,8 +320,7 @@ export const PlacementTestListPage: React.FC = () => {
                     </button>
                   </div>
                 </div>
-              );
-            })
+            ))
           )}
         </div>
 

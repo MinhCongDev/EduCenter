@@ -178,10 +178,10 @@ const PlacementTestFormModal: React.FC<{
         difficulty: test.difficulty,
         durationMinutes: test.durationMinutes,
         status: test.status,
-        questions: test.questions.map((question) => ({
+        questions: (test.questions || []).map((question) => ({
           skill: question.skill,
-          prompt: question.prompt || (question as any).questionText || '',
-          options: question.options,
+          prompt: question.prompt || question.questionText || '',
+          options: question.options || [],
           correctOption: question.correctOption ?? 0,
         })),
       }
@@ -522,12 +522,12 @@ const PlacementTestsManagementPage: React.FC = () => {
                   <td><strong>{test.title}</strong></td>
                   <td>{test.course?.code ? `${test.course.code} — ${test.course.title}` : <span style={{ color: '#64748b', fontStyle: 'italic' }}>Chung / Toàn trung tâm</span>}</td>
                   <td>{DIFFICULTIES.find(({ value }) => value === test.difficulty)?.label || test.difficulty}</td>
-                  <td>{test.questions.length}</td>
+                  <td>{test.questions?.length ?? 0}</td>
                   <td>{test.durationMinutes} phút</td>
                   <td><span className={`course-status-badge ${test.status === 'PUBLISHED' ? 'badge-active' : 'badge-inactive'}`}>{test.status === 'PUBLISHED' ? 'Đã xuất bản' : 'Bản nháp'}</span></td>
                   <td>
                     <div className="courses-actions">
-                      <Link to={`/placement-tests/${(test as any).slug || test._id}`} target="_blank" className="btn btn-outline btn-sm" style={{ textDecoration: 'none' }}>Xem đề</Link>
+                      <Link to={`/placement-tests/${test.slug || test._id}`} target="_blank" className="btn btn-outline btn-sm" style={{ textDecoration: 'none' }}>Xem đề</Link>
                       <button type="button" className="btn btn-outline btn-sm" onClick={() => { setEditingTest(test); setFormError(''); setShowForm(true); }}>Sửa</button>
                       <button type="button" className="btn btn-danger-outline btn-sm" onClick={() => setDeletingTest(test)}>Xóa</button>
                     </div>

@@ -20,7 +20,7 @@ const api: AxiosInstance = axios.create({
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = localStorage.getItem('educenter_token');
-    if (token && config.headers) {
+    if (token && config.headers && !config.headers.Authorization) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
@@ -38,6 +38,13 @@ api.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
     if (error.response?.status === 401) {
+      const requestAuthorization = error.config?.headers?.Authorization;
+      const currentToken = localStorage.getItem('educenter_token');
+      const requestUsedCurrentToken = typeof requestAuthorization !== 'string'
+        || requestAuthorization === `Bearer ${currentToken}`;
+
+      if (!requestUsedCurrentToken) return Promise.reject(error);
+
       // Token expired or invalid – clear local storage and redirect
       localStorage.removeItem('educenter_token');
       localStorage.removeItem('educenter_user');
