@@ -967,7 +967,9 @@ const StudentDashboard: React.FC = () => {
                             color: bandColor(g.overallBand),
                           }}
                         >
-                          {g.overallBand?.toFixed(1)}
+                          {g.overallBand !== undefined && g.overallBand !== null
+                            ? g.overallBand.toFixed(1)
+                            : 'Nhận xét'}
                         </td>
                         <td style={{ padding: '12px 14px' }}>
                           <span

@@ -395,8 +395,10 @@ export interface ClassGradeSummary {
   _id: string;
   evaluationType: string;
   title: string;
+  period?: string;
+  rating?: EvaluationRating;
   testDate: string;
-  overallBand: number;
+  overallBand?: number;
   listening?: number;
   reading?: number;
   writing?: number;
@@ -452,8 +454,10 @@ export interface ManagedStudentGrade {
   _id: string;
   title: string;
   evaluationType: string;
+  period?: string;
+  rating?: EvaluationRating;
   testDate: string;
-  overallBand: number;
+  overallBand?: number;
   listening?: number;
   reading?: number;
   writing?: number;
@@ -710,14 +714,18 @@ export interface Submission {
   updatedAt: string;
 }
 
-// Grade (IELTS band scores, plus optional raw score for numeric grading)
+// Grade (IELTS band scores, periodic tests, or monthly/course evaluations)
 export type GradeEvaluationType =
-  | 'MOCK_TEST'
+  | 'ENTRY_TEST'
   | 'MID_TERM'
   | 'FINAL_TEST'
+  | 'MONTHLY_EVALUATION'
+  | 'COURSE_EVALUATION'
+  | 'MOCK_TEST'
   | 'ASSIGNMENT'
   | 'SPEAKING_ASSESSMENT'
   | 'WRITING_ASSESSMENT';
+export type EvaluationRating = 'EXCELLENT' | 'GOOD' | 'SATISFACTORY' | 'NEEDS_IMPROVEMENT';
 export type GradeStatus = 'DRAFT' | 'PUBLISHED';
 
 export interface Grade {
@@ -727,10 +735,12 @@ export interface Grade {
   teacher: Pick<User, '_id' | 'fullName' | 'email'>;
   evaluationType: GradeEvaluationType;
   title: string;
+  period?: string;
+  rating?: EvaluationRating;
   testDate: string;
   score?: number;       // Raw score (backend may return it)
   maxScore?: number;    // Max possible score
-  overallBand: number; // IELTS band score (0-9)
+  overallBand?: number; // IELTS band score (0-9, optional for monthly/course evaluations)
   listening?: number;
   reading?: number;
   writing?: number;
@@ -908,17 +918,17 @@ export interface NotificationItem {
 }
 
 export const NOTIFICATION_META: Record<NotificationType, { icon: string; color: string; label: string }> = {
-  INFO:               { icon: 'ℹ️',  color: '#3b82f6', label: 'Thông tin' },
-  ALERT:              { icon: '🚨',  color: '#f59e0b', label: 'Cảnh báo' },
-  SUCCESS:            { icon: '✅',  color: '#10b981', label: 'Thành công' },
-  WARNING:            { icon: '⚠️',  color: '#f97316', label: 'Cảnh báo' },
-  GRADE_PUBLISHED:    { icon: '📊',  color: '#3b82f6', label: 'Điểm mới' },
-  ASSIGNMENT_GRADED:  { icon: '✅',  color: '#10b981', label: 'Chấm bài' },
-  REQUEST_APPROVED:   { icon: '👍',  color: '#10b981', label: 'Duyệt yêu cầu' },
-  REQUEST_REJECTED:   { icon: '⛔',  color: '#ef4444', label: 'Từ chối' },
-  PAYMENT_RECEIVED:   { icon: '💰',  color: '#10b981', label: 'Thanh toán' },
-  CLASS_ANNOUNCEMENT:{ icon: '📢',  color: '#8b5cf6', label: 'Thông báo lớp' },
-  ATTENDANCE_MARKED:  { icon: '🗓️',  color: '#f59e0b', label: 'Điểm danh' },
+  INFO: { icon: 'ℹ️', color: '#3b82f6', label: 'Thông tin' },
+  ALERT: { icon: '🚨', color: '#f59e0b', label: 'Cảnh báo' },
+  SUCCESS: { icon: '✅', color: '#10b981', label: 'Thành công' },
+  WARNING: { icon: '⚠️', color: '#f97316', label: 'Cảnh báo' },
+  GRADE_PUBLISHED: { icon: '📊', color: '#3b82f6', label: 'Điểm mới' },
+  ASSIGNMENT_GRADED: { icon: '✅', color: '#10b981', label: 'Chấm bài' },
+  REQUEST_APPROVED: { icon: '👍', color: '#10b981', label: 'Duyệt yêu cầu' },
+  REQUEST_REJECTED: { icon: '⛔', color: '#ef4444', label: 'Từ chối' },
+  PAYMENT_RECEIVED: { icon: '💰', color: '#10b981', label: 'Thanh toán' },
+  CLASS_ANNOUNCEMENT: { icon: '📢', color: '#8b5cf6', label: 'Thông báo lớp' },
+  ATTENDANCE_MARKED: { icon: '🗓️', color: '#f59e0b', label: 'Điểm danh' },
 };
 
 // ─── Toast & UI ──────────────────────────
@@ -976,6 +986,7 @@ export interface EnrollmentRecord {
   } | null;
   registrationDate: string;
   status: EnrollmentStatus;
+  tuitionStatus?: TuitionStatus;
   payments: EnrollmentPayment[];
   createdAt: string;
 }

@@ -116,7 +116,7 @@ const StudentDetailPage: React.FC = () => {
                       <tr className="courses-table-row" key={grade._id}>
                         <td>{grade.title}</td>
                         <td>{formatDate(grade.testDate)}</td>
-                        <td>{grade.overallBand}</td>
+                        <td>{grade.overallBand ?? '—'}</td>
                         <td>{grade.listening ?? '—'}</td>
                         <td>{grade.reading ?? '—'}</td>
                         <td>{grade.writing ?? '—'}</td>

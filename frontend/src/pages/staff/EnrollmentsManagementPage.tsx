@@ -59,7 +59,11 @@ const EnrollmentDetailModal: React.FC<{
         && (classItem.currentEnrollment ?? 0) < classItem.capacity)
     )
   );
-  const canAssign = enrollment.status !== 'DROPPED' && enrollment.status !== 'COMPLETED';
+  const hasSuccessPayment = enrollment.payments.some((payment) => payment.status === 'SUCCESS');
+  const isPaid =
+    (enrollment.tuitionStatus === 'PAID' || hasSuccessPayment) &&
+    enrollment.tuitionStatus !== 'REFUNDED';
+  const canAssign = enrollment.status !== 'DROPPED' && enrollment.status !== 'COMPLETED' && isPaid;
   const alreadyAssigned = enrollment.class !== undefined
     && enrollment.class !== null
     && selectedClassId === enrollment.class._id;
@@ -160,7 +164,14 @@ const EnrollmentDetailModal: React.FC<{
             {selectedClassId === enrollment.class?._id && enrollment.class && (
               <p className="form-hint">Học viên hiện đã được xếp vào lớp này.</p>
             )}
-            {!canAssign && <p className="form-hint">Ghi danh đã hủy hoặc hoàn thành nên không thể thay đổi lớp.</p>}
+            {!isPaid && (
+              <div className="form-error-banner" role="alert" style={{ marginTop: '0.5rem' }}>
+                Học viên chưa thanh toán hoặc đang chờ thanh toán học phí nên không thể xếp lớp.
+              </div>
+            )}
+            {(enrollment.status === 'DROPPED' || enrollment.status === 'COMPLETED') && (
+              <p className="form-hint">Ghi danh đã hủy hoặc hoàn thành nên không thể thay đổi lớp.</p>
+            )}
             {assignmentError && <div className="form-error-banner" role="alert">{assignmentError}</div>}
             {assignmentMessage && <p className="form-hint" role="status">{assignmentMessage}</p>}
             <div className="modal-footer">
@@ -429,7 +440,13 @@ const EnrollmentsManagementPage: React.FC = () => {
                           <strong>{formatCurrency(latestPayment.amount)}</strong>
                           <span className={`course-status-badge ${paymentBadgeClass(latestPayment.status)}`}>{PAYMENT_STATUS[latestPayment.status]}</span>
                         </div>
-                      ) : <span className="course-desc-preview">Chưa có thanh toán</span>}
+                      ) : enrollment.tuitionStatus === 'PAID' ? (
+                        <span className="course-status-badge badge-active">Đã thanh toán</span>
+                      ) : enrollment.tuitionStatus === 'PENDING' ? (
+                        <span className="course-status-badge class-status-open">Chờ thanh toán</span>
+                      ) : (
+                        <span className="course-desc-preview">Chưa có thanh toán</span>
+                      )}
                     </td>
                     <td><button className="btn btn-outline btn-sm" onClick={() => void openDetails(enrollment._id)}>Xem chi tiết</button></td>
                   </tr>

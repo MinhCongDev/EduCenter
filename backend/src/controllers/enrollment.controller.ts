@@ -5,6 +5,7 @@ import { createError } from '../middlewares/error.middleware';
 import { Class } from '../models/class.model';
 import { Course } from '../models/course.model';
 import { Enrollment } from '../models/enrollment.model';
+import { Payment } from '../models/payment.model';
 
 const escapeRegex = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -175,6 +176,7 @@ const buildResultPipeline = (
       },
       registrationDate: { $ifNull: ['$registrationDate', { $ifNull: ['$enrollmentDate', '$registeredAt'] }] },
       status: 1,
+      tuitionStatus: 1,
       payments: {
         $map: {
           input: '$payments',
@@ -282,6 +284,20 @@ export const assignEnrollmentClass = async (req: AuthRequest, res: Response, nex
       if (!enrollment) throw createError('Không tìm thấy ghi danh', 404);
       if (enrollment.status === 'DROPPED' || enrollment.status === 'COMPLETED') {
         throw createError('Không thể xếp lớp cho ghi danh đã hủy hoặc hoàn thành', 409);
+      }
+
+      const hasSuccessPayment = await Payment.exists({
+        $or: [{ enrollment: enrollment._id }, { enrollmentId: enrollment._id }],
+        status: 'SUCCESS',
+      }).session(transactionSession);
+      const isPaid =
+        (enrollment.tuitionStatus === 'PAID' || Boolean(hasSuccessPayment)) &&
+        enrollment.tuitionStatus !== 'REFUNDED';
+      if (!isPaid) {
+        throw createError(
+          'Học viên chưa thanh toán hoặc đang chờ thanh toán học phí nên không thể xếp lớp',
+          409
+        );
       }
 
       const currentClass = enrollment.class

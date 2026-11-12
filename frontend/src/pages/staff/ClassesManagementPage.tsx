@@ -221,7 +221,7 @@ const ClassDetailModal: React.FC<{ detail: ClassDetail; onClose: () => void }> =
                           <div className="course-title-cell">
                             {student.grades.map((grade) => (
                               <span key={grade._id} className="course-desc-preview">
-                                {grade.title}: {grade.overallBand} điểm ({formatDate(grade.testDate)})
+                                {grade.title}: {grade.overallBand !== undefined && grade.overallBand !== null ? `${grade.overallBand} điểm` : 'Nhận xét'} ({formatDate(grade.testDate)})
                               </span>
                             ))}
                           </div>
