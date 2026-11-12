@@ -237,12 +237,14 @@ export interface PlacementTestQuestion {
   _id?: string;
   skill: PlacementTestSkill;
   prompt: string;
+  questionText?: string;
   options: string[];
   correctOption: number;
 }
 
 export interface PlacementTest {
   _id: string;
+  slug?: string;
   title: string;
   course: Pick<Course, '_id' | 'code' | 'title'>;
   difficulty: PlacementTestDifficulty;

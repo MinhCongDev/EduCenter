@@ -10,7 +10,6 @@ import {
 } from '../models/placementTest.model';
 import { Course } from '../models/course.model';
 import { Student } from '../models/student.model';
-import { PLACEMENT_TESTS } from '../data/placementTests.data';
 
 interface PlacementTestInput {
   title: string;
@@ -25,105 +24,6 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
 const escapeRegex = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-/**
- * Tự động đồng bộ / nạp 3 bài kiểm tra đầu vào có sẵn vào MongoDB nếu chưa có
- */
-export const ensureDefaultPlacementTests = async (): Promise<void> => {
-  try {
-    const count = await PlacementTest.countDocuments();
-    if (count >= 3) return;
-
-    // Tìm các khóa học để liên kết
-    const [courseLost, coursePre, courseIntensive, anyCourse] = await Promise.all([
-      Course.findOne({ code: { $in: ['IELTS-LOST', 'IELTS-FOUNDATION', 'IELTS-FOU'] } }).select('_id'),
-      Course.findOne({ code: { $in: ['IELTS-PRE', 'IELTS-BASIC'] } }).select('_id'),
-      Course.findOne({ code: { $in: ['IELTS-INTENSIVE', 'IELTS-MASTER'] } }).select('_id'),
-      Course.findOne().select('_id'),
-    ]);
-
-    const fallbackCourseId = anyCourse?._id;
-
-    for (const testData of PLACEMENT_TESTS) {
-      const existing = await PlacementTest.findOne({
-        $or: [{ slug: testData.id }, { title: testData.title }],
-      });
-      if (existing) continue;
-
-      let courseId = fallbackCourseId;
-      if (testData.id === 'ielts-diagnostic-01') {
-        courseId = courseLost?._id || coursePre?._id || fallbackCourseId;
-      } else if (testData.id === 'ielts-reading-real-02') {
-        courseId = coursePre?._id || courseIntensive?._id || fallbackCourseId;
-      } else {
-        courseId = courseIntensive?._id || fallbackCourseId;
-      }
-
-      // Chuẩn hóa câu hỏi
-      const formattedQuestions = testData.questions.map((q, idx) => {
-        let correctOption = 0;
-        if (Array.isArray(q.options)) {
-          const foundIdx = q.options.findIndex((opt: any) =>
-            typeof opt === 'string'
-              ? opt.toUpperCase() === q.correctAnswer.toUpperCase()
-              : opt.key.toUpperCase() === q.correctAnswer.toUpperCase()
-          );
-          if (foundIdx >= 0) correctOption = foundIdx;
-        }
-
-        const skillMapped =
-          q.skill === 'Grammar'
-            ? 'WRITING'
-            : q.skill === 'Vocabulary'
-            ? 'READING'
-            : q.skill === 'Reading'
-            ? 'READING'
-            : q.skill === 'Critical Reasoning'
-            ? 'SPEAKING'
-            : q.skill || 'READING';
-
-        return {
-          id: q.id || `q_${idx + 1}`,
-          questionNumber: q.questionNumber || idx + 1,
-          skill: skillMapped,
-          prompt: q.questionText || '',
-          questionText: q.questionText || '',
-          section: q.section || '',
-          passageId: q.passageId || '',
-          type: q.type || 'MULTIPLE_CHOICE',
-          options: q.options,
-          correctOption,
-          correctAnswer: q.correctAnswer,
-          explanation: q.explanation || '',
-        };
-      });
-
-      await PlacementTest.create({
-        slug: testData.id,
-        title: testData.title,
-        subtitle: testData.subtitle,
-        category: testData.category,
-        targetLevel: testData.targetLevel,
-        difficulty:
-          testData.id === 'ielts-diagnostic-01'
-            ? 'BEGINNER'
-            : testData.id === 'ielts-reading-real-02'
-            ? 'INTERMEDIATE'
-            : 'ADVANCED',
-        durationMinutes: testData.durationMinutes,
-        status: 'PUBLISHED',
-        bannerUrl: testData.bannerUrl,
-        description: testData.description,
-        instructions: testData.instructions,
-        passages: testData.passages || [],
-        course: courseId,
-        questions: formattedQuestions,
-      });
-    }
-  } catch (error) {
-    console.warn('⚠️ Lỗi khi nạp dữ liệu bài kiểm tra mặc định vào MongoDB:', error);
-  }
-};
 
 export const parsePlacementTest = (input: unknown): PlacementTestInput => {
   if (!isRecord(input)) throw createError('Dữ liệu bài kiểm tra không hợp lệ', 400);
@@ -164,23 +64,43 @@ export const parsePlacementTest = (input: unknown): PlacementTestInput => {
         return option.trim();
       }
       if (isRecord(option) && typeof option.text === 'string') {
+        if (!option.text.trim()) throw createError(`Phương án ${optionIndex + 1} của câu ${index + 1} không được để trống`, 400);
         const optionKey = typeof option.key === 'string' && option.key.trim() ? option.key.trim() : String.fromCharCode(65 + optionIndex);
         return { key: optionKey, text: option.text.trim() };
       }
       throw createError(`Phương án ${optionIndex + 1} của câu ${index + 1} không hợp lệ`, 400);
     });
 
-    const parsedCorrect = Number.isInteger(correctOption) ? (correctOption as number) : 0;
+    const optionTexts = normalizedOptions.map((option) =>
+      (typeof option === 'string' ? option : option.text).trim().toLocaleLowerCase()
+    );
+    if (new Set(optionTexts).size !== optionTexts.length) {
+      throw createError(`Phương án của câu ${index + 1} có phương án bị trùng`, 400);
+    }
 
-    return {
+    const parsedCorrect = Number.isInteger(correctOption) ? (correctOption as number) : 0;
+    if (parsedCorrect < 0 || parsedCorrect >= normalizedOptions.length) {
+      throw createError(`Đáp án đúng của câu ${index + 1} không hợp lệ`, 400);
+    }
+
+    const normalizedQuestion: IPlacementTestQuestion = {
       skill: (skill || 'READING').toString(),
       prompt: finalPrompt,
-      questionText: finalPrompt,
       options: normalizedOptions,
       correctOption: parsedCorrect,
-      explanation: typeof explanation === 'string' ? explanation : '',
     };
+    if (typeof questionText === 'string') normalizedQuestion.questionText = finalPrompt;
+    if (typeof explanation === 'string' && explanation) normalizedQuestion.explanation = explanation;
+    return normalizedQuestion;
   });
+
+  if (status === 'PUBLISHED') {
+    const requiredSkills = ['LISTENING', 'SPEAKING', 'READING', 'WRITING'];
+    const includedSkills = new Set(normalizedQuestions.map((question) => question.skill));
+    if (requiredSkills.some((skill) => !includedSkills.has(skill))) {
+      throw createError('Bài kiểm tra cần có câu hỏi cho đủ 4 kỹ năng', 400);
+    }
+  }
 
   return {
     title: title.trim(),
@@ -202,9 +122,6 @@ export const getPlacementTests = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    // Tự động đảm bảo các bài test mặc định đã có trong MongoDB
-    await ensureDefaultPlacementTests();
-
     const { courseId, difficulty, status, search, page = '1', limit = '50' } = req.query;
     const filter: Record<string, unknown> = {};
 
@@ -252,18 +169,23 @@ export const getPlacementTests = async (
       difficulty: t.difficulty,
       durationMinutes: t.durationMinutes,
       totalQuestions: t.questions?.length || 0,
+      skills: [...new Set((t.questions || []).map((question) => question.skill).filter(Boolean))],
       bannerUrl: t.bannerUrl || 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?q=80&w=800&auto=format&fit=crop',
       description: t.description || '',
       instructions: t.instructions || [],
       status: t.status,
       course: t.course,
-      questions: t.questions?.map((q) => ({
-        ...q,
-        // Đảm bảo options có thể đọc cả dạng string[] lẫn { key, text }[]
-        options: Array.isArray(q.options)
-          ? q.options.map((opt: any) => (typeof opt === 'string' ? opt : opt.text || String(opt)))
-          : [],
-      })),
+      ...(isStaffOrDirector && {
+        questions: (t.questions || []).map((question) => ({
+          _id: question._id?.toString(),
+          skill: question.skill,
+          prompt: question.prompt || question.questionText || '',
+          options: Array.isArray(question.options)
+            ? question.options.map((option: any) => (typeof option === 'string' ? option : option.text || String(option)))
+            : [],
+          correctOption: question.correctOption,
+        })),
+      }),
       createdAt: t.createdAt,
       updatedAt: t.updatedAt,
     }));
@@ -294,8 +216,6 @@ export const getPlacementTestById = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    await ensureDefaultPlacementTests();
-
     const { id } = req.params;
     let query: Record<string, unknown> = { slug: id };
     if (mongoose.isValidObjectId(id)) {
@@ -304,6 +224,11 @@ export const getPlacementTestById = async (
 
     const test = await PlacementTest.findOne(query).populate('course', 'code title').lean();
     if (!test) {
+      throw createError('Không tìm thấy bài kiểm tra đầu vào', 404);
+    }
+
+    const isStaffOrDirector = req.user?.role === 'TRAINING_STAFF' || req.user?.role === 'DIRECTOR';
+    if (test.status !== 'PUBLISHED' && !isStaffOrDirector) {
       throw createError('Không tìm thấy bài kiểm tra đầu vào', 404);
     }
 
@@ -333,7 +258,6 @@ export const getPlacementTestById = async (
         questionText: q.questionText || q.prompt || '',
         options: formattedOptions,
         skill: q.skill,
-        explanation: q.explanation || '',
       };
     });
 
@@ -375,6 +299,10 @@ export const submitPlacementTest = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    if (!req.user || req.user.role !== 'STUDENT') {
+      throw createError('Học viên cần đăng nhập để lưu kết quả bài kiểm tra', 401);
+    }
+
     const { id } = req.params;
     const { answers } = req.body as { answers?: Record<string, string> };
 
@@ -389,6 +317,7 @@ export const submitPlacementTest = async (
 
     const test = await PlacementTest.findOne(query).populate('course').lean();
     if (!test) throw createError('Không tìm thấy bài kiểm tra', 404);
+    if (test.status !== 'PUBLISHED') throw createError('Không tìm thấy bài kiểm tra', 404);
 
     let correctCount = 0;
     const skillStats: Record<string, { total: number; correct: number }> = {};
@@ -490,17 +419,37 @@ export const submitPlacementTest = async (
       highlights: ['Giáo viên bản ngữ và 8.5+ IELTS trực tiếp đứng lớp', 'Cam kết chuẩn đầu ra bằng văn bản', 'Lớp học sĩ số nhỏ tương tác cao'],
     };
 
-    // Nếu học viên đã đăng nhập, tự động lưu kết quả vào Profile Student
-    if (req.user && req.user.role === 'STUDENT') {
-      await Student.findOneAndUpdate(
-        { user: req.user._id },
-        {
-          placementTestScore: predictedBand,
-          placementTestDate: new Date(),
-          currentBand: predictedBand,
-          placementNotes: `Hoàn thành bài test "${test.title}" đạt ${correctCount}/${totalQuestions} câu (${scorePercentage}%).`,
-        }
-      );
+    const submittedAt = new Date();
+    const placementResult = {
+      placementTestScore: predictedBand,
+      placementTestDate: submittedAt,
+      currentBand: predictedBand,
+      placementNotes: `Hoàn thành bài test "${test.title}" đạt ${correctCount}/${totalQuestions} câu (${scorePercentage}%).`,
+    };
+    const savedStudent = await Student.findOneAndUpdate(
+      { user: req.user._id },
+      { $set: placementResult },
+      { new: true, runValidators: true }
+    ).select('_id').lean();
+
+    if (!savedStudent) {
+      try {
+        await Student.create({
+          user: req.user._id,
+          studentCode: `STU-${req.user._id.toString()}`,
+          status: 'ACTIVE',
+          ...placementResult,
+        });
+      } catch (error) {
+        if (!isRecord(error) || error.code !== 11000) throw error;
+
+        const studentCreatedConcurrently = await Student.findOneAndUpdate(
+          { user: req.user._id },
+          { $set: placementResult },
+          { new: true, runValidators: true }
+        ).select('_id').lean();
+        if (!studentCreatedConcurrently) throw error;
+      }
     }
 
     res.status(200).json({
@@ -509,7 +458,7 @@ export const submitPlacementTest = async (
       data: {
         testId: test.slug || test._id.toString(),
         testTitle: test.title,
-        submittedAt: new Date().toISOString(),
+        submittedAt: submittedAt.toISOString(),
         score: correctCount,
         totalQuestions,
         scorePercentage,
