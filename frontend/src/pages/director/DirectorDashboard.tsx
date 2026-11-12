@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { directorService } from '../../services/director.service';
 import { announcementService } from '../../services/announcement.service';
+import { staffManagementService } from '../../services/staff-management.service';
 import type {
   DirectorSummary,
   StaffAccount,
@@ -15,12 +16,12 @@ import type {
   ClassAndCourseReportsData,
   RevenueReportsData,
 } from '../../services/director.service';
-import type { ProposalItem, Announcement } from '../../types';
+import type { ProposalItem, Announcement, ManagedStudent } from '../../types';
 
 export type DirectorTab =
   | 'overview'
   | 'announcements'
-  | 'staff_accounts'
+  | 'account_permissions'
   | 'monitoring'
   | 'student_reports'
   | 'teacher_reports'
@@ -34,13 +35,14 @@ export const DirectorDashboard: React.FC = () => {
 
   // Synchronize activeTab with URL ?tab=...
   useEffect(() => {
-    const tabParam = searchParams.get('tab') as DirectorTab | null;
+    const rawTab = searchParams.get('tab');
+    const tabParam = (rawTab === 'staff_accounts' ? 'account_permissions' : rawTab) as DirectorTab | null;
     if (
       tabParam &&
       [
         'overview',
         'announcements',
-        'staff_accounts',
+        'account_permissions',
         'monitoring',
         'student_reports',
         'teacher_reports',
@@ -85,8 +87,9 @@ export const DirectorDashboard: React.FC = () => {
 
   const [courseRevenueList, setCourseRevenueList] = useState<Array<{ name: string; revenue: number; count: number }>>([]);
   const [staffAccounts, setStaffAccounts] = useState<StaffAccount[]>([]);
-  const [staffFilterRole, setStaffFilterRole] = useState<'ALL' | 'TRAINING_STAFF' | 'TEACHER'>('ALL');
-  const [staffSearch, setStaffSearch] = useState<string>('');
+  const [studentAccounts, setStudentAccounts] = useState<ManagedStudent[]>([]);
+  const [permRoleFilter, setPermRoleFilter] = useState<'ALL' | 'TRAINING_STAFF' | 'TEACHER' | 'STUDENT'>('ALL');
+  const [permSearch, setPermSearch] = useState<string>('');
 
   // ── Teacher Reports Filters ──
   const [teaRepSearch, setTeaRepSearch] = useState<string>('');
@@ -265,7 +268,15 @@ export const DirectorDashboard: React.FC = () => {
     if (activeTab === 'announcements') {
       fetchAnnouncementsList();
     }
-  }, [activeTab, fetchAnnouncementsList]);
+    if (activeTab === 'account_permissions' && studentAccounts.length === 0) {
+      staffManagementService
+        .getStudents({ limit: 50 })
+        .then((res) => {
+          if (res?.data) setStudentAccounts(res.data);
+        })
+        .catch(() => {});
+    }
+  }, [activeTab, fetchAnnouncementsList, studentAccounts.length]);
 
   // ── Approvals Action Handlers (Calling Real Backend API) ──
   const handleApprove = async (id: string) => {
@@ -459,19 +470,18 @@ export const DirectorDashboard: React.FC = () => {
     }
   };
 
-  // Filtered staff list
-  const filteredStaff = staffAccounts.filter((s) => {
-    if (staffFilterRole !== 'ALL' && s.role !== staffFilterRole) return false;
-    if (staffSearch.trim()) {
-      const q = staffSearch.toLowerCase();
-      return (
-        s.fullName.toLowerCase().includes(q) ||
-        s.email.toLowerCase().includes(q) ||
-        (s.code && s.code.toLowerCase().includes(q))
+  const handleToggleStudentAccountStatus = async (stu: ManagedStudent) => {
+    const nextStatus = stu.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
+    try {
+      await staffManagementService.updateAccountStatus(stu._id, nextStatus);
+      showToast(`Đã chuyển trạng thái tài khoản ${stu.fullName} sang: ${nextStatus}`);
+      setStudentAccounts((prev) =>
+        prev.map((item) => (item._id === stu._id ? { ...item, status: nextStatus } : item))
       );
+    } catch (err: any) {
+      showToast('❌ Không thể đổi trạng thái: ' + (err?.response?.data?.message || err.message));
     }
-    return true;
-  });
+  };
 
   // Filtered transactions
   const allTxns = useMemo(() => {
@@ -892,9 +902,9 @@ export const DirectorDashboard: React.FC = () => {
             <button
               type="button"
               className="dash-quick-btn"
-              onClick={() => handleTabChange('staff_accounts')}
+              onClick={() => handleTabChange('account_permissions')}
             >
-              👥 Quản lý nhân sự ({staffAccounts.length || summary.staffCount + summary.teachersCount})
+              🛡️ Tài khoản &amp; Phân quyền ({staffAccounts.length || summary.staffCount + summary.teachersCount})
             </button>
             <button
               type="button"
@@ -984,7 +994,7 @@ export const DirectorDashboard: React.FC = () => {
               <div className="dash-metric-icon icon-purple">🏫</div>
             </div>
 
-            <div className="dash-metric-card" onClick={() => handleTabChange('staff_accounts')} style={{ cursor: 'pointer' }}>
+            <div className="dash-metric-card" onClick={() => handleTabChange('account_permissions')} style={{ cursor: 'pointer' }}>
               <div className="dash-metric-info">
                 <span className="dash-metric-label">Đội ngũ nhân sự &amp; GV</span>
                 <span className="dash-metric-val">
@@ -1201,10 +1211,10 @@ export const DirectorDashboard: React.FC = () => {
                   <button
                     type="button"
                     className="dash-quick-btn primary"
-                    onClick={() => handleTabChange('staff_accounts')}
+                    onClick={() => handleTabChange('account_permissions')}
                   >
-                    <span>👥</span>
-                    <span>Quản Lý Danh Sách Nhân Sự &amp; Giảng Viên</span>
+                    <span>🛡️</span>
+                    <span>Quản Lý Tài Khoản, Nhân Sự &amp; Phân Quyền</span>
                   </button>
                   <button
                     type="button"
@@ -1576,20 +1586,19 @@ export const DirectorDashboard: React.FC = () => {
       )}
 
       {/* ─────────────────────────────────────────────────────────────
-          2. VIEW STAFF ACCOUNTS LIST & ADD STAFF ACCOUNT
+          2. QUẢN LÝ TÀI KHOẢN, NHÂN SỰ & PHÂN QUYỀN
           ───────────────────────────────────────────────────────────── */}
-      {activeTab === 'staff_accounts' && (
+      {activeTab === 'account_permissions' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
             <div>
               <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>
-                👥 Quản Lý Tài Khoản Nhân Sự &amp; Giảng Viên (Staff Accounts)
+                🛡️ Quản Lý Tài Khoản &amp; Phân Quyền Hệ Thống
               </h2>
               <span style={{ fontSize: '0.82rem', color: '#64748b' }}>
-                Xem danh sách tài khoản, kiểm soát trạng thái hoạt động và cấp tài khoản nhân sự mới
+                Tổng quan phạm vi quyền hạn theo từng vai trò và kiểm soát trạng thái tài khoản toàn trung tâm
               </span>
             </div>
-
             <button
               type="button"
               onClick={() => setIsAddStaffModalOpen(true)}
@@ -1602,164 +1611,223 @@ export const DirectorDashboard: React.FC = () => {
                 fontSize: '0.85rem',
                 fontWeight: 700,
                 cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                boxShadow: '0 2px 6px rgba(5, 150, 105, 0.25)',
               }}
             >
-              <span>➕</span>
-              <span>Thêm Tài Khoản Nhân Sự Mới</span>
+              ➕ Cấp Tài Khoản Nhân Sự / GV
             </button>
           </div>
 
-          {/* Search & Filter Bar */}
-          <div className="dash-card" style={{ padding: '1rem', borderRadius: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-              <button
-                type="button"
-                onClick={() => setStaffFilterRole('ALL')}
-                className={`dash-quick-btn ${staffFilterRole === 'ALL' ? 'primary' : ''}`}
-                style={{ padding: '0.35rem 0.85rem', fontSize: '0.8rem' }}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '1rem' }}>
+            {[
+              {
+                role: 'DIRECTOR',
+                title: 'Ban Giám Đốc / Admin',
+                badge: 'Toàn quyền hệ thống',
+                color: '#7c3aed',
+                bg: '#f5f3ff',
+                perms: ['Phê duyệt đề xuất & thông báo', 'Quản lý nhân sự & phân quyền', 'Giám sát vận hành & báo cáo doanh thu'],
+              },
+              {
+                role: 'TRAINING_STAFF',
+                title: 'Phòng Giáo Vụ',
+                badge: 'Quản lý đào tạo',
+                color: '#1d4ed8',
+                bg: '#eff6ff',
+                perms: ['Quản lý khóa học, lớp học & lịch', 'Xếp lớp cho học viên đã thanh toán', 'Quản lý test đầu vào & hồ sơ HV/GV'],
+              },
+              {
+                role: 'TEACHER',
+                title: 'Giảng Viên',
+                badge: 'Giảng dạy',
+                color: '#047857',
+                bg: '#ecfdf5',
+                perms: ['Xem lịch dạy được phân công', 'Điểm danh từng buổi học', 'Nhập điểm định kỳ & nhận xét tháng/khóa'],
+              },
+              {
+                role: 'STUDENT',
+                title: 'Học Viên',
+                badge: 'Học tập',
+                color: '#b45309',
+                bg: '#fffbeb',
+                perms: ['Đăng ký lớp & thanh toán học phí', 'Xem thời khóa biểu & điểm danh', 'Xem kết quả học tập & gửi yêu cầu'],
+              },
+            ].map((item) => (
+              <div
+                key={item.role}
+                className="dash-card"
+                style={{ padding: '1rem', borderRadius: '14px', borderTop: `4px solid ${item.color}` }}
               >
-                Tất cả ({staffAccounts.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setStaffFilterRole('TRAINING_STAFF')}
-                className={`dash-quick-btn ${staffFilterRole === 'TRAINING_STAFF' ? 'primary' : ''}`}
-                style={{ padding: '0.35rem 0.85rem', fontSize: '0.8rem' }}
-              >
-                Phòng Giáo Vụ ({staffAccounts.filter((s) => s.role === 'TRAINING_STAFF').length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setStaffFilterRole('TEACHER')}
-                className={`dash-quick-btn ${staffFilterRole === 'TEACHER' ? 'primary' : ''}`}
-                style={{ padding: '0.35rem 0.85rem', fontSize: '0.8rem' }}
-              >
-                Giảng Viên ({staffAccounts.filter((s) => s.role === 'TEACHER').length})
-              </button>
-            </div>
-
-            <div>
-              <input
-                type="text"
-                placeholder="🔍 Tìm theo tên, email, mã nhân sự..."
-                value={staffSearch}
-                onChange={(e) => setStaffSearch(e.target.value)}
-                style={{
-                  padding: '0.45rem 0.85rem',
-                  borderRadius: '8px',
-                  border: '1px solid #cbd5e1',
-                  fontSize: '0.82rem',
-                  width: '280px',
-                }}
-              />
-            </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <strong style={{ fontSize: '0.95rem', color: '#0f172a' }}>{item.title}</strong>
+                  <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '2px 8px', borderRadius: '999px', backgroundColor: item.bg, color: item.color }}>
+                    {item.badge}
+                  </span>
+                </div>
+                <ul style={{ margin: 0, paddingLeft: '1.1rem', fontSize: '0.8rem', color: '#475569', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  {item.perms.map((p) => (
+                    <li key={p}>{p}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
 
-          {/* Staff Accounts Table */}
+          <div className="dash-card" style={{ padding: '1rem', borderRadius: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              {(
+                [
+                  { id: 'ALL', label: `Tất cả (${staffAccounts.length + studentAccounts.length})` },
+                  { id: 'TRAINING_STAFF', label: `Giáo vụ (${staffAccounts.filter((s) => s.role === 'TRAINING_STAFF').length})` },
+                  { id: 'TEACHER', label: `Giảng viên (${staffAccounts.filter((s) => s.role === 'TEACHER').length})` },
+                  { id: 'STUDENT', label: `Học viên (${studentAccounts.length})` },
+                ] as const
+              ).map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setPermRoleFilter(f.id)}
+                  className={`dash-quick-btn ${permRoleFilter === f.id ? 'primary' : ''}`}
+                  style={{ padding: '0.35rem 0.85rem', fontSize: '0.8rem' }}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+
+            <input
+              type="text"
+              placeholder="🔍 Tìm theo họ tên hoặc email..."
+              value={permSearch}
+              onChange={(e) => setPermSearch(e.target.value)}
+              style={{
+                padding: '0.45rem 0.85rem',
+                borderRadius: '8px',
+                border: '1px solid #cbd5e1',
+                fontSize: '0.82rem',
+                width: '260px',
+              }}
+            />
+          </div>
+
           <div className="dash-card" style={{ padding: '0.5rem', borderRadius: '16px', overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.84rem' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid #e2e8f0', backgroundColor: '#f8fafc', textAlign: 'left', color: '#475569' }}>
                   <th style={{ padding: '10px 14px' }}>Mã &amp; Họ Tên</th>
-                  <th style={{ padding: '10px 14px' }}>Vai Trò</th>
-                  <th style={{ padding: '10px 14px' }}>Bộ Phận / Chuyên Môn</th>
                   <th style={{ padding: '10px 14px' }}>Liên Hệ</th>
+                  <th style={{ padding: '10px 14px' }}>Bộ Phận / Thông Tin</th>
+                  <th style={{ padding: '10px 14px' }}>Vai Trò / Quyền</th>
                   <th style={{ padding: '10px 14px' }}>Trạng Thái</th>
                   <th style={{ padding: '10px 14px' }}>Thao Tác</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredStaff.length > 0 ? (
-                  filteredStaff.map((account) => (
-                    <tr key={account._id} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                      <td style={{ padding: '12px 14px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <span
-                            style={{
-                              width: '36px',
-                              height: '36px',
-                              borderRadius: '50%',
-                              backgroundColor: account.role === 'TEACHER' ? '#ecfdf5' : '#eff6ff',
-                              color: account.role === 'TEACHER' ? '#047857' : '#1d4ed8',
-                              fontWeight: 800,
-                              display: 'grid',
-                              placeItems: 'center',
-                              fontSize: '0.9rem',
-                            }}
-                          >
-                            {account.fullName.charAt(0).toUpperCase()}
-                          </span>
-                          <div>
-                            <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.9rem' }}>{account.fullName}</div>
-                            <div style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 600 }}>{account.code}</div>
-                          </div>
-                        </div>
+                {[
+                  ...staffAccounts.map((a) => ({
+                    kind: 'STAFF' as const,
+                    id: a._id,
+                    code: a.code,
+                    fullName: a.fullName,
+                    email: a.email,
+                    phone: a.phone,
+                    detailTitle: a.department,
+                    detailSub: a.position,
+                    role: a.role,
+                    status: a.status,
+                    rawStaff: a,
+                  })),
+                  ...studentAccounts.map((s) => ({
+                    kind: 'STUDENT' as const,
+                    id: s._id,
+                    code: s.profile?.studentCode || 'HV',
+                    fullName: s.fullName,
+                    email: s.email,
+                    phone: s.phone,
+                    detailTitle: `Đang học: ${s.activeClasses} lớp`,
+                    detailSub: `Hoàn thành: ${s.completedClasses} lớp`,
+                    role: 'STUDENT' as const,
+                    status: s.status,
+                    rawStudent: s,
+                  })),
+                ]
+                  .filter((row) => (permRoleFilter === 'ALL' ? true : row.role === permRoleFilter))
+                  .filter((row) => {
+                    if (!permSearch.trim()) return true;
+                    const q = permSearch.toLowerCase();
+                    return (
+                      row.fullName.toLowerCase().includes(q) ||
+                      row.email.toLowerCase().includes(q) ||
+                      (row.code && row.code.toLowerCase().includes(q))
+                    );
+                  })
+                  .map((row) => (
+                    <tr key={`${row.kind}-${row.id}`} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                      <td style={{ padding: '10px 14px' }}>
+                        <div style={{ fontWeight: 700, color: '#0f172a' }}>{row.fullName}</div>
+                        <div style={{ fontSize: '0.73rem', color: '#64748b', fontWeight: 600 }}>{row.code}</div>
                       </td>
-                      <td style={{ padding: '12px 14px' }}>
-                        {account.role === 'TEACHER' ? (
-                          <span style={{ backgroundColor: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', padding: '3px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700 }}>
-                            👨‍🏫 Giảng Viên (Band {account.ieltsBand || 8.5})
-                          </span>
-                        ) : (
-                          <span style={{ backgroundColor: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', padding: '3px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700 }}>
-                            💼 Phòng Giáo Vụ
-                          </span>
-                        )}
+                      <td style={{ padding: '10px 14px', color: '#475569' }}>
+                        <div>{row.email}</div>
+                        <div style={{ fontSize: '0.76rem', color: '#64748b' }}>{row.phone || '—'}</div>
                       </td>
-                      <td style={{ padding: '12px 14px' }}>
-                        <div style={{ fontWeight: 600, color: '#0f172a' }}>{account.department}</div>
-                        <div style={{ fontSize: '0.78rem', color: '#64748b' }}>{account.position}</div>
+                      <td style={{ padding: '10px 14px' }}>
+                        <div style={{ fontWeight: 600, color: '#0f172a' }}>{row.detailTitle}</div>
+                        <div style={{ fontSize: '0.76rem', color: '#64748b' }}>{row.detailSub}</div>
                       </td>
-                      <td style={{ padding: '12px 14px' }}>
-                        <div style={{ color: '#1e293b' }}>{account.email}</div>
-                        <div style={{ fontSize: '0.78rem', color: '#64748b' }}>{account.phone || '—'}</div>
-                      </td>
-                      <td style={{ padding: '12px 14px' }}>
+                      <td style={{ padding: '10px 14px' }}>
                         <span
                           style={{
-                            padding: '3px 8px',
+                            padding: '2px 8px',
                             borderRadius: '6px',
-                            fontWeight: 800,
-                            fontSize: '0.75rem',
-                            backgroundColor: account.status === 'ACTIVE' ? '#ecfdf5' : '#fee2e2',
-                            color: account.status === 'ACTIVE' ? '#047857' : '#b91c1c',
-                            border: account.status === 'ACTIVE' ? '1px solid #a7f3d0' : '1px solid #fca5a5',
+                            fontSize: '0.74rem',
+                            fontWeight: 700,
+                            backgroundColor:
+                              row.role === 'TRAINING_STAFF' ? '#eff6ff' : row.role === 'TEACHER' ? '#ecfdf5' : '#fffbeb',
+                            color:
+                              row.role === 'TRAINING_STAFF' ? '#1d4ed8' : row.role === 'TEACHER' ? '#047857' : '#b45309',
                           }}
                         >
-                          {account.status === 'ACTIVE' ? 'Đang hoạt động' : 'Tạm khóa'}
+                          {row.role === 'TRAINING_STAFF' ? 'Phòng Giáo Vụ' : row.role === 'TEACHER' ? 'Giảng Viên' : 'Học Viên'}
                         </span>
                       </td>
-                      <td style={{ padding: '12px 14px' }}>
+                      <td style={{ padding: '10px 14px' }}>
+                        <span
+                          style={{
+                            padding: '2px 8px',
+                            borderRadius: '6px',
+                            fontWeight: 700,
+                            fontSize: '0.74rem',
+                            backgroundColor: row.status === 'ACTIVE' ? '#ecfdf5' : '#fee2e2',
+                            color: row.status === 'ACTIVE' ? '#047857' : '#b91c1c',
+                          }}
+                        >
+                          {row.status === 'ACTIVE' ? 'Đang hoạt động' : 'Tạm khóa'}
+                        </span>
+                      </td>
+                      <td style={{ padding: '10px 14px' }}>
                         <button
                           type="button"
-                          onClick={() => handleToggleStaffStatus(account)}
+                          onClick={() =>
+                            row.kind === 'STAFF'
+                              ? handleToggleStaffStatus(row.rawStaff)
+                              : handleToggleStudentAccountStatus(row.rawStudent)
+                          }
                           style={{
                             padding: '4px 10px',
                             borderRadius: '6px',
                             fontSize: '0.75rem',
                             fontWeight: 700,
                             cursor: 'pointer',
-                            border: account.status === 'ACTIVE' ? '1px solid #fca5a5' : '1px solid #a7f3d0',
-                            backgroundColor: account.status === 'ACTIVE' ? '#fef2f2' : '#ecfdf5',
-                            color: account.status === 'ACTIVE' ? '#dc2626' : '#047857',
+                            border: row.status === 'ACTIVE' ? '1px solid #fca5a5' : '1px solid #a7f3d0',
+                            backgroundColor: row.status === 'ACTIVE' ? '#fef2f2' : '#ecfdf5',
+                            color: row.status === 'ACTIVE' ? '#dc2626' : '#047857',
                           }}
                         >
-                          {account.status === 'ACTIVE' ? 'Khóa TK' : 'Kích hoạt'}
+                          {row.status === 'ACTIVE' ? 'Khóa TK' : 'Kích hoạt'}
                         </button>
                       </td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
-                      Không tìm thấy tài khoản nhân sự nào phù hợp.
-                    </td>
-                  </tr>
-                )}
+                  ))}
               </tbody>
             </table>
           </div>
