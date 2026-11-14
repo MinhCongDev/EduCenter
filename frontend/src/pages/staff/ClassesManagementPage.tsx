@@ -40,6 +40,21 @@ const STATUS_LABELS: Record<ClassStatus, string> = {
 const formatDate = (date: string) => new Date(date).toLocaleDateString('vi-VN');
 const WEEK_DAYS_BY_UTC = ['Chủ Nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
 
+const getVietnamDateKey = (date: Date): string => {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date);
+  const dateParts: Partial<Record<Intl.DateTimeFormatPartTypes, string>> = {};
+  for (const part of parts) dateParts[part.type] = part.value;
+  if (!dateParts.year || !dateParts.month || !dateParts.day) {
+    throw new Error('Không thể xác định ngày hiện tại.');
+  }
+  return `${dateParts.year}-${dateParts.month}-${dateParts.day}`;
+};
+
 interface DraftSession {
   date: string;
   dayOfWeek: string;
@@ -173,12 +188,14 @@ interface ClassFormModalProps {
 }
 
 const ClassFormModal: React.FC<ClassFormModalProps> = ({ classItem, options, onSave, onClose, saving, error }) => {
+  const isInProgressClass = classItem?.status === 'IN_PROGRESS';
+  const isAttendanceLocked = isInProgressClass && classItem.hasAttendance === true;
   const [form, setForm] = useState<ClassFormData>(
     classItem
       ? {
           classCode: classItem.classCode,
-          course: classItem.course._id,
-          teacher: classItem.teacher._id,
+          course: classItem.course?._id ?? '',
+          teacher: classItem.teacher?._id ?? '',
           room: classItem.room,
           scheduleDays: classItem.scheduleDays,
           timeSlot: classItem.timeSlot,
@@ -190,10 +207,31 @@ const ClassFormModal: React.FC<ClassFormModalProps> = ({ classItem, options, onS
   );
   const [scheduleError, setScheduleError] = useState('');
   const selectedCourse = options.courses.find((course) => course._id === form.course);
+  const todayDate = getVietnamDateKey(new Date());
+  const tomorrowDate = new Date(`${todayDate}T00:00:00.000Z`);
+  tomorrowDate.setUTCDate(tomorrowDate.getUTCDate() + 1);
+  const tomorrowDateKey = tomorrowDate.toISOString().slice(0, 10);
+  const originalStartDate = classItem?.startDate.slice(0, 10);
+  const startDateChanged = !classItem || form.startDate !== originalStartDate;
+  const isStartDateInvalid = startDateChanged && form.startDate <= todayDate;
+  const startDateError = isStartDateInvalid ? 'Ngày bắt đầu khóa học phải là ngày trong tương lai.' : '';
+  const minimumStartDate = classItem && !startDateChanged ? originalStartDate : tomorrowDateKey;
   const scheduleConflicts = useMemo(
     () => getScheduleConflicts(form, selectedCourse?.sessions ?? 0, options.schedulingClasses, classItem?._id),
     [form, selectedCourse?.sessions, options.schedulingClasses, classItem?._id]
   );
+  const isRoomChanged = Boolean(classItem && form.room !== classItem.room);
+  const selectedTeacherConflict = !isAttendanceLocked && Boolean(scheduleConflicts.teacherReasons.get(form.teacher));
+  const selectedRoomConflict = (!isAttendanceLocked || isRoomChanged)
+    && Boolean(scheduleConflicts.roomReasons.get(form.room.trim().toLocaleLowerCase()));
+  const scheduleConflictMessage = [
+    !isAttendanceLocked && scheduleConflicts.teacherReasons.get(form.teacher)
+      ? `Giảng viên đã có lịch trùng với lớp ${scheduleConflicts.teacherReasons.get(form.teacher)}.`
+      : '',
+    (!isAttendanceLocked || isRoomChanged) && scheduleConflicts.roomReasons.get(form.room.trim().toLocaleLowerCase())
+      ? `Phòng học đã được sử dụng bởi lớp ${scheduleConflicts.roomReasons.get(form.room.trim().toLocaleLowerCase())}.`
+      : '',
+  ].filter(Boolean).join(' ');
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = event.target;
@@ -216,20 +254,16 @@ const ClassFormModal: React.FC<ClassFormModalProps> = ({ classItem, options, onS
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    const conflict = [
-      scheduleConflicts.teacherReasons.get(form.teacher)
-        ? `Giảng viên đã có lịch trùng với lớp ${scheduleConflicts.teacherReasons.get(form.teacher)}.`
-        : '',
-      scheduleConflicts.roomReasons.get(form.room.trim().toLocaleLowerCase())
-        ? `Phòng học đã được sử dụng bởi lớp ${scheduleConflicts.roomReasons.get(form.room.trim().toLocaleLowerCase())}.`
-        : '',
-    ].filter(Boolean).join(' ');
-    if (conflict) {
-      setScheduleError(conflict);
+    if (startDateError) {
+      setScheduleError(startDateError);
+      return;
+    }
+    if (scheduleConflictMessage) {
+      setScheduleError(scheduleConflictMessage);
       return;
     }
     setScheduleError('');
-    void onSave(form);
+    void onSave(classItem ? form : { ...form, status: 'OPEN' });
   };
   const hasLegacyRoom = Boolean(form.room) && !ROOM_OPTIONS.includes(form.room);
   const hasLegacyTimeSlot = Boolean(form.timeSlot) && !TIME_SLOTS.includes(form.timeSlot);
@@ -241,21 +275,26 @@ const ClassFormModal: React.FC<ClassFormModalProps> = ({ classItem, options, onS
           <div>
             <h2 className="modal-title">{classItem ? 'Chỉnh sửa lớp học' : 'Thêm lớp học mới'}</h2>
             <p className="modal-subtitle">{classItem ? `Cập nhật thông tin lớp ${classItem.classCode}` : 'Nhập thông tin lớp học mới'}</p>
+            {isAttendanceLocked && (
+              <p className="form-hint" role="status">Lớp đang diễn ra và đã có điểm danh. Chỉ có thể thay đổi trạng thái và phòng học.</p>
+            )}
           </div>
           <button type="button" className="modal-close-btn" onClick={onClose}>Đóng</button>
         </div>
 
         {error && <div className="form-error-banner" role="alert">⚠️ {error}</div>}
-        {scheduleError && <div className="form-error-banner" role="alert">{scheduleError}</div>}
+        {(scheduleError || startDateError || scheduleConflictMessage) && (
+          <div className="form-error-banner" role="alert">{scheduleError || startDateError || scheduleConflictMessage}</div>
+        )}
         <form className="modal-form" onSubmit={handleSubmit}>
           <div className="form-row">
             <div className="form-group">
               <label className="form-label" htmlFor="class-code">Mã lớp <span className="required">*</span></label>
-              <input id="class-code" name="classCode" className="form-input" placeholder="VD: ENG-K01-A" value={form.classCode} onChange={handleChange} required />
+              <input id="class-code" name="classCode" className="form-input" placeholder="VD: ENG-K01-A" value={form.classCode} onChange={handleChange} required disabled={isAttendanceLocked} />
             </div>
             <div className="form-group">
               <label className="form-label" htmlFor="class-course">Khóa học <span className="required">*</span></label>
-              <select id="class-course" name="course" className="form-input" value={form.course} onChange={handleChange} required>
+              <select id="class-course" name="course" className="form-input" value={form.course} onChange={handleChange} required disabled={isAttendanceLocked}>
                 {options.courses.map((course) => <option key={course._id} value={course._id}>{course.code} - {course.title}</option>)}
               </select>
             </div>
@@ -264,14 +303,14 @@ const ClassFormModal: React.FC<ClassFormModalProps> = ({ classItem, options, onS
           <div className="form-row">
             <div className="form-group">
               <label className="form-label" htmlFor="class-teacher">Giảng viên <span className="required">*</span></label>
-              <select id="class-teacher" name="teacher" className="form-input" value={form.teacher} onChange={handleChange} required>
+              <select id="class-teacher" name="teacher" className="form-input" value={form.teacher} onChange={handleChange} required disabled={isAttendanceLocked}>
                 {options.teachers.map((teacher) => (
                   <option key={teacher._id} value={teacher._id} disabled={scheduleConflicts.teacherReasons.has(teacher._id)}>
                     {teacher.fullName}{scheduleConflicts.teacherReasons.has(teacher._id) ? ' (Trùng lịch)' : ''}
                   </option>
                 ))}
               </select>
-              {scheduleConflicts.teacherReasons.get(form.teacher) && (
+              {!isAttendanceLocked && scheduleConflicts.teacherReasons.get(form.teacher) && (
                 <div className="form-hint" role="status">Giảng viên đã có lịch trùng với lớp {scheduleConflicts.teacherReasons.get(form.teacher)}.</div>
               )}
             </div>
@@ -287,13 +326,13 @@ const ClassFormModal: React.FC<ClassFormModalProps> = ({ classItem, options, onS
                 ))}
               </select>
               {hasLegacyRoom && <div className="form-hint" role="status">Lớp đang dùng phòng cũ. Có thể giữ nguyên hoặc chọn một phòng trong danh sách cố định.</div>}
-              {scheduleConflicts.roomReasons.get(form.room.trim().toLocaleLowerCase()) && (
+              {(!isAttendanceLocked || isRoomChanged) && scheduleConflicts.roomReasons.get(form.room.trim().toLocaleLowerCase()) && (
                 <div className="form-hint" role="status">Phòng đã được sử dụng bởi lớp {scheduleConflicts.roomReasons.get(form.room.trim().toLocaleLowerCase())}.</div>
               )}
             </div>
           </div>
 
-          <fieldset className="form-group class-days-field">
+          <fieldset className="form-group class-days-field" disabled={isAttendanceLocked}>
             <legend className="form-label">Ngày học</legend>
             <div className="class-days-options">
               {WEEK_DAYS.map((day) => (
@@ -313,7 +352,7 @@ const ClassFormModal: React.FC<ClassFormModalProps> = ({ classItem, options, onS
           <div className="form-row">
             <div className="form-group">
               <label className="form-label" htmlFor="class-time">Khung giờ học <span className="required">*</span></label>
-              <select id="class-time" name="timeSlot" className="form-input" value={form.timeSlot} onChange={handleChange} required>
+              <select id="class-time" name="timeSlot" className="form-input" value={form.timeSlot} onChange={handleChange} required disabled={isAttendanceLocked}>
                 <option value="" disabled>Chọn khung giờ</option>
                 {hasLegacyTimeSlot && <option value={form.timeSlot}>{form.timeSlot} (đang sử dụng)</option>}
                 {TIME_SLOTS.map((timeSlot) => <option key={timeSlot} value={timeSlot}>{timeSlot}</option>)}
@@ -322,25 +361,52 @@ const ClassFormModal: React.FC<ClassFormModalProps> = ({ classItem, options, onS
             </div>
             <div className="form-group">
               <label className="form-label" htmlFor="class-capacity">Sĩ số tối đa <span className="required">*</span></label>
-              <input id="class-capacity" name="capacity" type="number" min={1} className="form-input" value={form.capacity} onChange={handleChange} required />
+              <input id="class-capacity" name="capacity" type="number" min={1} className="form-input" value={form.capacity} onChange={handleChange} required disabled={isAttendanceLocked} />
             </div>
           </div>
 
           <div className="form-group">
             <label className="form-label" htmlFor="class-start-date">Ngày bắt đầu <span className="required">*</span></label>
-            <input id="class-start-date" name="startDate" type="date" className="form-input" value={form.startDate} onChange={handleChange} required />
+            <input
+              id="class-start-date"
+              name="startDate"
+              type="date"
+              className="form-input"
+              value={form.startDate}
+              min={minimumStartDate}
+              onChange={handleChange}
+              required
+              disabled={isAttendanceLocked}
+            />
           </div>
 
-          <div className="form-group">
-            <label className="form-label" htmlFor="class-status">Trạng thái</label>
-            <select id="class-status" name="status" className="form-input" value={form.status} onChange={handleChange}>
-              {Object.entries(STATUS_LABELS).map(([status, label]) => <option key={status} value={status}>{label}</option>)}
-            </select>
-          </div>
+          {classItem ? (
+            <div className="form-group">
+              <label className="form-label" htmlFor="class-status">Trạng thái</label>
+              <select id="class-status" name="status" className="form-input" value={form.status} onChange={handleChange}>
+                {Object.entries(STATUS_LABELS)
+                  .filter(([status]) => !isInProgressClass || (status !== 'OPEN' && status !== 'CANCELLED'))
+                  .map(([status, label]) => <option key={status} value={status}>{label}</option>)}
+              </select>
+            </div>
+          ) : (
+            <div className="form-hint" role="status">Trạng thái lớp mới: <strong>Đang tuyển sinh</strong>.</div>
+          )}
 
           <div className="modal-footer">
             <button type="button" className="btn btn-outline" onClick={onClose} disabled={saving}>Hủy</button>
-            <button type="submit" className="btn btn-primary" disabled={saving || options.courses.length === 0 || options.teachers.length === 0}>
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={
+                saving
+                || options.courses.length === 0
+                || options.teachers.length === 0
+                || isStartDateInvalid
+                || selectedTeacherConflict
+                || selectedRoomConflict
+              }
+            >
               {saving ? 'Đang lưu…' : classItem ? 'Cập nhật' : 'Tạo lớp học'}
             </button>
           </div>
@@ -358,14 +424,18 @@ const ClassDetailModal: React.FC<{ detail: ClassDetail; onClose: () => void }> =
         <div className="modal-header">
           <div>
             <h2 className="modal-title">Chi tiết lớp {classroom.classCode}</h2>
-            <p className="modal-subtitle">{classroom.course.code} - {classroom.course.title}</p>
+            <p className="modal-subtitle">
+              {classroom.course
+                ? `${classroom.course.code} - ${classroom.course.title}`
+                : 'Khóa học không còn tồn tại'}
+            </p>
           </div>
           <button type="button" className="modal-close-btn" onClick={onClose} aria-label="Đóng">✕</button>
         </div>
 
         <div className="enrollment-detail-grid">
-          <div><span>Giảng viên đứng lớp</span><strong>{classroom.teacher.fullName}</strong></div>
-          <div><span>Email giảng viên</span><strong>{classroom.teacher.email}</strong></div>
+          <div><span>Giảng viên đứng lớp</span><strong>{classroom.teacher?.fullName ?? 'Giảng viên không còn tồn tại'}</strong></div>
+          <div><span>Email giảng viên</span><strong>{classroom.teacher?.email ?? '—'}</strong></div>
           <div><span>Phòng học</span><strong>{classroom.room || '—'}</strong></div>
           <div><span>Lịch học</span><strong>{classroom.scheduleDays.join(', ') || 'Chưa xếp lịch'} · {classroom.timeSlot}</strong></div>
           <div><span>Thời gian</span><strong>{formatDate(classroom.startDate)} – {formatDate(classroom.endDate)}</strong></div>
@@ -631,8 +701,13 @@ const ClassesManagementPage: React.FC = () => {
               {classes.map((classItem) => (
                 <tr key={classItem._id} className="courses-table-row">
                   <td><span className="course-code-chip">{classItem.classCode}</span></td>
-                  <td><div className="course-title-cell"><strong>{classItem.course.title}</strong><span className="course-desc-preview">{classItem.course.code}</span></div></td>
-                  <td>{classItem.teacher.fullName}</td>
+                  <td>
+                    <div className="course-title-cell">
+                      <strong>{classItem.course?.title ?? 'Khóa học không còn tồn tại'}</strong>
+                      <span className="course-desc-preview">{classItem.course?.code ?? 'Thiếu liên kết khóa học'}</span>
+                    </div>
+                  </td>
+                  <td>{classItem.teacher?.fullName ?? 'Giảng viên không còn tồn tại'}</td>
                   <td><div className="course-title-cell"><strong>{classItem.scheduleDays.join(', ') || 'Chưa xếp lịch'}</strong><span className="course-desc-preview">{classItem.timeSlot || 'Chưa có khung giờ'}</span></div></td>
                   <td>{formatDate(classItem.startDate)} – {formatDate(classItem.endDate)}</td>
                   <td>{classItem.currentEnrollment ?? 0}/{classItem.capacity}</td>
@@ -643,7 +718,8 @@ const ClassesManagementPage: React.FC = () => {
                       <button
                         className="btn btn-outline btn-sm"
                         onClick={() => { setEditingClass(classItem); setFormError(''); setShowForm(true); }}
-                        disabled={Boolean(optionsError)}
+                        disabled={Boolean(optionsError) || !classItem.course || !classItem.teacher}
+                        title={!classItem.course || !classItem.teacher ? 'Không thể sửa lớp do thiếu khóa học hoặc giảng viên liên kết.' : undefined}
                       >
                         Sửa
                       </button>
