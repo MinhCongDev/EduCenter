@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { courseService } from '../../services/course.service';
 import { studentService } from '../../services/student.service';
 import { useAuth } from '../../contexts/AuthContext';
@@ -13,11 +13,12 @@ export const CoursesPage: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [enrollingClassId, setEnrollingClassId] = useState<string | null>(null);
 
   // Search & Filter state
   const [search, setSearch] = useState<string>('');
-  const [selectedLevel, setSelectedLevel] = useState<string>('ALL');
+  const [selectedLevel, setSelectedLevel] = useState<string>(() => searchParams.get('level') || 'ALL');
   const [selectedFormat, setSelectedFormat] = useState<string>('ALL');
   const [priceRange, setPriceRange] = useState<string>('ALL');
   const [sortBy, setSortBy] = useState<'newest' | 'price_asc' | 'price_desc' | 'duration'>('newest');
@@ -26,13 +27,20 @@ export const CoursesPage: React.FC = () => {
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [registrationNotice, setRegistrationNotice] = useState<string | null>(null);
 
+  useEffect(() => {
+    const levelParam = searchParams.get('level');
+    if (levelParam) {
+      setSelectedLevel(levelParam);
+    }
+  }, [searchParams]);
+
   const levelOptions = [
     { label: 'Tất cả trình độ', value: 'ALL' },
-    { label: 'Mất gốc (0 - 3.5)', value: '0 - 3.5' },
+    { label: 'Beginner – Mất gốc (0 - 3.5)', value: '0 - 3.5' },
     { label: 'Pre-IELTS (3.5 - 4.5)', value: '3.5 - 4.5' },
     { label: 'Foundation (4.5 - 5.5)', value: '4.5 - 5.5' },
-    { label: 'Bứt phá (5.5 - 6.5)', value: '5.5 - 6.5' },
-    { label: 'Chuyên sâu (6.5 - 7.5+)', value: '6.5 - 7.5+' },
+    { label: 'Breakthrough – Bứt phá (5.5 - 6.5)', value: '5.5 - 6.5' },
+    { label: 'Advanced – Chuyên sâu (6.5 - 7.5)', value: '6.5 - 7.5' },
     { label: 'Master (8.0+)', value: '8.0+' },
   ];
 

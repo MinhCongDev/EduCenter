@@ -212,8 +212,11 @@ export interface CourseFormData {
   targetLevel?: string;
   sessions: number;
   tuitionFee: number;
+  format?: CourseFormat;
   status: CourseStatus;
+  bannerUrl?: string;
   syllabus: string[];
+  learningObjectives?: string[];
 }
 
 export interface CourseQueryParams {
