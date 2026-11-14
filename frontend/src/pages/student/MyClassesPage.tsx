@@ -77,7 +77,7 @@ const MyClassesPage: React.FC = () => {
     <div className="dash-container">
       <div className="dash-banner">
         <div className="dash-banner-content">
-          <div className="dash-banner-badge">📚 Lớp Học Của Tôi</div>
+          <div className="dash-banner-badge">Lớp Học Của Tôi</div>
           <h1>Danh Sách Lớp Học</h1>
           <p>
             {classes.length > 0
@@ -87,7 +87,7 @@ const MyClassesPage: React.FC = () => {
         </div>
         <div className="dash-banner-right">
           <div className="dash-date-pill">
-            <div>📚 {classes.length} lớp đã đăng ký</div>
+            <div>{classes.length} lớp đã đăng ký</div>
             <div className="sub">Học viên: {user?.fullName}</div>
           </div>
         </div>
@@ -101,7 +101,7 @@ const MyClassesPage: React.FC = () => {
               <span className="dash-metric-val">{classes.length} lớp</span>
               <span className="dash-metric-trend up">{totalPaid} đã thanh toán</span>
             </div>
-            <div className="dash-metric-icon icon-blue">📚</div>
+            <div className="dash-metric-icon icon-blue"></div>
           </div>
           <div className="dash-metric-card">
             <div className="dash-metric-info">
@@ -111,7 +111,7 @@ const MyClassesPage: React.FC = () => {
                 {classes.length - totalPaid} chưa thanh toán
               </span>
             </div>
-            <div className="dash-metric-icon icon-emerald">✅</div>
+            <div className="dash-metric-icon icon-emerald"></div>
           </div>
           <div className="dash-metric-card">
             <div className="dash-metric-info">
@@ -121,7 +121,7 @@ const MyClassesPage: React.FC = () => {
                 {classes.filter((c) => (c.class as any).status === 'OPEN').length} đang mở
               </span>
             </div>
-            <div className="dash-metric-icon icon-purple">🎓</div>
+            <div className="dash-metric-icon icon-purple"></div>
           </div>
         </div>
       )}
@@ -133,7 +133,7 @@ const MyClassesPage: React.FC = () => {
           description="Bạn chưa đăng ký lớp học nào. Vui lòng liên hệ trung tâm để được tư vấn."
           action={
             <Link to="/courses" className="dash-quick-btn primary" style={{ textDecoration: 'none' }}>
-              📖 Xem các khóa học
+              Xem các khóa học
             </Link>
           }
         />
@@ -154,7 +154,7 @@ const MyClassesPage: React.FC = () => {
             >
               <input
                 type="text"
-                placeholder="🔍 Tìm theo mã lớp, tên khóa học, giảng viên..."
+                placeholder="Tìm theo mã lớp, tên khóa học, giảng viên..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 style={{
@@ -169,8 +169,8 @@ const MyClassesPage: React.FC = () => {
                 onChange={(e) => setTuitionFilter(e.target.value as any)}
                 style={selectStyle}
               >
-                <option value="ALL">💳 Tất cả học phí</option>
-                <option value="PAID">✅ Đã thanh toán</option>
+                <option value="ALL">Tất cả học phí</option>
+                <option value="PAID">Đã thanh toán</option>
                 <option value="PENDING">⏳ Chưa thanh toán</option>
               </select>
               <select
@@ -178,10 +178,10 @@ const MyClassesPage: React.FC = () => {
                 onChange={(e) => setStatusFilter(e.target.value as any)}
                 style={selectStyle}
               >
-                <option value="ALL">📊 Tất cả trạng thái</option>
+                <option value="ALL">Tất cả trạng thái</option>
                 <option value="PENDING">⏳ Chờ xếp lớp</option>
-                <option value="ENROLLED">🎓 Đang học</option>
-                <option value="COMPLETED">🏆 Hoàn thành</option>
+                <option value="ENROLLED">Đang học</option>
+                <option value="COMPLETED">Hoàn thành</option>
               </select>
               <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
                 {filtered.length}/{classes.length} khóa học
@@ -209,7 +209,7 @@ const MyClassesPage: React.FC = () => {
                 <div key={item._id} className="dash-card" style={{ borderLeft: '4px solid #f59e0b' }}>
                   <div className="dash-card-header">
                     <h2 className="dash-card-title">
-                      <span>📘</span>
+                      
                       {courseData?.code || 'Khóa học'} — {courseData?.title || 'Khóa học đã đăng ký'}
                     </h2>
                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
@@ -295,7 +295,7 @@ const MyClassesPage: React.FC = () => {
               <div key={item._id} className="dash-card">
                 <div className="dash-card-header">
                   <h2 className="dash-card-title">
-                    <span>📘</span>
+                    
                     {cls.course?.code || 'Khóa học'} — {cls.course?.title || ''}
                   </h2>
                   <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
@@ -347,28 +347,28 @@ const MyClassesPage: React.FC = () => {
                       className="dash-quick-btn"
                       style={{ textDecoration: 'none' }}
                     >
-                      📝 Bài Tập
+                      Bài Tập
                     </Link>
                     <Link
                       to={`/student/classes/${cls._id}/attendance`}
                       className="dash-quick-btn"
                       style={{ textDecoration: 'none' }}
                     >
-                      📅 Điểm Danh
+                      Điểm Danh
                     </Link>
                     <Link
                       to={`/student/classes/${cls._id}/grades`}
                       className="dash-quick-btn"
                       style={{ textDecoration: 'none' }}
                     >
-                      📊 Bảng Điểm
+                      Bảng Điểm
                     </Link>
                     <Link
                       to={`/student/classes/${cls._id}/schedule`}
                       className="dash-quick-btn"
                       style={{ textDecoration: 'none' }}
                     >
-                      🗓️ Lịch Học
+                      Lịch Học
                     </Link>
                   </div>
                 </div>

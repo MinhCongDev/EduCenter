@@ -758,10 +758,10 @@ export const TeacherDashboard: React.FC = () => {
 
           <div className="dash-actions-row">
             <button type="button" className="dash-quick-btn" onClick={() => handleTabChange('schedule')}>
-              🗓️ Lịch dạy tuần này ({thisWeekSchedules.length})
+              Lịch dạy tuần này ({thisWeekSchedules.length})
             </button>
             <button type="button" className="dash-quick-btn" onClick={() => handleTabChange('attendance')}>
-              ✅ Điểm danh buổi học
+              Điểm danh buổi học
             </button>
             <button
               type="button"
@@ -771,7 +771,7 @@ export const TeacherDashboard: React.FC = () => {
                 openNewGradeModal('TEST');
               }}
             >
-              📊 Nhập điểm định kỳ
+              Nhập điểm định kỳ
             </button>
             <button
               type="button"
@@ -781,14 +781,14 @@ export const TeacherDashboard: React.FC = () => {
                 openNewGradeModal('EVALUATION');
               }}
             >
-              📝 Nhận xét tháng / khóa
+              Nhận xét tháng / khóa
             </button>
             <button
               type="button"
               className="dash-quick-btn"
               onClick={() => handleTabChange('classes_students')}
             >
-              🏫 Lớp học &amp; Học viên ({students.length})
+              Lớp học &amp; Học viên ({students.length})
             </button>
             <button
               type="button"
@@ -798,7 +798,7 @@ export const TeacherDashboard: React.FC = () => {
                 setRequestTab('submit');
               }}
             >
-              🔄 Xin đổi lịch dạy
+              Xin đổi lịch dạy
             </button>
           </div>
 
@@ -813,7 +813,7 @@ export const TeacherDashboard: React.FC = () => {
                 <span className="dash-metric-val">{classes.length} lớp</span>
                 <span className="dash-metric-trend up">Xem danh sách lớp ➔</span>
               </div>
-              <div className="dash-metric-icon icon-blue">🏫</div>
+              <div className="dash-metric-icon icon-blue"></div>
             </div>
 
             <div
@@ -826,7 +826,7 @@ export const TeacherDashboard: React.FC = () => {
                 <span className="dash-metric-val">{thisWeekSchedules.length} buổi</span>
                 <span className="dash-metric-trend up">Xem thời khóa biểu ➔</span>
               </div>
-              <div className="dash-metric-icon icon-purple">🗓️</div>
+              <div className="dash-metric-icon icon-purple"></div>
             </div>
 
             <div
@@ -839,7 +839,7 @@ export const TeacherDashboard: React.FC = () => {
                 <span className="dash-metric-val">{students.length} HV</span>
                 <span className="dash-metric-trend up">Điểm danh buổi học ➔</span>
               </div>
-              <div className="dash-metric-icon icon-emerald">👩‍🎓</div>
+              <div className="dash-metric-icon icon-emerald"></div>
             </div>
 
             <div
@@ -854,7 +854,7 @@ export const TeacherDashboard: React.FC = () => {
                   {periodicTestCount} bài thi • {evaluationCount} nhận xét
                 </span>
               </div>
-              <div className="dash-metric-icon icon-amber">📊</div>
+              <div className="dash-metric-icon icon-amber"></div>
             </div>
           </div>
 
@@ -867,7 +867,7 @@ export const TeacherDashboard: React.FC = () => {
                   style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                 >
                   <h2 className="dash-card-title">
-                    <span>🗓️</span> Lịch Dạy Tuần Này ({thisWeekSchedules.length} buổi)
+                     Lịch Dạy Tuần Này ({thisWeekSchedules.length} buổi)
                   </h2>
                   <button
                     type="button"
@@ -929,8 +929,8 @@ export const TeacherDashboard: React.FC = () => {
                             {item.class?.classCode} • {item.class?.name || item.class?.course?.title}
                           </div>
                           <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '2px' }}>
-                            📍 {item.classroom || item.class?.room}
-                            {item.topic ? ` • 📖 ${item.topic}` : ''}
+                            {item.classroom || item.class?.room}
+                            {item.topic ? ` • ${item.topic}` : ''}
                           </div>
                         </div>
 
@@ -949,7 +949,7 @@ export const TeacherDashboard: React.FC = () => {
                             whiteSpace: 'nowrap',
                           }}
                         >
-                          ✅ Điểm danh buổi này
+                          Điểm danh buổi này
                         </button>
                       </div>
                     ))
@@ -967,7 +967,7 @@ export const TeacherDashboard: React.FC = () => {
                   style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                 >
                   <h2 className="dash-card-title">
-                    <span>📊</span> Điểm Định Kỳ &amp; Nhận Xét Gần Đây
+                     Điểm Định Kỳ &amp; Nhận Xét Gần Đây
                   </h2>
                   <button
                     type="button"
@@ -1077,7 +1077,7 @@ export const TeacherDashboard: React.FC = () => {
               <div className="dash-card">
                 <div className="dash-card-header">
                   <h2 className="dash-card-title">
-                    <span>🏫</span> Lớp Đang Phụ Trách
+                     Lớp Đang Phụ Trách
                   </h2>
                 </div>
                 <div className="dash-item-list">
@@ -1093,7 +1093,7 @@ export const TeacherDashboard: React.FC = () => {
                         }}
                       >
                         <div className="dash-item-main">
-                          <div className="dash-item-icon">🏫</div>
+                          
                           <div>
                             <div className="dash-item-title">
                               {cls.classCode} — {cls.name}
@@ -1119,13 +1119,13 @@ export const TeacherDashboard: React.FC = () => {
               <div className="dash-card">
                 <div className="dash-card-header">
                   <h2 className="dash-card-title">
-                    <span>⚡</span> Tác Vụ Nhanh
+                     Tác Vụ Nhanh
                   </h2>
                 </div>
                 <div className="dash-item-list">
                   <div className="dash-item" onClick={() => handleTabChange('attendance')} style={{ cursor: 'pointer' }}>
                     <div className="dash-item-main">
-                      <div className="dash-item-icon">📝</div>
+                      
                       <div>
                         <div className="dash-item-title">Điểm danh buổi học</div>
                         <div className="dash-item-sub">Ngày {new Date(attendanceDate).toLocaleDateString('vi-VN')}</div>
@@ -1143,7 +1143,7 @@ export const TeacherDashboard: React.FC = () => {
                     style={{ cursor: 'pointer' }}
                   >
                     <div className="dash-item-main">
-                      <div className="dash-item-icon">🎯</div>
+                      
                       <div>
                         <div className="dash-item-title">Nhập điểm kiểm tra định kỳ</div>
                         <div className="dash-item-sub">Đầu vào • Giữa kỳ • Cuối kỳ</div>
@@ -1161,7 +1161,7 @@ export const TeacherDashboard: React.FC = () => {
                     style={{ cursor: 'pointer' }}
                   >
                     <div className="dash-item-main">
-                      <div className="dash-item-icon">🔄</div>
+                      
                       <div>
                         <div className="dash-item-title">{scheduleRequests.length} đơn đổi lịch dạy</div>
                         <div className="dash-item-sub">Theo dõi trạng thái giáo vụ duyệt</div>
@@ -1213,10 +1213,10 @@ export const TeacherDashboard: React.FC = () => {
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {(
               [
-                { id: 'classes_students', label: '🏫 Lớp học & Học viên' },
-                { id: 'schedule', label: '🗓️ Lịch dạy' },
-                { id: 'attendance', label: '✅ Điểm danh buổi học' },
-                { id: 'grades', label: '📊 Điểm định kỳ & Nhận xét' },
+                { id: 'classes_students', label: 'Lớp học & Học viên' },
+                { id: 'schedule', label: 'Lịch dạy' },
+                { id: 'attendance', label: 'Điểm danh buổi học' },
+                { id: 'grades', label: 'Điểm định kỳ & Nhận xét' },
               ] as const
             ).map((tab) => (
               <button
@@ -1252,7 +1252,7 @@ export const TeacherDashboard: React.FC = () => {
           >
             <div>
               <h2 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>
-                🗓️ Thời Khóa Biểu &amp; Lịch Giảng Dạy
+                Thời Khóa Biểu &amp; Lịch Giảng Dạy
               </h2>
               <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
                 Xem lịch từng buổi học được phân công và chuyển nhanh sang điểm danh buổi học
@@ -1338,7 +1338,7 @@ export const TeacherDashboard: React.FC = () => {
                   cursor: 'pointer',
                 }}
               >
-                🔄 Xin đổi lịch dạy
+                Xin đổi lịch dạy
               </button>
             </div>
           </div>
@@ -1483,10 +1483,10 @@ export const TeacherDashboard: React.FC = () => {
                               {item.class?.classCode}
                             </div>
                             <div style={{ fontSize: '0.75rem', color: '#475569' }}>
-                              📍 {item.classroom || item.class?.room}
+                              {item.classroom || item.class?.room}
                             </div>
                             {item.topic && (
-                              <div style={{ fontSize: '0.74rem', color: '#64748b' }}>📖 {item.topic}</div>
+                              <div style={{ fontSize: '0.74rem', color: '#64748b' }}>{item.topic}</div>
                             )}
                             <button
                               type="button"
@@ -1508,7 +1508,7 @@ export const TeacherDashboard: React.FC = () => {
                                 cursor: 'pointer',
                               }}
                             >
-                              ✅ Điểm danh buổi này
+                              Điểm danh buổi này
                             </button>
                           </div>
                         ))
@@ -1595,7 +1595,7 @@ export const TeacherDashboard: React.FC = () => {
                               cursor: 'pointer',
                             }}
                           >
-                            ✅ Điểm danh
+                            Điểm danh
                           </button>
                         </td>
                       </tr>
@@ -1631,7 +1631,7 @@ export const TeacherDashboard: React.FC = () => {
           >
             <div>
               <h2 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>
-                ✅ Điểm Danh Từng Buổi Học — {classes.find((c) => c._id === attendanceClassId)?.classCode || 'Chọn lớp'}
+                Điểm Danh Từng Buổi Học — {classes.find((c) => c._id === attendanceClassId)?.classCode || 'Chọn lớp'}
               </h2>
               <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
                 Ghi nhận chuyên cần từng buổi học (Có mặt, Muộn, Vắng, Có phép) và xem lịch sử điểm danh
@@ -1718,7 +1718,7 @@ export const TeacherDashboard: React.FC = () => {
                   cursor: 'pointer',
                 }}
               >
-                {attendanceViewMode === 'check' ? '📜 Xem Lịch Sử Điểm Danh' : '✏️ Điểm Danh Buổi Học'}
+                {attendanceViewMode === 'check' ? 'Xem Lịch Sử Điểm Danh' : 'Điểm Danh Buổi Học'}
               </button>
             </div>
           </div>
@@ -1805,7 +1805,7 @@ export const TeacherDashboard: React.FC = () => {
                       cursor: savingAttendance ? 'not-allowed' : 'pointer',
                     }}
                   >
-                    {savingAttendance ? 'Đang lưu...' : '💾 Lưu Điểm Danh'}
+                    {savingAttendance ? 'Đang lưu...' : 'Lưu Điểm Danh'}
                   </button>
                 </div>
               </div>
@@ -1981,7 +1981,7 @@ export const TeacherDashboard: React.FC = () => {
             >
               <div>
                 <h2 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>
-                  🏫 Lớp Học Phụ Trách ({classes.length} lớp)
+                  Lớp Học Phụ Trách ({classes.length} lớp)
                 </h2>
                 <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
                   Chọn lớp để xem danh sách học viên thuộc lớp đó
@@ -2064,12 +2064,12 @@ export const TeacherDashboard: React.FC = () => {
                         gap: '3px',
                       }}
                     >
-                      <div>📍 {cls.room}</div>
+                      <div>{cls.room}</div>
                       <div>
                         ⏰ {cls.scheduleDays.join(' - ')} ({cls.timeSlot})
                       </div>
                       <div>
-                        👥 Sĩ số: <strong style={{ color: '#047857' }}>{studentCount}</strong> / {cls.capacity} HV
+                        Sĩ số: <strong style={{ color: '#047857' }}>{studentCount}</strong> / {cls.capacity} HV
                       </div>
                     </div>
                   </div>
@@ -2098,11 +2098,11 @@ export const TeacherDashboard: React.FC = () => {
               }}
             >
               <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>
-                👥 Danh Sách Học Viên ({searchedStudents.length} học viên)
+                Danh Sách Học Viên ({searchedStudents.length} học viên)
               </h2>
               <input
                 type="text"
-                placeholder="🔍 Tìm theo tên, email hoặc mã HV..."
+                placeholder="Tìm theo tên, email hoặc mã HV..."
                 value={studentSearch}
                 onChange={(e) => setStudentSearch(e.target.value)}
                 style={{
@@ -2197,7 +2197,7 @@ export const TeacherDashboard: React.FC = () => {
                               cursor: 'pointer',
                             }}
                           >
-                            👁️ Chi tiết
+                            Chi tiết
                           </button>
                         </td>
                       </tr>
@@ -2224,7 +2224,7 @@ export const TeacherDashboard: React.FC = () => {
           >
             <div>
               <h2 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>
-                📊 Điểm Kiểm Tra Định Kỳ &amp; Nhận Xét Học Viên
+                Điểm Kiểm Tra Định Kỳ &amp; Nhận Xét Học Viên
               </h2>
               <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
                 Nhập điểm kiểm tra (Đầu vào, Giữa kỳ, Cuối kỳ) và đánh giá nhận xét chung theo tháng hoặc cuối khóa
@@ -2246,7 +2246,7 @@ export const TeacherDashboard: React.FC = () => {
                   cursor: 'pointer',
                 }}
               >
-                ➕ Nhập Điểm Kiểm Tra Định Kỳ
+                Nhập Điểm Kiểm Tra Định Kỳ
               </button>
               <button
                 type="button"
@@ -2262,7 +2262,7 @@ export const TeacherDashboard: React.FC = () => {
                   cursor: 'pointer',
                 }}
               >
-                📝 Đánh Giá / Nhận Xét Tháng &amp; Khóa
+                Đánh Giá / Nhận Xét Tháng &amp; Khóa
               </button>
             </div>
           </div>
@@ -2332,7 +2332,7 @@ export const TeacherDashboard: React.FC = () => {
 
               <input
                 type="text"
-                placeholder="🔍 Tìm học viên, kỳ thi, tháng..."
+                placeholder="Tìm học viên, kỳ thi, tháng..."
                 value={gradeSearch}
                 onChange={(e) => setGradeSearch(e.target.value)}
                 style={{
@@ -2505,7 +2505,7 @@ export const TeacherDashboard: React.FC = () => {
                                 cursor: 'pointer',
                               }}
                             >
-                              ✏️ Sửa
+                              Sửa
                             </button>
                             <button
                               type="button"
@@ -2521,7 +2521,7 @@ export const TeacherDashboard: React.FC = () => {
                                 cursor: 'pointer',
                               }}
                             >
-                              🗑️
+                              Xóa
                             </button>
                           </div>
                         </td>
@@ -2553,8 +2553,8 @@ export const TeacherDashboard: React.FC = () => {
                 {editingGradeId
                   ? '✏️ Cập Nhật Kết Quả / Nhận Xét'
                   : gradeModalMode === 'TEST'
-                  ? '📊 Nhập Điểm Kiểm Tra Định Kỳ'
-                  : '📝 Đánh Giá & Nhận Xét Chung (Tháng / Khóa)'}
+                  ? 'Nhập Điểm Kiểm Tra Định Kỳ'
+                  : 'Đánh Giá & Nhận Xét Chung (Tháng / Khóa)'}
               </h3>
               <button
                 type="button"
@@ -2596,7 +2596,7 @@ export const TeacherDashboard: React.FC = () => {
                     color: gradeModalMode === 'TEST' ? '#047857' : '#64748b',
                   }}
                 >
-                  📊 Điểm kiểm tra định kỳ
+                  Điểm kiểm tra định kỳ
                 </button>
                 <button
                   type="button"
@@ -2622,7 +2622,7 @@ export const TeacherDashboard: React.FC = () => {
                     color: gradeModalMode === 'EVALUATION' ? '#1d4ed8' : '#64748b',
                   }}
                 >
-                  📝 Nhận xét tháng / cuối khóa
+                  Nhận xét tháng / cuối khóa
                 </button>
               </div>
             )}
@@ -2824,7 +2824,7 @@ export const TeacherDashboard: React.FC = () => {
                           cursor: 'pointer',
                         }}
                       >
-                        🧮 Tự tính Overall từ 4 kỹ năng
+                        Tự tính Overall từ 4 kỹ năng
                       </button>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.5rem' }}>
@@ -2984,7 +2984,7 @@ export const TeacherDashboard: React.FC = () => {
               }}
             >
               <h3 style={{ margin: 0, fontSize: '1.12rem', fontWeight: 800, color: '#0f172a' }}>
-                🔄 Đơn Xin Đổi Lịch Dạy
+                Đơn Xin Đổi Lịch Dạy
               </h3>
               <button
                 type="button"
@@ -3020,7 +3020,7 @@ export const TeacherDashboard: React.FC = () => {
                   color: requestTab === 'submit' ? '#064e3b' : '#64748b',
                 }}
               >
-                📝 Gửi Đơn Mới
+                Gửi Đơn Mới
               </button>
               <button
                 type="button"
@@ -3037,7 +3037,7 @@ export const TeacherDashboard: React.FC = () => {
                   color: requestTab === 'history' ? '#064e3b' : '#64748b',
                 }}
               >
-                📋 Lịch Sử ({scheduleRequests.length})
+                Lịch Sử ({scheduleRequests.length})
               </button>
             </div>
 
@@ -3258,7 +3258,7 @@ export const TeacherDashboard: React.FC = () => {
 
               <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', padding: '0.75rem 1rem', borderRadius: '10px' }}>
                 <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#166534' }}>
-                  📈 Chuyên cần: {selectedStudentDetail.attendanceStats?.attendanceRate ?? 100}% (
+                  Chuyên cần: {selectedStudentDetail.attendanceStats?.attendanceRate ?? 100}% (
                   {selectedStudentDetail.attendanceStats?.present ?? 0}/
                   {selectedStudentDetail.attendanceStats?.total ?? 0} buổi)
                 </div>

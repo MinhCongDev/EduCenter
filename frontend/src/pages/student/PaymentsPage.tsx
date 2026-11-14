@@ -75,17 +75,17 @@ const PaymentsPage: React.FC = () => {
 
   const tabs: { key: FilterKey; label: string; count: number }[] = [
     { key: 'ALL', label: 'Tất cả', count: payments.length },
-    { key: 'SUCCESS', label: '✅ Đã thanh toán', count: payments.filter((p) => p.status === 'SUCCESS').length },
+    { key: 'SUCCESS', label: 'Đã thanh toán', count: payments.filter((p) => p.status === 'SUCCESS').length },
     { key: 'PENDING', label: '⏳ Chờ thanh toán', count: payments.filter((p) => p.status === 'PENDING').length },
-    { key: 'FAILED', label: '❌ Thất bại', count: payments.filter((p) => p.status === 'FAILED').length },
-    { key: 'REFUNDED', label: '💸 Đã hoàn tiền', count: payments.filter((p) => p.status === 'REFUNDED').length },
+    { key: 'FAILED', label: 'Thất bại', count: payments.filter((p) => p.status === 'FAILED').length },
+    { key: 'REFUNDED', label: 'Đã hoàn tiền', count: payments.filter((p) => p.status === 'REFUNDED').length },
   ];
 
   return (
     <div className="dash-container">
       <div className="dash-banner">
         <div className="dash-banner-content">
-          <div className="dash-banner-badge">💳 Thanh Toán</div>
+          <div className="dash-banner-badge">Thanh Toán</div>
           <h1>Lịch Sử Thanh Toán Học Phí</h1>
           <p>
             {payments.length > 0
@@ -95,7 +95,7 @@ const PaymentsPage: React.FC = () => {
         </div>
         <div className="dash-banner-right">
           <div className="dash-date-pill">
-            <div>💳 {payments.length} giao dịch</div>
+            <div>{payments.length} giao dịch</div>
             <div className="sub">Học viên: {user?.fullName}</div>
           </div>
         </div>
@@ -106,10 +106,10 @@ const PaymentsPage: React.FC = () => {
           ← Dashboard
         </Link>
         <Link to="/student/classes" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
-          📚 Lớp Học
+          Lớp Học
         </Link>
         <Link to="/student/requests" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
-          🔄 Yêu Cầu
+          Yêu Cầu
         </Link>
       </div>
 
@@ -123,7 +123,7 @@ const PaymentsPage: React.FC = () => {
               </span>
               <span className="dash-metric-trend up">{stats.paidCount} giao dịch</span>
             </div>
-            <div className="dash-metric-icon icon-emerald">✅</div>
+            <div className="dash-metric-icon icon-emerald"></div>
           </div>
           <div className="dash-metric-card">
             <div className="dash-metric-info">
@@ -143,7 +143,7 @@ const PaymentsPage: React.FC = () => {
               </span>
               <span className="dash-metric-trend">{stats.total} giao dịch</span>
             </div>
-            <div className="dash-metric-icon icon-blue">💰</div>
+            <div className="dash-metric-icon icon-blue"></div>
           </div>
         </div>
       )}
@@ -161,7 +161,7 @@ const PaymentsPage: React.FC = () => {
           >
             <input
               type="text"
-              placeholder="🔍 Tìm theo mã GD, phương thức, lớp..."
+              placeholder="Tìm theo mã GD, phương thức, lớp..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               style={{

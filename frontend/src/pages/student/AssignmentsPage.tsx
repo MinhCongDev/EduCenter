@@ -109,14 +109,14 @@ const AssignmentsPage: React.FC = () => {
 
   const skillOptions: { value: string; label: string }[] = [
     { value: 'ALL', label: 'Tất cả kỹ năng' },
-    { value: 'LISTENING', label: '🎧 Listening' },
-    { value: 'READING', label: '📖 Reading' },
-    { value: 'WRITING', label: '✍️ Writing' },
-    { value: 'SPEAKING', label: '🎤 Speaking' },
-    { value: 'OVERALL', label: '📚 Overall' },
-    { value: 'VOCABULARY', label: '📝 Vocabulary' },
-    { value: 'GRAMMAR', label: '🔤 Grammar' },
-    { value: 'OTHER', label: '📌 Khác' },
+    { value: 'LISTENING', label: 'Listening' },
+    { value: 'READING', label: 'Reading' },
+    { value: 'WRITING', label: 'Writing' },
+    { value: 'SPEAKING', label: 'Speaking' },
+    { value: 'OVERALL', label: 'Overall' },
+    { value: 'VOCABULARY', label: 'Vocabulary' },
+    { value: 'GRAMMAR', label: 'Grammar' },
+    { value: 'OTHER', label: 'Khác' },
   ];
 
   const tabs: { key: FilterKey; label: string; count: number }[] = [
@@ -138,7 +138,7 @@ const AssignmentsPage: React.FC = () => {
     <div className="dash-container">
       <div className="dash-banner">
         <div className="dash-banner-content">
-          <div className="dash-banner-badge">📝 Bài Tập</div>
+          <div className="dash-banner-badge">Bài Tập</div>
           <h1>Bài Tập Lớp Học</h1>
           <p>
             {assignments.length > 0
@@ -150,7 +150,7 @@ const AssignmentsPage: React.FC = () => {
         </div>
         <div className="dash-banner-right">
           <div className="dash-date-pill">
-            <div>📝 {assignments.filter((a) => !a.submissionStatus).length} chưa nộp</div>
+            <div>{assignments.filter((a) => !a.submissionStatus).length} chưa nộp</div>
             <div className="sub">Lớp ID: {id}</div>
           </div>
         </div>
@@ -161,10 +161,10 @@ const AssignmentsPage: React.FC = () => {
           ← Chi Tiết Lớp
         </Link>
         <Link to={`/student/classes/${id}/attendance`} className="dash-quick-btn" style={{ textDecoration: 'none' }}>
-          📅 Điểm Danh
+          Điểm Danh
         </Link>
         <Link to={`/student/classes/${id}/grades`} className="dash-quick-btn" style={{ textDecoration: 'none' }}>
-          📊 Bảng Điểm
+          Bảng Điểm
         </Link>
       </div>
 
@@ -178,7 +178,7 @@ const AssignmentsPage: React.FC = () => {
                 Đã nộp: {assignments.filter((a) => a.submissionStatus).length}
               </span>
             </div>
-            <div className="dash-metric-icon icon-blue">📝</div>
+            <div className="dash-metric-icon icon-blue"></div>
           </div>
           <div className="dash-metric-card">
             <div className="dash-metric-info">
@@ -202,7 +202,7 @@ const AssignmentsPage: React.FC = () => {
                   : 'Chờ giảng viên chấm'}
               </span>
             </div>
-            <div className="dash-metric-icon icon-emerald">🏆</div>
+            <div className="dash-metric-icon icon-emerald"></div>
           </div>
         </div>
       )}
@@ -220,7 +220,7 @@ const AssignmentsPage: React.FC = () => {
           >
             <input
               type="text"
-              placeholder="🔍 Tìm theo tiêu đề, mô tả..."
+              placeholder="Tìm theo tiêu đề, mô tả..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               style={{
@@ -339,7 +339,7 @@ const AssignmentsPage: React.FC = () => {
                         marginBottom: '1rem',
                       }}
                     >
-                      <div className="dash-subcard-label">💬 Nhận xét</div>
+                      <div className="dash-subcard-label">Nhận xét</div>
                       <div style={{ marginTop: '0.25rem', fontSize: '0.9rem', color: '#475569' }}>
                         {a.feedback}
                       </div>
@@ -348,7 +348,7 @@ const AssignmentsPage: React.FC = () => {
 
                   {!a.submissionStatus ? (
                     <Button variant="primary" onClick={() => openSubmitModal(a._id)}>
-                      📤 Nộp bài ngay
+                      Nộp bài ngay
                     </Button>
                   ) : (
                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -362,7 +362,7 @@ const AssignmentsPage: React.FC = () => {
                           size="sm"
                           onClick={() => openSubmitModal(a._id)}
                         >
-                          🔄 Nộp lại
+                          Nộp lại
                         </Button>
                       )}
                     </div>

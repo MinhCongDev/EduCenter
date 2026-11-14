@@ -46,7 +46,7 @@ const StaffDashboard: React.FC = () => {
   const statCards = [
     {
       id: 'stat-total-courses',
-      icon: '📚',
+      icon: '',
       label: 'Tổng khóa học',
       value: loading ? '…' : stats.totalCourses.toString(),
       color: 'var(--primary-500)',
@@ -54,7 +54,7 @@ const StaffDashboard: React.FC = () => {
     },
     {
       id: 'stat-active-courses',
-      icon: '✅',
+      icon: '',
       label: 'Đang hoạt động',
       value: loading ? '…' : stats.activeCourses.toString(),
       color: 'var(--success)',
@@ -70,7 +70,7 @@ const StaffDashboard: React.FC = () => {
     },
     {
       id: 'stat-students',
-      icon: '👩‍🎓',
+      icon: '',
       label: 'Học viên',
       value: '–',
       color: 'var(--accent-500)',
@@ -78,7 +78,7 @@ const StaffDashboard: React.FC = () => {
     },
     {
       id: 'stat-teachers',
-      icon: '👨‍🏫',
+      icon: '',
       label: 'Giảng viên',
       value: '–',
       color: 'var(--primary-600)',
@@ -86,7 +86,7 @@ const StaffDashboard: React.FC = () => {
     },
     {
       id: 'stat-enrollments',
-      icon: '📋',
+      icon: '',
       label: 'Đăng ký',
       value: '–',
       color: 'var(--info)',
@@ -169,7 +169,7 @@ const StaffDashboard: React.FC = () => {
             <span className="dash-metric-val">4 lớp</span>
             <span className="dash-metric-trend up">Sắp đủ sĩ số</span>
           </div>
-          <div className="dash-metric-icon icon-blue">🏫</div>
+          <div className="dash-metric-icon icon-blue"></div>
         </div>
 
         <div className="dash-metric-card">
@@ -178,7 +178,7 @@ const StaffDashboard: React.FC = () => {
             <span className="dash-metric-val">186</span>
             <span className="dash-metric-trend up">Đang theo học tại trung tâm</span>
           </div>
-          <div className="dash-metric-icon icon-emerald">👩‍🎓</div>
+          <div className="dash-metric-icon icon-emerald"></div>
         </div>
 
         <div className="dash-metric-card">
@@ -187,7 +187,7 @@ const StaffDashboard: React.FC = () => {
             <span className="dash-metric-val">24.500.000 đ</span>
             <span className="dash-metric-trend neutral">3 giao dịch chờ xác nhận</span>
           </div>
-          <div className="dash-metric-icon icon-purple">💳</div>
+          <div className="dash-metric-icon icon-purple"></div>
         </div>
       </div>
 
@@ -199,7 +199,7 @@ const StaffDashboard: React.FC = () => {
           <div className="dash-card">
             <div className="dash-card-header">
               <h2 className="dash-card-title">
-                <span>🏫</span> Tình Trạng Tuyển Sinh Các Lớp Sắp Mở
+                 Tình Trạng Tuyển Sinh Các Lớp Sắp Mở
               </h2>
               <span className="dash-subcard-meta">Hạn chót: 28/10/2026</span>
             </div>
@@ -246,13 +246,13 @@ const StaffDashboard: React.FC = () => {
           <div className="dash-card">
             <div className="dash-card-header">
               <h2 className="dash-card-title">
-                <span>🏢</span> Lịch Phòng Máy Hôm Nay
+                 Lịch Phòng Máy Hôm Nay
               </h2>
             </div>
             <div className="dash-item-list">
               <div className="dash-item">
                 <div className="dash-item-main">
-                  <div className="dash-item-icon">🖥️</div>
+                  
                   <div>
                     <div className="dash-item-title">Phòng Lab 302</div>
                     <div className="dash-item-sub">18:30 - 21:00 • Lớp WEB-K24-A</div>
@@ -263,7 +263,7 @@ const StaffDashboard: React.FC = () => {
 
               <div className="dash-item">
                 <div className="dash-item-main">
-                  <div className="dash-item-icon">🖥️</div>
+                  
                   <div>
                     <div className="dash-item-title">Phòng Lab 405</div>
                     <div className="dash-item-sub">19:00 - 21:30 • Lớp AI-K12-B</div>
@@ -274,7 +274,7 @@ const StaffDashboard: React.FC = () => {
 
               <div className="dash-item">
                 <div className="dash-item-main">
-                  <div className="dash-item-icon">🏫</div>
+                  
                   <div>
                     <div className="dash-item-title">Phòng Lý Thuyết 201</div>
                     <div className="dash-item-sub">Trống cả ngày</div>
@@ -289,23 +289,23 @@ const StaffDashboard: React.FC = () => {
           <div className="dash-card">
             <div className="dash-card-header">
               <h2 className="dash-card-title">
-                <span>📌</span> Việc Giáo Vụ Cần Lưu Ý
+                 Việc Giáo Vụ Cần Lưu Ý
               </h2>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               <div className="dash-subcard" style={{ borderLeft: '4px solid #10b981' }}>
                 <p className="dash-subcard-body" style={{ margin: 0 }}>
-                  ✉️ Gửi email nhắc lịch khai giảng cho học viên lớp Web Fullstack trước ngày 29/10.
+                  Gửi email nhắc lịch khai giảng cho học viên lớp Web Fullstack trước ngày 29/10.
                 </p>
               </div>
               <div className="dash-subcard" style={{ borderLeft: '4px solid #3b82f6' }}>
                 <p className="dash-subcard-body" style={{ margin: 0 }}>
-                  🛠️ Kiểm tra hệ thống mạng và cài đặt IDE Node.js tại phòng Lab 302.
+                  Kiểm tra hệ thống mạng và cài đặt IDE Node.js tại phòng Lab 302.
                 </p>
               </div>
               <div className="dash-subcard" style={{ borderLeft: '4px solid #f59e0b' }}>
                 <p className="dash-subcard-body" style={{ margin: 0 }}>
-                  💰 Chốt danh sách thu học phí đợt đầu để chuyển sang phòng Kế toán.
+                  Chốt danh sách thu học phí đợt đầu để chuyển sang phòng Kế toán.
                 </p>
               </div>
             </div>
@@ -368,7 +368,7 @@ const StaffDashboard: React.FC = () => {
           <h2 className="staff-section-title">Hoạt động gần đây</h2>
         </div>
         <div className="staff-empty-state">
-          <span className="staff-empty-icon">📡</span>
+          
           <p>Kết nối backend để hiển thị dữ liệu thực tế.</p>
         </div>
       </section>

@@ -186,7 +186,7 @@ export const PlacementTestDetailPage: React.FC = () => {
 
   if (!isAuthenticated) {
     return (
-      <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem 1rem', backgroundColor: '#F8FAFC' }}>
+      <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'calc(76px + 2rem) 1rem 2rem', backgroundColor: '#F8FAFC' }}>
         <div style={{ maxWidth: '520px', width: '100%', backgroundColor: '#FFFFFF', borderRadius: '24px', padding: '2.5rem', boxShadow: '0 12px 36px rgba(0,0,0,0.08)', textAlign: 'center', border: '1px solid #E2E8F0' }}>
           <div style={{ width: '68px', height: '68px', borderRadius: '50%', backgroundColor: '#FEF3C7', color: '#D97706', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.2rem', margin: '0 auto 1.25rem' }}>
             🔒
@@ -259,8 +259,8 @@ export const PlacementTestDetailPage: React.FC = () => {
 
   if (error || !test) {
     return (
-      <div style={{ maxWidth: '600px', margin: '4rem auto', textAlign: 'center', padding: '2rem', backgroundColor: '#ffffff', borderRadius: '16px', border: '1px solid #fee2e2' }}>
-        <span style={{ fontSize: '3rem' }}>⚠️</span>
+      <div style={{ maxWidth: '600px', margin: 'calc(76px + 3rem) auto 4rem', textAlign: 'center', padding: '2rem', backgroundColor: '#ffffff', borderRadius: '16px', border: '1px solid #fee2e2' }}>
+        
         <h2 style={{ color: '#b91c1c', margin: '1rem 0 0.5rem' }}>Không thể tải bài thi</h2>
         <p style={{ color: '#64748b', marginBottom: '1.5rem' }}>{error || 'Bài thi không tồn tại.'}</p>
         <Link to="/placement-test" className="dash-quick-btn primary" style={{ display: 'inline-block', textDecoration: 'none' }}>
@@ -290,7 +290,7 @@ export const PlacementTestDetailPage: React.FC = () => {
                 : '0 - 3.5');
 
     return (
-      <div style={{ backgroundColor: '#f8fafc', minHeight: '100vh', padding: '2.5rem 1rem 5rem' }}>
+      <div style={{ backgroundColor: '#f8fafc', minHeight: '100vh', padding: 'calc(76px + 2rem) 1rem 5rem' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
           {/* Back link */}
           <div style={{ marginBottom: '1.5rem' }}>
@@ -348,14 +348,13 @@ export const PlacementTestDetailPage: React.FC = () => {
                     fontSize: '0.8rem',
                     fontWeight: 800,
                     color: '#fef3c7',
-                    marginBottom: '1rem',
+                    marginBottom: '0.85rem',
                   }}
                 >
-                  <span>🎉</span>
                   <span>KẾT QUẢ KHẢO THÍ CHUẨN XÁC</span>
                 </div>
 
-                <h1 style={{ fontSize: 'clamp(1.75rem, 3vw, 2.3rem)', fontWeight: 900, margin: '0 0 0.5rem', lineHeight: 1.2 }}>
+                <h1 style={{ fontSize: 'clamp(1.35rem, 2vw, 1.75rem)', fontWeight: 800, margin: '0 0 0.5rem', lineHeight: 1.3, color: '#ffffff' }}>
                   {result.testTitle}
                 </h1>
 
@@ -420,7 +419,7 @@ export const PlacementTestDetailPage: React.FC = () => {
             }}
           >
             <h2 style={{ margin: '0 0 1.25rem', fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>
-              📊 Phân Tích Năng Lực Chi Tiết Theo Kỹ Năng
+              Phân Tích Năng Lực Chi Tiết Theo Kỹ Năng
             </h2>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
@@ -472,7 +471,7 @@ export const PlacementTestDetailPage: React.FC = () => {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>
-              <span style={{ fontSize: '1.75rem' }}>🎯</span>
+              
               <div>
                 <span style={{ color: '#047857', fontWeight: 800, fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                   GỢI Ý LỘ TRÌNH KHÓA HỌC DÀNH RIÊNG CHO BẠN (BAND {result.predictedBand} • {targetMatchedLevel})
@@ -539,7 +538,7 @@ export const PlacementTestDetailPage: React.FC = () => {
                 }}
               >
                 <div style={{ fontWeight: 800, color: '#064e3b', fontSize: '0.88rem', marginBottom: '4px' }}>
-                  💡 Lý do khóa học này là bước đi hoàn hảo nhất cho bạn:
+                  Lý do khóa học này là bước đi hoàn hảo nhất cho bạn:
                 </div>
                 <div style={{ fontSize: '0.88rem', color: '#334155', lineHeight: 1.5 }}>
                   {result.primaryCourse.whyRecommended}
@@ -592,7 +591,7 @@ export const PlacementTestDetailPage: React.FC = () => {
                     transition: 'all 0.2s',
                   }}
                 >
-                  <span>⚡ Đăng Ký Khóa Học Này Ngay</span>
+                  <span>Đăng Ký Khóa Học Này Ngay</span>
                   <span>→</span>
                 </button>
 
@@ -613,7 +612,7 @@ export const PlacementTestDetailPage: React.FC = () => {
                     gap: '6px',
                   }}
                 >
-                  <span>🔍 Xem Tất Cả Khóa Học Band {result.predictedBand} ({targetMatchedLevel})</span>
+                  <span>Xem Tất Cả Khóa Học Band {result.predictedBand} ({targetMatchedLevel})</span>
                   <span>→</span>
                 </Link>
 
@@ -633,7 +632,7 @@ export const PlacementTestDetailPage: React.FC = () => {
                     gap: '6px',
                   }}
                 >
-                  <span>📞 Tư Vấn Lịch Học</span>
+                  <span>Tư Vấn Lịch Học</span>
                 </a>
               </div>
             </div>
@@ -642,7 +641,7 @@ export const PlacementTestDetailPage: React.FC = () => {
             {result.secondaryCourses.length > 0 && (
               <div style={{ marginTop: '1.5rem' }}>
                 <div style={{ fontSize: '0.88rem', fontWeight: 800, color: '#334155', marginBottom: '0.75rem' }}>
-                  📚 Khóa học cùng trình độ Band {result.predictedBand} ({targetMatchedLevel}):
+                  Khóa học cùng trình độ Band {result.predictedBand} ({targetMatchedLevel}):
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
                   {result.secondaryCourses.map((sec) => (
@@ -713,7 +712,7 @@ export const PlacementTestDetailPage: React.FC = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
               <div>
                 <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: '#0f172a' }}>
-                  📖 Đáp Án &amp; Lời Giải Thích Chi Tiết Từng Câu
+                  Đáp Án &amp; Lời Giải Thích Chi Tiết Từng Câu
                 </h2>
                 <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
                   Học từ những lỗi sai để cải thiện phản xạ và ghi nhớ ngữ pháp / từ vựng học thuật
@@ -809,7 +808,7 @@ export const PlacementTestDetailPage: React.FC = () => {
                         color: q.isCorrect ? '#047857' : '#b91c1c',
                       }}
                     >
-                      {q.isCorrect ? '✓ Đúng' : q.userAnswer === 'UNANSWERED' ? '⚠️ Chưa trả lời' : '✕ Sai'}
+                      {q.isCorrect ? '✓ Đúng' : q.userAnswer === 'UNANSWERED' ? 'Chưa trả lời' : '✕ Sai'}
                     </span>
                   </div>
 
@@ -874,7 +873,7 @@ export const PlacementTestDetailPage: React.FC = () => {
                       lineHeight: 1.5,
                     }}
                   >
-                    <strong style={{ color: '#047857' }}>💡 Giải thích chi tiết: </strong>
+                    <strong style={{ color: '#047857' }}>Giải thích chi tiết: </strong>
                     {q.explanation}
                   </div>
                 </div>
@@ -896,7 +895,7 @@ export const PlacementTestDetailPage: React.FC = () => {
                 className="dash-quick-btn"
                 style={{ padding: '0.75rem 1.5rem', fontWeight: 700 }}
               >
-                🔄 Làm Lại Bài Thi Này
+                Làm Lại Bài Thi Này
               </button>
 
               <Link
@@ -904,7 +903,7 @@ export const PlacementTestDetailPage: React.FC = () => {
                 className="dash-quick-btn primary"
                 style={{ padding: '0.75rem 1.5rem', fontWeight: 700, textDecoration: 'none' }}
               >
-                🎯 Chọn Bài Test Khác
+                Chọn Bài Test Khác
               </Link>
             </div>
           </div>
@@ -919,7 +918,7 @@ export const PlacementTestDetailPage: React.FC = () => {
   const isPassageBased = Boolean(test.passages && test.passages.length > 0);
 
   return (
-    <div style={{ backgroundColor: '#f1f5f9', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ backgroundColor: '#f1f5f9', minHeight: '100vh', display: 'flex', flexDirection: 'column', paddingTop: '76px' }}>
       {/* Sticky Exam Top Bar */}
       <header
         style={{
@@ -1150,7 +1149,7 @@ export const PlacementTestDetailPage: React.FC = () => {
                     gap: '4px',
                   }}
                 >
-                  <span>{flaggedQuestions[currentQuestion.id] ? '🚩 Đã cắm cờ' : '🏳️ Đặt cờ xem lại'}</span>
+                  <span>{flaggedQuestions[currentQuestion.id] ? 'Đã cắm cờ' : 'Đặt cờ xem lại'}</span>
                 </button>
               </div>
 
@@ -1396,7 +1395,7 @@ export const PlacementTestDetailPage: React.FC = () => {
             }}
           >
             <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>
-              {unansweredCount > 0 ? '⚠️' : '📝'}
+              
             </div>
 
             <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.35rem', fontWeight: 900, color: '#0f172a' }}>

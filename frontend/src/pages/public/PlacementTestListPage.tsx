@@ -68,7 +68,10 @@ export const PlacementTestListPage: React.FC = () => {
         style={{
           background: 'linear-gradient(135deg, #064e3b 0%, #065f46 40%, #047857 100%)',
           color: '#ffffff',
-          padding: '4rem 1.5rem 3.5rem',
+          paddingTop: 'calc(76px + 1.5rem)',
+          paddingBottom: '2.25rem',
+          paddingLeft: '1.5rem',
+          paddingRight: '1.5rem',
           position: 'relative',
           overflow: 'hidden',
         }}
@@ -87,16 +90,18 @@ export const PlacementTestListPage: React.FC = () => {
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '8px',
-              backgroundColor: 'rgba(255, 255, 255, 0.12)',
+              gap: '6px',
+              backgroundColor: 'rgba(255, 255, 255, 0.18)',
               backdropFilter: 'blur(8px)',
-              border: '1px solid rgba(255, 255, 255, 0.25)',
-              padding: '6px 16px',
+              border: '1px solid rgba(255, 255, 255, 0.35)',
+              padding: '3px 14px',
               borderRadius: '999px',
-              fontSize: '0.85rem',
+              fontSize: '0.75rem',
               fontWeight: 700,
               color: '#fef3c7',
-              marginBottom: '1.25rem',
+              marginBottom: '0.85rem',
+              letterSpacing: '0.4px',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.12)',
             }}
           >
             <span>BÀI KIỂM TRA ĐẦU VÀO</span>
@@ -104,24 +109,26 @@ export const PlacementTestListPage: React.FC = () => {
 
           <h1
             style={{
-              fontSize: 'clamp(2rem, 4vw, 3.2rem)',
-              fontWeight: 900,
-              lineHeight: 1.2,
-              margin: '0 0 1rem',
-              letterSpacing: '-0.02em',
+              fontSize: 'clamp(1.4rem, 2.2vw, 1.85rem)',
+              fontWeight: 800,
+              lineHeight: 1.3,
+              margin: '0 0 0.65rem',
+              letterSpacing: '-0.01em',
+              color: '#ffffff',
+              textShadow: '0 2px 10px rgba(0, 0, 0, 0.2)',
             }}
           >
-            Kiểm Tra Trình Độ Đầu Vào <br />
+            <span style={{ color: '#ffffff' }}>Kiểm Tra Trình Độ Đầu Vào</span> <br />
             <span style={{ color: '#fcd34d' }}>Chọn bài kiểm tra phù hợp với khóa học</span>
           </h1>
 
           <p
             style={{
-              fontSize: 'clamp(1rem, 1.8vw, 1.15rem)',
+              fontSize: '0.88rem',
               color: '#e2e8f0',
-              maxWidth: '820px',
-              margin: '0 auto 2rem',
-              lineHeight: 1.6,
+              maxWidth: '680px',
+              margin: '0 auto 1.25rem',
+              lineHeight: 1.55,
             }}
           >
             Danh sách dưới đây gồm các bài kiểm tra đã được trung tâm công bố. Chọn bài phù hợp để xem hướng dẫn và bắt đầu làm bài.
@@ -133,25 +140,25 @@ export const PlacementTestListPage: React.FC = () => {
               display: 'flex',
               justifyContent: 'center',
               flexWrap: 'wrap',
-              gap: '1.5rem',
-              maxWidth: '900px',
+              gap: '1.25rem',
+              maxWidth: '850px',
               margin: '0 auto',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#f1f5f9', fontSize: '0.9rem', fontWeight: 600 }}>
-              <span style={{ color: '#fcd34d', fontSize: '1.2rem' }}>✓</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#f1f5f9', fontSize: '0.8rem', fontWeight: 600 }}>
+              <span style={{ color: '#fcd34d', fontSize: '0.95rem' }}>✓</span>
               <span>Đề thi được lấy từ hệ thống của trung tâm</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#f1f5f9', fontSize: '0.9rem', fontWeight: 600 }}>
-              <span style={{ color: '#fcd34d', fontSize: '1.2rem' }}>✓</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#f1f5f9', fontSize: '0.8rem', fontWeight: 600 }}>
+              <span style={{ color: '#fcd34d', fontSize: '0.95rem' }}>✓</span>
               <span>Bài trắc nghiệm được chấm tự động sau khi nộp</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#f1f5f9', fontSize: '0.9rem', fontWeight: 600 }}>
-              <span style={{ color: '#fcd34d', fontSize: '1.2rem' }}>✓</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#f1f5f9', fontSize: '0.8rem', fontWeight: 600 }}>
+              <span style={{ color: '#fcd34d', fontSize: '0.95rem' }}>✓</span>
               <span>Hiển thị độ khó và khóa học liên quan</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#f1f5f9', fontSize: '0.9rem', fontWeight: 600 }}>
-              <span style={{ color: '#fcd34d', fontSize: '1.2rem' }}>✓</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#f1f5f9', fontSize: '0.8rem', fontWeight: 600 }}>
+              <span style={{ color: '#fcd34d', fontSize: '0.95rem' }}>✓</span>
               <span>Chỉ hiển thị đề đã được xuất bản</span>
             </div>
           </div>
@@ -344,7 +351,7 @@ export const PlacementTestListPage: React.FC = () => {
                       <div>
                         <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600 }}>Số câu hỏi</div>
                         <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#047857', marginTop: '2px' }}>
-                          📝 {test.totalQuestions} câu
+                          {test.totalQuestions} câu
                         </div>
                       </div>
                       <div>
@@ -358,7 +365,7 @@ export const PlacementTestListPage: React.FC = () => {
                     {/* What this test covers */}
                     <div style={{ marginBottom: '1.5rem' }}>
                       <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                        💡 Kỹ năng đánh giá chính:
+                        Kỹ năng đánh giá chính:
                       </div>
                       <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.82rem', color: '#64748b', lineHeight: 1.6 }}>
                         {test.skills.length > 0
@@ -391,7 +398,7 @@ export const PlacementTestListPage: React.FC = () => {
                         transition: 'background-color 0.2s',
                       }}
                     >
-                      <span>{isAuthenticated ? 'Bắt Đầu Làm Bài Ngay' : '🔒 Đăng Nhập Để Làm Bài'}</span>
+                      <span>{isAuthenticated ? 'Bắt Đầu Làm Bài Ngay' : 'Đăng Nhập Để Làm Bài'}</span>
                       <span>→</span>
                     </button>
                   </div>
@@ -415,7 +422,7 @@ export const PlacementTestListPage: React.FC = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
               <div>
                 <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>
-                  📊 Lịch Sử Các Lần Làm Bài Thi Của Bạn
+                  Lịch Sử Các Lần Làm Bài Thi Của Bạn
                 </h2>
                 <span style={{ fontSize: '0.84rem', color: '#64748b' }}>
                   Theo dõi sự tiến bộ và lộ trình khóa học đã được gợi ý
@@ -643,7 +650,7 @@ export const PlacementTestListPage: React.FC = () => {
           >
             <div>
               <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '1.05rem' }}>
-                💬 Bạn cần tư vấn trực tiếp 1:1 cùng Chuyên viên Giáo vụ?
+                Bạn cần tư vấn trực tiếp 1:1 cùng Chuyên viên Giáo vụ?
               </div>
               <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '3px' }}>
                 Hỗ trợ phân tích chuyên sâu bài thi Speaking &amp; Writing và lập kế hoạch mục tiêu du học/xét tuyển ĐH miễn phí.
@@ -665,7 +672,6 @@ export const PlacementTestListPage: React.FC = () => {
                 gap: '6px',
               }}
             >
-              <span>📞</span>
               <span>Hotline: 1900 6868</span>
             </a>
           </div>

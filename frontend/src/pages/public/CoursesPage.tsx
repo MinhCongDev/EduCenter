@@ -232,40 +232,102 @@ export const CoursesPage: React.FC = () => {
   return (
     <div style={{ backgroundColor: '#F8FAFC', minHeight: '80vh', paddingBottom: '4rem' }}>
       {/* Hero Header */}
-      <div
+      <section
         style={{
-          background: 'linear-gradient(135deg, #07403F 0%, #052F2E 100%)',
-          color: '#FFFFFF',
-          padding: '3rem 1.5rem',
-          textAlign: 'center',
-          borderBottom: '4px solid #57D061',
+          background: 'linear-gradient(135deg, #064e3b 0%, #065f46 40%, #047857 100%)',
+          color: '#ffffff',
+          paddingTop: 'calc(76px + 1.5rem)',
+          paddingBottom: '2.25rem',
+          paddingLeft: '1.5rem',
+          paddingRight: '1.5rem',
+          position: 'relative',
+          overflow: 'hidden',
         }}
       >
-        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'radial-gradient(circle at top right, rgba(252, 211, 77, 0.15) 0%, transparent 60%)',
+            pointerEvents: 'none',
+          }}
+        />
+
+        <div style={{ maxWidth: '1200px', margin: '0 auto', position: 'relative', zIndex: 1, textAlign: 'center' }}>
           <div
             style={{
-              display: 'inline-block',
-              backgroundColor: 'rgba(255, 255, 255, 0.15)',
-              padding: '4px 14px',
-              borderRadius: '20px',
-              fontSize: '0.85rem',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              backgroundColor: 'rgba(255, 255, 255, 0.18)',
+              backdropFilter: 'blur(8px)',
+              border: '1px solid rgba(255, 255, 255, 0.35)',
+              padding: '3px 14px',
+              borderRadius: '999px',
+              fontSize: '0.75rem',
               fontWeight: 700,
-              color: '#FCD34D',
-              marginBottom: '1rem',
-              letterSpacing: '1px',
+              color: '#fef3c7',
+              marginBottom: '0.85rem',
+              letterSpacing: '0.4px',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.12)',
             }}
           >
-            LỘ TRÌNH ĐÀO TẠO IELTS CHUẨN KHẢO THÍ IDP &amp; BC
+            <span>LỘ TRÌNH ĐÀO TẠO IELTS CHUẨN KHẢO THÍ IDP &amp; BC</span>
           </div>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: 800, margin: '0 0 1rem 0' }}>
-            Danh Sách Khóa Học IELTS
+
+          <h1
+            style={{
+              fontSize: 'clamp(1.4rem, 2.2vw, 1.85rem)',
+              fontWeight: 800,
+              lineHeight: 1.3,
+              margin: '0 0 0.65rem',
+              letterSpacing: '-0.01em',
+              color: '#ffffff',
+              textShadow: '0 2px 10px rgba(0, 0, 0, 0.2)',
+            }}
+          >
+            <span style={{ color: '#ffffff' }}>Danh Sách Khóa Học IELTS</span> <br />
+            <span style={{ color: '#fcd34d' }}>Cam kết chuẩn đầu ra bằng hợp đồng đào tạo</span>
           </h1>
-          <p style={{ fontSize: '1.05rem', color: '#E2E8F0', maxWidth: '700px', margin: '0 auto' }}>
-            Tìm kiếm và lựa chọn khóa học phù hợp với trình độ đầu vào và mục tiêu Band điểm mong muốn. 
-            Cam kết chuẩn đầu ra bằng hợp đồng đào tạo pháp lý.
+
+          <p
+            style={{
+              fontSize: '0.88rem',
+              color: '#e2e8f0',
+              maxWidth: '680px',
+              margin: '0 auto 1.25rem',
+              lineHeight: 1.55,
+            }}
+          >
+            Tìm kiếm và lựa chọn khóa học phù hợp với trình độ đầu vào và mục tiêu Band điểm mong muốn. Đội ngũ giáo viên 8.5+ IELTS cùng lộ trình đào tạo cá nhân hóa toàn diện.
           </p>
+
+          {/* Quick Highlights Bar */}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'center',
+              flexWrap: 'wrap',
+              gap: '1.25rem',
+              maxWidth: '850px',
+              margin: '0 auto',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#f1f5f9', fontSize: '0.8rem', fontWeight: 600 }}>
+              <span style={{ color: '#fcd34d', fontSize: '0.95rem' }}>✓</span>
+              <span>Cam kết chuẩn đầu ra bằng văn bản pháp lý</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#f1f5f9', fontSize: '0.8rem', fontWeight: 600 }}>
+              <span style={{ color: '#fcd34d', fontSize: '0.95rem' }}>✓</span>
+              <span>100% Giảng viên 8.5+ IELTS &amp; Chuyên gia sư phạm</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#f1f5f9', fontSize: '0.8rem', fontWeight: 600 }}>
+              <span style={{ color: '#fcd34d', fontSize: '0.95rem' }}>✓</span>
+              <span>Lộ trình cá nhân hóa dựa trên bài test đầu vào</span>
+            </div>
+          </div>
         </div>
-      </div>
+      </section>
 
       <div style={{ maxWidth: '1240px', margin: '0 auto', padding: '2rem 1rem' }}>
         {/* Search & Filter Toolbar */}
@@ -285,7 +347,7 @@ export const CoursesPage: React.FC = () => {
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="🔍 Tìm kiếm khóa học theo tên, mã khóa, từ khóa..."
+                placeholder="Tìm kiếm khóa học theo tên, mã khóa, từ khóa..."
                 style={{
                   width: '100%',
                   padding: '0.75rem 1rem',
@@ -552,8 +614,7 @@ export const CoursesPage: React.FC = () => {
               boxShadow: '0 4px 16px rgba(0, 0, 0, 0.05)',
             }}
           >
-            <span style={{ fontSize: '3rem' }}>🔍</span>
-            <h3 style={{ margin: '1rem 0 0.5rem', color: '#1E293B' }}>Không tìm thấy khóa học nào phù hợp</h3>
+            <h3 style={{ margin: '1rem 0 0.5rem', color: '#1E293B', fontSize: '1.15rem' }}>Không tìm thấy khóa học nào phù hợp</h3>
             <p style={{ color: '#64748B', maxWidth: '480px', margin: '0 auto 1.5rem' }}>
               Vui lòng thử thay đổi từ khóa tìm kiếm hoặc bấm đặt lại bộ lọc để xem toàn bộ danh mục khóa học.
             </p>
