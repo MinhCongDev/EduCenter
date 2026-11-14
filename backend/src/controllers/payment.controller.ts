@@ -915,7 +915,7 @@ export const checkPayOSPaymentStatus = async (req: AuthRequest, res: Response): 
         if (payment.enrollment) {
           await Enrollment.findByIdAndUpdate(payment.enrollment, { tuitionStatus: 'PAID' });
         } else if (payment.course) {
-          const studentEnrollment = await Enrollment.findOne({
+          let studentEnrollment = await Enrollment.findOne({
             student: payment.student,
             course: payment.course,
             status: { $ne: 'DROPPED' },
@@ -923,6 +923,17 @@ export const checkPayOSPaymentStatus = async (req: AuthRequest, res: Response): 
           if (studentEnrollment) {
             studentEnrollment.tuitionStatus = 'PAID';
             await studentEnrollment.save();
+          } else {
+            studentEnrollment = await Enrollment.create({
+              student: payment.student,
+              course: payment.course,
+              status: 'PENDING',
+              tuitionStatus: 'PAID',
+              registrationDate: payment.paymentDate || new Date(),
+              enrollmentDate: payment.paymentDate || new Date(),
+            });
+            payment.enrollment = studentEnrollment._id;
+            await payment.save();
           }
         }
       } catch (enrErr: any) {
@@ -1031,7 +1042,7 @@ export const handlePayOSWebhook = async (req: Request, res: Response): Promise<v
         if (payment.enrollment) {
           await Enrollment.findByIdAndUpdate(payment.enrollment, { tuitionStatus: 'PAID' });
         } else if (payment.course) {
-          const studentEnrollment = await Enrollment.findOne({
+          let studentEnrollment = await Enrollment.findOne({
             student: payment.student,
             course: payment.course,
             status: { $ne: 'DROPPED' },
@@ -1039,6 +1050,17 @@ export const handlePayOSWebhook = async (req: Request, res: Response): Promise<v
           if (studentEnrollment) {
             studentEnrollment.tuitionStatus = 'PAID';
             await studentEnrollment.save();
+          } else {
+            studentEnrollment = await Enrollment.create({
+              student: payment.student,
+              course: payment.course,
+              status: 'PENDING',
+              tuitionStatus: 'PAID',
+              registrationDate: payment.paymentDate || new Date(),
+              enrollmentDate: payment.paymentDate || new Date(),
+            });
+            payment.enrollment = studentEnrollment._id;
+            await payment.save();
           }
         }
       } catch (enrErr: any) {
