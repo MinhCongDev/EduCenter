@@ -149,7 +149,20 @@ export const getMyClasses = async (req: AuthRequest, res: Response): Promise<voi
 
     const classes = enrollments.map((e: any) => {
       const cls = e.class;
-      const course = cls?.course || e.course;
+      let course = cls?.course || e.course;
+
+      // Bảo vệ: Nếu khóa học bị null hoặc thiếu thông tin, tự động fallback để không bị crash giao diện
+      if (!course) {
+        course = {
+          _id: e.course || e._id,
+          code: 'IELTS-COURSE',
+          title: 'Khóa học đã đăng ký',
+          tuitionFee: 0,
+          description: 'Khóa học được thiết kế nâng cao toàn diện 4 kỹ năng IELTS chuẩn quốc tế.',
+          sessions: 30,
+          format: 'OFFLINE',
+        };
+      }
       const isPendingClass = !cls || e.status === 'PENDING';
 
       return {

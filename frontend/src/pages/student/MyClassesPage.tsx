@@ -31,40 +31,40 @@ const MyClassesPage: React.FC = () => {
   const [selectedCourseDetail, setSelectedCourseDetail] = useState<Course | null>(null);
 
   const handleOpenCourseDetail = async (courseData: any) => {
-    if (!courseData) return;
-    const targetIdOrCode = courseData._id || courseData.code || courseData.id;
+    const raw = courseData || {};
+    const targetIdOrCode = raw._id || raw.code || raw.id;
 
     const fallbackCourse: Course = {
-      _id: courseData._id || (typeof targetIdOrCode === 'string' ? targetIdOrCode : 'course_detail'),
-      code: courseData.code || 'IELTS',
-      title: courseData.title || 'Khóa học IELTS',
+      _id: raw._id || (typeof targetIdOrCode === 'string' ? targetIdOrCode : 'course_detail'),
+      code: raw.code || 'IELTS',
+      title: raw.title || 'Khóa học IELTS',
       description:
-        courseData.description ||
+        raw.description ||
         'Khóa học được thiết kế sát với năng lực học viên, nâng cao toàn diện 4 kỹ năng chuẩn khảo thí quốc tế.',
-      category: courseData.category || 'Nền tảng IELTS',
-      entryLevel: courseData.entryLevel || 'Nền tảng',
-      targetLevel: courseData.targetLevel || 'IELTS 6.5+',
-      sessions: courseData.sessions || 30,
-      tuitionFee: courseData.tuitionFee || 0,
-      format: courseData.format || 'OFFLINE',
+      category: raw.category || 'Nền tảng IELTS',
+      entryLevel: raw.entryLevel || 'Nền tảng',
+      targetLevel: raw.targetLevel || 'IELTS 6.5+',
+      sessions: raw.sessions || 30,
+      tuitionFee: raw.tuitionFee || 0,
+      format: raw.format || 'OFFLINE',
       status: 'ACTIVE',
-      learningObjectives: Array.isArray(courseData.learningObjectives) && courseData.learningObjectives.length > 0
-        ? courseData.learningObjectives
+      learningObjectives: Array.isArray(raw.learningObjectives) && raw.learningObjectives.length > 0
+        ? raw.learningObjectives
         : [
           'Hiểu rõ tiêu chí chấm điểm và format bài thi chuẩn quốc tế',
           'Rèn luyện kỹ năng Skimming & Scanning trong bài đọc',
           'Luyện phản xạ từ khóa và phương pháp tư duy học thuật',
           'Cam kết chuẩn đầu ra văn bằng chứng chỉ trung tâm',
         ],
-      syllabus: Array.isArray(courseData.syllabus) && courseData.syllabus.length > 0
-        ? courseData.syllabus
+      syllabus: Array.isArray(raw.syllabus) && raw.syllabus.length > 0
+        ? raw.syllabus
         : [
           'Tuần 1-3: Xây dựng nền tảng ngữ âm, từ vựng và ngữ pháp trọng tâm',
           'Tuần 4-6: Rèn luyện chiến thuật giải đề thi 4 kỹ năng chi tiết',
           'Tuần 7-9: Luyện đề thực chiến với áp lực thời gian',
           'Tuần 10: Mock test kiểm tra đầu ra và đánh giá xếp hạng',
         ],
-      classes: Array.isArray(courseData.classes) ? courseData.classes : [],
+      classes: Array.isArray(raw.classes) ? raw.classes : [],
       createdAt: '',
       updatedAt: '',
     };
@@ -296,8 +296,8 @@ const MyClassesPage: React.FC = () => {
                             gap: '0.75rem 1.5rem',
                           }}
                         >
-                          <Field label="Khóa học" value={courseData?.title || '—'} />
-                          <Field label="Mã khóa" value={courseData?.code || '—'} />
+                          <Field label="Khóa học" value={courseData?.title || 'Khóa học đã đăng ký'} />
+                          <Field label="Mã khóa" value={courseData?.code || 'IELTS'} />
                           <Field
                             label="Trạng thái lớp"
                             value={<span style={{ color: '#d97706', fontWeight: 700 }}>Đang chờ staff xếp lớp</span>}
