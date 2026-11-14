@@ -153,7 +153,6 @@ const getMenuItems = (role: UserRole): DashboardItem[] => {
       { label: 'Tổng quan', path: '/director/dashboard', icon: DIRECTOR_ICONS.overview },
       { label: 'Quản lý thông báo', path: '/director/dashboard?tab=announcements', icon: DIRECTOR_ICONS.announcements },
       { label: 'Quản lý tài khoản', path: '/director/dashboard?tab=account_permissions', icon: DIRECTOR_ICONS.permissions },
-      { label: 'Giám sát vận hành', path: '/director/dashboard?tab=monitoring', icon: DIRECTOR_ICONS.monitoring },
       { label: 'Báo cáo học viên', path: '/director/dashboard?tab=student_reports', dividerBefore: true, icon: DIRECTOR_ICONS.studentReport },
       { label: 'Báo cáo giảng viên', path: '/director/dashboard?tab=teacher_reports', icon: DIRECTOR_ICONS.teacherReport },
       { label: 'Báo cáo lớp & khóa học', path: '/director/dashboard?tab=class_course_reports', icon: DIRECTOR_ICONS.classReport },

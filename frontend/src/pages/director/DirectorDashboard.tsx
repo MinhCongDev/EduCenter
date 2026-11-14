@@ -8,21 +8,17 @@ import type {
   DirectorSummary,
   StaffAccount,
   AddStaffPayload,
-  CenterOperationsData,
-  StudentActivitiesData,
-  TeacherActivitiesData,
   StudentReportsData,
   TeacherReportsData,
   ClassAndCourseReportsData,
   RevenueReportsData,
 } from '../../services/director.service';
-import type { ProposalItem, Announcement, ManagedStudent } from '../../types';
+import type { Announcement, ManagedStudent } from '../../types';
 
 export type DirectorTab =
   | 'overview'
   | 'announcements'
   | 'account_permissions'
-  | 'monitoring'
   | 'student_reports'
   | 'teacher_reports'
   | 'class_course_reports'
@@ -43,7 +39,6 @@ export const DirectorDashboard: React.FC = () => {
         'overview',
         'announcements',
         'account_permissions',
-        'monitoring',
         'student_reports',
         'teacher_reports',
         'class_course_reports',
@@ -128,31 +123,12 @@ export const DirectorDashboard: React.FC = () => {
     yearsOfExperience: 3,
   });
 
-  // Monitoring Sub-tabs: 'operations' | 'students' | 'teachers'
-  const [monitoringSubTab, setMonitoringSubTab] = useState<'operations' | 'students' | 'teachers'>('operations');
-  const [operationsData, setOperationsData] = useState<CenterOperationsData | null>(null);
-  const [studentActivities, setStudentActivities] = useState<StudentActivitiesData | null>(null);
-  const [teacherActivities, setTeacherActivities] = useState<TeacherActivitiesData | null>(null);
-
   // Reports state
   const [studentReports, setStudentReports] = useState<StudentReportsData | null>(null);
   const [teacherReports, setTeacherReports] = useState<TeacherReportsData | null>(null);
   const [classCourseReports, setClassCourseReports] = useState<ClassAndCourseReportsData | null>(null);
   const [classCourseSubTab, setClassCourseSubTab] = useState<'classes' | 'courses'>('classes');
   const [revenueReports, setRevenueReports] = useState<RevenueReportsData | null>(null);
-
-  // ── Approvals & Proposals (Real DB Model) ──
-  const [approvals, setApprovals] = useState<ProposalItem[]>([]);
-  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
-  const [isAddProposalModalOpen, setIsAddProposalModalOpen] = useState<boolean>(false);
-  const [isSubmittingProposal, setIsSubmittingProposal] = useState<boolean>(false);
-  const [newProposalForm, setNewProposalForm] = useState({
-    title: '',
-    description: '',
-    category: 'Mở lớp mới',
-    proposerName: '',
-    proposerRole: 'Giáo vụ',
-  });
 
   // ── Announcements Management ──
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -200,18 +176,14 @@ export const DirectorDashboard: React.FC = () => {
   const loadDirectorData = async () => {
     try {
       setLoading(true);
-      const [statsRes, staffRes, opsRes, stuActRes, teaActRes, stuRepRes, teaRepRes, clsRepRes, revRepRes, appRes] =
+      const [statsRes, staffRes, stuRepRes, teaRepRes, clsRepRes, revRepRes] =
         await Promise.all([
           directorService.getDashboardStats().catch(() => null),
           directorService.getStaffAccounts().catch(() => null),
-          directorService.getOperationsMonitoring().catch(() => null),
-          directorService.getStudentActivities().catch(() => null),
-          directorService.getTeacherActivities().catch(() => null),
           directorService.getStudentReports().catch(() => null),
           directorService.getTeacherReports().catch(() => null),
           directorService.getClassAndCourseReports().catch(() => null),
           directorService.getRevenueReports().catch(() => null),
-          directorService.getApprovals().catch(() => null),
         ]);
 
       if (statsRes?.data?.data?.summary) {
@@ -220,23 +192,9 @@ export const DirectorDashboard: React.FC = () => {
       if (statsRes?.data?.data?.courseRevenue) {
         setCourseRevenueList(statsRes.data.data.courseRevenue);
       }
-      if (appRes?.data?.data) {
-        setApprovals(appRes.data.data);
-      } else if (statsRes?.data?.data?.recentApprovals) {
-        setApprovals(statsRes.data.data.recentApprovals);
-      }
 
       if (staffRes?.data?.data?.accounts) {
         setStaffAccounts(staffRes.data.data.accounts);
-      }
-      if (opsRes?.data?.data) {
-        setOperationsData(opsRes.data.data);
-      }
-      if (stuActRes?.data?.data) {
-        setStudentActivities(stuActRes.data.data);
-      }
-      if (teaActRes?.data?.data) {
-        setTeacherActivities(teaActRes.data.data);
       }
       if (stuRepRes?.data?.data) {
         setStudentReports(stuRepRes.data.data);
@@ -277,66 +235,6 @@ export const DirectorDashboard: React.FC = () => {
         .catch(() => {});
     }
   }, [activeTab, fetchAnnouncementsList, studentAccounts.length]);
-
-  // ── Approvals Action Handlers (Calling Real Backend API) ──
-  const handleApprove = async (id: string) => {
-    try {
-      setActionLoadingId(id);
-      const res = await directorService.reviewApproval(id, 'APPROVED');
-      setApprovals((prev) =>
-        prev.map((item) => (item._id === id || item.code === id ? res.data.data : item))
-      );
-      showToast('✅ Đã phê duyệt đề xuất thành công!');
-    } catch (err: any) {
-      showToast('❌ Lỗi phê duyệt: ' + (err?.response?.data?.message || err.message));
-    } finally {
-      setActionLoadingId(null);
-    }
-  };
-
-  const handleReject = async (id: string) => {
-    try {
-      setActionLoadingId(id);
-      const res = await directorService.reviewApproval(id, 'REJECTED');
-      setApprovals((prev) =>
-        prev.map((item) => (item._id === id || item.code === id ? res.data.data : item))
-      );
-      showToast('⚠️ Đã từ chối đề xuất.');
-    } catch (err: any) {
-      showToast('❌ Lỗi từ chối: ' + (err?.response?.data?.message || err.message));
-    } finally {
-      setActionLoadingId(null);
-    }
-  };
-
-  const handleCreateProposal = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newProposalForm.title.trim()) {
-      showToast('Vui lòng điền tiêu đề đề xuất');
-      return;
-    }
-    setIsSubmittingProposal(true);
-    try {
-      const res = await directorService.createApproval({
-        ...newProposalForm,
-        proposerName: newProposalForm.proposerName.trim() || user?.fullName || 'Ban Giám Đốc',
-      });
-      setApprovals((prev) => [res.data.data, ...prev]);
-      showToast('🎉 Đã tạo đề xuất thành công!');
-      setIsAddProposalModalOpen(false);
-      setNewProposalForm({
-        title: '',
-        description: '',
-        category: 'Mở lớp mới',
-        proposerName: '',
-        proposerRole: 'Giáo vụ',
-      });
-    } catch (err: any) {
-      showToast('❌ Lỗi tạo đề xuất: ' + (err?.response?.data?.message || err.message));
-    } finally {
-      setIsSubmittingProposal(false);
-    }
-  };
 
   // ── Announcements Action Handlers (Full CRUD) ──
   const handleOpenCreateAnnouncement = () => {
@@ -912,13 +810,6 @@ export const DirectorDashboard: React.FC = () => {
             <button
               type="button"
               className="dash-quick-btn"
-              onClick={() => handleTabChange('monitoring')}
-            >
-              Giám sát vận hành
-            </button>
-            <button
-              type="button"
-              className="dash-quick-btn"
               onClick={() => handleTabChange('student_reports')}
             >
               Báo cáo học viên
@@ -1079,114 +970,6 @@ export const DirectorDashboard: React.FC = () => {
                   })()}
                 </div>
               </div>
-
-              {/* Real Pending Approvals */}
-              <div className="dash-card">
-                <div className="dash-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <h2 className="dash-card-title">
-                    Đề Xuất &amp; Phê Duyệt Của Ban Quản Trị / Admin
-                  </h2>
-                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                    <span className="badge-pill badge-amber">
-                      {approvals.filter((a) => a.status === 'PENDING').length} cần xử lý
-                    </span>
-                  </div>
-                </div>
-
-                <div className="dash-table-wrapper" style={{ marginTop: '0.5rem' }}>
-                  <table className="dash-table">
-                    <thead>
-                      <tr>
-                        <th>Mã</th>
-                        <th>Nội dung đề xuất</th>
-                        <th>Người gửi</th>
-                        <th>Trạng thái</th>
-                        <th style={{ textAlign: 'right' }}>Hành động</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {approvals.length === 0 ? (
-                        <tr>
-                          <td colSpan={5} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
-                            {loading ? 'Đang tải danh sách đề xuất...' : 'Hiện không có đề xuất nào trong hệ thống.'}
-                          </td>
-                        </tr>
-                      ) : (
-                        approvals.map((item) => {
-                          const itemId = item._id || item.code;
-                          const isActing = actionLoadingId === itemId;
-                          return (
-                            <tr key={itemId}>
-                              <td style={{ fontWeight: 700, color: '#047857' }}>{item.code}</td>
-                              <td>
-                                <strong>{item.title}</strong>
-                                {item.description && (
-                                  <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '2px' }}>
-                                    {item.description}
-                                  </div>
-                                )}
-                                <div className="dash-subcard-meta">
-                                  {item.createdAt
-                                    ? new Date(item.createdAt).toLocaleDateString('vi-VN', {
-                                        hour: '2-digit',
-                                        minute: '2-digit',
-                                        day: '2-digit',
-                                        month: '2-digit',
-                                        year: 'numeric',
-                                      })
-                                    : 'Hôm nay'}
-                                  {item.category && ` • ${item.category}`}
-                                </div>
-                              </td>
-                              <td>
-                                <div>{item.proposerName}</div>
-                                {item.proposerRole && (
-                                  <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                                    ({item.proposerRole})
-                                  </div>
-                                )}
-                              </td>
-                              <td>
-                                {item.status === 'PENDING' && <span className="badge-pill badge-amber">Chờ duyệt</span>}
-                                {item.status === 'APPROVED' && <span className="badge-pill badge-green">Đã duyệt</span>}
-                                {item.status === 'REJECTED' && <span className="badge-pill badge-red">Từ chối</span>}
-                              </td>
-                              <td style={{ textAlign: 'right' }}>
-                                {item.status === 'PENDING' ? (
-                                  <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end' }}>
-                                    <button
-                                      type="button"
-                                      disabled={isActing}
-                                      onClick={() => handleApprove(itemId)}
-                                      className="dash-quick-btn primary"
-                                      style={{ padding: '0.35rem 0.8rem', fontSize: '0.78rem', cursor: 'pointer' }}
-                                    >
-                                      {isActing ? '...' : 'Duyệt'}
-                                    </button>
-                                    <button
-                                      type="button"
-                                      disabled={isActing}
-                                      onClick={() => handleReject(itemId)}
-                                      className="dash-quick-btn"
-                                      style={{ padding: '0.35rem 0.8rem', fontSize: '0.78rem', color: '#ef4444', cursor: 'pointer' }}
-                                    >
-                                      {isActing ? '...' : 'Bác'}
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <span className="dash-subcard-meta" style={{ fontWeight: 600 }}>
-                                    {item.status === 'APPROVED' ? 'Đã hoàn tất' : 'Đã từ chối'}
-                                  </span>
-                                )}
-                              </td>
-                            </tr>
-                          );
-                        })
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
             </div>
 
             {/* Right Col */}
@@ -1214,14 +997,6 @@ export const DirectorDashboard: React.FC = () => {
                   >
                     
                     <span>Quản Lý &amp; Đăng Thông Báo Trung Tâm</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="dash-quick-btn"
-                    onClick={() => handleTabChange('monitoring')}
-                  >
-                    
-                    <span>Giám Sát Vận Hành Phòng Học Hôm Nay</span>
                   </button>
                 </div>
               </div>
@@ -1608,7 +1383,7 @@ export const DirectorDashboard: React.FC = () => {
                 badge: 'Toàn quyền hệ thống',
                 color: '#7c3aed',
                 bg: '#f5f3ff',
-                perms: ['Phê duyệt đề xuất & thông báo', 'Quản lý tài khoản nhân sự', 'Giám sát vận hành & báo cáo doanh thu'],
+                perms: ['Quản lý thông báo trung tâm', 'Quản lý tài khoản nhân sự', 'Báo cáo doanh thu & báo cáo học viên'],
               },
               {
                 role: 'TRAINING_STAFF',
@@ -1818,282 +1593,7 @@ export const DirectorDashboard: React.FC = () => {
       )}
 
       {/* ─────────────────────────────────────────────────────────────
-          3. MONITOR OPERATIONS, STUDENT ACTIVITIES & TEACHER ACTIVITIES
-          ───────────────────────────────────────────────────────────── */}
-      {activeTab === 'monitoring' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          <div>
-            <h2 style={{ margin: '0 0 0.35rem', fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>
-              Trung Tâm Giám Sát Hoạt Động (Center Operations &amp; Activities Monitoring)
-            </h2>
-            <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
-              Theo dõi thời gian thực công suất phòng học, tiến độ học viên và hiệu suất giảng viên
-            </span>
-          </div>
-
-          {/* Sub-tab segmented control */}
-          <div style={{ display: 'flex', gap: '0.5rem', backgroundColor: '#f1f5f9', padding: '4px', borderRadius: '10px', width: 'fit-content' }}>
-            <button
-              type="button"
-              onClick={() => setMonitoringSubTab('operations')}
-              style={{
-                padding: '8px 16px',
-                borderRadius: '8px',
-                border: 'none',
-                fontWeight: 700,
-                fontSize: '0.82rem',
-                cursor: 'pointer',
-                backgroundColor: monitoringSubTab === 'operations' ? '#ffffff' : 'transparent',
-                color: monitoringSubTab === 'operations' ? '#064e3b' : '#64748b',
-                boxShadow: monitoringSubTab === 'operations' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-              }}
-            >
-              Giám Sát Phòng Học &amp; Cơ Sở
-            </button>
-            <button
-              type="button"
-              onClick={() => setMonitoringSubTab('students')}
-              style={{
-                padding: '8px 16px',
-                borderRadius: '8px',
-                border: 'none',
-                fontWeight: 700,
-                fontSize: '0.82rem',
-                cursor: 'pointer',
-                backgroundColor: monitoringSubTab === 'students' ? '#ffffff' : 'transparent',
-                color: monitoringSubTab === 'students' ? '#064e3b' : '#64748b',
-                boxShadow: monitoringSubTab === 'students' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-              }}
-            >
-              Giám Sát Học Viên
-            </button>
-            <button
-              type="button"
-              onClick={() => setMonitoringSubTab('teachers')}
-              style={{
-                padding: '8px 16px',
-                borderRadius: '8px',
-                border: 'none',
-                fontWeight: 700,
-                fontSize: '0.82rem',
-                cursor: 'pointer',
-                backgroundColor: monitoringSubTab === 'teachers' ? '#ffffff' : 'transparent',
-                color: monitoringSubTab === 'teachers' ? '#064e3b' : '#64748b',
-                boxShadow: monitoringSubTab === 'teachers' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-              }}
-            >
-              Giám Sát Giảng Viên
-            </button>
-          </div>
-
-          {/* Sub-tab 1: Center Operations */}
-          {monitoringSubTab === 'operations' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
-                <div className="dash-card" style={{ padding: '1.25rem', borderLeft: '4px solid #059669' }}>
-                  <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>Tỷ lệ sử dụng phòng</div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', marginTop: '0.2rem' }}>
-                    {operationsData?.capacityUtilizationRate || 86.5}%
-                  </div>
-                  <div style={{ fontSize: '0.75rem', color: '#047857', marginTop: '0.25rem' }}>Đạt tiêu chuẩn cao</div>
-                </div>
-
-                <div className="dash-card" style={{ padding: '1.25rem', borderLeft: '4px solid #3b82f6' }}>
-                  <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>Phòng đang sử dụng</div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', marginTop: '0.2rem' }}>
-                    {operationsData?.inUseRooms || 3} / {operationsData?.totalRooms || 5} phòng
-                  </div>
-                  <div style={{ fontSize: '0.75rem', color: '#1d4ed8', marginTop: '0.25rem' }}>Ca tối 18:30 - 21:00</div>
-                </div>
-
-                <div className="dash-card" style={{ padding: '1.25rem', borderLeft: '4px solid #f59e0b' }}>
-                  <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>Lớp đang vận hành</div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', marginTop: '0.2rem' }}>
-                    {summary.classesCount} lớp học
-                  </div>
-                  <div style={{ fontSize: '0.75rem', color: '#b45309', marginTop: '0.25rem' }}>100% đúng tiến độ</div>
-                </div>
-              </div>
-
-              {/* Classrooms Status Grid */}
-              <div className="dash-card" style={{ padding: '1.25rem', borderRadius: '16px' }}>
-                <h3 style={{ margin: '0 0 1rem', fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>
-                  Trạng Thái Phòng Máy &amp; Giảng Đường Hôm Nay
-                </h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
-                  {(operationsData?.classrooms || [
-                    { room: 'Phòng Lab 301', type: 'Computer Lab (Thi thử IDP/BC)', capacity: 30, occupied: 24, status: 'IN_USE', currentClass: 'IELTS-K26-A' },
-                    { room: 'Phòng Lab 302', type: 'Smart Classroom 4K', capacity: 25, occupied: 20, status: 'IN_USE', currentClass: 'IELTS-K25-B' },
-                    { room: 'Phòng Lab 303', type: 'Speaking Studio 1:1', capacity: 10, occupied: 8, status: 'IN_USE', currentClass: 'Speaking Coaching' },
-                    { room: 'Phòng Lab 401', type: 'Lý thuyết & Thảo luận', capacity: 35, occupied: 0, status: 'AVAILABLE', currentClass: 'Trống' },
-                    { room: 'Phòng Hội thảo', type: 'Hội trường & Thi thử lớn', capacity: 80, occupied: 0, status: 'MAINTENANCE', currentClass: 'Bảo trì định kỳ' },
-                  ]).map((cr, idx) => (
-                    <div
-                      key={idx}
-                      style={{
-                        padding: '1rem',
-                        borderRadius: '12px',
-                        backgroundColor: '#f8fafc',
-                        border: '1px solid #e2e8f0',
-                        borderLeft: cr.status === 'IN_USE' ? '4px solid #059669' : cr.status === 'AVAILABLE' ? '4px solid #3b82f6' : '4px solid #f59e0b',
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontWeight: 800, color: '#0f172a', fontSize: '1rem' }}>{cr.room}</span>
-                        <span
-                          style={{
-                            padding: '2px 7px',
-                            borderRadius: '6px',
-                            fontSize: '0.72rem',
-                            fontWeight: 700,
-                            backgroundColor: cr.status === 'IN_USE' ? '#ecfdf5' : cr.status === 'AVAILABLE' ? '#eff6ff' : '#fef3c7',
-                            color: cr.status === 'IN_USE' ? '#047857' : cr.status === 'AVAILABLE' ? '#1d4ed8' : '#b45309',
-                          }}
-                        >
-                          {cr.status === 'IN_USE' ? 'Đang dùng' : cr.status === 'AVAILABLE' ? 'Trống' : 'Bảo trì'}
-                        </span>
-                      </div>
-                      <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '0.2rem' }}>{cr.type}</div>
-                      <div style={{ marginTop: '0.65rem', fontSize: '0.82rem' }}>
-                        <div>Sĩ số: <strong style={{ color: '#0f172a' }}>{cr.occupied} / {cr.capacity}</strong> máy/chỗ</div>
-                        <div style={{ marginTop: '2px' }}>Lớp: <strong style={{ color: '#047857' }}>{cr.currentClass}</strong></div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Sub-tab 2: Student Activities */}
-          {monitoringSubTab === 'students' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
-                <div className="dash-card" style={{ padding: '1.25rem', borderLeft: '4px solid #059669' }}>
-                  <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>Tỷ lệ chuyên cần trung bình</div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#047857', marginTop: '0.2rem' }}>
-                    {studentActivities?.averageAttendanceRate || '94.2%'}
-                  </div>
-                  <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>4/4 buổi diễn ra đúng giờ</div>
-                </div>
-
-                <div className="dash-card" style={{ padding: '1.25rem', borderLeft: '4px solid #3b82f6' }}>
-                  <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>Tỷ lệ nộp bài tập đúng hạn</div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#1d4ed8', marginTop: '0.2rem' }}>
-                    {studentActivities?.assignmentSubmissionRate || '91.8%'}
-                  </div>
-                  <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>Writing Task 1 &amp; 2</div>
-                </div>
-              </div>
-
-              {/* Recent Student Submissions */}
-              <div className="dash-card" style={{ padding: '1.25rem', borderRadius: '16px' }}>
-                <h3 style={{ margin: '0 0 1rem', fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>
-                  Bài Làm &amp; Hoạt Động Mới Nhất Của Học Viên
-                </h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  {(studentActivities?.recentSubmissions?.length ? studentActivities.recentSubmissions : [
-                    { id: '1', title: 'Writing Task 1 - Bar Chart', student: 'Phạm Hải Đăng', skill: 'Writing', time: '10 phút trước', score: 'Band 7.5' },
-                    { id: '2', title: 'Speaking Part 2 Self-Introduction', student: 'Vũ Ngọc Mai', skill: 'Speaking', time: '35 phút trước', score: 'Chờ chấm' },
-                    { id: '3', title: 'Reading Passage Practice Vol 19', student: 'Lê Minh Khôi', skill: 'Reading', time: '1 giờ trước', score: 'Band 8.0' },
-                    { id: '4', title: 'Writing Task 2 - Education Topic', student: 'Nguyễn Thị Lan Anh', skill: 'Writing', time: '2 giờ trước', score: 'Band 7.0' },
-                  ]).map((item: any, idx: number) => (
-                    <div
-                      key={item.id || idx}
-                      style={{
-                        padding: '0.85rem 1rem',
-                        borderRadius: '10px',
-                        backgroundColor: '#f8fafc',
-                        border: '1px solid #e2e8f0',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <div>
-                        <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.9rem' }}>
-                          {item.title || item.assignment?.title}
-                        </div>
-                        <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '2px' }}>
-                          Học viên: <strong style={{ color: '#0f172a' }}>{item.student?.fullName || item.student}</strong> • {item.time || new Date(item.submittedAt).toLocaleTimeString('vi-VN')}
-                        </div>
-                      </div>
-                      <div>
-                        <span style={{ backgroundColor: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', padding: '3px 8px', borderRadius: '6px', fontWeight: 800, fontSize: '0.75rem' }}>
-                          {item.score || (item.grade ? `Band ${item.grade}` : 'Đã nộp')}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Sub-tab 3: Teacher Activities */}
-          {monitoringSubTab === 'teachers' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
-                <div className="dash-card" style={{ padding: '1.25rem', borderLeft: '4px solid #059669' }}>
-                  <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>Tổng giờ dạy trong tuần</div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#047857', marginTop: '0.2rem' }}>
-                    {teacherActivities?.totalTeachingHoursWeek || 48} giờ
-                  </div>
-                  <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>Đúng lịch 100%</div>
-                </div>
-
-                <div className="dash-card" style={{ padding: '1.25rem', borderLeft: '4px solid #f59e0b' }}>
-                  <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>Đánh giá trung bình từ học viên</div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#b45309', marginTop: '0.2rem' }}>
-                    ⭐ {teacherActivities?.averageFeedbackScore || 4.88} / 5.0
-                  </div>
-                  <div style={{ fontSize: '0.75rem', color: '#047857', marginTop: '0.25rem' }}>Top 1 học viện</div>
-                </div>
-              </div>
-
-              {/* Teacher Performance Grid */}
-              <div className="dash-card" style={{ padding: '0.5rem', borderRadius: '16px', overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '2px solid #e2e8f0', backgroundColor: '#f8fafc', textAlign: 'left', color: '#475569' }}>
-                      <th style={{ padding: '10px 14px' }}>Giảng Viên</th>
-                      <th style={{ padding: '10px 14px' }}>IELTS Band</th>
-                      <th style={{ padding: '10px 14px' }}>Lớp Phụ Trách</th>
-                      <th style={{ padding: '10px 14px' }}>Giờ Dạy / Tuần</th>
-                      <th style={{ padding: '10px 14px' }}>Tốc Độ Chấm Bài</th>
-                      <th style={{ padding: '10px 14px' }}>Đánh Giá Học Viên</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(teacherActivities?.teachers?.length ? teacherActivities.teachers : [
-                      { id: '1', fullName: 'ThS. Nguyễn Hoàng Nam', ieltsBand: 9.0, assignedClassesCount: 3, weeklyHours: 18, gradingSpeed: 'Dưới 12 giờ', satisfactionRating: 4.95 },
-                      { id: '2', fullName: 'Thầy Alex Nguyễn', ieltsBand: 9.0, assignedClassesCount: 4, weeklyHours: 24, gradingSpeed: 'Dưới 24 giờ', satisfactionRating: 4.92 },
-                      { id: '3', fullName: 'Cô Sarah Phương', ieltsBand: 8.5, assignedClassesCount: 3, weeklyHours: 18, gradingSpeed: 'Dưới 24 giờ', satisfactionRating: 4.88 },
-                      { id: '4', fullName: 'Thầy Michael Trần', ieltsBand: 8.5, assignedClassesCount: 2, weeklyHours: 12, gradingSpeed: 'Dưới 24 giờ', satisfactionRating: 4.85 },
-                    ]).map((t: any, idx: number) => (
-                      <tr key={t.id || idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                        <td style={{ padding: '12px 14px', fontWeight: 800, color: '#0f172a' }}>{t.fullName}</td>
-                        <td style={{ padding: '12px 14px' }}>
-                          <span style={{ backgroundColor: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', padding: '2px 7px', borderRadius: '6px', fontWeight: 800 }}>
-                            Band {t.ieltsBand}
-                          </span>
-                        </td>
-                        <td style={{ padding: '12px 14px', fontWeight: 600 }}>{t.assignedClassesCount} lớp active</td>
-                        <td style={{ padding: '12px 14px', color: '#334155' }}>{t.weeklyHours} giờ / tuần</td>
-                        <td style={{ padding: '12px 14px', color: '#047857', fontWeight: 600 }}>⚡ {t.gradingSpeed}</td>
-                        <td style={{ padding: '12px 14px', fontWeight: 800, color: '#f59e0b' }}>⭐ {t.satisfactionRating?.toFixed(2)} / 5.0</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ─────────────────────────────────────────────────────────────
-          4. VIEW STUDENT REPORTS
+          3. VIEW STUDENT REPORTS
           ───────────────────────────────────────────────────────────── */}
       {activeTab === 'student_reports' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -4215,356 +3715,6 @@ export const DirectorDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* ─────────────────────────────────────────────────────────────
-          MODAL: TẠO ĐỀ XUẤT MỚI (APPROVALS)
-          ───────────────────────────────────────────────────────────── */}
-      {isAddProposalModalOpen && (
-        <div
-          className="dmr-modal-backdrop"
-          onClick={() => setIsAddProposalModalOpen(false)}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(15, 23, 42, 0.65)',
-            backdropFilter: 'blur(8px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 9999,
-            padding: '1rem',
-          }}
-        >
-          <div
-            style={{
-              maxWidth: '620px',
-              width: '94%',
-              maxHeight: '92vh',
-              overflowY: 'auto',
-              borderRadius: '20px',
-              backgroundColor: '#FFFFFF',
-              boxShadow: '0 25px 60px -15px rgba(15, 23, 42, 0.28)',
-              border: '1px solid #E2E8F0',
-              display: 'flex',
-              flexDirection: 'column',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div
-              style={{
-                padding: '1.35rem 1.65rem',
-                background: 'linear-gradient(135deg, #064E3B 0%, #065F46 50%, #047857 100%)',
-                color: '#FFFFFF',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                position: 'sticky',
-                top: 0,
-                zIndex: 10,
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div
-                  style={{
-                    width: '42px',
-                    height: '42px',
-                    borderRadius: '12px',
-                    background: 'rgba(255, 255, 255, 0.16)',
-                    backdropFilter: 'blur(6px)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '1.3rem',
-                    border: '1px solid rgba(255, 255, 255, 0.25)',
-                    flexShrink: 0,
-                  }}
-                >
-                  📑
-                </div>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: '1.18rem', fontWeight: 800, color: '#FFFFFF', letterSpacing: '-0.01em' }}>
-                    Tạo Đề Xuất Trình Ban Giám Đốc
-                  </h3>
-                  <p style={{ margin: '2px 0 0', fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.85)' }}>
-                    Gửi tờ trình phê duyệt mở lớp mới, học bổng hoặc đề xuất vận hành trung tâm
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsAddProposalModalOpen(false)}
-                style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '50%',
-                  border: 'none',
-                  background: 'rgba(255, 255, 255, 0.15)',
-                  color: '#FFFFFF',
-                  fontSize: '1rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  transition: 'background 0.2s',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)')}
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Form Content */}
-            <form onSubmit={handleCreateProposal} style={{ display: 'flex', flexDirection: 'column' }}>
-              <div style={{ padding: '1.5rem 1.65rem', display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
-                {/* Title */}
-                <div>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.84rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.35rem' }}>
-                    
-                    <span>Tiêu đề đề xuất</span>
-                    <span style={{ color: '#EF4444' }}>*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Ví dụ: Mở thêm lớp cấp tốc IELTS 7.0+, Đề xuất cấp học bổng tài năng..."
-                    value={newProposalForm.title}
-                    onChange={(e) => setNewProposalForm({ ...newProposalForm, title: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '0.7rem 0.95rem',
-                      borderRadius: '10px',
-                      border: '1.5px solid #E2E8F0',
-                      fontSize: '0.9rem',
-                      fontWeight: 600,
-                      color: '#0F172A',
-                      outline: 'none',
-                      backgroundColor: '#F8FAFC',
-                      transition: 'all 0.2s ease',
-                    }}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = '#059669';
-                      e.target.style.backgroundColor = '#FFFFFF';
-                      e.target.style.boxShadow = '0 0 0 3px rgba(5, 150, 105, 0.12)';
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = '#E2E8F0';
-                      e.target.style.backgroundColor = '#F8FAFC';
-                      e.target.style.boxShadow = 'none';
-                    }}
-                  />
-                </div>
-
-                {/* Grid Category & Proposer Role */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.85rem' }}>
-                  <div>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
-                      
-                      <span>Lĩnh vực phân loại:</span>
-                    </label>
-                    <select
-                      value={newProposalForm.category}
-                      onChange={(e) => setNewProposalForm({ ...newProposalForm, category: e.target.value })}
-                      style={{
-                        width: '100%',
-                        padding: '0.65rem 0.85rem',
-                        borderRadius: '10px',
-                        border: '1.5px solid #E2E8F0',
-                        fontSize: '0.85rem',
-                        fontWeight: 600,
-                        color: '#0F172A',
-                        backgroundColor: '#F8FAFC',
-                        cursor: 'pointer',
-                        outline: 'none',
-                      }}
-                      onFocus={(e) => {
-                        e.target.style.borderColor = '#059669';
-                        e.target.style.backgroundColor = '#FFFFFF';
-                      }}
-                      onBlur={(e) => {
-                        e.target.style.borderColor = '#E2E8F0';
-                        e.target.style.backgroundColor = '#F8FAFC';
-                      }}
-                    >
-                      <option value="Mở lớp mới">Mở lớp học mới</option>
-                      <option value="Học bổng">Học bổng &amp; Ưu đãi học phí</option>
-                      <option value="Khảo thí & Điểm">Khảo thí &amp; Điểm thi</option>
-                      <option value="Cơ sở vật chất">Cơ sở vật chất &amp; Thiết bị</option>
-                      <option value="Chương trình học">Giáo trình &amp; Học liệu</option>
-                      <option value="Khác">Đề xuất vận hành khác</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
-                      
-                      <span>Chức vụ / Bộ phận người gửi:</span>
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Ví dụ: Trưởng ban Giáo vụ, Phòng Đào tạo..."
-                      value={newProposalForm.proposerRole}
-                      onChange={(e) => setNewProposalForm({ ...newProposalForm, proposerRole: e.target.value })}
-                      style={{
-                        width: '100%',
-                        padding: '0.65rem 0.95rem',
-                        borderRadius: '10px',
-                        border: '1.5px solid #E2E8F0',
-                        fontSize: '0.86rem',
-                        color: '#334155',
-                        outline: 'none',
-                        backgroundColor: '#F8FAFC',
-                      }}
-                      onFocus={(e) => {
-                        e.target.style.borderColor = '#059669';
-                        e.target.style.backgroundColor = '#FFFFFF';
-                      }}
-                      onBlur={(e) => {
-                        e.target.style.borderColor = '#E2E8F0';
-                        e.target.style.backgroundColor = '#F8FAFC';
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* Proposer Name */}
-                <div>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
-                    
-                    <span>Họ tên người đề xuất:</span>
-                    <span style={{ fontSize: '0.76rem', fontWeight: 500, color: '#64748B' }}>(Mặc định lấy theo tài khoản đang đăng nhập)</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder={user?.fullName ? `Mặc định: ${user.fullName}` : 'Để trống nếu lấy theo tài khoản đang đăng nhập'}
-                    value={newProposalForm.proposerName}
-                    onChange={(e) => setNewProposalForm({ ...newProposalForm, proposerName: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '0.65rem 0.95rem',
-                      borderRadius: '10px',
-                      border: '1.5px solid #E2E8F0',
-                      fontSize: '0.86rem',
-                      color: '#334155',
-                      outline: 'none',
-                      backgroundColor: '#F8FAFC',
-                    }}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = '#059669';
-                      e.target.style.backgroundColor = '#FFFFFF';
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = '#E2E8F0';
-                      e.target.style.backgroundColor = '#F8FAFC';
-                    }}
-                  />
-                </div>
-
-                {/* Description Textarea */}
-                <div>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.84rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.35rem' }}>
-                    
-                    <span>Nội dung chi tiết &amp; Lý do trình Ban Giám Đốc</span>
-                    <span style={{ color: '#EF4444' }}>*</span>
-                  </label>
-                  <textarea
-                    required
-                    rows={5}
-                    placeholder="Mô tả mục đích đề xuất, căn cứ thực tế, dự trù kinh phí/nhân sự (nếu có) và kế hoạch triển khai cụ thể để Ban Giám Đốc xem xét..."
-                    value={newProposalForm.description}
-                    onChange={(e) => setNewProposalForm({ ...newProposalForm, description: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '0.75rem 0.95rem',
-                      borderRadius: '10px',
-                      border: '1.5px solid #E2E8F0',
-                      fontSize: '0.88rem',
-                      lineHeight: 1.6,
-                      color: '#0F172A',
-                      outline: 'none',
-                      backgroundColor: '#F8FAFC',
-                      fontFamily: 'inherit',
-                      resize: 'vertical',
-                    }}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = '#059669';
-                      e.target.style.backgroundColor = '#FFFFFF';
-                      e.target.style.boxShadow = '0 0 0 3px rgba(5, 150, 105, 0.12)';
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = '#E2E8F0';
-                      e.target.style.backgroundColor = '#F8FAFC';
-                      e.target.style.boxShadow = 'none';
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* Modal Footer */}
-              <div
-                style={{
-                  padding: '1rem 1.65rem',
-                  borderTop: '1px solid #E2E8F0',
-                  display: 'flex',
-                  justifyContent: 'flex-end',
-                  gap: '0.75rem',
-                  backgroundColor: '#F8FAFC',
-                  borderBottomLeftRadius: '20px',
-                  borderBottomRightRadius: '20px',
-                }}
-              >
-                <button
-                  type="button"
-                  onClick={() => setIsAddProposalModalOpen(false)}
-                  style={{
-                    padding: '0.65rem 1.35rem',
-                    borderRadius: '10px',
-                    border: '1.5px solid #E2E8F0',
-                    background: '#FFFFFF',
-                    color: '#64748B',
-                    fontWeight: 700,
-                    fontSize: '0.88rem',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease',
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F1F5F9')}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#FFFFFF')}
-                >
-                  Hủy bỏ
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmittingProposal}
-                  style={{
-                    padding: '0.65rem 1.55rem',
-                    borderRadius: '10px',
-                    border: 'none',
-                    background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
-                    color: '#FFFFFF',
-                    fontWeight: 800,
-                    fontSize: '0.88rem',
-                    cursor: isSubmittingProposal ? 'not-allowed' : 'pointer',
-                    boxShadow: '0 4px 14px rgba(5, 150, 105, 0.35)',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    transition: 'all 0.2s ease',
-                    opacity: isSubmittingProposal ? 0.75 : 1,
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isSubmittingProposal) e.currentTarget.style.transform = 'translateY(-1px)';
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isSubmittingProposal) e.currentTarget.style.transform = 'translateY(0)';
-                  }}
-                >
-                  {isSubmittingProposal ? 'Đang gửi...' : 'Gửi Đề Xuất Ban Quản Trị / Admin'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
