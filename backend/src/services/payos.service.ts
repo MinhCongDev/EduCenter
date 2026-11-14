@@ -222,6 +222,26 @@ class PayOSService {
   }
 
   /**
+   * Hủy link thanh toán PayOS qua Order Code
+   */
+  public async cancelPaymentLink(orderCode: number, cancellationReason?: string): Promise<any> {
+    if (!this.isConfigured() || !this.client) {
+      return { orderCode, status: 'CANCELLED', isMock: true };
+    }
+
+    try {
+      const response = await (this.client.paymentRequests as any).cancel(
+        orderCode,
+        cancellationReason || 'Hết thời gian thanh toán (10 phút)'
+      );
+      return response;
+    } catch (error: any) {
+      console.warn(`⚠️ [PayOS] Không thể hủy payment request #${orderCode}:`, error?.message);
+      return null;
+    }
+  }
+
+  /**
    * Xác thực chữ ký dữ liệu Webhook từ PayOS
    */
   public async verifyWebhookData(webhookBody: any): Promise<any> {

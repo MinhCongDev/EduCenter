@@ -11,6 +11,7 @@ import {
   checkPayOSPaymentStatus,
   handlePayOSWebhook,
   getPayOSConfigStatus,
+  cancelPaymentOrRegistration,
 } from '../controllers/payment.controller';
 
 const router = Router();
@@ -37,6 +38,10 @@ router.get('/my-payments', authorize('STUDENT'), getMyPayments);
 
 // Lấy danh sách học phí còn nợ cần đóng
 router.get('/pending-tuition', authorize('STUDENT'), getPendingTuition);
+
+// Hủy đơn thanh toán và tự động hủy đăng ký khóa học khi hết thời gian 10 phút
+router.post('/cancel-expired', authorize('STUDENT', 'TRAINING_STAFF', 'DIRECTOR'), cancelPaymentOrRegistration);
+router.post('/:id/cancel', authorize('STUDENT', 'TRAINING_STAFF', 'DIRECTOR'), cancelPaymentOrRegistration);
 
 // Tạo mới bản ghi thanh toán ở trạng thái PENDING khi học viên mở mã QR
 router.post('/', authorize('STUDENT', 'TRAINING_STAFF', 'DIRECTOR'), createPayment);

@@ -323,7 +323,7 @@ const HomePage: React.FC = () => {
                   marginBottom: '0.5rem',
                 }}
               >
-                <span>🎯</span>
+
                 <span>HỆ THỐNG KHẢO THÍ CHUẨN QUỐC TẾ</span>
               </div>
               <h2 style={{ fontFamily: 'var(--font-beanbag)', fontSize: '2rem', fontWeight: 900, color: '#07403F', margin: 0 }}>
@@ -374,7 +374,7 @@ const HomePage: React.FC = () => {
                   <span style={{ backgroundColor: '#ecfdf5', color: '#047857', fontSize: '0.75rem', fontWeight: 800, padding: '3px 8px', borderRadius: '6px' }}>
                     Band 0.0 - 5.5
                   </span>
-                  <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>⏱️ 30 phút • 25 câu</span>
+                  <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}> 30 phút • 25 câu</span>
                 </div>
                 <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>
                   IELTS Diagnostic Test - Ngữ Pháp &amp; Từ Vựng
@@ -420,7 +420,7 @@ const HomePage: React.FC = () => {
                   <span style={{ backgroundColor: '#059669', color: '#ffffff', fontSize: '0.75rem', fontWeight: 800, padding: '3px 8px', borderRadius: '6px' }}>
                     Band 5.0 - 7.5+ • ĐỀ THI THẬT
                   </span>
-                  <span style={{ fontSize: '0.8rem', color: '#047857', fontWeight: 700 }}>⏱️ 40 phút • 28 câu</span>
+                  <span style={{ fontSize: '0.8rem', color: '#047857', fontWeight: 700 }}> 40 phút • 28 câu</span>
                 </div>
                 <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.15rem', fontWeight: 800, color: '#064e3b' }}>
                   IELTS Academic Reading - Đọc Hiểu Thực Chiến
@@ -466,7 +466,7 @@ const HomePage: React.FC = () => {
                   <span style={{ backgroundColor: '#fef3c7', color: '#b45309', fontSize: '0.75rem', fontWeight: 800, padding: '3px 8px', borderRadius: '6px' }}>
                     Band 4.5 - 8.5+ • DỰ ĐOÁN TOÀN DIỆN
                   </span>
-                  <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>⏱️ 45 phút • 30 câu</span>
+                  <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}> 45 phút • 30 câu</span>
                 </div>
                 <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>
                   IELTS Comprehensive Band Predictor
@@ -763,7 +763,7 @@ const HomePage: React.FC = () => {
       {/* Floating Action Buttons */}
       <div className="dmr-floating-actions">
         <Link to="/courses" className="dmr-fab-btn dmr-fab-test" title="Làm bài thi thử IELTS">
-          📝
+          Thi thử
         </Link>
         <a
           href="https://m.me/educenter"
@@ -772,7 +772,7 @@ const HomePage: React.FC = () => {
           className="dmr-fab-btn dmr-fab-chat"
           title="Tư vấn lộ trình IELTS 24/7"
         >
-          💬
+          Tư vấn
         </a>
       </div>
     </div>

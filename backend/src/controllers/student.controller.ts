@@ -12,6 +12,8 @@ import { ChangeRequest } from '../models/changeRequest.model';
 import { ClassSchedule } from '../models/classSchedule.model';
 import { Class } from '../models/class.model';
 import { Notification } from '../models/notification.model';
+import { Student } from '../models/student.model';
+import { cleanupExpiredPendingEnrollments } from './payment.controller';
 
 // =====================================================
 //  Helpers
@@ -127,15 +129,19 @@ export const getMyClasses = async (req: AuthRequest, res: Response): Promise<voi
   try {
     const user = requireUser(req);
 
+    // Tự động dọn dẹp các đăng ký quá hạn 10 phút chưa thanh toán
+    await cleanupExpiredPendingEnrollments(user._id);
+
     const enrollments = await Enrollment.find({
       student: user._id,
       status: { $ne: 'DROPPED' },
+      tuitionStatus: 'PAID',
     })
-      .populate('course', 'code title description durationWeeks sessions tuitionFee level format')
+      .populate('course', 'code title description durationWeeks sessions tuitionFee level format entryLevel targetLevel learningObjectives syllabus bannerUrl')
       .populate({
         path: 'class',
         populate: [
-          { path: 'course', select: 'code title description durationWeeks sessions tuitionFee level format' },
+          { path: 'course', select: 'code title description durationWeeks sessions tuitionFee level format entryLevel targetLevel learningObjectives syllabus bannerUrl' },
           { path: 'teacher', select: 'fullName email phone avatarUrl' },
         ],
       })
@@ -143,7 +149,20 @@ export const getMyClasses = async (req: AuthRequest, res: Response): Promise<voi
 
     const classes = enrollments.map((e: any) => {
       const cls = e.class;
-      const course = cls?.course || e.course;
+      let course = cls?.course || e.course;
+
+      // Bảo vệ: Nếu khóa học bị null hoặc thiếu thông tin, tự động fallback để không bị crash giao diện
+      if (!course) {
+        course = {
+          _id: e.course || e._id,
+          code: 'IELTS-COURSE',
+          title: 'Khóa học đã đăng ký',
+          tuitionFee: 0,
+          description: 'Khóa học được thiết kế nâng cao toàn diện 4 kỹ năng IELTS chuẩn quốc tế.',
+          sessions: 30,
+          format: 'OFFLINE',
+        };
+      }
       const isPendingClass = !cls || e.status === 'PENDING';
 
       return {
@@ -152,37 +171,37 @@ export const getMyClasses = async (req: AuthRequest, res: Response): Promise<voi
         isPendingClass,
         class: cls
           ? {
-              _id: cls._id,
-              classCode: cls.classCode,
-              room: cls.room,
-              scheduleDays: cls.scheduleDays,
-              timeSlot: cls.timeSlot,
-              startDate: cls.startDate,
-              endDate: cls.endDate,
-              capacity: cls.capacity,
-              currentStudents: cls.currentEnrollment ?? cls.currentStudents ?? 0,
-              currentEnrollment: cls.currentEnrollment ?? cls.currentStudents ?? 0,
-              sessions: cls.sessions,
-              status: cls.status,
-              course: cls.course || course,
-              teacher: cls.teacher,
-            }
+            _id: cls._id,
+            classCode: cls.classCode,
+            room: cls.room,
+            scheduleDays: cls.scheduleDays,
+            timeSlot: cls.timeSlot,
+            startDate: cls.startDate,
+            endDate: cls.endDate,
+            capacity: cls.capacity,
+            currentStudents: cls.currentEnrollment ?? cls.currentStudents ?? 0,
+            currentEnrollment: cls.currentEnrollment ?? cls.currentStudents ?? 0,
+            sessions: cls.sessions,
+            status: cls.status,
+            course: cls.course || course,
+            teacher: cls.teacher,
+          }
           : {
-              _id: '',
-              classCode: 'Chưa xếp lớp',
-              room: 'Đang xếp phòng',
-              scheduleDays: [],
-              timeSlot: 'Đang xếp ca',
-              startDate: null,
-              endDate: null,
-              capacity: 0,
-              currentStudents: 0,
-              currentEnrollment: 0,
-              sessions: course?.sessions || 0,
-              status: 'PENDING_CLASS',
-              course: course,
-              teacher: null,
-            },
+            _id: '',
+            classCode: 'Chưa xếp lớp',
+            room: 'Đang xếp phòng',
+            scheduleDays: [],
+            timeSlot: 'Đang xếp ca',
+            startDate: null,
+            endDate: null,
+            capacity: 0,
+            currentStudents: 0,
+            currentEnrollment: 0,
+            sessions: course?.sessions || 0,
+            status: 'PENDING_CLASS',
+            course: course,
+            teacher: null,
+          },
         course: course,
         status: isPendingClass ? 'PENDING' : e.status,
         enrollmentStatus: isPendingClass ? 'PENDING' : e.status,
@@ -396,6 +415,162 @@ export const getAttendance = async (req: AuthRequest, res: Response): Promise<vo
 };
 
 // =====================================================
+//  GET /api/student/academic-results
+//  Lấy kết quả học tập tổng hợp:
+//  1) Kết quả bài test đầu vào (Placement Test)
+//  2) Dữ liệu điểm số từ bên Teacher (Grades)
+//  3) Danh sách các lớp học đã tham gia để lọc
+// =====================================================
+export const getAcademicResults = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const user = requireUser(req);
+
+    // 1. Lấy thông tin bài test đầu vào từ hồ sơ học viên
+    const studentDoc = await Student.findOne({ user: user._id }).lean();
+
+    let placementTest: any = null;
+    if (
+      studentDoc &&
+      (studentDoc.placementTestScore !== undefined ||
+        studentDoc.currentBand !== undefined ||
+        studentDoc.placementTestDate)
+    ) {
+      const score = studentDoc.placementTestScore ?? studentDoc.currentBand ?? 0;
+      let levelName = 'Mất gốc (0 - 3.5)';
+      let matchedLevel = '0 - 3.5';
+      if (score >= 8.0) {
+        levelName = 'Master (8.0+)';
+        matchedLevel = '8.0+';
+      } else if (score >= 6.5) {
+        levelName = 'Chuyên sâu (6.5 - 7.5+)';
+        matchedLevel = '6.5 - 7.5+';
+      } else if (score >= 5.5) {
+        levelName = 'Bứt phá (5.5 - 6.5)';
+        matchedLevel = '5.5 - 6.5';
+      } else if (score >= 4.5) {
+        levelName = 'Foundation (4.5 - 5.5)';
+        matchedLevel = '4.5 - 5.5';
+      } else if (score >= 3.5) {
+        levelName = 'Pre-IELTS (3.5 - 4.5)';
+        matchedLevel = '3.5 - 4.5';
+      }
+
+      let testTitle = 'Bài Kiểm Tra Chẩn Đoán Trình Độ Đầu Vào (Placement Test)';
+      if (studentDoc.placementNotes) {
+        const match = studentDoc.placementNotes.match(/bài test "([^"]+)"/i);
+        if (match && match[1]) {
+          testTitle = match[1];
+        }
+      }
+
+      placementTest = {
+        hasTest: true,
+        testTitle,
+        score,
+        predictedBand: score,
+        currentBand: studentDoc.currentBand || score,
+        targetBand: studentDoc.targetBand || 6.5,
+        testDate: studentDoc.placementTestDate || (studentDoc as any).createdAt,
+        levelName,
+        matchedLevel,
+        notes:
+          studentDoc.placementNotes ||
+          studentDoc.learningGoal ||
+          `Đánh giá năng lực đầu vào đạt Band ${score}.`,
+        learningGoal: studentDoc.learningGoal,
+      };
+    }
+
+    // 2. Lấy tất cả điểm số từ phía giảng viên đã công bố (PUBLISHED)
+    const { classId } = req.query;
+    const gradeQuery: any = {
+      student: user._id,
+      status: 'PUBLISHED',
+    };
+    if (classId && isValidId(String(classId))) {
+      gradeQuery.class = classId;
+    }
+
+    const grades = await Grade.find(gradeQuery)
+      .populate('teacher', 'fullName email title avatar avatarUrl')
+      .populate({
+        path: 'class',
+        select: 'classCode name course room timeSlot startDate endDate',
+        populate: {
+          path: 'course',
+          select: 'code title level targetLevel tuitionFee sessions',
+        },
+      })
+      .sort({ testDate: -1, createdAt: -1 });
+
+    // 3. Lấy danh sách các lớp học của học viên để phục vụ lọc điểm theo lớp
+    const enrollments = await Enrollment.find({
+      student: user._id,
+      status: { $ne: 'DROPPED' },
+    })
+      .populate({
+        path: 'class',
+        select: 'classCode name course room timeSlot',
+        populate: {
+          path: 'course',
+          select: 'code title',
+        },
+      })
+      .populate('course', 'code title');
+
+    const classesList = enrollments
+      .map((enr: any) => {
+        const cls = enr.class as any;
+        if (cls) {
+          return {
+            _id: cls._id,
+            classCode: cls.classCode,
+            name: cls.name || cls.classCode,
+            courseTitle: cls.course?.title || (enr.course as any)?.title || 'Khóa học',
+          };
+        }
+        return null;
+      })
+      .filter(Boolean);
+
+    // 4. Tính toán số liệu thống kê điểm số
+    const withBand = grades.filter((g) => g.overallBand !== undefined && g.overallBand !== null);
+    const avgBand =
+      withBand.length > 0
+        ? Number((withBand.reduce((sum, g) => sum + (g.overallBand || 0), 0) / withBand.length).toFixed(1))
+        : null;
+    const maxBand = withBand.length > 0 ? Math.max(...withBand.map((g) => g.overallBand!)) : null;
+
+    const byType: Record<string, number> = {};
+    grades.forEach((g: any) => {
+      byType[g.evaluationType] = (byType[g.evaluationType] || 0) + 1;
+    });
+
+    res.json({
+      success: true,
+      message: 'Lấy dữ liệu kết quả học tập và điểm số thành công',
+      data: {
+        placementTest,
+        grades,
+        classes: classesList,
+        stats: {
+          total: grades.length,
+          avgBand,
+          maxBand,
+          byType,
+          latestTestDate: grades[0]?.testDate || null,
+        },
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Lỗi server khi lấy kết quả học tập',
+    });
+  }
+};
+
+// =====================================================
 //  GET /api/student/classes/:id/grades
 // =====================================================
 export const getGrades = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -449,6 +624,7 @@ export const getCombinedSchedule = async (req: AuthRequest, res: Response): Prom
     const enrollments = await Enrollment.find({
       student: user._id,
       status: { $ne: 'DROPPED' },
+      tuitionStatus: 'PAID',
     })
       .populate({
         path: 'class',
@@ -474,9 +650,24 @@ export const getCombinedSchedule = async (req: AuthRequest, res: Response): Prom
       })
       .sort({ dayOfWeek: 1, startTime: 1 });
 
+    // Loại bỏ các buổi học trùng lặp cùng lớp, cùng thứ, cùng khung giờ (cho thời khóa biểu tuần)
+    const seenSlots = new Set<string>();
+    const uniqueSchedule: any[] = [];
+    for (const s of schedule) {
+      const clsId = (s.class as any)?._id?.toString() || (s.class as any)?.toString() || '';
+      const day = (s.dayOfWeek || '').trim().toLowerCase();
+      const start = (s.startTime || '').trim();
+      const end = (s.endTime || '').trim();
+      const slotKey = `${clsId}-${day}-${start}-${end}`;
+      if (!seenSlots.has(slotKey)) {
+        seenSlots.add(slotKey);
+        uniqueSchedule.push(s);
+      }
+    }
+
     // Fallback: nếu bảng ClassSchedule chưa có dữ liệu, dựng lịch từ
     // class.scheduleDays + class.timeSlot (dữ liệu lớp học hiện có trong seed).
-    let scheduleList: any[] = schedule;
+    let scheduleList: any[] = uniqueSchedule;
     if (!scheduleList.length) {
       const timeParts = (slot?: string) => {
         const [s, e] = (slot || '').split('-').map((x) => x.trim());
@@ -541,8 +732,22 @@ export const getSchedule = async (req: AuthRequest, res: Response): Promise<void
       startTime: 1,
     });
 
+    // Loại bỏ các buổi học trùng lặp cùng thứ, cùng khung giờ (cho thời khóa biểu tuần)
+    const seenSlotsSingle = new Set<string>();
+    const uniqueScheduleSingle: any[] = [];
+    for (const s of schedule) {
+      const day = (s.dayOfWeek || '').trim().toLowerCase();
+      const start = (s.startTime || '').trim();
+      const end = (s.endTime || '').trim();
+      const slotKey = `${day}-${start}-${end}`;
+      if (!seenSlotsSingle.has(slotKey)) {
+        seenSlotsSingle.add(slotKey);
+        uniqueScheduleSingle.push(s);
+      }
+    }
+
     // Fallback khi bảng ClassSchedule chưa có dữ liệu cho lớp này
-    let scheduleList: any[] = schedule;
+    let scheduleList: any[] = uniqueScheduleSingle;
     if (!scheduleList.length && classDoc?.scheduleDays?.length) {
       const [s, e] = (classDoc.timeSlot || '').split('-').map((x) => x.trim());
       const clsPlain =
@@ -665,6 +870,7 @@ export const getTuition = async (req: AuthRequest, res: Response): Promise<void>
     const enrollments = await Enrollment.find({
       student: user._id,
       status: { $ne: 'DROPPED' },
+      tuitionStatus: 'PAID',
     })
       .populate({
         path: 'class',
@@ -695,23 +901,23 @@ export const getTuition = async (req: AuthRequest, res: Response): Promise<void>
           endDate: cls.endDate,
           course: course
             ? {
-                _id: course._id,
-                code: course.code,
-                title: course.title,
-                description: course.description,
-                durationWeeks: course.durationWeeks,
-                sessions: course.sessions,
-                tuitionFee: course.tuitionFee,
-              }
+              _id: course._id,
+              code: course.code,
+              title: course.title,
+              description: course.description,
+              durationWeeks: course.durationWeeks,
+              sessions: course.sessions,
+              tuitionFee: course.tuitionFee,
+            }
             : null,
           teacher: cls.teacher
             ? {
-                _id: cls.teacher._id,
-                fullName: cls.teacher.fullName,
-                email: cls.teacher.email,
-                phone: cls.teacher.phone,
-                avatarUrl: cls.teacher.avatarUrl,
-              }
+              _id: cls.teacher._id,
+              fullName: cls.teacher.fullName,
+              email: cls.teacher.email,
+              phone: cls.teacher.phone,
+              avatarUrl: cls.teacher.avatarUrl,
+            }
             : null,
           tuitionFee,
           tuitionStatus,
@@ -1221,12 +1427,12 @@ export const getDashboard = async (req: AuthRequest, res: Response): Promise<voi
         },
         currentClass: currentClass
           ? {
-              enrollmentId: (currentClass as any)._id,
-              class: (currentClass as any).class,
-              status: (currentClass as any).status,
-              tuitionStatus: (currentClass as any).tuitionStatus,
-              enrollmentDate: (currentClass as any).enrollmentDate,
-            }
+            enrollmentId: (currentClass as any)._id,
+            class: (currentClass as any).class,
+            status: (currentClass as any).status,
+            tuitionStatus: (currentClass as any).tuitionStatus,
+            enrollmentDate: (currentClass as any).enrollmentDate,
+          }
           : null,
         myClasses: enrollments.map((e: any) => {
           const cls = e.class;
@@ -1239,11 +1445,11 @@ export const getDashboard = async (req: AuthRequest, res: Response): Promise<voi
             class: cls
               ? e.class
               : {
-                  _id: '',
-                  classCode: 'Chưa xếp lớp',
-                  course,
-                  teacher: null,
-                },
+                _id: '',
+                classCode: 'Chưa xếp lớp',
+                course,
+                teacher: null,
+              },
             course,
             status: isPendingClass ? 'PENDING' : e.status,
             tuitionStatus: e.tuitionStatus,
@@ -1292,14 +1498,14 @@ export const getMyProfile = async (req: AuthRequest, res: Response): Promise<voi
         },
         student: student
           ? {
-              studentCode: student.studentCode,
-              dob: student.dob,
-              currentBand: student.currentBand,
-              targetBand: student.targetBand,
-              learningGoal: student.learningGoal,
-              emergencyContact: student.emergencyContact,
-              status: student.status,
-            }
+            studentCode: student.studentCode,
+            dob: student.dob,
+            currentBand: student.currentBand,
+            targetBand: student.targetBand,
+            learningGoal: student.learningGoal,
+            emergencyContact: student.emergencyContact,
+            status: student.status,
+          }
           : null,
       },
     });

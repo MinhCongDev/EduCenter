@@ -120,9 +120,6 @@ const AttendancePage: React.FC = () => {
         <Link to="/student/classes" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
           📚 Khóa Học
         </Link>
-        <Link to="/student/grades" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
-          📊 Điểm Số
-        </Link>
         <Link to="/student/schedule" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
           🗓️ Xem Lịch Học
         </Link>

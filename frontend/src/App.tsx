@@ -29,7 +29,6 @@ const MyClassesPage = lazy(() => import('./pages/student/MyClassesPage'));
 const ClassDetailsPage = lazy(() => import('./pages/student/ClassDetailsPage'));
 const AssignmentsPage = lazy(() => import('./pages/student/AssignmentsPage'));
 const AttendancePage = lazy(() => import('./pages/student/AttendancePage'));
-const GradesPage = lazy(() => import('./pages/student/GradesPage'));
 const SchedulePage = lazy(() => import('./pages/student/SchedulePage'));
 const PaymentsPage = lazy(() => import('./pages/student/PaymentsPage'));
 const RequestsPage = lazy(() => import('./pages/student/RequestsPage'));
@@ -226,13 +225,7 @@ const AppRouter: React.FC = () => {
         />
         <Route
           path="/student/classes/:id/grades"
-          element={
-            <ProtectedRoute allowedRoles={['STUDENT']}>
-              <DashboardLayout>
-                <GradesPage />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
+          element={<Navigate to="/student/progress?tab=grades" replace />}
         />
         <Route
           path="/student/classes/:id/schedule"
@@ -320,13 +313,7 @@ const AppRouter: React.FC = () => {
         />
         <Route
           path="/student/grades"
-          element={
-            <ProtectedRoute allowedRoles={['STUDENT']}>
-              <DashboardLayout>
-                <GradesPage />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
+          element={<Navigate to="/student/progress?tab=grades" replace />}
         />
         <Route
           path="/student/announcements"

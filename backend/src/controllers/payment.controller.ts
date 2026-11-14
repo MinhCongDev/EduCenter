@@ -4,9 +4,62 @@ import { AuthRequest } from '../middlewares/auth.middleware';
 import { Payment, PaymentMethod, PaymentStatus } from '../models/payment.model';
 import { Enrollment } from '../models/enrollment.model';
 import { Course } from '../models/course.model';
+import { Class } from '../models/class.model';
 import { Center } from '../models/center.model';
 import { Notification } from '../models/notification.model';
 import { payosService } from '../services/payos.service';
+
+/**
+ * Tự động hủy và dọn dẹp các đăng ký khóa học quá hạn 10 phút chưa thanh toán
+ */
+export const cleanupExpiredPendingEnrollments = async (studentId?: Types.ObjectId | string): Promise<void> => {
+  try {
+    const TEN_MINUTES_MS = 10 * 60 * 1000;
+    const expirationThreshold = new Date(Date.now() - TEN_MINUTES_MS);
+
+    const query: any = {
+      tuitionStatus: 'PENDING',
+      $or: [
+        { createdAt: { $lte: expirationThreshold } },
+        { registrationDate: { $lte: expirationThreshold } },
+      ],
+    };
+    if (studentId) {
+      query.student = studentId;
+    }
+
+    const expiredEnrollments = await Enrollment.find(query);
+    if (!expiredEnrollments || expiredEnrollments.length === 0) return;
+
+    for (const enr of expiredEnrollments) {
+      // Giảm sĩ số lớp nếu đã có lớp
+      if (enr.class) {
+        await Class.findByIdAndUpdate(enr.class, { $inc: { currentEnrollment: -1 } });
+      }
+
+      // Hủy payment pending liên quan nếu có
+      const relatedPayment = await Payment.findOne({
+        enrollment: enr._id,
+        status: 'PENDING',
+      });
+      if (relatedPayment) {
+        relatedPayment.status = 'FAILED';
+        relatedPayment.note = `${relatedPayment.note ? relatedPayment.note + ' | ' : ''}Hết thời gian thanh toán (10 phút) - Tự động hủy`;
+        await relatedPayment.save();
+        if (relatedPayment.orderCode) {
+          try {
+            await payosService.cancelPaymentLink(relatedPayment.orderCode, 'Hết hạn 10 phút');
+          } catch { }
+        }
+      }
+
+      // Xóa enrollment quá hạn để tự động hủy khóa học vừa đăng ký
+      await Enrollment.findByIdAndDelete(enr._id);
+    }
+  } catch (err) {
+    console.warn('Lỗi khi tự động dọn dẹp enrollment quá hạn 10 phút:', err);
+  }
+};
 
 /**
  * GET /api/payments/my-payments
@@ -19,6 +72,9 @@ export const getMyPayments = async (req: AuthRequest, res: Response): Promise<vo
       res.status(401).json({ success: false, message: 'Chưa xác thực học viên' });
       return;
     }
+
+    // Tự động dọn dẹp các đơn quá hạn 10 phút chưa thanh toán
+    await cleanupExpiredPendingEnrollments(studentId);
 
     const { status, search } = req.query;
 
@@ -99,6 +155,9 @@ export const getPendingTuition = async (req: AuthRequest, res: Response): Promis
       res.status(401).json({ success: false, message: 'Chưa xác thực học viên' });
       return;
     }
+
+    // Tự động dọn dẹp các khoản quá hạn 10 phút chưa thanh toán
+    await cleanupExpiredPendingEnrollments(studentId);
 
     const pendingEnrollments = await Enrollment.find({
       student: studentId,
@@ -856,7 +915,7 @@ export const checkPayOSPaymentStatus = async (req: AuthRequest, res: Response): 
         if (payment.enrollment) {
           await Enrollment.findByIdAndUpdate(payment.enrollment, { tuitionStatus: 'PAID' });
         } else if (payment.course) {
-          const studentEnrollment = await Enrollment.findOne({
+          let studentEnrollment = await Enrollment.findOne({
             student: payment.student,
             course: payment.course,
             status: { $ne: 'DROPPED' },
@@ -864,6 +923,17 @@ export const checkPayOSPaymentStatus = async (req: AuthRequest, res: Response): 
           if (studentEnrollment) {
             studentEnrollment.tuitionStatus = 'PAID';
             await studentEnrollment.save();
+          } else {
+            studentEnrollment = await Enrollment.create({
+              student: payment.student,
+              course: payment.course,
+              status: 'PENDING',
+              tuitionStatus: 'PAID',
+              registrationDate: payment.paymentDate || new Date(),
+              enrollmentDate: payment.paymentDate || new Date(),
+            });
+            payment.enrollment = studentEnrollment._id;
+            await payment.save();
           }
         }
       } catch (enrErr: any) {
@@ -972,7 +1042,7 @@ export const handlePayOSWebhook = async (req: Request, res: Response): Promise<v
         if (payment.enrollment) {
           await Enrollment.findByIdAndUpdate(payment.enrollment, { tuitionStatus: 'PAID' });
         } else if (payment.course) {
-          const studentEnrollment = await Enrollment.findOne({
+          let studentEnrollment = await Enrollment.findOne({
             student: payment.student,
             course: payment.course,
             status: { $ne: 'DROPPED' },
@@ -980,6 +1050,17 @@ export const handlePayOSWebhook = async (req: Request, res: Response): Promise<v
           if (studentEnrollment) {
             studentEnrollment.tuitionStatus = 'PAID';
             await studentEnrollment.save();
+          } else {
+            studentEnrollment = await Enrollment.create({
+              student: payment.student,
+              course: payment.course,
+              status: 'PENDING',
+              tuitionStatus: 'PAID',
+              registrationDate: payment.paymentDate || new Date(),
+              enrollmentDate: payment.paymentDate || new Date(),
+            });
+            payment.enrollment = studentEnrollment._id;
+            await payment.save();
           }
         }
       } catch (enrErr: any) {
@@ -1004,6 +1085,107 @@ export const handlePayOSWebhook = async (req: Request, res: Response): Promise<v
   } catch (error: any) {
     console.error('❌ [PayOS Webhook] Lỗi xử lý webhook:', error);
     res.status(500).json({ success: false, message: error?.message || 'Lỗi xử lý webhook PayOS' });
+  }
+};
+
+/**
+ * POST /api/payments/cancel-expired
+ * POST /api/payments/:id/cancel
+ * Hủy đơn thanh toán và tự động hủy đăng ký khóa học khi hết thời gian 10 phút
+ */
+export const cancelPaymentOrRegistration = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const studentId = req.user?._id;
+    if (!studentId) {
+      res.status(401).json({ success: false, message: 'Chưa xác thực người dùng' });
+      return;
+    }
+
+    const { id } = req.params;
+    const { orderCode, enrollmentId, courseId, reason } = req.body || {};
+    const cancelReason = reason || 'Hết thời gian thanh toán (10 phút) - Tự động hủy đăng ký';
+
+    // 1. Tìm payment theo ID hoặc orderCode
+    let payment: any = null;
+    const targetOrderCode = Number(id) || Number(orderCode);
+
+    if (targetOrderCode) {
+      payment = await Payment.findOne({ orderCode: targetOrderCode, student: studentId });
+    }
+    if (!payment && id && Types.ObjectId.isValid(id)) {
+      payment = await Payment.findOne({ _id: id, student: studentId });
+    }
+    if (!payment && enrollmentId && Types.ObjectId.isValid(enrollmentId)) {
+      payment = await Payment.findOne({ enrollment: enrollmentId, student: studentId, status: 'PENDING' });
+    }
+
+    // Nếu có payment trên PayOS, gọi hủy payment link trên PayOS
+    if (payment?.orderCode) {
+      try {
+        await payosService.cancelPaymentLink(payment.orderCode, cancelReason);
+      } catch (e) {
+        console.warn('Lỗi khi hủy trên PayOS:', e);
+      }
+    }
+
+    if (payment && payment.status === 'PENDING') {
+      payment.status = 'FAILED';
+      payment.note = `${payment.note ? payment.note + ' | ' : ''}${cancelReason}`;
+      await payment.save();
+    }
+
+    // 2. Tìm và hủy / xóa enrollment chưa thanh toán
+    const targetEnrollmentId =
+      payment?.enrollment || (enrollmentId && Types.ObjectId.isValid(enrollmentId) ? enrollmentId : null);
+    let enrollment: any = null;
+
+    if (targetEnrollmentId) {
+      enrollment = await Enrollment.findOne({ _id: targetEnrollmentId, student: studentId });
+    } else if (courseId && Types.ObjectId.isValid(courseId)) {
+      enrollment = await Enrollment.findOne({ course: courseId, student: studentId, tuitionStatus: 'PENDING' });
+    } else if (payment?.course) {
+      enrollment = await Enrollment.findOne({ course: payment.course, student: studentId, tuitionStatus: 'PENDING' });
+    }
+
+    let cancelledCourseTitle = '';
+    if (enrollment && enrollment.tuitionStatus === 'PENDING') {
+      if (enrollment.course) {
+        const c = await Course.findById(enrollment.course).select('title');
+        if (c) cancelledCourseTitle = c.title;
+      }
+      if (enrollment.class) {
+        await Class.findByIdAndUpdate(enrollment.class, { $inc: { currentEnrollment: -1 } });
+      }
+      await Enrollment.findByIdAndDelete(enrollment._id);
+    } else if (courseId && Types.ObjectId.isValid(courseId)) {
+      const c = await Course.findById(courseId).select('title');
+      if (c) cancelledCourseTitle = c.title;
+    }
+
+    // Thông báo cho học viên
+    await Notification.create({
+      recipient: studentId,
+      title: '⏰ Đơn đăng ký khóa học đã tự động bị hủy',
+      content: `Đơn thanh toán ${cancelledCourseTitle ? `cho khóa "${cancelledCourseTitle}" ` : ''
+        }đã quá hạn 10 phút và tự động bị hủy. Bạn có thể đăng ký lại bất kỳ lúc nào.`,
+      type: 'WARNING',
+      linkUrl: '/courses',
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Đã tự động hủy đơn đăng ký khóa học do hết thời gian thanh toán (10 phút)',
+      data: {
+        paymentId: payment?._id,
+        cancelled: true,
+      },
+    });
+  } catch (error: any) {
+    console.error('Lỗi khi hủy đơn thanh toán:', error);
+    res.status(500).json({
+      success: false,
+      message: error?.message || 'Lỗi khi hủy đơn thanh toán',
+    });
   }
 };
 

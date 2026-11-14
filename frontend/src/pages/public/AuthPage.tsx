@@ -431,7 +431,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
                     target="_blank"
                     rel="noreferrer"
                   >
-                    📬 Mở hộp thư của bạn
+                     Mở hộp thư của bạn
                   </a>
                 )}
 
