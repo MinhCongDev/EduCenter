@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { courseService } from '../../services/course.service';
 import type { Course, CourseFormData } from '../../types';
@@ -7,24 +7,35 @@ import type { Course, CourseFormData } from '../../types';
 // Constants
 // =====================================================================
 const COURSE_CATEGORIES = [
-  'Tiếng Anh Giao Tiếp',
-  'Tiếng Anh Kinh Doanh',
-  'Tiếng Anh Học Thuật',
-  'Luyện Thi IELTS',
-  'Luyện Thi TOEIC',
-  'Tiếng Anh Trẻ Em',
-  'Tiếng Anh Online',
+  'Lộ trình IELTS',
+  'IELTS Toàn Diện',
+  'IELTS Kỹ Năng Chuyên Sâu',
+  'IELTS Cấp Tốc',
+];
+
+const LEVEL_OPTIONS = [
+  '0 - 3.5',
+  '3.5 - 4.5',
+  '4.5 - 5.5',
+  '5.5 - 6.5',
+  '6.5 - 7.5',
+  '8.0+',
 ];
 
 const EMPTY_FORM: CourseFormData = {
   code: '',
   title: '',
   description: '',
-  category: COURSE_CATEGORIES[0],
-  sessions: 24,
-  tuitionFee: 0,
+  category: 'Lộ trình IELTS',
+  entryLevel: '0 - 3.5',
+  targetLevel: '3.5',
+  sessions: 30,
+  tuitionFee: 5000000,
+  format: 'OFFLINE',
   status: 'ACTIVE',
+  bannerUrl: '',
   syllabus: [],
+  learningObjectives: [],
 };
 
 // =====================================================================
@@ -37,6 +48,31 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => (
     {status === 'ACTIVE' ? '✅ Hoạt động' : '⏸ Tạm dừng'}
   </span>
 );
+
+/** Badge for IELTS Band / Level */
+const LevelBadge: React.FC<{ level?: string }> = ({ level }) => {
+  if (!level) return null;
+  const isMaster = level.includes('8.0');
+  const bg = isMaster ? '#f3e8ff' : '#dcfce7';
+  const color = isMaster ? '#7e22ce' : '#15803d';
+  return (
+    <span
+      style={{
+        display: 'inline-block',
+        padding: '2px 8px',
+        borderRadius: '9999px',
+        fontSize: '11px',
+        fontWeight: 700,
+        backgroundColor: bg,
+        color: color,
+        marginLeft: '6px',
+        verticalAlign: 'middle',
+      }}
+    >
+      {level}
+    </span>
+  );
+};
 
 /** Confirm delete dialog */
 interface ConfirmDeleteProps {
@@ -68,7 +104,7 @@ const ConfirmDeleteDialog: React.FC<ConfirmDeleteProps> = ({ course, onConfirm, 
 );
 
 // =====================================================================
-// Course Form Modal
+// Course Form Modal (with Image Upload & Band Alignment)
 // =====================================================================
 interface CourseFormModalProps {
   course?: Course | null;
@@ -80,17 +116,26 @@ interface CourseFormModalProps {
 
 const CourseFormModal: React.FC<CourseFormModalProps> = ({ course, onSave, onClose, saving, error }) => {
   const isEditing = Boolean(course);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [uploadImageError, setUploadImageError] = useState('');
+
   const [form, setForm] = useState<CourseFormData>(
     course
       ? {
           code: course.code,
           title: course.title,
           description: course.description,
-          category: course.category,
-          sessions: course.sessions,
-          tuitionFee: course.tuitionFee,
-          status: course.status,
+          category: course.category || 'Lộ trình IELTS',
+          entryLevel: course.entryLevel || '0 - 3.5',
+          targetLevel: course.targetLevel || '',
+          sessions: course.sessions || 30,
+          tuitionFee: course.tuitionFee || 0,
+          format: course.format || 'OFFLINE',
+          status: course.status || 'ACTIVE',
+          bannerUrl: course.bannerUrl || '',
           syllabus: course.syllabus ?? [],
+          learningObjectives: course.learningObjectives ?? [],
         }
       : { ...EMPTY_FORM }
   );
@@ -102,6 +147,28 @@ const CourseFormModal: React.FC<CourseFormModalProps> = ({ course, onSave, onClo
       ...prev,
       [name]: name === 'sessions' || name === 'tuitionFee' ? Number(value) : value,
     }));
+  };
+
+  const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingImage(true);
+    setUploadImageError('');
+    try {
+      const res = await courseService.uploadCourseImage(file);
+      if (res.success && res.data && res.data.url) {
+        const uploadedUrl = res.data.url;
+        setForm((prev) => ({ ...prev, bannerUrl: uploadedUrl }));
+      } else {
+        setUploadImageError(res.message || 'Tải ảnh thất bại');
+      }
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Lỗi khi tải ảnh lên';
+      setUploadImageError(msg);
+    } finally {
+      setIsUploadingImage(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   const addSyllabusItem = () => {
@@ -123,12 +190,12 @@ const CourseFormModal: React.FC<CourseFormModalProps> = ({ course, onSave, onClo
 
   return (
     <div className="modal-overlay" role="dialog" aria-modal="true" aria-label={isEditing ? 'Chỉnh sửa khóa học' : 'Thêm khóa học'}>
-      <div className="modal-box modal-lg">
+      <div className="modal-box modal-lg" style={{ maxHeight: '90vh', overflowY: 'auto' }}>
         {/* Header */}
         <div className="modal-header">
           <div>
             <h2 className="modal-title">{isEditing ? 'Chỉnh sửa khóa học' : 'Thêm khóa học mới'}</h2>
-            <p className="modal-subtitle">{isEditing ? `Cập nhật thông tin cho ${course?.code}` : 'Điền thông tin khóa học bên dưới'}</p>
+            <p className="modal-subtitle">{isEditing ? `Cập nhật thông tin cho [${course?.code}]` : 'Điền thông tin chuẩn hóa khóa học bên dưới'}</p>
           </div>
           <button id="btn-close-modal" className="modal-close-btn" onClick={onClose}>Đóng</button>
         </div>
@@ -138,6 +205,133 @@ const CourseFormModal: React.FC<CourseFormModalProps> = ({ course, onSave, onClo
 
         {/* Form */}
         <form id="course-form" onSubmit={handleSubmit} className="modal-form">
+          {/* Ảnh khóa học */}
+          <div className="form-group">
+            <label className="form-label">
+              Hình ảnh khóa học (Banner / Thumbnail)
+            </label>
+            <div
+              style={{
+                display: 'flex',
+                gap: '16px',
+                alignItems: 'flex-start',
+                background: '#f8fafc',
+                padding: '12px',
+                borderRadius: '8px',
+                border: '1px dashed #cbd5e1',
+              }}
+            >
+              {form.bannerUrl ? (
+                <div
+                  style={{
+                    position: 'relative',
+                    width: '120px',
+                    height: '80px',
+                    flexShrink: 0,
+                    borderRadius: '6px',
+                    overflow: 'hidden',
+                    border: '1px solid #e2e8f0',
+                    background: '#f1f5f9',
+                  }}
+                >
+                  <img
+                    src={form.bannerUrl}
+                    alt="Preview"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    onError={(e) => {
+                      (e.target as HTMLElement).style.display = 'none';
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setForm((prev) => ({ ...prev, bannerUrl: '' }))}
+                    style={{
+                      position: 'absolute',
+                      top: 4,
+                      right: 4,
+                      background: 'rgba(0,0,0,0.65)',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '50%',
+                      width: '20px',
+                      height: '20px',
+                      cursor: 'pointer',
+                      fontSize: '11px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                    title="Xóa ảnh"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <div
+                  style={{
+                    width: '120px',
+                    height: '80px',
+                    flexShrink: 0,
+                    borderRadius: '6px',
+                    background: '#e2e8f0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#64748b',
+                    fontSize: '28px',
+                  }}
+                >
+                  🖼️
+                </div>
+              )}
+
+              <div style={{ flex: 1 }}>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/png, image/jpeg, image/jpg, image/webp, image/gif"
+                  style={{ display: 'none' }}
+                  onChange={handleImageFileChange}
+                />
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                  <button
+                    type="button"
+                    className="btn btn-outline btn-sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploadingImage}
+                  >
+                    {isUploadingImage ? <><span className="spinner-sm" /> Đang tải ảnh…</> : '📁 Tải ảnh từ máy tính'}
+                  </button>
+                  {form.bannerUrl && (
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => setForm((prev) => ({ ...prev, bannerUrl: '' }))}
+                    >
+                      Gỡ ảnh
+                    </button>
+                  )}
+                </div>
+                <input
+                  className="form-input"
+                  placeholder="Hoặc dán URL hình ảnh trực tiếp (https://...)"
+                  name="bannerUrl"
+                  value={form.bannerUrl || ''}
+                  onChange={handleChange}
+                  style={{ fontSize: '13px', padding: '6px 10px' }}
+                />
+                {uploadImageError && (
+                  <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
+                    ⚠️ {uploadImageError}
+                  </div>
+                )}
+                <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
+                  Hỗ trợ JPG, PNG, WEBP, GIF tối đa 10MB. Ảnh sẽ được lưu trữ và hiển thị trực tiếp.
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="form-row">
             <div className="form-group">
               <label className="form-label" htmlFor="course-code">
@@ -147,7 +341,7 @@ const CourseFormModal: React.FC<CourseFormModalProps> = ({ course, onSave, onClo
                 id="course-code"
                 name="code"
                 className="form-input"
-                placeholder="VD: ENG101"
+                placeholder="VD: IELTS-PRE"
                 value={form.code}
                 onChange={handleChange}
                 required
@@ -175,22 +369,55 @@ const CourseFormModal: React.FC<CourseFormModalProps> = ({ course, onSave, onClo
               id="course-title"
               name="title"
               className="form-input"
-              placeholder="VD: Tiếng Anh Giao Tiếp Cơ Bản"
+              placeholder="VD: IELTS Breakthrough – Bứt Phá"
               value={form.title}
               onChange={handleChange}
               required
             />
           </div>
 
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label" htmlFor="course-entry-level">
+                Trình độ đầu vào (Band)
+              </label>
+              <input
+                id="course-entry-level"
+                name="entryLevel"
+                className="form-input"
+                placeholder="VD: 0 - 3.5, 4.5 - 5.5..."
+                value={form.entryLevel || ''}
+                onChange={handleChange}
+                list="entry-level-suggestions"
+              />
+              <datalist id="entry-level-suggestions">
+                {LEVEL_OPTIONS.map((lvl) => <option key={lvl} value={lvl} />)}
+              </datalist>
+            </div>
+            <div className="form-group">
+              <label className="form-label" htmlFor="course-target-level">
+                Mục tiêu đầu ra (Target)
+              </label>
+              <input
+                id="course-target-level"
+                name="targetLevel"
+                className="form-input"
+                placeholder="VD: 3.5, 5.5, 6.5, 8.0+..."
+                value={form.targetLevel || ''}
+                onChange={handleChange}
+              />
+            </div>
+          </div>
+
           <div className="form-group">
             <label className="form-label" htmlFor="course-description">
-              Mô tả khóa học
+              Mô tả ngắn gọn nội dung
             </label>
             <textarea
               id="course-description"
               name="description"
               className="form-input form-textarea"
-              placeholder="Mô tả ngắn gọn về khóa học…"
+              placeholder="Nội dung tóm tắt mục tiêu và phương pháp đào tạo…"
               value={form.description}
               onChange={handleChange}
               rows={3}
@@ -232,22 +459,32 @@ const CourseFormModal: React.FC<CourseFormModalProps> = ({ course, onSave, onClo
             </div>
           </div>
 
-          <div className="form-group">
-            <label className="form-label" htmlFor="course-status">Trạng thái</label>
-            <select id="course-status" name="status" className="form-input" value={form.status} onChange={handleChange}>
-              <option value="ACTIVE">Hoạt động</option>
-              <option value="INACTIVE">Tạm dừng</option>
-            </select>
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label" htmlFor="course-format">Hình thức đào tạo</label>
+              <select id="course-format" name="format" className="form-input" value={form.format || 'OFFLINE'} onChange={handleChange}>
+                <option value="OFFLINE">Trực tiếp tại trung tâm (Offline)</option>
+                <option value="ONLINE">Trực tuyến qua Zoom (Online)</option>
+                <option value="BLENDED">Kết hợp Trực tiếp & Trực tuyến (Blended)</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label" htmlFor="course-status">Trạng thái</label>
+              <select id="course-status" name="status" className="form-input" value={form.status} onChange={handleChange}>
+                <option value="ACTIVE">Hoạt động</option>
+                <option value="INACTIVE">Tạm dừng</option>
+              </select>
+            </div>
           </div>
 
           {/* Syllabus */}
           <div className="form-group">
-            <label className="form-label">Nội dung chương trình</label>
+            <label className="form-label">Nội dung chương trình (Syllabus theo tuần)</label>
             <div className="syllabus-input-row">
               <input
                 id="syllabus-item-input"
                 className="form-input"
-                placeholder="Thêm chủ đề / module…"
+                placeholder="Thêm chủ đề / module / tuần học…"
                 value={syllabusInput}
                 onChange={(e) => setSyllabusInput(e.target.value)}
                 onKeyDown={(e) => {
@@ -377,7 +614,7 @@ const CoursesManagementPage: React.FC = () => {
       setDeletingCourse(null);
       fetchCourses();
     } catch {
-      showToast('Xóa thất bại. Vui lòng thử lại.', 'error');
+      showToast('Xóa thất bại. Vui lòng kiểm tra xem khóa học có lớp đang hoạt động hay không.', 'error');
       setDeletingCourse(null);
     } finally {
       setDeleting(false);
@@ -405,7 +642,7 @@ const CoursesManagementPage: React.FC = () => {
       <div className="courses-page-header">
         <div>
           <h1 className="courses-page-title">Quản lý khóa học</h1>
-          <p className="courses-page-subtitle">Thêm, sửa, xóa các khóa học của trung tâm</p>
+          <p className="courses-page-subtitle">Chuẩn hóa danh mục, lộ trình đào tạo IELTS và học phí</p>
         </div>
         <button id="btn-add-course" className="btn btn-primary btn-lg" onClick={openCreate}>
           + Thêm khóa học
@@ -471,39 +708,89 @@ const CoursesManagementPage: React.FC = () => {
           <table className="courses-table" aria-label="Danh sách khóa học">
             <thead>
               <tr>
-                <th>Mã KH</th>
-                <th>Tên khóa học</th>
+                <th style={{ width: '80px' }}>Hình ảnh</th>
+                <th>Mã & Tên khóa học</th>
                 <th>Danh mục</th>
                 <th>Thời lượng</th>
                 <th>Học phí</th>
                 <th>Trạng thái</th>
-                <th>Hành động</th>
+                <th style={{ textAlign: 'right' }}>Hành động</th>
               </tr>
             </thead>
             <tbody>
               {courses.map((course) => (
                 <tr key={course._id} className="courses-table-row">
                   <td>
-                    <span className="course-code-chip">{course.code}</span>
+                    {course.bannerUrl ? (
+                      <div
+                        style={{
+                          width: '64px',
+                          height: '42px',
+                          borderRadius: '6px',
+                          overflow: 'hidden',
+                          background: '#f1f5f9',
+                          border: '1px solid #e2e8f0',
+                        }}
+                      >
+                        <img
+                          src={course.bannerUrl}
+                          alt={course.title}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          onError={(e) => {
+                            (e.target as HTMLElement).style.display = 'none';
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <div
+                        style={{
+                          width: '64px',
+                          height: '42px',
+                          borderRadius: '6px',
+                          background: '#e2e8f0',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '18px',
+                          color: '#64748b',
+                        }}
+                      >
+                        🎓
+                      </div>
+                    )}
                   </td>
                   <td>
                     <div className="course-title-cell">
-                      <strong>{course.title}</strong>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                        <span className="course-code-chip">{course.code}</span>
+                        <strong>{course.title}</strong>
+                        <LevelBadge level={course.entryLevel} />
+                      </div>
                       {course.description && (
-                        <span className="course-desc-preview">{course.description.slice(0, 60)}{course.description.length > 60 ? '…' : ''}</span>
+                        <span
+                          className="course-desc-preview"
+                          style={{ marginTop: '3px', color: '#64748b', fontSize: '12px' }}
+                        >
+                          {course.description}
+                        </span>
                       )}
                     </div>
                   </td>
                   <td>
                     <span className="course-category-chip">{course.category}</span>
                   </td>
-                  <td>{course.sessions} buổi</td>
+                  <td>
+                    {course.sessions} buổi
+                    <span style={{ display: 'block', fontSize: '11px', color: '#64748b' }}>
+                      {course.format === 'BLENDED' ? 'Kết hợp' : course.format === 'ONLINE' ? 'Trực tuyến' : 'Tại lớp'}
+                    </span>
+                  </td>
                   <td className="course-fee">{formatCurrency(course.tuitionFee)}</td>
                   <td>
                     <StatusBadge status={course.status} />
                   </td>
-                  <td>
-                    <div className="courses-actions">
+                  <td style={{ textAlign: 'right' }}>
+                    <div className="courses-actions" style={{ justifyContent: 'flex-end' }}>
                       <button
                         id={`btn-edit-${course._id}`}
                         className="btn btn-outline btn-sm"

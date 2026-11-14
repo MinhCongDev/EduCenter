@@ -85,12 +85,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         // Then verify token is still valid with the server
         try {
-          const result = await authService.getMe();
+          const result = await authService.getMe(token);
+          if (authService.getToken() !== token) return;
           dispatch({
             type: 'LOGIN_SUCCESS',
             payload: { user: result.data.user, token },
           });
         } catch {
+          if (authService.getToken() !== token) return;
           // Token invalid → logout
           authService.logout();
           dispatch({ type: 'LOGOUT' });

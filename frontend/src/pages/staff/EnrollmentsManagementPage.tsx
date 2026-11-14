@@ -85,7 +85,12 @@ const EnrollmentDetailModal: React.FC<{
         <div><span>Số điện thoại</span><strong>{enrollment.student?.phone || '—'}</strong></div>
         <div><span>Khóa học</span><strong>{enrollment.course?.title ?? 'Chưa có thông tin khóa học'}</strong></div>
         <div><span>Chuẩn đầu vào</span><strong>{enrollment.course?.entryLevel || '—'}</strong></div>
-        <div><span>Trình độ học viên</span><strong>{enrollment.studentProfile?.currentBand ? `Band ${enrollment.studentProfile.currentBand}` : 'Chưa có điểm Band'}</strong></div>
+        <div><span>Điểm kiểm tra đầu vào</span><strong>{enrollment.studentProfile?.placementTestScore != null ? `Band ${enrollment.studentProfile.placementTestScore}` : 'Chưa làm bài'}</strong></div>
+        <div><span>Ngày kiểm tra đầu vào</span><strong>{formatDate(enrollment.studentProfile?.placementTestDate)}</strong></div>
+        <div><span>Trình độ hiện tại</span><strong>{enrollment.studentProfile?.currentBand != null ? `Band ${enrollment.studentProfile.currentBand}` : 'Chưa có điểm Band'}</strong></div>
+        {enrollment.studentProfile?.placementNotes && (
+          <div className="enrollment-detail-wide"><span>Kết quả bài kiểm tra</span><strong>{enrollment.studentProfile.placementNotes}</strong></div>
+        )}
         <div><span>Học phí khóa học</span><strong>{enrollment.course ? formatCurrency(enrollment.course.tuitionFee) : '—'}</strong></div>
         <div><span>Lớp học</span><strong>{enrollment.class?.classCode ?? 'Chưa được xếp lớp'}</strong></div>
         <div><span>Ngày ghi danh</span><strong>{formatDate(enrollment.registrationDate)}</strong></div>
@@ -130,10 +135,9 @@ const EnrollmentDetailModal: React.FC<{
             <div style={{ marginTop: '4px', lineHeight: 1.4 }}>
               • Chuẩn đầu vào khóa học: <strong>{enrollment.course.entryLevel}</strong>
               <br />
-              • Band điểm học viên: <strong>{enrollment.studentProfile?.currentBand ? `Band ${enrollment.studentProfile.currentBand}` : 'Chưa kiểm tra đầu vào'}</strong>
-              {enrollment.studentProfile?.placementTestScore !== undefined && (
-                <span> (Điểm Test: Band {enrollment.studentProfile.placementTestScore})</span>
-              )}
+              • Điểm kiểm tra đầu vào: <strong>{enrollment.studentProfile?.placementTestScore != null ? `Band ${enrollment.studentProfile.placementTestScore}` : 'Chưa kiểm tra đầu vào'}</strong>
+              <br />
+              • Trình độ hiện tại: <strong>{enrollment.studentProfile?.currentBand != null ? `Band ${enrollment.studentProfile.currentBand}` : 'Chưa có dữ liệu'}</strong>
             </div>
           </div>
         )}
@@ -407,7 +411,7 @@ const EnrollmentsManagementPage: React.FC = () => {
           <div className="courses-empty"><h3>Không có ghi danh phù hợp</h3><p>Thử thay đổi điều kiện tìm kiếm hoặc bộ lọc.</p></div>
         ) : (
           <table className="courses-table enrollment-table" aria-label="Danh sách ghi danh">
-            <thead><tr><th>Mã ghi danh</th><th>Học viên</th><th>Khóa học</th><th>Trình độ / Chuẩn</th><th>Học phí</th><th>Lớp</th><th>Ngày đăng ký</th><th>Trạng thái ghi danh</th><th>Thanh toán gần nhất</th><th>Thao tác</th></tr></thead>
+            <thead><tr><th>Mã ghi danh</th><th>Học viên</th><th>Khóa học</th><th>Điểm đầu vào / Chuẩn</th><th>Học phí</th><th>Lớp</th><th>Ngày đăng ký</th><th>Trạng thái ghi danh</th><th>Thanh toán gần nhất</th><th>Thao tác</th></tr></thead>
             <tbody>
               {enrollments.map((enrollment) => {
                 const latestPayment = enrollment.payments[0];
@@ -418,8 +422,12 @@ const EnrollmentsManagementPage: React.FC = () => {
                     <td>{enrollment.course?.title ?? 'Chưa có thông tin'}</td>
                     <td>
                       <div style={{ fontSize: '0.82rem' }}>
-                        <div>Band: <strong>{enrollment.studentProfile?.currentBand ?? '—'}</strong></div>
+                        <div>Đầu vào: <strong>{enrollment.studentProfile?.placementTestScore != null ? `Band ${enrollment.studentProfile.placementTestScore}` : 'Chưa thi'}</strong></div>
+                        <div style={{ fontSize: '0.74rem', color: '#64748b' }}>Hiện tại: {enrollment.studentProfile?.currentBand ?? '—'}</div>
                         <div style={{ fontSize: '0.74rem', color: '#64748b' }}>Y/c: {enrollment.course?.entryLevel ?? '—'}</div>
+                        {enrollment.studentProfile?.placementTestDate && (
+                          <div style={{ fontSize: '0.74rem', color: '#64748b' }}>Ngày thi: {formatDate(enrollment.studentProfile.placementTestDate)}</div>
+                        )}
                       </div>
                     </td>
                     <td>{enrollment.course ? formatCurrency(enrollment.course.tuitionFee) : '—'}</td>

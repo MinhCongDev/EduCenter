@@ -212,8 +212,11 @@ export interface CourseFormData {
   targetLevel?: string;
   sessions: number;
   tuitionFee: number;
+  format?: CourseFormat;
   status: CourseStatus;
+  bannerUrl?: string;
   syllabus: string[];
+  learningObjectives?: string[];
 }
 
 export interface CourseQueryParams {
@@ -237,12 +240,14 @@ export interface PlacementTestQuestion {
   _id?: string;
   skill: PlacementTestSkill;
   prompt: string;
+  questionText?: string;
   options: string[];
   correctOption: number;
 }
 
 export interface PlacementTest {
   _id: string;
+  slug?: string;
   title: string;
   course: Pick<Course, '_id' | 'code' | 'title'>;
   difficulty: PlacementTestDifficulty;

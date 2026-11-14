@@ -50,19 +50,20 @@
   flex-direction: column;
   width: 264px;
   height: 100vh;
-  min-height: 600px;
-  padding: 26px 18px 18px;
+  padding: 20px 16px 14px;
   background: #ffffff;
   border-right: 1px solid #e2ebe4;
+  overflow-y: auto;
 }
 
 .dashboard-brand {
   display: inline-flex;
   align-items: center;
   gap: 11px;
-  margin: 0 8px 46px;
+  margin: 0 8px 24px;
   color: #1c2b20;
   text-decoration: none;
+  flex-shrink: 0;
 }
 
 .dashboard-brand:hover {
@@ -104,17 +105,21 @@
 .dashboard-nav {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  gap: 4px;
 }
 
 .dashboard-nav-item {
   display: flex;
   width: 100%;
-  min-height: 44px;
+  min-height: 40px;
+  flex-shrink: 0;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 10px 12px;
+  padding: 8px 12px;
   border: 0;
   border-radius: 9px;
   background: transparent;
@@ -125,6 +130,29 @@
   text-align: left;
   text-decoration: none;
   transition: background-color 150ms ease, color 150ms ease;
+}
+
+.dashboard-nav-item-main {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.dashboard-nav-icon {
+  flex: 0 0 17px;
+  opacity: 0.85;
+}
+
+.dashboard-nav-divider {
+  height: 1px;
+  flex-shrink: 0;
+  margin: 10px 8px 12px;
+  background: #edf2ee;
+}
+
+.dashboard-nav-label.is-section {
+  margin: 0 10px 8px;
 }
 
 .dashboard-nav-item:hover {
@@ -158,9 +186,10 @@
 .dashboard-account {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  flex-shrink: 0;
+  gap: 6px;
   margin-top: auto;
-  padding: 14px 4px 0;
+  padding: 12px 4px 0;
   border-top: 1px solid #e8eee9;
 }
 

@@ -13,7 +13,88 @@ interface DashboardLayoutProps {
 interface DashboardItem {
   label: string;
   path?: string;
+  dividerBefore?: boolean;
+  icon?: React.ReactNode;
 }
+
+const navIcon = (children: React.ReactNode) => (
+  <svg
+    className="dashboard-nav-icon"
+    width="17"
+    height="17"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.9"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    {children}
+  </svg>
+);
+
+const DIRECTOR_ICONS = {
+  overview: navIcon(
+    <>
+      <rect x="3" y="3" width="7" height="7" rx="1.5" />
+      <rect x="14" y="3" width="7" height="7" rx="1.5" />
+      <rect x="3" y="14" width="7" height="7" rx="1.5" />
+      <rect x="14" y="14" width="7" height="7" rx="1.5" />
+    </>
+  ),
+  announcements: navIcon(
+    <>
+      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+    </>
+  ),
+  staff: navIcon(
+    <>
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </>
+  ),
+  permissions: navIcon(
+    <>
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      <path d="m9 12 2 2 4-4" />
+    </>
+  ),
+  monitoring: navIcon(
+    <>
+      <rect x="3" y="3" width="18" height="18" rx="3" />
+      <path d="m7 14 3-3 3 2 4-5" />
+    </>
+  ),
+  studentReport: navIcon(
+    <>
+      <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+      <path d="M6 12v5c3 3 9 3 12 0v-5" />
+    </>
+  ),
+  teacherReport: navIcon(
+    <>
+      <path d="M2 3h20" />
+      <path d="M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3" />
+      <path d="m7 21 5-5 5 5" />
+    </>
+  ),
+  classReport: navIcon(
+    <>
+      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+      <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+    </>
+  ),
+  revenueReport: navIcon(
+    <>
+      <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1" />
+      <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4" />
+    </>
+  ),
+};
 
 const dashboardPaths: Record<UserRole, string> = {
   STUDENT: '/student/dashboard',
@@ -40,7 +121,6 @@ const getMenuItems = (role: UserRole): DashboardItem[] => {
       { label: 'Thời khóa biểu', path: '/staff/timetable' },
       { label: 'Quản lý học viên', path: '/staff/students' },
       { label: 'Quản lý giảng viên', path: '/staff/teachers' },
-      { label: 'Báo cáo' },
     ];
   }
 
@@ -62,20 +142,20 @@ const getMenuItems = (role: UserRole): DashboardItem[] => {
       { label: 'Lịch học', path: '/student/dashboard?tab=schedule' },
       { label: 'Bài tập về nhà', path: '/student/dashboard?tab=assignments' },
       { label: 'Kết quả học tập', path: '/student/dashboard?tab=grades' },
-      { label: '🎯 Thi thử & Test đầu vào', path: '/placement-tests' },
+      { label: 'Thi thử & Test đầu vào', path: '/placement-tests' },
     ];
   }
 
   if (role === 'DIRECTOR') {
     return [
-      { label: 'Tổng quan', path: '/director/dashboard' },
-      { label: 'Quản lý thông báo', path: '/director/dashboard?tab=announcements' },
-      { label: 'Quản lý nhân sự', path: '/director/dashboard?tab=staff_accounts' },
-      { label: 'Giám sát vận hành', path: '/director/dashboard?tab=monitoring' },
-      { label: 'Báo cáo học viên', path: '/director/dashboard?tab=student_reports' },
-      { label: 'Báo cáo giảng viên', path: '/director/dashboard?tab=teacher_reports' },
-      { label: 'Báo cáo lớp & khóa học', path: '/director/dashboard?tab=class_course_reports' },
-      { label: 'Báo cáo tài chính & doanh thu', path: '/director/dashboard?tab=revenue_reports' },
+      { label: 'Tổng quan', path: '/director/dashboard', icon: DIRECTOR_ICONS.overview },
+      { label: 'Quản lý thông báo', path: '/director/dashboard?tab=announcements', icon: DIRECTOR_ICONS.announcements },
+      { label: 'Quản lý tài khoản & phân quyền', path: '/director/dashboard?tab=account_permissions', icon: DIRECTOR_ICONS.permissions },
+      { label: 'Giám sát vận hành', path: '/director/dashboard?tab=monitoring', icon: DIRECTOR_ICONS.monitoring },
+      { label: 'Báo cáo học viên', path: '/director/dashboard?tab=student_reports', dividerBefore: true, icon: DIRECTOR_ICONS.studentReport },
+      { label: 'Báo cáo giảng viên', path: '/director/dashboard?tab=teacher_reports', icon: DIRECTOR_ICONS.teacherReport },
+      { label: 'Báo cáo lớp & khóa học', path: '/director/dashboard?tab=class_course_reports', icon: DIRECTOR_ICONS.classReport },
+      { label: 'Báo cáo tài chính & doanh thu', path: '/director/dashboard?tab=revenue_reports', icon: DIRECTOR_ICONS.revenueReport },
     ];
   }
 
@@ -119,7 +199,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           <span className="dashboard-brand-name">Edu<span>Center</span></span>
         </Link>
 
-        <div className="dashboard-nav-label">KHÔNG GIAN LÀM VIỆC</div>
+        {role !== 'DIRECTOR' && (
+          <div className="dashboard-nav-label">KHÔNG GIAN LÀM VIỆC</div>
+        )}
         <nav className="dashboard-nav" aria-label="Điều hướng tác vụ">
           {items.map((item) => {
             const currentFull = location.pathname + (location.search || '');
@@ -129,26 +211,37 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                 : location.pathname === item.path && (!location.search || location.search === '')
               : false;
 
-            return item.path ? (
+            const navElement = item.path ? (
               <NavLink
-                key={item.label}
                 to={item.path}
                 className={`dashboard-nav-item${isCurrent ? ' is-active' : ''}`}
                 aria-current={isCurrent ? 'page' : undefined}
               >
-                {item.label}
+                <span className="dashboard-nav-item-main">
+                  {item.icon}
+                  <span>{item.label}</span>
+                </span>
               </NavLink>
             ) : (
               <button
-                key={item.label}
                 type="button"
                 className="dashboard-nav-item is-placeholder"
                 disabled
                 title="Chức năng sẽ được cập nhật trong thời gian tới"
               >
-                <span>{item.label}</span>
+                <span className="dashboard-nav-item-main">
+                  {item.icon}
+                  <span>{item.label}</span>
+                </span>
                 <span className="dashboard-nav-status">Sắp có</span>
               </button>
+            );
+
+            return (
+              <React.Fragment key={item.label}>
+                {item.dividerBefore && <div className="dashboard-nav-divider" />}
+                {navElement}
+              </React.Fragment>
             );
           })}
         </nav>

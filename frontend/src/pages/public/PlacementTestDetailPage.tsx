@@ -7,6 +7,17 @@ import {
   type PlacementPassage,
 } from '../../services/placementTest.service';
 
+const getSubmissionErrorMessage = (error: unknown): string => {
+  if (typeof error !== 'object' || error === null) return 'Lỗi mạng hoặc máy chủ.';
+  if ('response' in error && typeof error.response === 'object' && error.response !== null
+    && 'data' in error.response && typeof error.response.data === 'object' && error.response.data !== null
+    && 'message' in error.response.data && typeof error.response.data.message === 'string') {
+    return error.response.data.message;
+  }
+  if ('message' in error && typeof error.message === 'string') return error.message;
+  return 'Lỗi mạng hoặc máy chủ.';
+};
+
 export const PlacementTestDetailPage: React.FC = () => {
   const { id, testId } = useParams<{ id?: string; testId?: string }>();
   const activeTestId = id || testId;
@@ -125,8 +136,8 @@ export const PlacementTestDetailPage: React.FC = () => {
       const evalResult = await placementTestService.submitTest(targetId, userAnswers);
       setResult(evalResult);
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    } catch (err: any) {
-      alert('Lỗi nộp bài thi: ' + (err?.message || 'Lỗi mạng'));
+    } catch (err: unknown) {
+      alert('Lỗi nộp bài thi: ' + getSubmissionErrorMessage(err));
     } finally {
       setIsSubmitting(false);
     }
