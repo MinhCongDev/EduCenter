@@ -173,7 +173,6 @@ const AttendancePage: React.FC = () => {
               <span className="dash-metric-val">{stats.total}</span>
               <span className="dash-metric-trend">Tỷ lệ có mặt: {stats.rate}%</span>
             </div>
-            <div className="dash-metric-icon icon-blue"></div>
           </div>
           <div className="dash-metric-card">
             <div className="dash-metric-info">
@@ -183,7 +182,6 @@ const AttendancePage: React.FC = () => {
               </span>
               <span className="dash-metric-trend up">Tỷ lệ {stats.rate}%</span>
             </div>
-            <div className="dash-metric-icon icon-emerald"></div>
           </div>
           <div className="dash-metric-card">
             <div className="dash-metric-info">
@@ -195,7 +193,6 @@ const AttendancePage: React.FC = () => {
                 {stats.late > 0 ? `${stats.late} đi trễ` : 'Không đi trễ'}
               </span>
             </div>
-            <div className="dash-metric-icon icon-purple"></div>
           </div>
         </div>
       )}

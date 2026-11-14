@@ -178,7 +178,6 @@ const AssignmentsPage: React.FC = () => {
                 Đã nộp: {assignments.filter((a) => a.submissionStatus).length}
               </span>
             </div>
-            <div className="dash-metric-icon icon-blue"></div>
           </div>
           <div className="dash-metric-card">
             <div className="dash-metric-info">
@@ -188,7 +187,6 @@ const AssignmentsPage: React.FC = () => {
               </span>
               <span className="dash-metric-trend">Cần hoàn thành sớm</span>
             </div>
-            <div className="dash-metric-icon icon-amber">⏳</div>
           </div>
           <div className="dash-metric-card">
             <div className="dash-metric-info">
@@ -202,7 +200,6 @@ const AssignmentsPage: React.FC = () => {
                   : 'Chờ giảng viên chấm'}
               </span>
             </div>
-            <div className="dash-metric-icon icon-emerald"></div>
           </div>
         </div>
       )}

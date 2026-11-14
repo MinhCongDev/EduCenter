@@ -197,7 +197,6 @@ const GradesPage: React.FC = () => {
                 {avgBand ? `${withBand.length} bài có band` : 'Chưa có điểm Overall'}
               </span>
             </div>
-            <div className="dash-metric-icon icon-emerald"></div>
           </div>
           <div className="dash-metric-card">
             <div className="dash-metric-info">
@@ -212,7 +211,6 @@ const GradesPage: React.FC = () => {
                 {maxBand ? bandLabel(parseFloat(maxBand)) : '—'}
               </span>
             </div>
-            <div className="dash-metric-icon icon-amber">⭐</div>
           </div>
           <div className="dash-metric-card">
             <div className="dash-metric-info">
@@ -220,7 +218,6 @@ const GradesPage: React.FC = () => {
               <span className="dash-metric-val">{grades.length} bài</span>
               <span className="dash-metric-trend">{withBand.length} đã chấm</span>
             </div>
-            <div className="dash-metric-icon icon-blue">📋</div>
           </div>
         </div>
       )}

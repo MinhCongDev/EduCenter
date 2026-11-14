@@ -197,7 +197,6 @@ const RequestsPage: React.FC = () => {
                 {requests.filter((r) => r.status === 'APPROVED').length} đã duyệt
               </span>
             </div>
-            <div className="dash-metric-icon icon-blue"></div>
           </div>
           <div className="dash-metric-card">
             <div className="dash-metric-info">
@@ -207,7 +206,6 @@ const RequestsPage: React.FC = () => {
               </span>
               <span className="dash-metric-trend">Đang chờ nhân viên xử lý</span>
             </div>
-            <div className="dash-metric-icon icon-amber">⏳</div>
           </div>
           <div className="dash-metric-card">
             <div className="dash-metric-info">
@@ -219,7 +217,6 @@ const RequestsPage: React.FC = () => {
                 {requests.filter((r) => r.status === 'REJECTED').length} bị từ chối
               </span>
             </div>
-            <div className="dash-metric-icon icon-emerald"></div>
           </div>
         </div>
       )}

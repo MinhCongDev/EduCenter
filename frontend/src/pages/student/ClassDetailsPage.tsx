@@ -108,7 +108,6 @@ const ClassDetailsPage: React.FC = () => {
               {cls.tuitionStatus === 'PAID' ? 'Hoàn tất' : 'Cần thanh toán sớm'}
             </span>
           </div>
-          <div className="dash-metric-icon icon-emerald">💰</div>
         </div>
         <div className="dash-metric-card">
           <div className="dash-metric-info">
@@ -118,7 +117,6 @@ const ClassDetailsPage: React.FC = () => {
             </span>
             <span className="dash-metric-trend">{pending.length} bài chưa nộp</span>
           </div>
-          <div className="dash-metric-icon icon-amber">📝</div>
         </div>
         <div className="dash-metric-card">
           <div className="dash-metric-info">
@@ -128,7 +126,6 @@ const ClassDetailsPage: React.FC = () => {
               {c.course?.durationWeeks || '—'} tuần • {c.sessions || c.course?.sessions || '—'} buổi
             </span>
           </div>
-          <div className="dash-metric-icon icon-purple">🎓</div>
         </div>
       </div>
 

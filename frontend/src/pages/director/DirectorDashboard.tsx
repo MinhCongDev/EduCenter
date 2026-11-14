@@ -972,7 +972,6 @@ export const DirectorDashboard: React.FC = () => {
                   {summary.totalRevenue > 0 ? '↗ Ghi nhận từ giao dịch học phí thực tế' : 'Chưa phát sinh doanh thu'}
                 </span>
               </div>
-              <div className="dash-metric-icon icon-emerald"></div>
             </div>
 
             <div className="dash-metric-card" onClick={() => handleTabChange('student_reports')} style={{ cursor: 'pointer' }}>
@@ -983,7 +982,6 @@ export const DirectorDashboard: React.FC = () => {
                 </span>
                 <span className="dash-metric-trend up">Học viên ghi danh thực tế</span>
               </div>
-              <div className="dash-metric-icon icon-blue"></div>
             </div>
 
             <div className="dash-metric-card" onClick={() => handleTabChange('class_course_reports')} style={{ cursor: 'pointer' }}>
@@ -994,7 +992,6 @@ export const DirectorDashboard: React.FC = () => {
                 </span>
                 <span className="dash-metric-trend up">{summary.activeClassesCount} lớp đang diễn ra</span>
               </div>
-              <div className="dash-metric-icon icon-purple"></div>
             </div>
 
             <div className="dash-metric-card" onClick={() => handleTabChange('account_permissions')} style={{ cursor: 'pointer' }}>
@@ -1005,7 +1002,6 @@ export const DirectorDashboard: React.FC = () => {
                 </span>
                 <span className="dash-metric-trend neutral">⭐ Đánh giá 4.88 / 5.0</span>
               </div>
-              <div className="dash-metric-icon icon-amber"></div>
             </div>
           </div>
 

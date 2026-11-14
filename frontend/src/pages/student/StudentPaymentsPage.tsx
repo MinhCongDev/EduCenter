@@ -371,7 +371,6 @@ export const StudentPaymentsPage: React.FC = () => {
               ✅ {summary.successCount} giao dịch thành công
             </span>
           </div>
-          <div className="dash-metric-icon icon-emerald"></div>
         </div>
 
         <div className="dash-metric-card" style={{ borderLeft: activeCoursePayment ? '4px solid #ef4444' : '4px solid #6366f1' }}>
@@ -386,9 +385,6 @@ export const StudentPaymentsPage: React.FC = () => {
                 : '✨ Chưa có khoản thanh toán nào cần thực hiện'}
             </span>
           </div>
-          <div className="dash-metric-icon icon-amber">
-            {activeCoursePayment ? '⏳' : '🎉'}
-          </div>
         </div>
 
         <div className="dash-metric-card" style={{ borderLeft: '4px solid #3b82f6' }}>
@@ -397,7 +393,6 @@ export const StudentPaymentsPage: React.FC = () => {
             <span className="dash-metric-val">{payments.length} Hóa đơn</span>
             <span className="dash-metric-trend neutral">Lịch sử giao dịch lưu trữ</span>
           </div>
-          <div className="dash-metric-icon icon-blue"></div>
         </div>
 
         <div
@@ -441,7 +436,6 @@ export const StudentPaymentsPage: React.FC = () => {
               </span>
             </span>
           </div>
-          <div className="dash-metric-icon icon-emerald"></div>
         </div>
       </div>
 

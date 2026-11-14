@@ -139,7 +139,6 @@ const SchedulePage: React.FC = () => {
               <span className="dash-metric-val">{schedules.length}</span>
               <span className="dash-metric-trend up">{orderedDays.length} ngày học</span>
             </div>
-            <div className="dash-metric-icon icon-blue"></div>
           </div>
           <div className="dash-metric-card">
             <div className="dash-metric-info">
@@ -149,7 +148,6 @@ const SchedulePage: React.FC = () => {
                 {7 - orderedDays.length === 0 ? 'Học đủ 7 ngày' : 'Có thể nghỉ ngơi'}
               </span>
             </div>
-            <div className="dash-metric-icon icon-emerald"></div>
           </div>
           <div className="dash-metric-card">
             <div className="dash-metric-info">
@@ -159,7 +157,6 @@ const SchedulePage: React.FC = () => {
                 {schedules.length > 0 ? 'Cố định phòng' : 'Chưa có thông tin'}
               </span>
             </div>
-            <div className="dash-metric-icon icon-purple"></div>
           </div>
         </div>
       )}

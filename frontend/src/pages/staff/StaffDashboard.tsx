@@ -174,7 +174,6 @@ const StaffDashboard: React.FC = () => {
             <span className="dash-metric-val">4 lớp</span>
             <span className="dash-metric-trend up">Sắp đủ sĩ số</span>
           </div>
-          <div className="dash-metric-icon icon-blue"></div>
         </div>
 
         <div className="dash-metric-card">
@@ -183,7 +182,6 @@ const StaffDashboard: React.FC = () => {
             <span className="dash-metric-val">186</span>
             <span className="dash-metric-trend up">Đang theo học tại trung tâm</span>
           </div>
-          <div className="dash-metric-icon icon-emerald"></div>
         </div>
 
         <div className="dash-metric-card">
@@ -192,7 +190,6 @@ const StaffDashboard: React.FC = () => {
             <span className="dash-metric-val">24.500.000 đ</span>
             <span className="dash-metric-trend neutral">3 giao dịch chờ xác nhận</span>
           </div>
-          <div className="dash-metric-icon icon-purple"></div>
         </div>
       </div>
 

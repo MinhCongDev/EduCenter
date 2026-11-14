@@ -101,7 +101,6 @@ const MyClassesPage: React.FC = () => {
               <span className="dash-metric-val">{classes.length} lớp</span>
               <span className="dash-metric-trend up">{totalPaid} đã thanh toán</span>
             </div>
-            <div className="dash-metric-icon icon-blue"></div>
           </div>
           <div className="dash-metric-card">
             <div className="dash-metric-info">
@@ -111,7 +110,6 @@ const MyClassesPage: React.FC = () => {
                 {classes.length - totalPaid} chưa thanh toán
               </span>
             </div>
-            <div className="dash-metric-icon icon-emerald"></div>
           </div>
           <div className="dash-metric-card">
             <div className="dash-metric-info">
@@ -121,7 +119,6 @@ const MyClassesPage: React.FC = () => {
                 {classes.filter((c) => (c.class as any).status === 'OPEN').length} đang mở
               </span>
             </div>
-            <div className="dash-metric-icon icon-purple"></div>
           </div>
         </div>
       )}

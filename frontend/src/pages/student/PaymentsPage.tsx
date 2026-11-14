@@ -123,7 +123,6 @@ const PaymentsPage: React.FC = () => {
               </span>
               <span className="dash-metric-trend up">{stats.paidCount} giao dịch</span>
             </div>
-            <div className="dash-metric-icon icon-emerald"></div>
           </div>
           <div className="dash-metric-card">
             <div className="dash-metric-info">
@@ -133,7 +132,6 @@ const PaymentsPage: React.FC = () => {
               </span>
               <span className="dash-metric-trend">{stats.pendingCount} khoản chưa thanh toán</span>
             </div>
-            <div className="dash-metric-icon icon-amber">⏳</div>
           </div>
           <div className="dash-metric-card">
             <div className="dash-metric-info">
@@ -143,7 +141,6 @@ const PaymentsPage: React.FC = () => {
               </span>
               <span className="dash-metric-trend">{stats.total} giao dịch</span>
             </div>
-            <div className="dash-metric-icon icon-blue"></div>
           </div>
         </div>
       )}
