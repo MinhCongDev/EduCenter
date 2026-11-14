@@ -1,10 +1,21 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { courseService } from '../../services/course.service';
 import { studentService } from '../../services/student.service';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import type { Course, CourseQueryParams } from '../../types';
+
+const getLevelFromBand = (bandVal: string | number): string => {
+  const b = typeof bandVal === 'number' ? bandVal : parseFloat(String(bandVal));
+  if (isNaN(b)) return 'ALL';
+  if (b >= 7.5) return '8.0+';
+  if (b >= 6.5) return '6.5 - 7.5+';
+  if (b >= 5.5) return '5.5 - 6.5';
+  if (b >= 4.5) return '4.5 - 5.5';
+  if (b >= 3.5) return '3.5 - 4.5';
+  return '0 - 3.5';
+};
 
 export const CoursesPage: React.FC = () => {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -13,14 +24,39 @@ export const CoursesPage: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
   const [enrollingClassId, setEnrollingClassId] = useState<string | null>(null);
+
+  const queryLevel = searchParams.get('level');
+  const queryBand = searchParams.get('band');
+  const locationState = location.state as { recommendedLevel?: string; band?: number } | null;
+
+  const initialLevel =
+    queryLevel ||
+    (queryBand ? getLevelFromBand(queryBand) : null) ||
+    locationState?.recommendedLevel ||
+    (locationState?.band ? getLevelFromBand(locationState.band) : null) ||
+    'ALL';
 
   // Search & Filter state
   const [search, setSearch] = useState<string>('');
-  const [selectedLevel, setSelectedLevel] = useState<string>('ALL');
+  const [selectedLevel, setSelectedLevel] = useState<string>(initialLevel);
   const [selectedFormat, setSelectedFormat] = useState<string>('ALL');
   const [priceRange, setPriceRange] = useState<string>('ALL');
   const [sortBy, setSortBy] = useState<'newest' | 'price_asc' | 'price_desc' | 'duration'>('newest');
+
+  // Cập nhật selectedLevel khi URL param hoặc location.state thay đổi
+  useEffect(() => {
+    const activeLevel =
+      searchParams.get('level') ||
+      (searchParams.get('band') ? getLevelFromBand(searchParams.get('band')!) : null) ||
+      (location.state as any)?.recommendedLevel ||
+      ((location.state as any)?.band ? getLevelFromBand((location.state as any).band) : null);
+    if (activeLevel && activeLevel !== selectedLevel) {
+      setSelectedLevel(activeLevel);
+    }
+  }, [searchParams, location.state]);
 
   // Detail Modal state
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
@@ -100,6 +136,7 @@ export const CoursesPage: React.FC = () => {
     setSelectedFormat('ALL');
     setPriceRange('ALL');
     setSortBy('newest');
+    setSearchParams({});
   };
 
   // M7: Ghi danh trực tiếp vào một lớp học (Student actor)
@@ -300,7 +337,17 @@ export const CoursesPage: React.FC = () => {
                 <button
                   key={opt.value}
                   type="button"
-                  onClick={() => setSelectedLevel(opt.value)}
+                  onClick={() => {
+                    setSelectedLevel(opt.value);
+                    const newParams = new URLSearchParams(searchParams);
+                    if (opt.value === 'ALL') {
+                      newParams.delete('level');
+                      newParams.delete('band');
+                    } else {
+                      newParams.set('level', opt.value);
+                    }
+                    setSearchParams(newParams);
+                  }}
                   style={{
                     padding: '0.4rem 0.85rem',
                     borderRadius: '20px',
@@ -365,6 +412,74 @@ export const CoursesPage: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Banner thông báo lọc theo kết quả bài thi kiểm tra đầu vào */}
+        {selectedLevel !== 'ALL' && (Boolean(queryBand) || Boolean(queryLevel) || Boolean(locationState?.band) || Boolean(locationState?.recommendedLevel)) && (
+          <div
+            style={{
+              backgroundColor: '#ecfdf5',
+              border: '1.5px solid #a7f3d0',
+              borderRadius: '16px',
+              padding: '1.25rem 1.5rem',
+              marginBottom: '2rem',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '1rem',
+              boxShadow: '0 4px 15px rgba(5, 150, 105, 0.08)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div
+                style={{
+                  width: '44px',
+                  height: '44px',
+                  borderRadius: '12px',
+                  backgroundColor: '#059669',
+                  color: '#ffffff',
+                  display: 'grid',
+                  placeItems: 'center',
+                  fontSize: '1.4rem',
+                  fontWeight: 800,
+                  flexShrink: 0,
+                }}
+              >
+                🎯
+              </div>
+              <div>
+                <div style={{ fontWeight: 800, color: '#064e3b', fontSize: '1.05rem' }}>
+                  Đang lọc các khóa học phù hợp với kết quả thi thử: {queryBand || locationState?.band ? `Band ${queryBand || locationState?.band} • ` : ''}Trình độ {selectedLevel}
+                </div>
+                <div style={{ fontSize: '0.88rem', color: '#047857', marginTop: '2px' }}>
+                  Hệ thống EduCenter chỉ hiển thị các khóa học thuộc khung năng lực này giúp bạn học đúng lộ trình và tối ưu hóa thời gian đạt chuẩn đầu ra.
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleResetFilters}
+              style={{
+                backgroundColor: '#ffffff',
+                color: '#065f46',
+                border: '1.5px solid #6ee7b7',
+                padding: '8px 18px',
+                borderRadius: '10px',
+                fontWeight: 700,
+                fontSize: '0.88rem',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.2s',
+              }}
+            >
+              <span>Xem tất cả khóa học</span>
+              <span>✕</span>
+            </button>
+          </div>
+        )}
 
         {/* Course Cards Grid */}
         {isLoading ? (

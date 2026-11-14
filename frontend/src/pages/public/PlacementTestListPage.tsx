@@ -1,6 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { placementTestService, type PlacementTestSummary, type TestHistoryItem } from '../../services/placementTest.service';
+
+const getHistoryLevel = (item: TestHistoryItem): string => {
+  if (item.matchedLevel) return item.matchedLevel;
+  const b = item.predictedBand;
+  if (b >= 7.5) return '8.0+';
+  if (b >= 6.5) return '6.5 - 7.5+';
+  if (b >= 5.5) return '5.5 - 6.5';
+  if (b >= 4.5) return '4.5 - 5.5';
+  if (b >= 3.5) return '3.5 - 4.5';
+  return '0 - 3.5';
+};
 
 export const PlacementTestListPage: React.FC = () => {
   const navigate = useNavigate();
@@ -383,24 +394,61 @@ export const PlacementTestListPage: React.FC = () => {
                           Band {item.predictedBand}
                         </span>
                       </td>
-                      <td style={{ padding: '12px 14px', fontWeight: 600, color: '#1d4ed8' }}>{item.recommendedCourse}</td>
-                      <td style={{ padding: '12px 14px', textAlign: 'right' }}>
-                        <button
-                          type="button"
-                          onClick={() => navigate(`/placement-test/${item.testId}`)}
+                      <td style={{ padding: '12px 14px' }}>
+                        <Link
+                          to={`/courses?level=${encodeURIComponent(getHistoryLevel(item))}&band=${item.predictedBand}`}
                           style={{
-                            backgroundColor: '#eff6ff',
-                            color: '#1d4ed8',
-                            border: '1px solid #bfdbfe',
-                            padding: '4px 10px',
-                            borderRadius: '6px',
-                            fontSize: '0.78rem',
                             fontWeight: 700,
-                            cursor: 'pointer',
+                            color: '#047857',
+                            textDecoration: 'none',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
                           }}
+                          title={`Xem các khóa học trình độ ${getHistoryLevel(item)}`}
                         >
-                          Thi lại ↺
-                        </button>
+                          <span>{item.recommendedCourse}</span>
+                          <span style={{ fontSize: '0.8rem' }}>↗</span>
+                        </Link>
+                      </td>
+                      <td style={{ padding: '12px 14px', textAlign: 'right' }}>
+                        <div style={{ display: 'inline-flex', gap: '8px', alignItems: 'center' }}>
+                          <Link
+                            to={`/courses?level=${encodeURIComponent(getHistoryLevel(item))}&band=${item.predictedBand}`}
+                            style={{
+                              backgroundColor: '#ecfdf5',
+                              color: '#047857',
+                              border: '1px solid #a7f3d0',
+                              padding: '5px 12px',
+                              borderRadius: '8px',
+                              fontSize: '0.78rem',
+                              fontWeight: 700,
+                              textDecoration: 'none',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                            }}
+                          >
+                            <span>Xem khóa học</span>
+                            <span>→</span>
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => navigate(`/placement-test/${item.testId}`)}
+                            style={{
+                              backgroundColor: '#eff6ff',
+                              color: '#1d4ed8',
+                              border: '1px solid #bfdbfe',
+                              padding: '5px 10px',
+                              borderRadius: '8px',
+                              fontSize: '0.78rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            Thi lại ↺
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}

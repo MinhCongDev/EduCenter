@@ -43,11 +43,14 @@ export interface PlacementTestDetail extends PlacementTestSummary {
 }
 
 export interface RecommendedCourseDetail {
+  _id?: string;
   code: string;
   title: string;
   targetLevel: string;
+  entryLevel?: string;
   tuitionFee: number;
   durationWeeks: number;
+  sessions?: number;
   badge: string;
   description: string;
   whyRecommended: string;
@@ -85,6 +88,7 @@ export interface PlacementResultResponse {
   predictedBand: number;
   bandRange: string;
   levelName: string;
+  matchedLevel?: string;
   summaryFeedback: string;
   primaryCourse: RecommendedCourseDetail;
   secondaryCourses: RecommendedCourseDetail[];
@@ -102,6 +106,7 @@ export interface TestHistoryItem {
   scorePercentage: number;
   predictedBand: number;
   levelName: string;
+  matchedLevel?: string;
   recommendedCourse: string;
 }
 
@@ -161,6 +166,7 @@ export const placementTestService = {
         scorePercentage: result.scorePercentage,
         predictedBand: result.predictedBand,
         levelName: result.levelName,
+        matchedLevel: result.matchedLevel,
         recommendedCourse: result.primaryCourse?.title || '',
       });
       localStorage.setItem('educenter_placement_history', JSON.stringify(history.slice(0, 15)));

@@ -30,26 +30,41 @@ export const getCourses = async (req: Request, res: Response): Promise<void> => 
       query.status = 'ACTIVE';
     }
 
+    const escapeRegex = (val: string): string => val.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const andConditions: any[] = [];
+
     // Search Courses by keyword
     if (search && typeof search === 'string' && search.trim() !== '') {
-      const searchRegex = new RegExp(search.trim(), 'i');
-      query.$or = [
-        { title: searchRegex },
-        { code: searchRegex },
-        { description: searchRegex },
-        { category: searchRegex },
-        { entryLevel: searchRegex },
-        { targetLevel: searchRegex },
-      ];
+      const searchRegex = new RegExp(escapeRegex(search.trim()), 'i');
+      andConditions.push({
+        $or: [
+          { title: searchRegex },
+          { code: searchRegex },
+          { description: searchRegex },
+          { category: searchRegex },
+          { entryLevel: searchRegex },
+          { targetLevel: searchRegex },
+        ],
+      });
     }
 
-    // Filter Courses
+    // Filter Courses by Level (trình độ học viên)
     if (level && typeof level === 'string' && level !== 'ALL') {
-      query.$or = [
-        ...(query.$or || []),
-        { entryLevel: new RegExp(level, 'i') },
-        { targetLevel: new RegExp(level, 'i') },
-      ];
+      const escapedLevel = escapeRegex(level.trim());
+      const levelRegex = new RegExp(escapedLevel, 'i');
+      andConditions.push({
+        $or: [
+          { entryLevel: levelRegex },
+          { targetLevel: levelRegex },
+          { title: levelRegex },
+        ],
+      });
+    }
+
+    if (andConditions.length === 1) {
+      Object.assign(query, andConditions[0]);
+    } else if (andConditions.length > 1) {
+      query.$and = andConditions;
     }
 
     if (category && typeof category === 'string' && category !== 'ALL') {

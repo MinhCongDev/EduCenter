@@ -198,6 +198,21 @@ export const PlacementTestDetailPage: React.FC = () => {
   // RENDER: EXAM RESULT & COURSE RECOMMENDATION VIEW
   // =========================================================================
   if (result) {
+    const targetMatchedLevel =
+      result.matchedLevel ||
+      result.primaryCourse?.entryLevel ||
+      (result.predictedBand >= 7.5
+        ? '8.0+'
+        : result.predictedBand >= 6.5
+          ? '6.5 - 7.5+'
+          : result.predictedBand >= 5.5
+            ? '5.5 - 6.5'
+            : result.predictedBand >= 4.5
+              ? '4.5 - 5.5'
+              : result.predictedBand >= 3.5
+                ? '3.5 - 4.5'
+                : '0 - 3.5');
+
     return (
       <div style={{ backgroundColor: '#f8fafc', minHeight: '100vh', padding: '2.5rem 1rem 5rem' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
@@ -384,7 +399,7 @@ export const PlacementTestDetailPage: React.FC = () => {
               <span style={{ fontSize: '1.75rem' }}>🎯</span>
               <div>
                 <span style={{ color: '#047857', fontWeight: 800, fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                  GỢI Ý LỘ TRÌNH KHÓA HỌC DÀNH RIÊNG CHO BẠN
+                  GỢI Ý LỘ TRÌNH KHÓA HỌC DÀNH RIÊNG CHO BẠN (BAND {result.predictedBand} • {targetMatchedLevel})
                 </span>
                 <h2 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 900, color: '#0f172a' }}>
                   Khóa Học EduCenter Được Khuyến Nghị Tối Ưu Nhất
@@ -393,7 +408,7 @@ export const PlacementTestDetailPage: React.FC = () => {
             </div>
 
             <p style={{ margin: '0.5rem 0 1.75rem', color: '#64748b', fontSize: '0.95rem' }}>
-              Dựa trên kết quả bài thi kiểm tra đầu vào và phân tích các điểm cần cải thiện, EduCenter đề xuất lộ trình khóa học phù hợp nhất giúp bạn tiết kiệm thời gian và đảm bảo chuẩn đầu ra.
+              Dựa trên kết quả bài thi kiểm tra đầu vào (Band {result.predictedBand}), EduCenter đề xuất khóa học đúng với năng lực hiện tại của bạn giúp bạn tối ưu hóa thời gian và đảm bảo chuẩn đầu ra.
             </p>
 
             {/* Primary Recommended Course Card */}
@@ -425,7 +440,7 @@ export const PlacementTestDetailPage: React.FC = () => {
                     {result.primaryCourse.title}
                   </h3>
                   <div style={{ fontSize: '0.88rem', color: '#047857', fontWeight: 700 }}>
-                    Mã khóa: {result.primaryCourse.code} • Mục tiêu đầu ra: Band {result.primaryCourse.targetLevel} • Thời lượng: {result.primaryCourse.durationWeeks} tuần
+                    Mã khóa: {result.primaryCourse.code} • Trình độ mục tiêu: Band {result.primaryCourse.targetLevel} • Thời lượng: {result.primaryCourse.durationWeeks} tuần
                   </div>
                 </div>
 
@@ -471,29 +486,43 @@ export const PlacementTestDetailPage: React.FC = () => {
               </div>
 
               {/* Action Buttons */}
-              <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                <Link
-                  to="/courses"
+              <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const coursePayload = {
+                      _id: result.primaryCourse._id || result.primaryCourse.code,
+                      title: result.primaryCourse.title,
+                      code: result.primaryCourse.code,
+                      tuitionFee: result.primaryCourse.tuitionFee,
+                      format: 'OFFLINE',
+                      sessions: result.primaryCourse.sessions || 30,
+                    };
+                    navigate('/student/payments', { state: { course: coursePayload } });
+                  }}
                   style={{
                     backgroundColor: '#059669',
                     color: '#ffffff',
+                    border: 'none',
                     padding: '0.75rem 1.75rem',
                     borderRadius: '12px',
                     fontWeight: 800,
                     fontSize: '0.95rem',
-                    textDecoration: 'none',
+                    cursor: 'pointer',
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '8px',
                     boxShadow: '0 4px 14px rgba(5, 150, 105, 0.3)',
+                    transition: 'all 0.2s',
                   }}
                 >
-                  <span>Đăng Ký Khóa Học Ngay</span>
+                  <span>⚡ Đăng Ký Khóa Học Này Ngay</span>
                   <span>→</span>
-                </Link>
+                </button>
 
-                <a
-                  href="tel:19006868"
+                <Link
+                  to={`/courses?level=${encodeURIComponent(targetMatchedLevel)}&band=${result.predictedBand}`}
+                  state={{ recommendedLevel: targetMatchedLevel, band: result.predictedBand }}
                   style={{
                     backgroundColor: '#ffffff',
                     color: '#047857',
@@ -508,7 +537,27 @@ export const PlacementTestDetailPage: React.FC = () => {
                     gap: '6px',
                   }}
                 >
-                  <span>📞 Tư Vấn Lịch Học &amp; Ưu Đãi</span>
+                  <span>🔍 Xem Tất Cả Khóa Học Band {result.predictedBand} ({targetMatchedLevel})</span>
+                  <span>→</span>
+                </Link>
+
+                <a
+                  href="tel:19006868"
+                  style={{
+                    backgroundColor: '#f8fafc',
+                    color: '#475569',
+                    border: '1px solid #cbd5e1',
+                    padding: '0.75rem 1.25rem',
+                    borderRadius: '12px',
+                    fontWeight: 600,
+                    fontSize: '0.9rem',
+                    textDecoration: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <span>📞 Tư Vấn Lịch Học</span>
                 </a>
               </div>
             </div>
@@ -517,7 +566,7 @@ export const PlacementTestDetailPage: React.FC = () => {
             {result.secondaryCourses.length > 0 && (
               <div style={{ marginTop: '1.5rem' }}>
                 <div style={{ fontSize: '0.88rem', fontWeight: 800, color: '#334155', marginBottom: '0.75rem' }}>
-                  📚 Khóa học bổ trợ hoặc mục tiêu kế tiếp:
+                  📚 Khóa học cùng trình độ Band {result.predictedBand} ({targetMatchedLevel}):
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
                   {result.secondaryCourses.map((sec) => (
@@ -548,9 +597,10 @@ export const PlacementTestDetailPage: React.FC = () => {
                         </p>
                       </div>
 
-                      <div style={{ marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid #e2e8f0' }}>
+                      <div style={{ marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid #e2e8f0', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
                         <Link
-                          to="/courses"
+                          to={`/courses?level=${encodeURIComponent(sec.entryLevel || targetMatchedLevel)}&band=${result.predictedBand}`}
+                          state={{ recommendedLevel: sec.entryLevel || targetMatchedLevel, band: result.predictedBand }}
                           style={{
                             color: '#047857',
                             fontWeight: 700,
@@ -561,7 +611,7 @@ export const PlacementTestDetailPage: React.FC = () => {
                             gap: '4px',
                           }}
                         >
-                          <span>Xem chi tiết khóa học</span>
+                          <span>Xem khóa học trình độ {sec.entryLevel || targetMatchedLevel}</span>
                           <span>→</span>
                         </Link>
                       </div>
