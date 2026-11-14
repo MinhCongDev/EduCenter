@@ -173,7 +173,7 @@ const StudentDashboard: React.FC = () => {
           <div className="dash-banner" style={{ background: 'linear-gradient(135deg, #064e3b 0%, #065f46 50%, #047857 100%)' }}>
             <div className="dash-banner-content">
               <div className="dash-banner-badge">
-                🎓 Cổng Học Viên • EduCenter Portal
+                Cổng Học Viên • EduCenter Portal
               </div>
               <h1>{greeting}, {user?.fullName || 'Học viên'}!</h1>
               <p>
@@ -200,7 +200,7 @@ const StudentDashboard: React.FC = () => {
               className="dash-quick-btn"
               style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
             >
-              🗓️ Xem lịch học
+              Xem lịch học
             </Link>
             <Link
               to="/student/classes"
@@ -214,7 +214,7 @@ const StudentDashboard: React.FC = () => {
               className="dash-quick-btn"
               style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
             >
-              📊 Điểm số
+              Điểm số
             </Link>
             <Link
               to="/student/attendance"
@@ -250,7 +250,7 @@ const StudentDashboard: React.FC = () => {
                 gap: '0.35rem',
               }}
             >
-              <span>💳</span>
+              
               <span>Thanh toán học phí</span>
             </Link>
           </div>
@@ -265,7 +265,7 @@ const StudentDashboard: React.FC = () => {
                   {myClasses[0]?.class?.course?.code || '—'} ➔
                 </span>
               </div>
-              <div className="dash-metric-icon icon-blue">📚</div>
+              <div className="dash-metric-icon icon-blue"></div>
             </div>
 
             <div className="dash-metric-card" onClick={() => navigate('/student/schedule')} style={{ cursor: 'pointer' }}>
@@ -278,7 +278,7 @@ const StudentDashboard: React.FC = () => {
                     : 'Chưa có lịch'}
                 </span>
               </div>
-              <div className="dash-metric-icon icon-emerald">✅</div>
+              <div className="dash-metric-icon icon-emerald"></div>
             </div>
 
             <div className="dash-metric-card" onClick={() => navigate('/student/grades')} style={{ cursor: 'pointer' }}>
@@ -294,7 +294,7 @@ const StudentDashboard: React.FC = () => {
                   {avgBand ? `⭐ ${bandLabel(parseFloat(avgBand))}` : 'Chưa có điểm'} ➔
                 </span>
               </div>
-              <div className="dash-metric-icon icon-amber">🏆</div>
+              <div className="dash-metric-icon icon-amber"></div>
             </div>
 
             <div className="dash-metric-card" onClick={() => handleTabChange('assignments')} style={{ cursor: 'pointer' }}>
@@ -329,7 +329,7 @@ const StudentDashboard: React.FC = () => {
                     : 'Đã thanh toán đủ ➔'}
                 </span>
               </div>
-              <div className="dash-metric-icon icon-blue">💳</div>
+              <div className="dash-metric-icon icon-blue"></div>
             </div>
           </div>
 
@@ -376,7 +376,7 @@ const StudentDashboard: React.FC = () => {
 
                       {(nextSession as any).topic && (
                         <div className="dash-subcard-body">
-                          🎯 <strong>Nội dung buổi học:</strong> {(nextSession as any).topic}
+                          <strong>Nội dung buổi học:</strong> {(nextSession as any).topic}
                         </div>
                       )}
 
@@ -386,7 +386,7 @@ const StudentDashboard: React.FC = () => {
                           className="dash-quick-btn primary"
                           onClick={() => navigate('/student/schedule')}
                         >
-                           Xem lịch học đầy đủ
+                          Xem lịch học đầy đủ
                         </button>
                         {(nextSession as any).class?._id && (
                           <button
@@ -394,7 +394,7 @@ const StudentDashboard: React.FC = () => {
                             className="dash-quick-btn"
                             onClick={() => navigate(`/student/classes/${(nextSession as any).class._id}/assignments`)}
                           >
-                             Bài tập lớp này
+                            Bài tập lớp này
                           </button>
                         )}
                       </div>
@@ -411,7 +411,7 @@ const StudentDashboard: React.FC = () => {
               <div className="dash-card">
                 <div className="dash-card-header">
                   <h2 className="dash-card-title">
-                    <span>📚</span> Tiến Độ Lớp Học Của Tôi
+                    Tiến Độ Lớp Học Của Tôi
                   </h2>
                   <button
                     type="button"
@@ -500,7 +500,7 @@ const StudentDashboard: React.FC = () => {
               <div className="dash-card">
                 <div className="dash-card-header">
                   <h2 className="dash-card-title">
-                    <span>📝</span> Bài Tập Về Nhà
+                    Bài Tập Về Nhà
                   </h2>
                   <span className="badge-pill badge-amber">
                     {assignments.filter((a) => a.status === 'PENDING').length} cần nộp
@@ -562,7 +562,7 @@ const StudentDashboard: React.FC = () => {
               <div className="dash-card">
                 <div className="dash-card-header">
                   <h2 className="dash-card-title">
-                    <span>📢</span> Thông Báo Từ Trung Tâm
+                    Thông Báo Từ Trung Tâm
                   </h2>
                   <Link
                     to="/student/announcements"
@@ -617,7 +617,7 @@ const StudentDashboard: React.FC = () => {
               boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
             }}
           >
-
+            
             <span>Quay lại Bảng điều khiển Tổng quan</span>
           </button>
         </div>
@@ -628,7 +628,7 @@ const StudentDashboard: React.FC = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div>
             <h2 style={{ margin: '0 0 0.35rem', fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>
-              📚 Lớp Học Của Tôi
+              Lớp Học Của Tôi
             </h2>
             <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
               Theo dõi tiến độ nộp bài, học phí và thông tin giảng viên của từng lớp
@@ -646,7 +646,7 @@ const StudentDashboard: React.FC = () => {
                   className="dash-quick-btn primary"
                   onClick={() => navigate('/courses')}
                 >
-                   Xem các khóa học
+                  Xem các khóa học
                 </button>
               }
             />
@@ -683,7 +683,7 @@ const StudentDashboard: React.FC = () => {
                           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem' }}>
                             <span className="badge-pill badge-amber">⏳ Đang chờ staff xếp lớp</span>
                             <span className={`badge-pill ${e.tuitionStatus === 'PAID' ? 'badge-green' : 'badge-amber'}`}>
-                              {e.tuitionStatus === 'PAID' ? '✅ Đã thanh toán' : '⏳ Chưa thanh toán'}
+                              {e.tuitionStatus === 'PAID' ? 'Đã thanh toán' : 'Chưa thanh toán'}
                             </span>
                           </div>
                           <h3
@@ -761,7 +761,7 @@ const StudentDashboard: React.FC = () => {
                           className={`badge-pill ${e.tuitionStatus === 'PAID' ? 'badge-green' : 'badge-amber'
                             }`}
                         >
-                          {e.tuitionStatus === 'PAID' ? '✅ Đã thanh toán' : '⏳ Chưa thanh toán'}
+                          {e.tuitionStatus === 'PAID' ? 'Đã thanh toán' : 'Chưa thanh toán'}
                         </span>
                         <h3
                           style={{
@@ -834,21 +834,21 @@ const StudentDashboard: React.FC = () => {
                         className="dash-quick-btn primary"
                         onClick={() => navigate(`/student/classes/${cls?._id}`)}
                       >
-                         Chi Tiết
+                        ℹ️ Chi Tiết
                       </button>
                       <button
                         type="button"
                         className="dash-quick-btn"
                         onClick={() => navigate(`/student/classes/${cls?._id}/assignments`)}
                       >
-                         Bài Tập
+                        Bài Tập
                       </button>
                       <button
                         type="button"
                         className="dash-quick-btn"
                         onClick={() => navigate(`/student/classes/${cls?._id}/grades`)}
                       >
-                         Điểm
+                        Điểm
                       </button>
                     </div>
                   </div>
@@ -864,7 +864,7 @@ const StudentDashboard: React.FC = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div>
             <h2 style={{ margin: '0 0 0.35rem', fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>
-              🗓️ Lịch Học Tổng Hợp
+              Lịch Học Tổng Hợp
             </h2>
             <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
               Thời khóa biểu tuần của tất cả lớp bạn đang theo học
@@ -948,7 +948,7 @@ const StudentDashboard: React.FC = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div>
             <h2 style={{ margin: '0 0 0.35rem', fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>
-              📝 Bài Tập Về Nhà &amp; Thực Hành
+              Bài Tập Về Nhà &amp; Thực Hành
             </h2>
             <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
               Xem hạn nộp, nộp link bài làm và theo dõi nhận xét chi tiết của giảng viên
@@ -1008,7 +1008,7 @@ const StudentDashboard: React.FC = () => {
                       className="dash-quick-btn primary"
                       style={{ padding: '0.45rem 1rem', fontSize: '0.82rem' }}
                     >
-                       Nộp bài ngay
+                      Nộp bài ngay
                     </button>
                   ) : (
                     <button
@@ -1019,7 +1019,7 @@ const StudentDashboard: React.FC = () => {
                       className="dash-quick-btn"
                       style={{ padding: '0.45rem 0.85rem', fontSize: '0.8rem' }}
                     >
-                       Xem nhận xét
+                      Xem nhận xét
                     </button>
                   )}
                 </div>
@@ -1034,7 +1034,7 @@ const StudentDashboard: React.FC = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div>
             <h2 style={{ margin: '0 0 0.35rem', fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>
-              📊 Bảng Điểm &amp; Kết Quả Học Tập
+              Bảng Điểm &amp; Kết Quả Học Tập
             </h2>
             <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
               Tổng hợp điểm các bài tập, đánh giá chuyên cần và xếp loại học tập

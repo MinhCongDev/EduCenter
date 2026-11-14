@@ -147,9 +147,9 @@ const RequestsPage: React.FC = () => {
 
   const tabs: { key: FilterKey; label: string; count: number }[] = [
     { key: 'ALL', label: 'Tất cả', count: requests.length },
-    { key: 'PENDING', label: 'Chờ duyệt', count: requests.filter((r) => r.status === 'PENDING').length },
-    { key: 'APPROVED', label: 'Đã duyệt', count: requests.filter((r) => r.status === 'APPROVED').length },
-    { key: 'REJECTED', label: 'Từ chối', count: requests.filter((r) => r.status === 'REJECTED').length },
+    { key: 'PENDING', label: '⏳ Chờ duyệt', count: requests.filter((r) => r.status === 'PENDING').length },
+    { key: 'APPROVED', label: '✅ Đã duyệt', count: requests.filter((r) => r.status === 'APPROVED').length },
+    { key: 'REJECTED', label: '❌ Từ chối', count: requests.filter((r) => r.status === 'REJECTED').length },
   ];
 
   const showScheduleFields = form.requestType === 'SCHEDULE_CHANGE';
@@ -159,7 +159,7 @@ const RequestsPage: React.FC = () => {
     <div className="dash-container">
       <div className="dash-banner">
         <div className="dash-banner-content">
-          <div className="dash-banner-badge">🔄 Yêu Cầu</div>
+          <div className="dash-banner-badge">Yêu Cầu</div>
           <h1>Yêu Cầu Thay Đổi</h1>
           <p>
             {requests.length > 0
@@ -169,7 +169,7 @@ const RequestsPage: React.FC = () => {
         </div>
         <div className="dash-banner-right">
           <div className="dash-date-pill">
-            <div>🔄 {requests.length} yêu cầu</div>
+            <div>{requests.length} yêu cầu</div>
             <div className="sub">{requests.filter((r) => r.status === 'PENDING').length} đang chờ</div>
           </div>
         </div>
@@ -180,10 +180,10 @@ const RequestsPage: React.FC = () => {
           ← Dashboard
         </Link>
         <Link to="/student/classes" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
-           Lớp Học
+          Lớp Học
         </Link>
         <Link to="/student/payments" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
-           Thanh Toán
+          Thanh Toán
         </Link>
       </div>
 
@@ -197,7 +197,7 @@ const RequestsPage: React.FC = () => {
                 {requests.filter((r) => r.status === 'APPROVED').length} đã duyệt
               </span>
             </div>
-            <div className="dash-metric-icon icon-blue">📋</div>
+            <div className="dash-metric-icon icon-blue"></div>
           </div>
           <div className="dash-metric-card">
             <div className="dash-metric-info">
@@ -219,7 +219,7 @@ const RequestsPage: React.FC = () => {
                 {requests.filter((r) => r.status === 'REJECTED').length} bị từ chối
               </span>
             </div>
-            <div className="dash-metric-icon icon-emerald">✅</div>
+            <div className="dash-metric-icon icon-emerald"></div>
           </div>
         </div>
       )}
@@ -247,7 +247,7 @@ const RequestsPage: React.FC = () => {
           ))}
         </div>
         <Button variant="primary" onClick={() => setShowForm((v) => !v)}>
-          {showForm ? '✕ Đóng' : ' Tạo Yêu Cầu Mới'}
+          {showForm ? 'Đóng' : 'Tạo Yêu Cầu Mới'}
         </Button>
       </div>
 
@@ -257,7 +257,7 @@ const RequestsPage: React.FC = () => {
           style={{ marginBottom: '1.5rem', border: '2px solid rgba(59,130,246,0.4)' }}
         >
           <div className="dash-card-header">
-            <h2 className="dash-card-title"><span>➕</span> Tạo Yêu Cầu Mới</h2>
+            <h2 className="dash-card-title">Tạo Yêu Cầu Mới</h2>
           </div>
           <div className="dash-subcard">
             <form onSubmit={handleCreate}>
@@ -292,8 +292,8 @@ const RequestsPage: React.FC = () => {
                       }
                       style={inputStyle}
                     >
-                      <option value="CLASS_CHANGE"> Đổi lớp</option>
-                      <option value="SCHEDULE_CHANGE"> Đổi lịch học</option>
+                      <option value="CLASS_CHANGE">Đổi lớp</option>
+                      <option value="SCHEDULE_CHANGE">Đổi lịch học</option>
                     </select>
                   </div>
                   <div>
@@ -374,7 +374,7 @@ const RequestsPage: React.FC = () => {
                 />
               </div>
               <div style={{ display: 'flex', gap: '0.75rem' }}>
-                <Button type="submit" variant="primary" loading={submitting}>
+                <Button type="submit" variant="primary" loading={submitting} icon="📤">
                   Gửi Yêu Cầu
                 </Button>
                 <Button
@@ -405,7 +405,7 @@ const RequestsPage: React.FC = () => {
           action={
             filter === 'ALL' && !showForm ? (
               <Button variant="primary" onClick={() => setShowForm(true)}>
-                 Tạo Yêu Cầu Đầu Tiên
+                Tạo Yêu Cầu Đầu Tiên
               </Button>
             ) : undefined
           }
@@ -455,7 +455,7 @@ const RequestsPage: React.FC = () => {
                       padding: '0.75rem',
                     }}
                   >
-                    <div className="dash-subcard-label">📝 Lý do</div>
+                    <div className="dash-subcard-label">Lý do</div>
                     <div style={{ marginTop: '0.25rem', fontSize: '0.9rem', color: '#475569' }}>
                       {r.reason}
                     </div>
@@ -470,7 +470,7 @@ const RequestsPage: React.FC = () => {
                         marginTop: '0.5rem',
                       }}
                     >
-                      <div className="dash-subcard-label">💬 Phản hồi từ nhân viên</div>
+                      <div className="dash-subcard-label">Phản hồi từ nhân viên</div>
                       <div style={{ marginTop: '0.25rem', fontSize: '0.9rem', color: '#475569' }}>
                         {r.reviewNote}
                       </div>
@@ -490,6 +490,7 @@ const RequestsPage: React.FC = () => {
                         variant="secondary"
                         onClick={() => handleCancel(r._id)}
                         loading={cancellingId === r._id}
+                        icon="🗑️"
                       >
                         Hủy yêu cầu
                       </Button>

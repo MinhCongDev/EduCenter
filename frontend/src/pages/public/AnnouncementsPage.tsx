@@ -71,38 +71,102 @@ export const AnnouncementsPage: React.FC = () => {
   return (
     <div style={{ backgroundColor: '#F8FAFC', minHeight: '80vh', paddingBottom: '4rem' }}>
       {/* Header Banner */}
-      <div
+      <section
         style={{
-          background: 'linear-gradient(135deg, #07403F 0%, #052F2E 100%)',
-          color: '#FFFFFF',
-          padding: '3rem 1.5rem',
-          textAlign: 'center',
-          borderBottom: '4px solid #EC6E23',
+          background: 'linear-gradient(135deg, #064e3b 0%, #065f46 40%, #047857 100%)',
+          color: '#ffffff',
+          paddingTop: 'calc(76px + 1.5rem)',
+          paddingBottom: '2.25rem',
+          paddingLeft: '1.5rem',
+          paddingRight: '1.5rem',
+          position: 'relative',
+          overflow: 'hidden',
         }}
       >
-        <div style={{ maxWidth: '850px', margin: '0 auto' }}>
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'radial-gradient(circle at top right, rgba(252, 211, 77, 0.15) 0%, transparent 60%)',
+            pointerEvents: 'none',
+          }}
+        />
+
+        <div style={{ maxWidth: '1200px', margin: '0 auto', position: 'relative', zIndex: 1, textAlign: 'center' }}>
           <div
             style={{
-              display: 'inline-block',
-              backgroundColor: 'rgba(255, 255, 255, 0.15)',
-              padding: '4px 14px',
-              borderRadius: '20px',
-              fontSize: '0.85rem',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              backgroundColor: 'rgba(255, 255, 255, 0.18)',
+              backdropFilter: 'blur(8px)',
+              border: '1px solid rgba(255, 255, 255, 0.35)',
+              padding: '3px 14px',
+              borderRadius: '999px',
+              fontSize: '0.75rem',
               fontWeight: 700,
-              color: '#FCD34D',
-              marginBottom: '1rem',
+              color: '#fef3c7',
+              marginBottom: '0.85rem',
+              letterSpacing: '0.4px',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.12)',
             }}
           >
-            BẢN TIN HỌC THUẬT &amp; SỰ KIỆN KHẢO THÍ
+            <span>BẢN TIN HỌC THUẬT &amp; SỰ KIỆN KHẢO THÍ</span>
           </div>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: 800, margin: '0 0 1rem', color: '#FFFFFF' }}>
-            Thông Báo Từ Trung Tâm
+
+          <h1
+            style={{
+              fontSize: 'clamp(1.4rem, 2.2vw, 1.85rem)',
+              fontWeight: 800,
+              lineHeight: 1.3,
+              margin: '0 0 0.65rem',
+              letterSpacing: '-0.01em',
+              color: '#ffffff',
+              textShadow: '0 2px 10px rgba(0, 0, 0, 0.2)',
+            }}
+          >
+            <span style={{ color: '#ffffff' }}>Thông Báo Từ Trung Tâm</span> <br />
+            <span style={{ color: '#fcd34d' }}>Cập nhật lịch thi thử, hội thảo &amp; tin tức học vụ</span>
           </h1>
-          <p style={{ fontSize: '1.05rem', color: '#E2E8F0', maxWidth: '650px', margin: '0 auto', lineHeight: 1.6 }}>
-            Cập nhật lịch thi thử IELTS trên máy tính, workshop cùng giáo viên 8.5+ - 9.0 và các thông báo học vụ quan trọng.
+
+          <p
+            style={{
+              fontSize: '0.88rem',
+              color: '#e2e8f0',
+              maxWidth: '680px',
+              margin: '0 auto 1.25rem',
+              lineHeight: 1.55,
+            }}
+          >
+            Cập nhật lịch thi thử IELTS trên máy tính chuẩn khảo thí IDP &amp; BC, workshop chuyên đề cùng chuyên gia 8.5+ - 9.0 và các thông báo học vụ quan trọng.
           </p>
+
+          {/* Quick Highlights Bar */}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'center',
+              flexWrap: 'wrap',
+              gap: '1.25rem',
+              maxWidth: '850px',
+              margin: '0 auto',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#f1f5f9', fontSize: '0.8rem', fontWeight: 600 }}>
+              <span style={{ color: '#fcd34d', fontSize: '0.95rem' }}>✓</span>
+              <span>Lịch thi thử IELTS Computer-delivered định kỳ</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#f1f5f9', fontSize: '0.8rem', fontWeight: 600 }}>
+              <span style={{ color: '#fcd34d', fontSize: '0.95rem' }}>✓</span>
+              <span>Workshop giải đề Writing &amp; Speaking hàng tuần</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#f1f5f9', fontSize: '0.8rem', fontWeight: 600 }}>
+              <span style={{ color: '#fcd34d', fontSize: '0.95rem' }}>✓</span>
+              <span>Thông tin tuyển sinh và ưu đãi học vụ mới nhất</span>
+            </div>
+          </div>
         </div>
-      </div>
+      </section>
 
       <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '2rem 1rem' }}>
         {/* Search & Category Filter Toolbar */}

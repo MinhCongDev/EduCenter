@@ -69,42 +69,42 @@ const Footer: React.FC = () => {
           }}
         >
           <div className="dmr-location-item">
-            <div className="dmr-location-name">🏢 Cơ sở 1 (Trụ sở Cầu Giấy):</div>
+            <div className="dmr-location-name">Cơ sở 1 (Trụ sở Cầu Giấy):</div>
             <div>EduCenter Tower, 128 Cầu Giấy, Q. Cầu Giấy, Hà Nội.</div>
             <a href="tel:02437896868" className="dmr-location-phone">
-              📞 024 3789 6868
+              024 3789 6868
             </a>
           </div>
 
           <div className="dmr-location-item">
-            <div className="dmr-location-name">🏫 Cơ sở 2 (Đống Đa):</div>
+            <div className="dmr-location-name">Cơ sở 2 (Đống Đa):</div>
             <div>Số 254 Tây Sơn, P. Trung Liệt, Q. Đống Đa, Hà Nội.</div>
             <a href="tel:02437896869" className="dmr-location-phone">
-              📞 024 3789 6869
+              024 3789 6869
             </a>
           </div>
 
           <div className="dmr-location-item">
-            <div className="dmr-location-name">🏫 Cơ sở 3 (Bách Khoa):</div>
+            <div className="dmr-location-name">Cơ sở 3 (Bách Khoa):</div>
             <div>Số 86 Lê Thanh Nghị, P. Đồng Tâm, Q. Hai Bà Trưng, Hà Nội.</div>
             <a href="tel:02437896870" className="dmr-location-phone">
-              📞 024 3789 6870
+              024 3789 6870
             </a>
           </div>
 
           <div className="dmr-location-item">
-            <div className="dmr-location-name">🏫 Cơ sở 4 (TP. HCM - Quận 1):</div>
+            <div className="dmr-location-name">Cơ sở 4 (TP. HCM - Quận 1):</div>
             <div>Tòa nhà Bitexco Nam, 180 Nguyễn Thị Minh Khai, Q. 1, TP. HCM.</div>
             <a href="tel:02839886868" className="dmr-location-phone">
-              📞 028 3988 6868
+              028 3988 6868
             </a>
           </div>
 
           <div className="dmr-location-item">
-            <div className="dmr-location-name">🏫 Cơ sở 5 (TP. HCM - Quận 10):</div>
+            <div className="dmr-location-name">Cơ sở 5 (TP. HCM - Quận 10):</div>
             <div>Số 387 Sư Vạn Hạnh, P. 12, Q. 10, TP. HCM.</div>
             <a href="tel:02839886869" className="dmr-location-phone">
-              📞 028 3988 6869
+              028 3988 6869
             </a>
           </div>
         </div>
@@ -123,9 +123,9 @@ const Footer: React.FC = () => {
             gap: '12px',
           }}
         >
-          <div>⏰ <b>Giờ làm việc &amp; Thi thử:</b> Thứ 2 - Chủ Nhật: 08:00 - 21:30</div>
-          <div>✉️ <b>Email liên hệ:</b> contact@educenter.edu.vn</div>
-          <div>🔥 <b>Hotline Tuyển sinh &amp; Thi thử:</b> <span style={{ color: '#FCD34D', fontWeight: 800 }}>1900 6868 - 0988 123 456</span></div>
+          <div><b>Giờ làm việc &amp; Thi thử:</b> Thứ 2 - Chủ Nhật: 08:00 - 21:30</div>
+          <div><b>Email liên hệ:</b> contact@educenter.edu.vn</div>
+          <div><b>Hotline Tuyển sinh &amp; Thi thử:</b> <span style={{ color: '#FCD34D', fontWeight: 800 }}>1900 6868 - 0988 123 456</span></div>
         </div>
 
         {/* Bottom Legal / Copyright */}
@@ -147,7 +147,7 @@ const Footer: React.FC = () => {
               border: '1px solid rgba(255,255,255,0.2)',
             }}
           >
-            <span style={{ fontSize: '20px' }}>🎓</span>
+            
             <div>
               <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>HỆ THỐNG ĐÀO TẠO</div>
               <div style={{ fontWeight: 800, fontSize: '12px', color: '#FCD34D' }}>EDUCENTER IELTS LMS</div>

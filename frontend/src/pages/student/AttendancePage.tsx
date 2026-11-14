@@ -105,7 +105,7 @@ const AttendancePage: React.FC = () => {
         </div>
         <div className="dash-banner-right">
           <div className="dash-date-pill">
-            <div>📅 {stats?.total || 0} buổi học</div>
+            <div>{stats?.total || 0} buổi học</div>
             <div className="sub">
               {currentClassData?.classCode ? `Lớp ${currentClassData.classCode}` : 'Chuyên cần học viên'}
             </div>
@@ -173,7 +173,7 @@ const AttendancePage: React.FC = () => {
               <span className="dash-metric-val">{stats.total}</span>
               <span className="dash-metric-trend">Tỷ lệ có mặt: {stats.rate}%</span>
             </div>
-            <div className="dash-metric-icon icon-blue">📅</div>
+            <div className="dash-metric-icon icon-blue"></div>
           </div>
           <div className="dash-metric-card">
             <div className="dash-metric-info">
@@ -183,7 +183,7 @@ const AttendancePage: React.FC = () => {
               </span>
               <span className="dash-metric-trend up">Tỷ lệ {stats.rate}%</span>
             </div>
-            <div className="dash-metric-icon icon-emerald">✅</div>
+            <div className="dash-metric-icon icon-emerald"></div>
           </div>
           <div className="dash-metric-card">
             <div className="dash-metric-info">
@@ -195,7 +195,7 @@ const AttendancePage: React.FC = () => {
                 {stats.late > 0 ? `${stats.late} đi trễ` : 'Không đi trễ'}
               </span>
             </div>
-            <div className="dash-metric-icon icon-purple">❌</div>
+            <div className="dash-metric-icon icon-purple"></div>
           </div>
         </div>
       )}
@@ -214,7 +214,7 @@ const AttendancePage: React.FC = () => {
       ) : (
         <div className="dash-card">
           <div className="dash-card-header">
-            <h2 className="dash-card-title"><span>📋</span> Lịch Sử Điểm Danh & Chuyên Cần</h2>
+            <h2 className="dash-card-title">Lịch Sử Điểm Danh & Chuyên Cần</h2>
             <span className="badge-pill badge-blue">{records.length} buổi học</span>
           </div>
 

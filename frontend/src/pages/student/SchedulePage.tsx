@@ -100,7 +100,7 @@ const SchedulePage: React.FC = () => {
     <div className="dash-container">
       <div className="dash-banner">
         <div className="dash-banner-content">
-          <div className="dash-banner-badge">🗓️ Lịch Học</div>
+          <div className="dash-banner-badge">Lịch Học</div>
           <h1>Lịch Học Chi Tiết</h1>
           <p>
             {schedules.length > 0
@@ -110,7 +110,7 @@ const SchedulePage: React.FC = () => {
         </div>
         <div className="dash-banner-right">
           <div className="dash-date-pill">
-            <div>🗓️ {orderedDays.length} ngày học/tuần</div>
+            <div>{orderedDays.length} ngày học/tuần</div>
             <div className="sub">Lớp ID: {id}</div>
           </div>
         </div>
@@ -121,13 +121,13 @@ const SchedulePage: React.FC = () => {
           ← Chi Tiết Lớp
         </Link>
         <Link to={`/student/classes/${id}/assignments`} className="dash-quick-btn" style={{ textDecoration: 'none' }}>
-           Bài Tập
+          Bài Tập
         </Link>
         <Link to={`/student/classes/${id}/attendance`} className="dash-quick-btn" style={{ textDecoration: 'none' }}>
-           Điểm Danh
+          Điểm Danh
         </Link>
         <Link to={`/student/classes/${id}/grades`} className="dash-quick-btn" style={{ textDecoration: 'none' }}>
-           Bảng Điểm
+          Bảng Điểm
         </Link>
       </div>
 
@@ -139,7 +139,7 @@ const SchedulePage: React.FC = () => {
               <span className="dash-metric-val">{schedules.length}</span>
               <span className="dash-metric-trend up">{orderedDays.length} ngày học</span>
             </div>
-            <div className="dash-metric-icon icon-blue">📅</div>
+            <div className="dash-metric-icon icon-blue"></div>
           </div>
           <div className="dash-metric-card">
             <div className="dash-metric-info">
@@ -149,7 +149,7 @@ const SchedulePage: React.FC = () => {
                 {7 - orderedDays.length === 0 ? 'Học đủ 7 ngày' : 'Có thể nghỉ ngơi'}
               </span>
             </div>
-            <div className="dash-metric-icon icon-emerald">🏖️</div>
+            <div className="dash-metric-icon icon-emerald"></div>
           </div>
           <div className="dash-metric-card">
             <div className="dash-metric-info">
@@ -159,7 +159,7 @@ const SchedulePage: React.FC = () => {
                 {schedules.length > 0 ? 'Cố định phòng' : 'Chưa có thông tin'}
               </span>
             </div>
-            <div className="dash-metric-icon icon-purple">🏫</div>
+            <div className="dash-metric-icon icon-purple"></div>
           </div>
         </div>
       )}
@@ -186,7 +186,7 @@ const SchedulePage: React.FC = () => {
             >
               <div className="dash-card-header">
                 <h2 className="dash-card-title">
-                  <span>📅</span> {day}
+                  {day}
                 </h2>
                 <span className="badge-pill badge-blue">{grouped[day].length} buổi</span>
               </div>
@@ -203,10 +203,10 @@ const SchedulePage: React.FC = () => {
                     }}
                   >
                     <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '0.25rem' }}>
-                      🕐 {item.startTime} — {item.endTime}
+                      {item.startTime} — {item.endTime}
                     </div>
                     <div style={{ fontSize: '0.82rem', color: '#64748b' }}>
-                      🏫 Phòng: {item.room}
+                      Phòng: {item.room}
                     </div>
                   </div>
                 ))}

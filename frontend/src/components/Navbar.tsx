@@ -245,7 +245,6 @@ const Navbar: React.FC = () => {
                   }}
                   title="Đăng xuất khỏi hệ thống"
                 >
-
                   <span>Đăng xuất</span>
                 </button>
               </div>
@@ -302,7 +301,6 @@ const Navbar: React.FC = () => {
                           textDecoration: 'none',
                         }}
                       >
-
                         <span>Dashboard của tôi</span>
                       </Link>
 
@@ -322,7 +320,6 @@ const Navbar: React.FC = () => {
                             textDecoration: 'none',
                           }}
                         >
-
                           <span>Học phí & Thanh toán</span>
                         </Link>
                       )}
@@ -357,7 +354,6 @@ const Navbar: React.FC = () => {
                           textAlign: 'left',
                         }}
                       >
-
                         <span>Hồ sơ cá nhân</span>
                       </button>
 
@@ -383,7 +379,6 @@ const Navbar: React.FC = () => {
                           textAlign: 'left',
                         }}
                       >
-
                         <span>Đổi mật khẩu</span>
                       </button>
                     </div>
@@ -408,7 +403,6 @@ const Navbar: React.FC = () => {
                           textAlign: 'left',
                         }}
                       >
-
                         <span>Đăng xuất (Thoát)</span>
                       </button>
                     </div>
@@ -465,7 +459,7 @@ const Navbar: React.FC = () => {
             }}
             style={{ color: '#FFF', fontWeight: 700, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}
           >
-            🏠 Trang chủ
+            Trang chủ
           </Link>
           <Link
             to="/courses"
@@ -475,7 +469,7 @@ const Navbar: React.FC = () => {
             }}
             style={{ color: '#FFF', fontWeight: 700, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}
           >
-            📚 Khóa học
+            Khóa học
           </Link>
           <Link
             to="/placement-test"
@@ -485,7 +479,7 @@ const Navbar: React.FC = () => {
             }}
             style={{ color: '#FFF', fontWeight: 700, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}
           >
-            🎯 Thi thử
+            Thi thử
           </Link>
           <Link
             to="/#about"
@@ -495,7 +489,7 @@ const Navbar: React.FC = () => {
             }}
             style={{ color: '#FFF', fontWeight: 700, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}
           >
-            ℹ️ Giới thiệu
+            Giới thiệu
           </Link>
           <Link
             to="/announcements"
@@ -505,7 +499,7 @@ const Navbar: React.FC = () => {
             }}
             style={{ color: '#FFF', fontWeight: 700, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}
           >
-            📢 Thông báo
+            Thông báo
           </Link>
           {isAuthenticated && user ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
@@ -534,7 +528,7 @@ const Navbar: React.FC = () => {
                     textDecoration: 'none',
                   }}
                 >
-                   Dashboard
+                  Dashboard
                 </Link>
                 <button
                   type="button"
@@ -555,7 +549,7 @@ const Navbar: React.FC = () => {
                     cursor: 'pointer',
                   }}
                 >
-                   Đăng xuất
+                  Đăng xuất
                 </button>
               </div>
             </div>
