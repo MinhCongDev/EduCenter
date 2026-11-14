@@ -48,6 +48,21 @@ const userSchema = new Schema<IUser>(
       type: String,
       trim: true,
       default: '',
+      validate: {
+        validator: (value: unknown) => {
+          if (value === undefined || value === null || value === '') {
+            return true;
+          }
+
+          if (typeof value !== 'string') {
+            return false;
+          }
+
+          return /^(03|05|07|08|09)\d{8}$/.test(value.trim());
+        },
+        message:
+          'Số điện thoại không hợp lệ.',
+      },
     },
     role: {
       type: String,
