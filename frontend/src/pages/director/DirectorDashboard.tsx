@@ -753,8 +753,11 @@ export const DirectorDashboard: React.FC = () => {
       if (txnMethodFilter !== 'ALL' && t.method !== txnMethodFilter) return false;
       if (txnStatusFilter !== 'ALL' && t.status !== txnStatusFilter) return false;
 
-      if (txnDateFilter !== 'ALL' && t.paymentDate) {
-        const tDate = new Date(t.paymentDate).getTime();
+      // 3. Lọc theo Thời gian giao dịch (Date Filter)
+      if (txnDateFilter !== 'ALL') {
+        const rawDate = t.paymentDate || t.createdAt;
+        if (!rawDate) return false;
+        const tDate = new Date(rawDate).getTime();
         const now = Date.now();
         if (txnDateFilter === 'TODAY') {
           const oneDay = 24 * 60 * 60 * 1000;
@@ -766,7 +769,7 @@ export const DirectorDashboard: React.FC = () => {
           const thirtyDays = 30 * 24 * 60 * 60 * 1000;
           if (now - tDate > thirtyDays) return false;
         } else if (txnDateFilter === 'THIS_MONTH') {
-          const d = new Date(t.paymentDate);
+          const d = new Date(rawDate);
           const curr = new Date();
           if (d.getMonth() !== curr.getMonth() || d.getFullYear() !== curr.getFullYear()) return false;
         }
@@ -774,7 +777,7 @@ export const DirectorDashboard: React.FC = () => {
 
       return true;
     });
-  }, [allTxns, txnSearch, txnCategoryFilter, txnCourseFilter, txnMethodFilter, txnStatusFilter, txnDateFilter]);
+  }, [allTxns, txnSearch, txnDateFilter, txnCategoryFilter, txnCourseFilter, txnMethodFilter, txnStatusFilter]);
 
   // Phân trang 10 giao dịch 1 trang
   const txnTotalPages = Math.max(1, Math.ceil(filteredTxns.length / TXN_PAGE_SIZE));
@@ -1091,14 +1094,6 @@ export const DirectorDashboard: React.FC = () => {
                     <span className="badge-pill badge-amber">
                       {approvals.filter((a) => a.status === 'PENDING').length} cần xử lý
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => setIsAddProposalModalOpen(true)}
-                      className="dash-quick-btn primary"
-                      style={{ padding: '0.35rem 0.75rem', fontSize: '0.78rem' }}
-                    >
-                      ➕ Tạo đề xuất
-                    </button>
                   </div>
                 </div>
 
@@ -1223,14 +1218,6 @@ export const DirectorDashboard: React.FC = () => {
                   >
                     <span>📢</span>
                     <span>Quản Lý &amp; Đăng Thông Báo Trung Tâm</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="dash-quick-btn"
-                    onClick={() => handleTabChange('revenue_reports')}
-                  >
-                    <span>📥</span>
-                    <span>Xuất Báo Cáo Tài Chính (Excel / PDF)</span>
                   </button>
                   <button
                     type="button"
@@ -2706,28 +2693,6 @@ export const DirectorDashboard: React.FC = () => {
                 Thống kê doanh thu theo tháng, cơ cấu nguồn thu và lịch sử giao dịch học phí
               </span>
             </div>
-
-            <button
-              type="button"
-              onClick={() => showToast('🎉 Đang xuất file Excel Báo Cáo Tài Chính Quý...')}
-              style={{
-                backgroundColor: '#059669',
-                color: '#ffffff',
-                border: 'none',
-                padding: '0.6rem 1.25rem',
-                borderRadius: '10px',
-                fontSize: '0.85rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                boxShadow: '0 2px 6px rgba(5, 150, 105, 0.25)',
-              }}
-            >
-              <span>📥</span>
-              <span>Xuất Báo Cáo Excel (Tài Chính)</span>
-            </button>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
@@ -3025,11 +2990,14 @@ export const DirectorDashboard: React.FC = () => {
                 style={{
                   padding: '6px 12px',
                   borderRadius: '8px',
-                  border: '1px solid #cbd5e1',
+                  border: txnDateFilter !== 'ALL' ? '1.5px solid #047857' : '1px solid #cbd5e1',
                   fontSize: '0.8rem',
-                  backgroundColor: '#fff',
+                  backgroundColor: txnDateFilter !== 'ALL' ? '#f0fdf4' : '#fff',
+                  color: txnDateFilter !== 'ALL' ? '#047857' : '#0f172a',
+                  fontWeight: txnDateFilter !== 'ALL' ? 700 : 500,
                   outline: 'none',
                 }}
+                title="Lọc theo thời gian giao dịch"
               >
                 <option value="ALL">📅 Tất cả thời gian</option>
                 <option value="TODAY">Hôm nay (24h qua)</option>
@@ -3165,6 +3133,7 @@ export const DirectorDashboard: React.FC = () => {
               <thead>
                 <tr style={{ borderBottom: '2px solid #e2e8f0', backgroundColor: '#f8fafc', textAlign: 'left', color: '#475569' }}>
                   <th style={{ padding: '10px 14px' }}>Mã Giao Dịch</th>
+                  <th style={{ padding: '10px 14px' }}>Thời Gian</th>
                   <th style={{ padding: '10px 14px' }}>Học Viên</th>
                   <th style={{ padding: '10px 14px' }}>Khóa Học</th>
                   <th style={{ padding: '10px 14px' }}>Số Tiền</th>
@@ -3175,7 +3144,7 @@ export const DirectorDashboard: React.FC = () => {
               <tbody>
                 {filteredTxns.length === 0 ? (
                   <tr>
-                    <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
+                    <td colSpan={7} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
                       Không tìm thấy giao dịch nào phù hợp với bộ lọc hiện tại.
                     </td>
                   </tr>
@@ -3190,9 +3159,23 @@ export const DirectorDashboard: React.FC = () => {
                         ? txn.course?.title || txn.course?.name || txn.course?.code || 'Khóa học'
                         : String(txn.course || 'Khóa học');
 
+                    const rawDate = txn.paymentDate || txn.createdAt;
+                    const dateFormatted = rawDate
+                      ? new Date(rawDate).toLocaleString('vi-VN', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })
+                      : '---';
+
                     return (
                       <tr key={txn._id || idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
                         <td style={{ padding: '12px 14px', fontWeight: 700, color: '#047857' }}>{txn.transactionCode}</td>
+                        <td style={{ padding: '12px 14px', color: '#64748b', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                          📅 {dateFormatted}
+                        </td>
                         <td style={{ padding: '12px 14px', fontWeight: 700, color: '#0f172a' }}>{studentLabel}</td>
                         <td style={{ padding: '12px 14px', color: '#334155' }}>{courseLabel}</td>
                         <td style={{ padding: '12px 14px', fontWeight: 800, color: '#047857' }}>
