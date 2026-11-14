@@ -540,8 +540,36 @@ export interface ClassFormData {
 }
 
 // ── Payment Types ────────────────────────────
-export type PaymentMethod = 'VNPAY' | 'BANK_TRANSFER' | 'CASH' | 'CREDIT_CARD';
+export type PaymentMethod = 'VIETQR' | 'PAYOS' | 'VNPAY' | 'BANK_TRANSFER' | 'CASH' | 'CREDIT_CARD';
 export type PaymentStatus = 'PENDING' | 'SUCCESS' | 'FAILED' | 'REFUNDED';
+
+export interface PayOSPaymentLinkResult {
+  orderCode: number;
+  paymentLinkId?: string;
+  checkoutUrl?: string;
+  qrCode?: string;
+  accountNumber?: string;
+  accountName?: string;
+  bin?: string;
+  amount: number;
+  description: string;
+  status: string;
+  isMock?: boolean;
+}
+
+export interface PayOSStatusCheckResult {
+  isPaid: boolean;
+  status: string;
+  payosInfo?: {
+    orderCode: number;
+    amount: number;
+    amountPaid: number;
+    amountRemaining: number;
+    status: string;
+    transactions?: any[];
+  };
+  payment?: Payment;
+}
 
 export interface PaymentCourseInfo {
   _id: string;
@@ -581,6 +609,11 @@ export interface Payment {
   amount: number;
   method: PaymentMethod;
   transactionCode?: string;
+  invoiceId?: string;
+  orderCode?: number;
+  paymentLinkId?: string;
+  checkoutUrl?: string;
+  qrCode?: string;
   paymentDate?: string;
   dueDate?: string;
   status: PaymentStatus;
@@ -823,6 +856,9 @@ export interface Enrollment {
   _id: string;
   enrollmentId: string;
   class: Class;
+  course?: Course;
+  isPendingClass?: boolean;
+  registrationDate?: string;
   status: EnrollmentStatus;
   enrollmentStatus: EnrollmentStatus;
   tuitionStatus: TuitionStatus;

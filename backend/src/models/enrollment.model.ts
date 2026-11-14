@@ -54,7 +54,10 @@ const enrollmentSchema = new Schema<IEnrollment>(
   }
 );
 
-// Prevent duplicate enrollment of the same student into the same class
-enrollmentSchema.index({ student: 1, class: 1 }, { unique: true });
+// Prevent duplicate enrollment of the same student into the same class (only when class is specified)
+enrollmentSchema.index(
+  { student: 1, class: 1 },
+  { unique: true, partialFilterExpression: { class: { $exists: true, $type: 'objectId' } } }
+);
 
 export const Enrollment: Model<IEnrollment> = mongoose.model<IEnrollment>('Enrollment', enrollmentSchema);
