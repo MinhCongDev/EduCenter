@@ -424,7 +424,15 @@ const EnrollmentsManagementPage: React.FC = () => {
                 const latestPayment = enrollment.payments[0];
                 return (
                   <tr key={enrollment._id} className="courses-table-row">
-                    <td><span className="course-code-chip">{enrollment._id}</span></td>
+                    <td>
+                      <span
+                        className="course-code-chip"
+                        title={enrollment._id}
+                        aria-label={`Mã ghi danh ${enrollment._id}`}
+                      >
+                        {enrollment._id.slice(0, 8)}
+                      </span>
+                    </td>
                     <td><div className="course-title-cell"><strong>{enrollment.student?.fullName ?? 'Không có dữ liệu'}</strong><span className="course-desc-preview">{enrollment.studentProfile?.studentCode ?? enrollment.student?.email ?? '—'}</span></div></td>
                     <td>{enrollment.course?.title ?? 'Chưa có thông tin'}</td>
                     <td>

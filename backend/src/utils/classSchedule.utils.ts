@@ -24,6 +24,42 @@ export const parseTimeSlot = (timeSlot: string): { startTime: string; endTime: s
   return { startTime, endTime };
 };
 
+const getDateKeyInVietnam = (date: Date): string => {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date);
+  const dateParts: Partial<Record<Intl.DateTimeFormatPartTypes, string>> = {};
+  for (const part of parts) dateParts[part.type] = part.value;
+  if (!dateParts.year || !dateParts.month || !dateParts.day) {
+    throw new Error('Không thể xác định ngày hiện tại.');
+  }
+  return `${dateParts.year}-${dateParts.month}-${dateParts.day}`;
+};
+
+export const assertFutureClassStartDate = (startDate: Date, now = new Date()): void => {
+  if (startDate.toISOString().slice(0, 10) <= getDateKeyInVietnam(now)) {
+    throw createError('Ngày bắt đầu khóa học phải là ngày trong tương lai', 400);
+  }
+};
+
+export const assertAttendanceLockedUpdateAllowed = (
+  isLocked: boolean,
+  changedFields: string[]
+): void => {
+  if (isLocked && changedFields.some((field) => field !== 'room' && field !== 'status')) {
+    throw createError('Lớp đang diễn ra và đã có điểm danh: chỉ được thay đổi trạng thái và phòng học', 409);
+  }
+};
+
+export const assertInProgressClassStatusAllowed = (isInProgress: boolean, requestedStatus: string): void => {
+  if (isInProgress && (requestedStatus === 'OPEN' || requestedStatus === 'CANCELLED')) {
+    throw createError('Không thể chuyển lớp đang diễn ra về trạng thái tuyển sinh hoặc đã hủy', 409);
+  }
+};
+
 export const generateSessionDates = (startDate: Date, scheduleDays: string[], sessions: number): Date[] => {
   if (!Number.isInteger(sessions) || sessions < 1 || sessions > 500) {
     throw createError('Số buổi học phải từ 1 đến 500', 400);

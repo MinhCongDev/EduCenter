@@ -12,6 +12,9 @@ import { Grade } from '../models/grade.model';
 import { Student } from '../models/student.model';
 import { ClassTeacher } from '../models/classTeacher.model';
 import {
+  assertAttendanceLockedUpdateAllowed,
+  assertInProgressClassStatusAllowed,
+  assertFutureClassStartDate,
   buildScheduleCandidates,
   generateSessionDates,
   getTeacherIdsForClass,
@@ -108,14 +111,22 @@ export const getClasses = async (req: AuthRequest, res: Response, next: NextFunc
       Class.countDocuments(filter),
     ]);
     const classIds = classes.map((classroom) => classroom._id);
-    const enrollmentCounts = await Enrollment.aggregate<{ _id: Types.ObjectId; count: number }>([
-      { $match: { class: { $in: classIds }, status: 'ENROLLED' } },
-      { $group: { _id: '$class', count: { $sum: 1 } } },
+    const [enrollmentCounts, attendanceCounts] = await Promise.all([
+      Enrollment.aggregate<{ _id: Types.ObjectId; count: number }>([
+        { $match: { class: { $in: classIds }, status: 'ENROLLED' } },
+        { $group: { _id: '$class', count: { $sum: 1 } } },
+      ]),
+      Attendance.aggregate<{ _id: Types.ObjectId; count: number }>([
+        { $match: { class: { $in: classIds } } },
+        { $group: { _id: '$class', count: { $sum: 1 } } },
+      ]),
     ]);
     const countsByClassId = new Map(enrollmentCounts.map(({ _id, count }) => [_id.toString(), count]));
+    const attendanceByClassId = new Map(attendanceCounts.map(({ _id, count }) => [_id.toString(), count]));
     const data = classes.map((classroom) => ({
       ...classroom.toObject(),
       currentEnrollment: countsByClassId.get(classroom._id.toString()) ?? 0,
+      hasAttendance: (attendanceByClassId.get(classroom._id.toString()) ?? 0) > 0,
     }));
 
     res.status(200).json({
@@ -203,6 +214,7 @@ export const createClass = async (req: AuthRequest, res: Response, next: NextFun
     const courseDocument = await validateAssignments(course, teacher);
     if (!courseDocument) throw createError('Không tìm thấy khóa học đang hoạt động', 400);
     const startDate = parseClassStartDate(classData.startDate);
+    assertFutureClassStartDate(startDate);
     const dates = generateSessionDates(startDate, classData.scheduleDays, courseDocument.sessions);
     const { startTime, endTime } = parseTimeSlot(classData.timeSlot);
     const room = typeof classData.room === 'string' && classData.room.trim() ? classData.room.trim() : 'Phòng học 101';
@@ -215,6 +227,7 @@ export const createClass = async (req: AuthRequest, res: Response, next: NextFun
       await session.withTransaction(async () => {
         const [created] = await Class.create([{
           ...classData,
+          status: 'OPEN',
           startDate,
           endDate: dates[dates.length - 1],
           scheduleDays: [...new Set(classData.scheduleDays.map(normalizeClassWeekday))],
@@ -250,8 +263,10 @@ export const updateClass = async (req: AuthRequest, res: Response, next: NextFun
     }
 
     const { classCode, course, teacher, ...classData } = req.body;
+    const originalClassCode = classroom.classCode;
+    const originalRoom = classroom.room;
+    const normalizedCode = classCode ? classCode.trim().toUpperCase() : classroom.classCode;
     if (classCode) {
-      const normalizedCode = classCode.trim().toUpperCase();
       const duplicate = await Class.findOne({ classCode: normalizedCode, _id: { $ne: classroom._id } });
       if (duplicate) {
         res.status(409).json({ success: false, message: 'Mã lớp học đã tồn tại' });
@@ -263,6 +278,9 @@ export const updateClass = async (req: AuthRequest, res: Response, next: NextFun
     const courseDocument = await validateAssignments(course || classroom.course.toString(), teacher || classroom.teacher.toString());
     if (!courseDocument) throw createError('Không tìm thấy khóa học đang hoạt động', 400);
     const startDate = parseClassStartDate(classData.startDate);
+    if (startDate.toISOString().slice(0, 10) !== classroom.startDate.toISOString().slice(0, 10)) {
+      assertFutureClassStartDate(startDate);
+    }
     const dates = generateSessionDates(startDate, classData.scheduleDays, courseDocument.sessions);
     const { startTime, endTime } = parseTimeSlot(classData.timeSlot);
     const room = typeof classData.room === 'string' && classData.room.trim() ? classData.room.trim() : 'Phòng học 101';
@@ -271,75 +289,109 @@ export const updateClass = async (req: AuthRequest, res: Response, next: NextFun
     const session = await mongoose.startSession();
     try {
       await session.withTransaction(async () => {
-        await validateScheduleConflicts({
-          teacherIds: await getTeacherIdsForClass(classroom._id, teacherId),
-          candidates,
-          ignoreClassId: classroom._id,
-        });
-
         const currentSchedules = await ClassSchedule.find({ class: classroom._id }).session(session);
-        const scheduleIds = currentSchedules.map((schedule) => schedule._id);
-        const linkedAttendanceCount = scheduleIds.length
-          ? await Attendance.countDocuments({ classSchedule: { $in: scheduleIds } }).session(session)
-          : 0;
+        const linkedAttendanceCount = await Attendance.countDocuments({ class: classroom._id }).session(session);
+        const isInProgressWithAttendance = classroom.status === 'IN_PROGRESS' && linkedAttendanceCount > 0;
+        if (!isInProgressWithAttendance || classroom.room !== room) {
+          await validateScheduleConflicts({
+            teacherIds: await getTeacherIdsForClass(classroom._id, teacherId),
+            candidates,
+            ignoreClassId: classroom._id,
+          });
+        }
+
         const expectedDates = new Set(dates.map((date) => date.toISOString().slice(0, 10)));
         const existingDates = new Set(currentSchedules
           .filter((schedule) => schedule.sessionDate)
           .map((schedule) => new Date(schedule.sessionDate!).toISOString().slice(0, 10)));
-        const scheduleConfigurationChanged = classroom.course.toString() !== courseDocument._id.toString()
+        const timeSlotChanged = classroom.timeSlot !== `${startTime} - ${endTime}`;
+        const submittedTimeSlotChanged = classData.timeSlot !== classroom.timeSlot;
+        const scheduleDaysChanged = JSON.stringify(classroom.scheduleDays.map(normalizeClassWeekday).sort())
+          !== JSON.stringify([...new Set(classData.scheduleDays.map(normalizeClassWeekday))].sort());
+        const startDateChanged = classroom.startDate.toISOString().slice(0, 10) !== startDate.toISOString().slice(0, 10);
+        const endDateChanged = classroom.endDate.toISOString().slice(0, 10)
+          !== dates[dates.length - 1].toISOString().slice(0, 10);
+        const scheduleConfigurationChangedExceptRoom = classroom.course.toString() !== courseDocument._id.toString()
           || classroom.teacher.toString() !== teacherId.toString()
-          || classroom.room !== room
-          || classroom.timeSlot !== `${startTime} - ${endTime}`
-          || JSON.stringify(classroom.scheduleDays.map(normalizeClassWeekday).sort())
-            !== JSON.stringify([...new Set(classData.scheduleDays.map(normalizeClassWeekday))].sort())
-          || classroom.startDate.toISOString().slice(0, 10) !== startDate.toISOString().slice(0, 10)
-          || classroom.endDate.toISOString().slice(0, 10) !== dates[dates.length - 1].toISOString().slice(0, 10)
+          || timeSlotChanged
+          || scheduleDaysChanged
+          || startDateChanged
+          || endDateChanged
           || currentSchedules.some((schedule) => !schedule.sessionDate)
           || expectedDates.size !== existingDates.size
           || [...expectedDates].some((date) => !existingDates.has(date))
           || currentSchedules.some((schedule) => {
             const candidate = candidates.find((item) => item.sessionDate.toISOString().slice(0, 10) === schedule.sessionDate?.toISOString().slice(0, 10));
-            return candidate && (schedule.startTime !== candidate.startTime || schedule.endTime !== candidate.endTime || schedule.classroom !== candidate.classroom);
+            return candidate && (schedule.startTime !== candidate.startTime || schedule.endTime !== candidate.endTime);
           });
+        const roomConfigurationChanged = classroom.room !== room
+          || currentSchedules.some((schedule) => schedule.classroom !== room);
+        const scheduleConfigurationChanged = scheduleConfigurationChangedExceptRoom || roomConfigurationChanged;
+        const allowedAttendanceUpdateFields = new Set(['room', 'status', 'scheduleDays', 'timeSlot', 'startDate', 'capacity']);
+        const changedAttendanceLockedFields = [
+          ...(normalizedCode !== originalClassCode ? ['classCode'] : []),
+          ...(courseDocument._id.toString() !== classroom.course.toString() ? ['course'] : []),
+          ...(teacherId.toString() !== classroom.teacher.toString() ? ['teacher'] : []),
+          ...(Number(classData.capacity) !== classroom.capacity ? ['capacity'] : []),
+          ...(submittedTimeSlotChanged ? ['timeSlot'] : []),
+          ...(scheduleDaysChanged ? ['scheduleDays'] : []),
+          ...(startDateChanged ? ['startDate'] : []),
+          ...Object.keys(classData).filter((key) => !allowedAttendanceUpdateFields.has(key)),
+        ];
+        assertInProgressClassStatusAllowed(classroom.status === 'IN_PROGRESS', classData.status ?? classroom.status);
+        assertAttendanceLockedUpdateAllowed(isInProgressWithAttendance, changedAttendanceLockedFields);
 
         if (scheduleConfigurationChanged && (classroom.status === 'CANCELLED' || classroom.status === 'COMPLETED')) {
           throw createError('Không thể cập nhật lịch cho lớp đã hủy hoặc hoàn thành', 400);
         }
-        if (scheduleConfigurationChanged && linkedAttendanceCount > 0) {
+        if (scheduleConfigurationChanged && linkedAttendanceCount > 0 && !isInProgressWithAttendance) {
           throw createError('Không thể thay đổi lịch vì đã có điểm danh gắn với các buổi học hiện tại', 409);
         }
 
-        Object.assign(classroom, classData, {
-          startDate,
-          endDate: dates[dates.length - 1],
-          scheduleDays: [...new Set(classData.scheduleDays.map(normalizeClassWeekday))],
-          timeSlot: `${startTime} - ${endTime}`,
-          room,
-          course: courseDocument._id,
-          teacher: teacherId,
-        });
+        if (isInProgressWithAttendance) {
+          Object.assign(classroom, { room, status: classData.status ?? classroom.status });
+        } else {
+          Object.assign(classroom, classData, {
+            startDate,
+            endDate: dates[dates.length - 1],
+            scheduleDays: [...new Set(classData.scheduleDays.map(normalizeClassWeekday))],
+            timeSlot: `${startTime} - ${endTime}`,
+            room,
+            course: courseDocument._id,
+            teacher: teacherId,
+          });
+        }
         await classroom.save({ session });
 
-        const byDate = new Map(currentSchedules
-          .filter((schedule) => schedule.sessionDate)
-          .map((schedule) => [schedule.sessionDate!.toISOString().slice(0, 10), schedule]));
-        const legacySchedules = currentSchedules.filter((schedule) => !schedule.sessionDate);
-        const retainedIds: Types.ObjectId[] = [];
-        for (const [index, candidate] of candidates.entries()) {
-          const dateKey = candidate.sessionDate.toISOString().slice(0, 10);
-          const existingSchedule = byDate.get(dateKey) ?? (index === 0 ? legacySchedules.shift() : undefined);
-          if (existingSchedule) {
-            Object.assign(existingSchedule, candidate, { class: classroom._id });
-            await existingSchedule.save({ session });
-            retainedIds.push(existingSchedule._id);
-          } else {
-            const [createdSchedule] = await ClassSchedule.create([{ class: classroom._id, ...candidate, topic: '' }], { session });
-            retainedIds.push(createdSchedule._id);
+        if (isInProgressWithAttendance) {
+          if (room !== originalRoom) {
+            await ClassSchedule.updateMany(
+              { class: classroom._id },
+              { $set: { classroom: room } }
+            ).session(session);
           }
+        } else {
+          const byDate = new Map(currentSchedules
+            .filter((schedule) => schedule.sessionDate)
+            .map((schedule) => [schedule.sessionDate!.toISOString().slice(0, 10), schedule]));
+          const legacySchedules = currentSchedules.filter((schedule) => !schedule.sessionDate);
+          const retainedIds: Types.ObjectId[] = [];
+          for (const [index, candidate] of candidates.entries()) {
+            const dateKey = candidate.sessionDate.toISOString().slice(0, 10);
+            const existingSchedule = byDate.get(dateKey) ?? (index === 0 ? legacySchedules.shift() : undefined);
+            if (existingSchedule) {
+              Object.assign(existingSchedule, candidate, { class: classroom._id });
+              await existingSchedule.save({ session });
+              retainedIds.push(existingSchedule._id);
+            } else {
+              const [createdSchedule] = await ClassSchedule.create([{ class: classroom._id, ...candidate, topic: '' }], { session });
+              retainedIds.push(createdSchedule._id);
+            }
+          }
+          const currentIds = currentSchedules.map((schedule) => schedule._id);
+          const removableIds = currentIds.filter((id) => !retainedIds.some((retainedId) => retainedId.equals(id)));
+          if (removableIds.length) await ClassSchedule.deleteMany({ _id: { $in: removableIds } }).session(session);
         }
-        const currentIds = currentSchedules.map((schedule) => schedule._id);
-        const removableIds = currentIds.filter((id) => !retainedIds.some((retainedId) => retainedId.equals(id)));
-        if (removableIds.length) await ClassSchedule.deleteMany({ _id: { $in: removableIds } }).session(session);
       });
     } finally {
       await session.endSession();
