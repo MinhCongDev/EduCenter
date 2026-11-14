@@ -42,7 +42,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
 
   // ── Login State ────────────────────────────────────────────────────────
   const stateData = location.state as { from?: { pathname: string }; message?: string } | null;
-  const from = stateData?.from?.pathname || null;
+  const from = stateData?.from?.pathname || (location.state as any)?.redirect || null;
   const initialSuccessMessage = stateData?.message || null;
 
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
@@ -115,7 +115,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
       }
     }
 
-    navigate(targetPath, { replace: true });
+    const passedCourse = (location.state as any)?.course;
+    navigate(targetPath, { state: passedCourse ? { course: passedCourse } : undefined, replace: true });
   };
 
   const handleLoginSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -251,9 +252,15 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
       <div className="auth-wrapper">
         <div className={`auth-master-card mode-${mode}`}>
 
+
           {/* Mobile Header with brand logo & segmented pill toggle */}
           <div className="auth-mobile-header">
-            <BrandLogo size="sm" tagline="IELTS ACADEMY" className="auth-mobile-brand" />
+            <BrandLogo
+              size="sm"
+              tagline="IELTS ACADEMY"
+              className="auth-mobile-brand"
+            />
+
             <div className="auth-mobile-toggle-pills">
               <button
                 type="button"
@@ -262,6 +269,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
               >
                 Đăng nhập
               </button>
+
               <button
                 type="button"
                 className={`auth-mobile-pill ${mode === 'register' ? 'active' : ''}`}
@@ -272,7 +280,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
             </div>
           </div>
 
-          {/* ── Form Containers ─────────────────────────────────────────── */}
           <div className="auth-forms-container">
 
             {/* 1. LOGIN FORM PANEL (Left side) */}
@@ -552,7 +559,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
                               value={registerForm.password}
                               onChange={handleRegisterChange}
                               className="auth-input-control"
-                                                            autoComplete="new-password"
+                              autoComplete="new-password"
                               required
                               minLength={10}
                               maxLength={20}
@@ -581,7 +588,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
                               value={registerForm.confirmPassword}
                               onChange={handleRegisterChange}
                               className="auth-input-control"
-                                                            autoComplete="new-password"
+                              autoComplete="new-password"
                               required
                               maxLength={20}
                               disabled={registerSubmitting}

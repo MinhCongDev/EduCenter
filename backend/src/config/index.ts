@@ -1,7 +1,10 @@
 import dotenv from 'dotenv';
+import path from 'path';
 
-// Load environment variables first
+// Load environment variables first (support running from root or backend folder)
 dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+dotenv.config({ path: path.resolve(process.cwd(), 'backend/.env') });
 
 const requiredEnvVars = ['MONGODB_URI', 'JWT_SECRET'] as const;
 
@@ -67,4 +70,14 @@ export const config = {
     url: process.env.PAYMENT_GATEWAY_URL || 'http://localhost:5001/mock-gateway',
     secret: process.env.PAYMENT_GATEWAY_SECRET || 'mock_payment_secret',
   },
+
+  // PayOS Payment Gateway
+  payos: {
+    clientId: process.env.PAYOS_CLIENT_ID || '',
+    apiKey: process.env.PAYOS_API_KEY || '',
+    checksumKey: process.env.PAYOS_CHECKSUM_KEY || '',
+  },
+  isPayOSConfigured: Boolean(
+    process.env.PAYOS_CLIENT_ID && process.env.PAYOS_API_KEY && process.env.PAYOS_CHECKSUM_KEY
+  ),
 } as const;

@@ -15,8 +15,11 @@
   align-items: center;
   justify-content: center;
   color: #ffffff;
-  background: linear-gradient(135deg, #308560 0%, #57d061 100%);
-  box-shadow: 0 4px 12px rgba(48, 133, 96, 0.26);
+  background: #26743d;
+  font-family: var(--font-heading, 'Montserrat', sans-serif);
+  font-weight: 800;
+  box-shadow: 0 4px 12px rgba(38, 116, 61, 0.28);
+  user-select: none;
 }
 
 .brand-logo__text {
@@ -50,39 +53,30 @@
 
 /* ── Sizes ── */
 .brand-logo--sm .brand-logo__mark {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-}
-.brand-logo--sm .brand-logo__mark svg {
-  width: 21px;
-  height: 21px;
+  width: 32px;
+  height: 32px;
+  font-size: 1.05rem;
+  border-radius: 9px;
 }
 .brand-logo--sm .brand-logo__name {
   font-size: 1.05rem;
 }
 
 .brand-logo--md .brand-logo__mark {
-  width: 42px;
-  height: 42px;
+  width: 39px;
+  height: 39px;
+  font-size: 1.25rem;
   border-radius: 12px;
-}
-.brand-logo--md .brand-logo__mark svg {
-  width: 26px;
-  height: 26px;
 }
 .brand-logo--md .brand-logo__name {
   font-size: 1.3rem;
 }
 
 .brand-logo--lg .brand-logo__mark {
-  width: 54px;
-  height: 54px;
-  border-radius: 15px;
-}
-.brand-logo--lg .brand-logo__mark svg {
-  width: 33px;
-  height: 33px;
+  width: 48px;
+  height: 48px;
+  font-size: 1.6rem;
+  border-radius: 14px;
 }
 .brand-logo--lg .brand-logo__name {
   font-size: 1.65rem;

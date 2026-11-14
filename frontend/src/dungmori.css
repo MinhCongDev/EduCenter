@@ -75,16 +75,21 @@
 }
 
 .dmr-logo-badge {
-  width: 44px;
-  height: 44px;
-  background: linear-gradient(135deg, var(--dmr-green-light), var(--dmr-lime));
+  width: 40px;
+  height: 40px;
+  background: #26743d;
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
-  box-shadow: 0 4px 10px rgba(87, 208, 97, 0.35);
+  color: #ffffff;
+  font-family: var(--font-heading, 'Montserrat', sans-serif);
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 4px 12px rgba(38, 116, 61, 0.35);
   transition: transform 0.3s ease;
+  user-select: none;
 }
 
 .dmr-logo-wrap:hover .dmr-logo-badge {
@@ -588,10 +593,6 @@
   gap: 14px;
 }
 
-.dmr-coupon-icon {
-  font-size: 2rem;
-}
-
 .dmr-coupon-title {
   font-family: var(--font-beanbag);
   font-weight: 800;
@@ -710,14 +711,6 @@
   font-size: 1.5rem;
   font-weight: 600;
   color: #A0AEC0;
-}
-
-/* Floating Motifs */
-.dmr-floating-shape {
-  position: absolute;
-  pointer-events: none;
-  z-index: 1;
-  opacity: 0.85;
 }
 
 /* Product Highlight Grid */
@@ -1400,9 +1393,9 @@
 }
 
 .dmr-fab-btn {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
+  min-height: 48px;
+  padding: 0 16px;
+  border-radius: 999px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1410,7 +1403,9 @@
   cursor: pointer;
   transition: transform 0.25s, box-shadow 0.25s;
   text-decoration: none;
-  font-size: 24px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .dmr-fab-btn:hover {

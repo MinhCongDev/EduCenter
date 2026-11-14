@@ -753,8 +753,11 @@ export const DirectorDashboard: React.FC = () => {
       if (txnMethodFilter !== 'ALL' && t.method !== txnMethodFilter) return false;
       if (txnStatusFilter !== 'ALL' && t.status !== txnStatusFilter) return false;
 
-      if (txnDateFilter !== 'ALL' && t.paymentDate) {
-        const tDate = new Date(t.paymentDate).getTime();
+      // 3. Lọc theo Thời gian giao dịch (Date Filter)
+      if (txnDateFilter !== 'ALL') {
+        const rawDate = t.paymentDate || t.createdAt;
+        if (!rawDate) return false;
+        const tDate = new Date(rawDate).getTime();
         const now = Date.now();
         if (txnDateFilter === 'TODAY') {
           const oneDay = 24 * 60 * 60 * 1000;
@@ -766,7 +769,7 @@ export const DirectorDashboard: React.FC = () => {
           const thirtyDays = 30 * 24 * 60 * 60 * 1000;
           if (now - tDate > thirtyDays) return false;
         } else if (txnDateFilter === 'THIS_MONTH') {
-          const d = new Date(t.paymentDate);
+          const d = new Date(rawDate);
           const curr = new Date();
           if (d.getMonth() !== curr.getMonth() || d.getFullYear() !== curr.getFullYear()) return false;
         }
@@ -774,7 +777,7 @@ export const DirectorDashboard: React.FC = () => {
 
       return true;
     });
-  }, [allTxns, txnSearch, txnCategoryFilter, txnCourseFilter, txnMethodFilter, txnStatusFilter, txnDateFilter]);
+  }, [allTxns, txnSearch, txnDateFilter, txnCategoryFilter, txnCourseFilter, txnMethodFilter, txnStatusFilter]);
 
   // Phân trang 10 giao dịch 1 trang
   const txnTotalPages = Math.max(1, Math.ceil(filteredTxns.length / TXN_PAGE_SIZE));
@@ -904,56 +907,56 @@ export const DirectorDashboard: React.FC = () => {
               className="dash-quick-btn"
               onClick={() => handleTabChange('account_permissions')}
             >
-              🛡️ Tài khoản &amp; Phân quyền ({staffAccounts.length || summary.staffCount + summary.teachersCount})
+               Tài khoản &amp; Phân quyền ({staffAccounts.length || summary.staffCount + summary.teachersCount})
             </button>
             <button
               type="button"
               className="dash-quick-btn"
               onClick={() => handleTabChange('monitoring')}
             >
-              📡 Giám sát vận hành
+               Giám sát vận hành
             </button>
             <button
               type="button"
               className="dash-quick-btn"
               onClick={() => handleTabChange('student_reports')}
             >
-              📈 Báo cáo học viên
+               Báo cáo học viên
             </button>
             <button
               type="button"
               className="dash-quick-btn"
               onClick={() => handleTabChange('teacher_reports')}
             >
-              👨‍🏫 Báo cáo giảng viên
+               Báo cáo giảng viên
             </button>
             <button
               type="button"
               className="dash-quick-btn"
               onClick={() => handleTabChange('class_course_reports')}
             >
-              🏫 Báo cáo lớp &amp; khóa
+               Báo cáo lớp &amp; khóa
             </button>
             <button
               type="button"
               className="dash-quick-btn"
               onClick={() => handleTabChange('announcements')}
             >
-              📢 Quản lý thông báo ({announcements.length})
+               Quản lý thông báo ({announcements.length})
             </button>
             <button
               type="button"
               className="dash-quick-btn"
               onClick={() => handleTabChange('revenue_reports')}
             >
-              💰 Báo cáo tài chính
+               Báo cáo tài chính
             </button>
             <button
               type="button"
               className="dash-quick-btn primary"
               onClick={() => setIsAddStaffModalOpen(true)}
             >
-              ➕ Thêm nhân sự mới
+               Thêm nhân sự mới
             </button>
           </div>
 
@@ -1091,14 +1094,6 @@ export const DirectorDashboard: React.FC = () => {
                     <span className="badge-pill badge-amber">
                       {approvals.filter((a) => a.status === 'PENDING').length} cần xử lý
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => setIsAddProposalModalOpen(true)}
-                      className="dash-quick-btn primary"
-                      style={{ padding: '0.35rem 0.75rem', fontSize: '0.78rem' }}
-                    >
-                      ➕ Tạo đề xuất
-                    </button>
                   </div>
                 </div>
 
@@ -1213,7 +1208,7 @@ export const DirectorDashboard: React.FC = () => {
                     className="dash-quick-btn primary"
                     onClick={() => handleTabChange('account_permissions')}
                   >
-                    <span>🛡️</span>
+                    <span></span>
                     <span>Quản Lý Tài Khoản, Nhân Sự &amp; Phân Quyền</span>
                   </button>
                   <button
@@ -1221,23 +1216,15 @@ export const DirectorDashboard: React.FC = () => {
                     className="dash-quick-btn"
                     onClick={() => handleTabChange('announcements')}
                   >
-                    <span>📢</span>
+                    <span></span>
                     <span>Quản Lý &amp; Đăng Thông Báo Trung Tâm</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="dash-quick-btn"
-                    onClick={() => handleTabChange('revenue_reports')}
-                  >
-                    <span>📥</span>
-                    <span>Xuất Báo Cáo Tài Chính (Excel / PDF)</span>
                   </button>
                   <button
                     type="button"
                     className="dash-quick-btn"
                     onClick={() => handleTabChange('monitoring')}
                   >
-                    <span>📡</span>
+                    <span></span>
                     <span>Giám Sát Vận Hành Phòng Học Hôm Nay</span>
                   </button>
                 </div>
@@ -1326,7 +1313,7 @@ export const DirectorDashboard: React.FC = () => {
               boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
             }}
           >
-            <span>⬅</span>
+            <span></span>
             <span>Quay lại Bảng điều khiển Tổng quan</span>
           </button>
         </div>
@@ -1366,8 +1353,8 @@ export const DirectorDashboard: React.FC = () => {
                   gap: '6px',
                 }}
               >
-                <span>🌐</span>
-                <span>Xem Trang Công Khai ↗</span>
+                <span></span>
+                <span>Xem Trang Công Khai </span>
               </a>
 
               <button
@@ -1388,7 +1375,7 @@ export const DirectorDashboard: React.FC = () => {
                   boxShadow: '0 2px 6px rgba(5, 150, 105, 0.25)',
                 }}
               >
-                <span>➕</span>
+                <span></span>
                 <span>Viết Thông Báo Mới</span>
               </button>
             </div>
@@ -1399,7 +1386,7 @@ export const DirectorDashboard: React.FC = () => {
             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flex: 1, minWidth: '220px' }}>
               <input
                 type="text"
-                placeholder="🔍 Tìm kiếm thông báo theo tiêu đề, nội dung..."
+                placeholder=" Tìm kiếm thông báo theo tiêu đề, nội dung..."
                 value={announcementSearch}
                 onChange={(e) => setAnnouncementSearch(e.target.value)}
                 style={{
@@ -1555,7 +1542,7 @@ export const DirectorDashboard: React.FC = () => {
                               className="dash-quick-btn"
                               style={{ padding: '0.35rem 0.65rem', fontSize: '0.78rem' }}
                             >
-                              {item.isPinned ? 'Bỏ ghim' : '📌 Ghim'}
+                              {item.isPinned ? 'Bỏ ghim' : ' Ghim'}
                             </button>
                             <button
                               type="button"
@@ -1563,7 +1550,7 @@ export const DirectorDashboard: React.FC = () => {
                               className="dash-quick-btn primary"
                               style={{ padding: '0.35rem 0.65rem', fontSize: '0.78rem' }}
                             >
-                              ✏️ Sửa
+                               Sửa
                             </button>
                             <button
                               type="button"
@@ -1571,7 +1558,7 @@ export const DirectorDashboard: React.FC = () => {
                               className="dash-quick-btn"
                               style={{ padding: '0.35rem 0.65rem', fontSize: '0.78rem', color: '#ef4444' }}
                             >
-                              🗑️ Xóa
+                               Xóa
                             </button>
                           </div>
                         </td>
@@ -1613,7 +1600,7 @@ export const DirectorDashboard: React.FC = () => {
                 cursor: 'pointer',
               }}
             >
-              ➕ Cấp Tài Khoản Nhân Sự / GV
+               Cấp Tài Khoản Nhân Sự / GV
             </button>
           </div>
 
@@ -1696,7 +1683,7 @@ export const DirectorDashboard: React.FC = () => {
 
             <input
               type="text"
-              placeholder="🔍 Tìm theo họ tên hoặc email..."
+              placeholder=" Tìm theo họ tên hoặc email..."
               value={permSearch}
               onChange={(e) => setPermSearch(e.target.value)}
               style={{
@@ -1865,7 +1852,7 @@ export const DirectorDashboard: React.FC = () => {
                 boxShadow: monitoringSubTab === 'operations' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
               }}
             >
-              🏢 Giám Sát Phòng Học &amp; Cơ Sở
+               Giám Sát Phòng Học &amp; Cơ Sở
             </button>
             <button
               type="button"
@@ -1882,7 +1869,7 @@ export const DirectorDashboard: React.FC = () => {
                 boxShadow: monitoringSubTab === 'students' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
               }}
             >
-              🎓 Giám Sát Học Viên
+               Giám Sát Học Viên
             </button>
             <button
               type="button"
@@ -1899,7 +1886,7 @@ export const DirectorDashboard: React.FC = () => {
                 boxShadow: monitoringSubTab === 'teachers' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
               }}
             >
-              👨‍🏫 Giám Sát Giảng Viên
+               Giám Sát Giảng Viên
             </button>
           </div>
 
@@ -2345,7 +2332,7 @@ export const DirectorDashboard: React.FC = () => {
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
                 <input
                   type="text"
-                  placeholder="🔍 Tìm tên giảng viên..."
+                  placeholder=" Tìm tên giảng viên..."
                   value={teaRepSearch}
                   onChange={(e) => setTeaRepSearch(e.target.value)}
                   style={{
@@ -2466,7 +2453,7 @@ export const DirectorDashboard: React.FC = () => {
                   color: classCourseSubTab === 'classes' ? '#064e3b' : '#64748b',
                 }}
               >
-                🏫 Báo Cáo Lớp Học ({classCourseReports?.classes?.length || 12})
+                 Báo Cáo Lớp Học ({classCourseReports?.classes?.length || 12})
               </button>
               <button
                 type="button"
@@ -2482,7 +2469,7 @@ export const DirectorDashboard: React.FC = () => {
                   color: classCourseSubTab === 'courses' ? '#064e3b' : '#64748b',
                 }}
               >
-                📚 Báo Cáo Khóa Học ({classCourseReports?.courses?.length || 4})
+                 Báo Cáo Khóa Học ({classCourseReports?.courses?.length || 4})
               </button>
             </div>
           </div>
@@ -2496,7 +2483,7 @@ export const DirectorDashboard: React.FC = () => {
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
                   <input
                     type="text"
-                    placeholder="🔍 Tìm tên lớp, mã lớp, khóa học..."
+                    placeholder=" Tìm tên lớp, mã lớp, khóa học..."
                     value={classRepSearch}
                     onChange={(e) => setClassRepSearch(e.target.value)}
                     style={{
@@ -2624,7 +2611,7 @@ export const DirectorDashboard: React.FC = () => {
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                   <input
                     type="text"
-                    placeholder="🔍 Tìm tên hoặc mã khóa học..."
+                    placeholder=" Tìm tên hoặc mã khóa học..."
                     value={courseRepSearch}
                     onChange={(e) => setCourseRepSearch(e.target.value)}
                     style={{
@@ -2706,28 +2693,6 @@ export const DirectorDashboard: React.FC = () => {
                 Thống kê doanh thu theo tháng, cơ cấu nguồn thu và lịch sử giao dịch học phí
               </span>
             </div>
-
-            <button
-              type="button"
-              onClick={() => showToast('🎉 Đang xuất file Excel Báo Cáo Tài Chính Quý...')}
-              style={{
-                backgroundColor: '#059669',
-                color: '#ffffff',
-                border: 'none',
-                padding: '0.6rem 1.25rem',
-                borderRadius: '10px',
-                fontSize: '0.85rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                boxShadow: '0 2px 6px rgba(5, 150, 105, 0.25)',
-              }}
-            >
-              <span>📥</span>
-              <span>Xuất Báo Cáo Excel (Tài Chính)</span>
-            </button>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
@@ -2781,9 +2746,9 @@ export const DirectorDashboard: React.FC = () => {
                 }}
               >
                 {[
-                  { id: 'WEEK', label: '📅 Theo Tuần' },
-                  { id: 'MONTH', label: '📆 Theo Tháng' },
-                  { id: 'YEAR', label: '📈 Theo Năm' },
+                  { id: 'WEEK', label: ' Theo Tuần' },
+                  { id: 'MONTH', label: ' Theo Tháng' },
+                  { id: 'YEAR', label: ' Theo Năm' },
                 ].map((btn) => {
                   const active = revenuePeriod === btn.id;
                   return (
@@ -2988,7 +2953,7 @@ export const DirectorDashboard: React.FC = () => {
                         transition: 'all 0.15s ease',
                       }}
                     >
-                      <span>🏷️</span> {cat}
+                      <span></span> {cat}
                     </button>
                   );
                 })}
@@ -2999,7 +2964,7 @@ export const DirectorDashboard: React.FC = () => {
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '1rem', backgroundColor: '#f8fafc', padding: '10px 12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
               <input
                 type="text"
-                placeholder="🔍 Tìm mã GD, học viên, khóa học..."
+                placeholder=" Tìm mã GD, học viên, khóa học..."
                 value={txnSearch}
                 onChange={(e) => {
                   setTxnSearch(e.target.value);
@@ -3025,13 +2990,16 @@ export const DirectorDashboard: React.FC = () => {
                 style={{
                   padding: '6px 12px',
                   borderRadius: '8px',
-                  border: '1px solid #cbd5e1',
+                  border: txnDateFilter !== 'ALL' ? '1.5px solid #047857' : '1px solid #cbd5e1',
                   fontSize: '0.8rem',
-                  backgroundColor: '#fff',
+                  backgroundColor: txnDateFilter !== 'ALL' ? '#f0fdf4' : '#fff',
+                  color: txnDateFilter !== 'ALL' ? '#047857' : '#0f172a',
+                  fontWeight: txnDateFilter !== 'ALL' ? 700 : 500,
                   outline: 'none',
                 }}
+                title="Lọc theo thời gian giao dịch"
               >
-                <option value="ALL">📅 Tất cả thời gian</option>
+                <option value="ALL"> Tất cả thời gian</option>
                 <option value="TODAY">Hôm nay (24h qua)</option>
                 <option value="7_DAYS">7 ngày qua</option>
                 <option value="30_DAYS">30 ngày qua</option>
@@ -3054,7 +3022,7 @@ export const DirectorDashboard: React.FC = () => {
                 }}
                 title="Lọc theo loại khóa học"
               >
-                <option value="ALL">🏷️ Tất cả phân loại</option>
+                <option value="ALL"> Tất cả phân loại</option>
                 {courseCategories.map((cat) => (
                   <option key={cat} value={cat}>
                     🏷️ Loại: {cat}
@@ -3080,7 +3048,7 @@ export const DirectorDashboard: React.FC = () => {
                 title="Lọc theo từng khóa học cụ thể"
               >
                 <option value="ALL">
-                  📚 {txnCategoryFilter !== 'ALL' ? `Tất cả khóa [${txnCategoryFilter}]` : '📚 Tất cả khóa học'}
+                   {txnCategoryFilter !== 'ALL' ? `Tất cả khóa [${txnCategoryFilter}]` : ' Tất cả khóa học'}
                 </option>
                 {availableCoursesForFilter.map((c) => (
                   <option key={c.code || c.title} value={c.title || c.code}>
@@ -3104,7 +3072,7 @@ export const DirectorDashboard: React.FC = () => {
                   outline: 'none',
                 }}
               >
-                <option value="ALL">💳 Mọi phương thức</option>
+                <option value="ALL"> Mọi phương thức</option>
                 <option value="VNPAY">VNPAY</option>
                 <option value="BANK_TRANSFER">Chuyển khoản QR</option>
                 <option value="CREDIT_CARD">Thẻ tín dụng / Visa</option>
@@ -3165,6 +3133,7 @@ export const DirectorDashboard: React.FC = () => {
               <thead>
                 <tr style={{ borderBottom: '2px solid #e2e8f0', backgroundColor: '#f8fafc', textAlign: 'left', color: '#475569' }}>
                   <th style={{ padding: '10px 14px' }}>Mã Giao Dịch</th>
+                  <th style={{ padding: '10px 14px' }}>Thời Gian</th>
                   <th style={{ padding: '10px 14px' }}>Học Viên</th>
                   <th style={{ padding: '10px 14px' }}>Khóa Học</th>
                   <th style={{ padding: '10px 14px' }}>Số Tiền</th>
@@ -3175,7 +3144,7 @@ export const DirectorDashboard: React.FC = () => {
               <tbody>
                 {filteredTxns.length === 0 ? (
                   <tr>
-                    <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
+                    <td colSpan={7} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
                       Không tìm thấy giao dịch nào phù hợp với bộ lọc hiện tại.
                     </td>
                   </tr>
@@ -3190,9 +3159,23 @@ export const DirectorDashboard: React.FC = () => {
                         ? txn.course?.title || txn.course?.name || txn.course?.code || 'Khóa học'
                         : String(txn.course || 'Khóa học');
 
+                    const rawDate = txn.paymentDate || txn.createdAt;
+                    const dateFormatted = rawDate
+                      ? new Date(rawDate).toLocaleString('vi-VN', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })
+                      : '---';
+
                     return (
                       <tr key={txn._id || idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
                         <td style={{ padding: '12px 14px', fontWeight: 700, color: '#047857' }}>{txn.transactionCode}</td>
+                        <td style={{ padding: '12px 14px', color: '#64748b', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                          📅 {dateFormatted}
+                        </td>
                         <td style={{ padding: '12px 14px', fontWeight: 700, color: '#0f172a' }}>{studentLabel}</td>
                         <td style={{ padding: '12px 14px', color: '#334155' }}>{courseLabel}</td>
                         <td style={{ padding: '12px 14px', fontWeight: 800, color: '#047857' }}>
@@ -3455,7 +3438,7 @@ export const DirectorDashboard: React.FC = () => {
               <div style={{ padding: '1.5rem 1.65rem', display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
                 <div>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.84rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.35rem' }}>
-                    <span>👤</span>
+                    <span></span>
                     <span>Họ và tên nhân sự</span>
                     <span style={{ color: '#EF4444' }}>*</span>
                   </label>
@@ -3492,7 +3475,7 @@ export const DirectorDashboard: React.FC = () => {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.85rem' }}>
                   <div>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
-                      <span>✉️</span>
+                      <span></span>
                       <span>Email đăng nhập</span>
                       <span style={{ color: '#EF4444' }}>*</span>
                     </label>
@@ -3525,7 +3508,7 @@ export const DirectorDashboard: React.FC = () => {
 
                   <div>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
-                      <span>📱</span>
+                      <span></span>
                       <span>Số điện thoại:</span>
                     </label>
                     <input
@@ -3558,7 +3541,7 @@ export const DirectorDashboard: React.FC = () => {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.85rem' }}>
                   <div>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
-                      <span>💼</span>
+                      <span></span>
                       <span>Vai trò công việc:</span>
                     </label>
                     <select
@@ -3585,14 +3568,14 @@ export const DirectorDashboard: React.FC = () => {
                         e.target.style.backgroundColor = '#F8FAFC';
                       }}
                     >
-                      <option value="TRAINING_STAFF">💼 Chuyên viên Giáo vụ (TRAINING_STAFF)</option>
-                      <option value="TEACHER">👨‍🏫 Giảng viên IELTS (TEACHER)</option>
+                      <option value="TRAINING_STAFF"> Chuyên viên Giáo vụ (TRAINING_STAFF)</option>
+                      <option value="TEACHER"> Giảng viên IELTS (TEACHER)</option>
                     </select>
                   </div>
 
                   <div>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
-                      <span>🔑</span>
+                      <span></span>
                       <span>Mật khẩu khởi tạo</span>
                       <span style={{ color: '#EF4444' }}>*</span>
                     </label>
@@ -3796,7 +3779,7 @@ export const DirectorDashboard: React.FC = () => {
                     if (!isSubmittingStaff) e.currentTarget.style.transform = 'translateY(0)';
                   }}
                 >
-                  {isSubmittingStaff ? 'Đang tạo...' : '💾 Cấp Tài Khoản'}
+                  {isSubmittingStaff ? 'Đang tạo...' : ' Cấp Tài Khoản'}
                 </button>
               </div>
             </form>
@@ -3897,7 +3880,7 @@ export const DirectorDashboard: React.FC = () => {
                 {/* Title */}
                 <div>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.84rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.35rem' }}>
-                    <span>🏷️</span>
+                    <span></span>
                     <span>Tiêu đề thông báo</span>
                     <span style={{ color: '#EF4444' }}>*</span>
                   </label>
@@ -3935,7 +3918,7 @@ export const DirectorDashboard: React.FC = () => {
                 {/* Summary */}
                 <div>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.84rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.35rem' }}>
-                    <span>📝</span>
+                    <span></span>
                     <span>Tóm tắt ngắn gọn</span>
                     <span style={{ fontSize: '0.76rem', fontWeight: 500, color: '#64748B' }}>(Hiển thị xem trước ở danh sách)</span>
                   </label>
@@ -3971,7 +3954,7 @@ export const DirectorDashboard: React.FC = () => {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.85rem' }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
-                      📁 Danh mục:
+                       Danh mục:
                     </label>
                     <select
                       value={announcementForm.category}
@@ -3999,7 +3982,7 @@ export const DirectorDashboard: React.FC = () => {
 
                   <div>
                     <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
-                      👥 Đối tượng nhận tin:
+                       Đối tượng nhận tin:
                     </label>
                     <select
                       value={announcementForm.targetAudience}
@@ -4016,16 +3999,16 @@ export const DirectorDashboard: React.FC = () => {
                         cursor: 'pointer',
                       }}
                     >
-                      <option value="ALL">🌐 Tất cả (Công khai)</option>
-                      <option value="STUDENTS">🎓 Học viên</option>
-                      <option value="TEACHERS">👨‍🏫 Giảng viên</option>
-                      <option value="STAFF">👥 Nhân sự / Giáo vụ</option>
+                      <option value="ALL"> Tất cả (Công khai)</option>
+                      <option value="STUDENTS"> Học viên</option>
+                      <option value="TEACHERS"> Giảng viên</option>
+                      <option value="STAFF"> Nhân sự / Giáo vụ</option>
                     </select>
                   </div>
 
                   <div>
                     <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
-                      👁️ Trạng thái hiển thị:
+                       Trạng thái hiển thị:
                     </label>
                     <select
                       value={announcementForm.status}
@@ -4042,8 +4025,8 @@ export const DirectorDashboard: React.FC = () => {
                         cursor: 'pointer',
                       }}
                     >
-                      <option value="PUBLISHED">✅ Xuất bản ngay</option>
-                      <option value="DRAFT">📋 Lưu bản nháp</option>
+                      <option value="PUBLISHED"> Xuất bản ngay</option>
+                      <option value="DRAFT"> Lưu bản nháp</option>
                     </select>
                   </div>
                 </div>
@@ -4106,7 +4089,7 @@ export const DirectorDashboard: React.FC = () => {
                 {/* Banner image URL */}
                 <div>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
-                    <span>🖼️</span>
+                    <span></span>
                     <span>Link ảnh bìa / banner minh họa (tùy chọn):</span>
                   </label>
                   <input
@@ -4138,7 +4121,7 @@ export const DirectorDashboard: React.FC = () => {
                 {/* Content textarea */}
                 <div>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.84rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.35rem' }}>
-                    <span>📄</span>
+                    <span></span>
                     <span>Nội dung chi tiết bài viết</span>
                     <span style={{ color: '#EF4444' }}>*</span>
                   </label>
@@ -4228,7 +4211,7 @@ export const DirectorDashboard: React.FC = () => {
                   onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-1px)')}
                   onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
                 >
-                  {isSubmittingAnnouncement ? 'Đang lưu...' : editingAnnouncement ? '💾 Cập Nhật Thông Báo' : '🚀 Xuất Bản Thông Báo'}
+                  {isSubmittingAnnouncement ? 'Đang lưu...' : editingAnnouncement ? ' Cập Nhật Thông Báo' : ' Xuất Bản Thông Báo'}
                 </button>
               </div>
             </form>
@@ -4341,7 +4324,7 @@ export const DirectorDashboard: React.FC = () => {
                 {/* Title */}
                 <div>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.84rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.35rem' }}>
-                    <span>🏷️</span>
+                    <span></span>
                     <span>Tiêu đề đề xuất</span>
                     <span style={{ color: '#EF4444' }}>*</span>
                   </label>
@@ -4380,7 +4363,7 @@ export const DirectorDashboard: React.FC = () => {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.85rem' }}>
                   <div>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
-                      <span>📁</span>
+                      <span></span>
                       <span>Lĩnh vực phân loại:</span>
                     </label>
                     <select
@@ -4407,18 +4390,18 @@ export const DirectorDashboard: React.FC = () => {
                         e.target.style.backgroundColor = '#F8FAFC';
                       }}
                     >
-                      <option value="Mở lớp mới">🏢 Mở lớp học mới</option>
-                      <option value="Học bổng">🎓 Học bổng &amp; Ưu đãi học phí</option>
-                      <option value="Khảo thí & Điểm">📊 Khảo thí &amp; Điểm thi</option>
-                      <option value="Cơ sở vật chất">🏛️ Cơ sở vật chất &amp; Thiết bị</option>
-                      <option value="Chương trình học">📚 Giáo trình &amp; Học liệu</option>
-                      <option value="Khác">📌 Đề xuất vận hành khác</option>
+                      <option value="Mở lớp mới"> Mở lớp học mới</option>
+                      <option value="Học bổng"> Học bổng &amp; Ưu đãi học phí</option>
+                      <option value="Khảo thí & Điểm"> Khảo thí &amp; Điểm thi</option>
+                      <option value="Cơ sở vật chất"> Cơ sở vật chất &amp; Thiết bị</option>
+                      <option value="Chương trình học"> Giáo trình &amp; Học liệu</option>
+                      <option value="Khác"> Đề xuất vận hành khác</option>
                     </select>
                   </div>
 
                   <div>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
-                      <span>💼</span>
+                      <span></span>
                       <span>Chức vụ / Bộ phận người gửi:</span>
                     </label>
                     <input
@@ -4451,7 +4434,7 @@ export const DirectorDashboard: React.FC = () => {
                 {/* Proposer Name */}
                 <div>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '0.35rem' }}>
-                    <span>👤</span>
+                    <span></span>
                     <span>Họ tên người đề xuất:</span>
                     <span style={{ fontSize: '0.76rem', fontWeight: 500, color: '#64748B' }}>(Mặc định lấy theo tài khoản đang đăng nhập)</span>
                   </label>
@@ -4484,7 +4467,7 @@ export const DirectorDashboard: React.FC = () => {
                 {/* Description Textarea */}
                 <div>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.84rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.35rem' }}>
-                    <span>📝</span>
+                    <span></span>
                     <span>Nội dung chi tiết &amp; Lý do trình Ban Giám Đốc</span>
                     <span style={{ color: '#EF4444' }}>*</span>
                   </label>
@@ -4579,7 +4562,7 @@ export const DirectorDashboard: React.FC = () => {
                     if (!isSubmittingProposal) e.currentTarget.style.transform = 'translateY(0)';
                   }}
                 >
-                  {isSubmittingProposal ? 'Đang gửi...' : '📤 Gửi Đề Xuất Ban Giám Đốc'}
+                  {isSubmittingProposal ? 'Đang gửi...' : ' Gửi Đề Xuất Ban Giám Đốc'}
                 </button>
               </div>
             </form>

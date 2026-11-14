@@ -147,9 +147,9 @@ const RequestsPage: React.FC = () => {
 
   const tabs: { key: FilterKey; label: string; count: number }[] = [
     { key: 'ALL', label: 'Tất cả', count: requests.length },
-    { key: 'PENDING', label: '⏳ Chờ duyệt', count: requests.filter((r) => r.status === 'PENDING').length },
-    { key: 'APPROVED', label: '✅ Đã duyệt', count: requests.filter((r) => r.status === 'APPROVED').length },
-    { key: 'REJECTED', label: '❌ Từ chối', count: requests.filter((r) => r.status === 'REJECTED').length },
+    { key: 'PENDING', label: 'Chờ duyệt', count: requests.filter((r) => r.status === 'PENDING').length },
+    { key: 'APPROVED', label: 'Đã duyệt', count: requests.filter((r) => r.status === 'APPROVED').length },
+    { key: 'REJECTED', label: 'Từ chối', count: requests.filter((r) => r.status === 'REJECTED').length },
   ];
 
   const showScheduleFields = form.requestType === 'SCHEDULE_CHANGE';
@@ -180,10 +180,10 @@ const RequestsPage: React.FC = () => {
           ← Dashboard
         </Link>
         <Link to="/student/classes" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
-          📚 Lớp Học
+           Lớp Học
         </Link>
         <Link to="/student/payments" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
-          💳 Thanh Toán
+           Thanh Toán
         </Link>
       </div>
 
@@ -247,7 +247,7 @@ const RequestsPage: React.FC = () => {
           ))}
         </div>
         <Button variant="primary" onClick={() => setShowForm((v) => !v)}>
-          {showForm ? '✕ Đóng' : '➕ Tạo Yêu Cầu Mới'}
+          {showForm ? '✕ Đóng' : ' Tạo Yêu Cầu Mới'}
         </Button>
       </div>
 
@@ -292,8 +292,8 @@ const RequestsPage: React.FC = () => {
                       }
                       style={inputStyle}
                     >
-                      <option value="CLASS_CHANGE">🔄 Đổi lớp</option>
-                      <option value="SCHEDULE_CHANGE">🗓️ Đổi lịch học</option>
+                      <option value="CLASS_CHANGE"> Đổi lớp</option>
+                      <option value="SCHEDULE_CHANGE"> Đổi lịch học</option>
                     </select>
                   </div>
                   <div>
@@ -374,7 +374,7 @@ const RequestsPage: React.FC = () => {
                 />
               </div>
               <div style={{ display: 'flex', gap: '0.75rem' }}>
-                <Button type="submit" variant="primary" loading={submitting} icon="📤">
+                <Button type="submit" variant="primary" loading={submitting}>
                   Gửi Yêu Cầu
                 </Button>
                 <Button
@@ -405,7 +405,7 @@ const RequestsPage: React.FC = () => {
           action={
             filter === 'ALL' && !showForm ? (
               <Button variant="primary" onClick={() => setShowForm(true)}>
-                ➕ Tạo Yêu Cầu Đầu Tiên
+                 Tạo Yêu Cầu Đầu Tiên
               </Button>
             ) : undefined
           }
@@ -490,7 +490,6 @@ const RequestsPage: React.FC = () => {
                         variant="secondary"
                         onClick={() => handleCancel(r._id)}
                         loading={cancellingId === r._id}
-                        icon="🗑️"
                       >
                         Hủy yêu cầu
                       </Button>

@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import { Course } from '../models/course.model';
 import { Class } from '../models/class.model';
 
+const escapeRegex = (str: string): string => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 /**
  * View Courses List
  * Search Courses
@@ -30,26 +32,40 @@ export const getCourses = async (req: Request, res: Response): Promise<void> => 
       query.status = 'ACTIVE';
     }
 
+    const andConditions: any[] = [];
+
     // Search Courses by keyword
     if (search && typeof search === 'string' && search.trim() !== '') {
-      const searchRegex = new RegExp(search.trim(), 'i');
-      query.$or = [
-        { title: searchRegex },
-        { code: searchRegex },
-        { description: searchRegex },
-        { category: searchRegex },
-        { entryLevel: searchRegex },
-        { targetLevel: searchRegex },
-      ];
+      const searchRegex = new RegExp(escapeRegex(search.trim()), 'i');
+      andConditions.push({
+        $or: [
+          { title: searchRegex },
+          { code: searchRegex },
+          { description: searchRegex },
+          { category: searchRegex },
+          { entryLevel: searchRegex },
+          { targetLevel: searchRegex },
+        ],
+      });
     }
 
-    // Filter Courses
+    // Filter Courses by Level (trình độ học viên)
     if (level && typeof level === 'string' && level !== 'ALL') {
-      query.$or = [
-        ...(query.$or || []),
-        { entryLevel: new RegExp(level, 'i') },
-        { targetLevel: new RegExp(level, 'i') },
-      ];
+      const escapedLevel = escapeRegex(level.trim());
+      const levelRegex = new RegExp(escapedLevel, 'i');
+      andConditions.push({
+        $or: [
+          { entryLevel: levelRegex },
+          { targetLevel: levelRegex },
+          { title: levelRegex },
+        ],
+      });
+    }
+
+    if (andConditions.length === 1) {
+      Object.assign(query, andConditions[0]);
+    } else if (andConditions.length > 1) {
+      query.$and = andConditions;
     }
 
     if (category && typeof category === 'string' && category !== 'ALL') {
@@ -260,6 +276,37 @@ export const deleteCourse = async (req: Request, res: Response): Promise<void> =
     res.status(500).json({
       success: false,
       message: error.message || 'Lỗi server khi xóa khóa học',
+    });
+  }
+};
+
+/**
+ * Upload Course Image (Staff/Director)
+ * POST /api/courses/upload-image
+ */
+export const uploadCourseImageHandler = async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!req.file) {
+      res.status(400).json({
+        success: false,
+        message: 'Vui lòng chọn file hình ảnh (JPG, PNG, GIF, WEBP)',
+      });
+      return;
+    }
+
+    const relativeUrl = `/uploads/courses/${req.file.filename}`;
+    res.status(200).json({
+      success: true,
+      message: 'Tải lên hình ảnh khóa học thành công',
+      data: {
+        filename: req.file.filename,
+        url: relativeUrl,
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Lỗi khi tải lên hình ảnh khóa học',
     });
   }
 };

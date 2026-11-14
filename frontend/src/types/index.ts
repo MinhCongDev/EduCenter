@@ -25,6 +25,29 @@ export interface User {
     _id: string;
     name: string;
   };
+  studentProfile?: StudentProfile;
+  teacherProfile?: TeacherProfile;
+  staffProfile?: StaffProfile;
+}
+
+export interface TeacherProfile {
+  _id?: string;
+  teacherCode?: string;
+  specialization?: string[];
+  bio?: string;
+  qualifications?: string[];
+  ieltsBand?: number;
+  yearsOfExperience?: number;
+  status?: string;
+}
+
+export interface StaffProfile {
+  _id?: string;
+  staffCode?: string;
+  department?: string;
+  position?: string;
+  joinDate?: string;
+  status?: string;
 }
 
 // Student profile (datlt)
@@ -212,8 +235,11 @@ export interface CourseFormData {
   targetLevel?: string;
   sessions: number;
   tuitionFee: number;
+  format?: CourseFormat;
   status: CourseStatus;
+  bannerUrl?: string;
   syllabus: string[];
+  learningObjectives?: string[];
 }
 
 export interface CourseQueryParams {
@@ -540,8 +566,36 @@ export interface ClassFormData {
 }
 
 // ── Payment Types ────────────────────────────
-export type PaymentMethod = 'VNPAY' | 'BANK_TRANSFER' | 'CASH' | 'CREDIT_CARD';
+export type PaymentMethod = 'VIETQR' | 'PAYOS' | 'VNPAY' | 'BANK_TRANSFER' | 'CASH' | 'CREDIT_CARD';
 export type PaymentStatus = 'PENDING' | 'SUCCESS' | 'FAILED' | 'REFUNDED';
+
+export interface PayOSPaymentLinkResult {
+  orderCode: number;
+  paymentLinkId?: string;
+  checkoutUrl?: string;
+  qrCode?: string;
+  accountNumber?: string;
+  accountName?: string;
+  bin?: string;
+  amount: number;
+  description: string;
+  status: string;
+  isMock?: boolean;
+}
+
+export interface PayOSStatusCheckResult {
+  isPaid: boolean;
+  status: string;
+  payosInfo?: {
+    orderCode: number;
+    amount: number;
+    amountPaid: number;
+    amountRemaining: number;
+    status: string;
+    transactions?: any[];
+  };
+  payment?: Payment;
+}
 
 export interface PaymentCourseInfo {
   _id: string;
@@ -581,6 +635,11 @@ export interface Payment {
   amount: number;
   method: PaymentMethod;
   transactionCode?: string;
+  invoiceId?: string;
+  orderCode?: number;
+  paymentLinkId?: string;
+  checkoutUrl?: string;
+  qrCode?: string;
   paymentDate?: string;
   dueDate?: string;
   status: PaymentStatus;
@@ -823,6 +882,9 @@ export interface Enrollment {
   _id: string;
   enrollmentId: string;
   class: Class;
+  course?: Course;
+  isPendingClass?: boolean;
+  registrationDate?: string;
   status: EnrollmentStatus;
   enrollmentStatus: EnrollmentStatus;
   tuitionStatus: TuitionStatus;
@@ -917,20 +979,6 @@ export interface NotificationItem {
   updatedAt: string;
 }
 
-export const NOTIFICATION_META: Record<NotificationType, { icon: string; color: string; label: string }> = {
-  INFO: { icon: 'ℹ️', color: '#3b82f6', label: 'Thông tin' },
-  ALERT: { icon: '🚨', color: '#f59e0b', label: 'Cảnh báo' },
-  SUCCESS: { icon: '✅', color: '#10b981', label: 'Thành công' },
-  WARNING: { icon: '⚠️', color: '#f97316', label: 'Cảnh báo' },
-  GRADE_PUBLISHED: { icon: '📊', color: '#3b82f6', label: 'Điểm mới' },
-  ASSIGNMENT_GRADED: { icon: '✅', color: '#10b981', label: 'Chấm bài' },
-  REQUEST_APPROVED: { icon: '👍', color: '#10b981', label: 'Duyệt yêu cầu' },
-  REQUEST_REJECTED: { icon: '⛔', color: '#ef4444', label: 'Từ chối' },
-  PAYMENT_RECEIVED: { icon: '💰', color: '#10b981', label: 'Thanh toán' },
-  CLASS_ANNOUNCEMENT: { icon: '📢', color: '#8b5cf6', label: 'Thông báo lớp' },
-  ATTENDANCE_MARKED: { icon: '🗓️', color: '#f59e0b', label: 'Điểm danh' },
-};
-
 // ─── Toast & UI ──────────────────────────
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 export interface Toast {
@@ -987,6 +1035,7 @@ export interface EnrollmentRecord {
   registrationDate: string;
   status: EnrollmentStatus;
   tuitionStatus?: TuitionStatus;
+  scheduleConflictClassIds?: string[];
   payments: EnrollmentPayment[];
   createdAt: string;
 }

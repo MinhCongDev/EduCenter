@@ -147,7 +147,7 @@ const CombinedSchedulePage: React.FC = () => {
           ← Dashboard
         </Link>
         <Link to="/student/classes" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
-          📚 Lớp Học
+           Lớp Học
         </Link>
       </div>
 
@@ -184,7 +184,12 @@ const CombinedSchedulePage: React.FC = () => {
         <EmptyState
           icon="📅"
           title="Chưa có lịch học"
-          description="Các lớp của bạn chưa được xếp lịch cố định. Vui lòng liên hệ trung tâm."
+          description="Hiện tại bạn chưa có lịch học nào. Nếu bạn vừa đăng ký khóa học mới, nhân viên giáo vụ (Staff) đang tiến hành xếp lớp học phù hợp cho bạn."
+          action={
+            <Link to="/student/classes" className="dash-quick-btn primary" style={{ textDecoration: 'none' }}>
+              📚 Xem khóa học của tôi
+            </Link>
+          }
         />
       ) : (
         <div className="dash-card" style={{ padding: 0, overflow: 'hidden' }}>
@@ -257,12 +262,12 @@ const CombinedSchedulePage: React.FC = () => {
                               {s.startTime}–{s.endTime}
                             </div>
                             <div style={{ fontSize: '0.7rem', color: '#64748b' }}>
-                              {slot === 'MORNING' ? '🌅' : slot === 'AFTERNOON' ? '☀️' : '🌙'}{' '}
+                              {slot === 'MORNING' ? '' : slot === 'AFTERNOON' ? '' : ''}{' '}
                               {s.class?.course?.code || s.class?.classCode}
                             </div>
                             {s.room && (
                               <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: 2 }}>
-                                📍 {s.room}
+                                 {s.room}
                               </div>
                             )}
                           </Link>

@@ -6,6 +6,8 @@ import path from 'path';
 import { OAuth2Client, TokenPayload } from 'google-auth-library';
 import { User, IUser } from '../models/user.model';
 import { Student } from '../models/student.model';
+import { Teacher } from '../models/teacher.model';
+import { Staff } from '../models/staff.model';
 import { Enrollment } from '../models/enrollment.model';
 import { config } from '../config';
 import { AuthRequest } from '../middlewares/auth.middleware';
@@ -571,9 +573,15 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
       return;
     }
 
-    // Get current enrolled class for students
+    // Get current enrolled class & role-specific profile details
     let currentClass = null;
+    let studentProfile = null;
+    let teacherProfile = null;
+    let staffProfile = null;
+
     if (req.user.role === 'STUDENT') {
+      const studentDoc = await Student.findOne({ user: req.user._id }).lean();
+      studentProfile = studentDoc;
       const enrollment = await Enrollment.findOne({
         student: req.user._id,
         status: 'ENROLLED',
@@ -584,12 +592,24 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
           name: (enrollment.class as any).name,
         };
       }
+    } else if (req.user.role === 'TEACHER') {
+      const teacherDoc = await Teacher.findOne({ user: req.user._id }).lean();
+      teacherProfile = teacherDoc;
+    } else if (req.user.role === 'TRAINING_STAFF' || req.user.role === 'DIRECTOR') {
+      const staffDoc = await Staff.findOne({ user: req.user._id }).lean();
+      staffProfile = staffDoc;
     }
 
     res.status(200).json({
       success: true,
       data: {
-        user: { ...req.user.toObject(), currentClass },
+        user: {
+          ...req.user.toObject(),
+          currentClass,
+          studentProfile,
+          teacherProfile,
+          staffProfile,
+        },
       },
     });
   } catch (error: any) {

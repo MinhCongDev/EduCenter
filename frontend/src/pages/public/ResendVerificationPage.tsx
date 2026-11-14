@@ -71,7 +71,7 @@ const ResendVerificationPage: React.FC = () => {
                 target="_blank"
                 rel="noreferrer"
               >
-                📬 Mở hộp thư của bạn
+                 Mở hộp thư của bạn
               </a>
             )}
 
