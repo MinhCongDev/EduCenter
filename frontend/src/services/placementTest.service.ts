@@ -123,12 +123,20 @@ const getApiData = <T>(response: ApiEnvelope<T>): T => {
   return response.data;
 };
 
-const readLocalHistory = (): TestHistoryItem[] => {
+// Dọn dẹp key lịch sử cũ không gán theo tài khoản để tránh rò rỉ dữ liệu khi chưa đăng nhập
+try {
+  localStorage.removeItem('educenter_placement_history');
+} catch {
+  // Ignore in SSR / non-browser environment
+}
+
+const readLocalHistory = (userId?: string): TestHistoryItem[] => {
+  if (!userId) return [];
   try {
-    const saved = localStorage.getItem('educenter_placement_history');
+    const saved = localStorage.getItem(`educenter_placement_history_${userId}`);
     if (!saved) return [];
     const parsed: unknown = JSON.parse(saved);
-    return Array.isArray(parsed) ? parsed as TestHistoryItem[] : [];
+    return Array.isArray(parsed) ? (parsed as TestHistoryItem[]) : [];
   } catch {
     return [];
   }
@@ -147,42 +155,49 @@ export const placementTestService = {
     return getApiData(response.data);
   },
 
-  async submitTest(id: string, answers: Record<string, string>): Promise<PlacementResultResponse> {
+  async submitTest(id: string, answers: Record<string, string>, userId?: string): Promise<PlacementResultResponse> {
     const response = await api.post<ApiEnvelope<PlacementResultResponse>>(
       `/placement-tests/${encodeURIComponent(id)}/submit`,
       { answers }
     );
     const result = getApiData(response.data);
 
-    try {
-      const history = readLocalHistory();
-      history.unshift({
-        id: `RES-${Date.now()}`,
-        testId: result.testId,
-        testTitle: result.testTitle,
-        submittedAt: result.submittedAt,
-        score: result.score,
-        totalQuestions: result.totalQuestions,
-        scorePercentage: result.scorePercentage,
-        predictedBand: result.predictedBand,
-        levelName: result.levelName,
-        matchedLevel: result.matchedLevel,
-        recommendedCourse: result.primaryCourse?.title || '',
-      });
-      localStorage.setItem('educenter_placement_history', JSON.stringify(history.slice(0, 15)));
-    } catch {
-      // The server result remains valid if browser storage is unavailable.
+    if (userId) {
+      try {
+        const history = readLocalHistory(userId);
+        history.unshift({
+          id: `RES-${Date.now()}`,
+          testId: result.testId,
+          testTitle: result.testTitle,
+          submittedAt: result.submittedAt,
+          score: result.score,
+          totalQuestions: result.totalQuestions,
+          scorePercentage: result.scorePercentage,
+          predictedBand: result.predictedBand,
+          levelName: result.levelName,
+          matchedLevel: result.matchedLevel,
+          recommendedCourse: result.primaryCourse?.title || '',
+        });
+        localStorage.setItem(`educenter_placement_history_${userId}`, JSON.stringify(history.slice(0, 15)));
+      } catch {
+        // The server result remains valid if browser storage is unavailable.
+      }
     }
 
     return result;
   },
 
-  async getMyHistory(): Promise<TestHistoryItem[]> {
+  async getMyHistory(userId?: string): Promise<TestHistoryItem[]> {
+    if (!userId) return [];
     try {
       const response = await api.get<ApiEnvelope<TestHistoryItem[]>>('/placement-tests/my/history');
-      return getApiData(response.data);
+      const serverHistory = getApiData(response.data);
+      if (Array.isArray(serverHistory) && serverHistory.length > 0) {
+        return serverHistory;
+      }
+      return readLocalHistory(userId);
     } catch {
-      return readLocalHistory();
+      return readLocalHistory(userId);
     }
   },
 };

@@ -4,6 +4,7 @@ import { authorize } from '../middlewares/authorize.middleware';
 import {
   createPlacementTest,
   deletePlacementTest,
+  getMyPlacementHistory,
   getPlacementTestById,
   getPlacementTests,
   submitPlacementTest,
@@ -14,6 +15,9 @@ export const placementTestRouter = Router();
 
 // Public: Xem danh sách bài test từ CSDL
 placementTestRouter.get('/', optionalAuthenticate, getPlacementTests);
+
+// Student: Lịch sử làm bài thi thử (phải đặt trước /:id)
+placementTestRouter.get('/my/history', authenticate, getMyPlacementHistory);
 
 // Student / Staff / Director: Phải đăng nhập mới được xem chi tiết câu hỏi và làm bài thi thử
 placementTestRouter.get('/:id', authenticate, getPlacementTestById);

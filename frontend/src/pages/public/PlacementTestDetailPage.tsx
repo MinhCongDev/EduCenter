@@ -24,7 +24,7 @@ export const PlacementTestDetailPage: React.FC = () => {
   const activeTestId = id || testId;
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, user } = useAuth();
 
   // Test state
   const [test, setTest] = useState<PlacementTestDetail | null>(null);
@@ -136,7 +136,7 @@ export const PlacementTestDetailPage: React.FC = () => {
     if (timerRef.current) clearInterval(timerRef.current);
 
     try {
-      const evalResult = await placementTestService.submitTest(targetId, userAnswers);
+      const evalResult = await placementTestService.submitTest(targetId, userAnswers, user?._id);
       setResult(evalResult);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err: unknown) {
