@@ -210,7 +210,7 @@ const MyClassesPage: React.FC = () => {
             >
               <input
                 type="text"
-                placeholder="🔍 Tìm theo mã lớp, tên khóa học, giảng viên..."
+                placeholder=" Tìm theo mã lớp, tên khóa học, giảng viên..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 style={{

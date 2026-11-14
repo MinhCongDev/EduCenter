@@ -305,7 +305,7 @@ const ProgressPage: React.FC = () => {
               fontWeight: 500,
             }}
           >
-            🔄 Làm mới
+             Làm mới
           </button>
         </div>
 

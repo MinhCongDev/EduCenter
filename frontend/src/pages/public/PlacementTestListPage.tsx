@@ -16,7 +16,7 @@ const getHistoryLevel = (item: TestHistoryItem): string => {
 
 export const PlacementTestListPage: React.FC = () => {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [tests, setTests] = useState<PlacementTestSummary[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -29,12 +29,15 @@ export const PlacementTestListPage: React.FC = () => {
       setLoading(true);
       setLoadError(null);
       try {
-        const [testList, historyList] = await Promise.all([
-          placementTestService.getTests(),
-          placementTestService.getMyHistory(),
-        ]);
+        const testList = await placementTestService.getTests();
         setTests(testList);
-        setHistory(historyList);
+
+        if (isAuthenticated && user?._id) {
+          const historyList = await placementTestService.getMyHistory(user._id);
+          setHistory(historyList);
+        } else {
+          setHistory([]);
+        }
       } catch (err: unknown) {
         setTests([]);
         setLoadError(err instanceof Error ? err.message : 'Đã xảy ra lỗi không xác định.');
@@ -43,7 +46,7 @@ export const PlacementTestListPage: React.FC = () => {
       }
     };
     fetchData();
-  }, [loadAttempt]);
+  }, [loadAttempt, isAuthenticated, user?._id]);
 
   const handleStartTest = (testId: string) => {
     if (!isAuthenticated) {
@@ -398,7 +401,7 @@ export const PlacementTestListPage: React.FC = () => {
         </div>
 
         {/* History of Past Tests Section */}
-        {history.length > 0 && (
+        {isAuthenticated && history.length > 0 && (
           <div
             style={{
               marginTop: '3.5rem',
@@ -662,7 +665,7 @@ export const PlacementTestListPage: React.FC = () => {
                 gap: '6px',
               }}
             >
-              <span>📞</span>
+
               <span>Hotline: 1900 6868</span>
             </a>
           </div>

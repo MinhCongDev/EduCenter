@@ -81,16 +81,16 @@ const ClassDetailsPage: React.FC = () => {
 
       <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
         <Link to={`/student/classes/${id}/assignments`} className="dash-quick-btn primary" style={{ textDecoration: 'none' }}>
-          📝 Bài Tập ({assignments.length})
+           Bài Tập ({assignments.length})
         </Link>
         <Link to={`/student/classes/${id}/attendance`} className="dash-quick-btn" style={{ textDecoration: 'none' }}>
-          📅 Điểm Danh
+           Điểm Danh
         </Link>
         <Link to={`/student/classes/${id}/grades`} className="dash-quick-btn" style={{ textDecoration: 'none' }}>
-          📊 Bảng Điểm
+           Bảng Điểm
         </Link>
         <Link to={`/student/classes/${id}/schedule`} className="dash-quick-btn" style={{ textDecoration: 'none' }}>
-          🗓️ Lịch Học
+           Lịch Học
         </Link>
         <Link to="/student/classes" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
           ← Danh Sách Lớp

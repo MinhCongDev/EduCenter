@@ -66,6 +66,117 @@ interface ScheduleCandidate {
   classroom: string;
 }
 
+export interface ScheduleRecordInput {
+  sessionDate?: Date | string | null;
+  excludedDates?: (Date | string)[];
+  dayOfWeek: string;
+  startTime: string;
+  endTime: string;
+  classroom: string;
+  status?: 'ACTIVE' | 'CANCELLED';
+}
+
+export interface ScheduleClassWindow {
+  startDate: Date | string;
+  endDate: Date | string;
+  scheduleDays: string[];
+  timeSlot: string;
+  room: string;
+}
+
+export interface ScheduleInstance {
+  sessionDate: Date;
+  startTime: string;
+  endTime: string;
+  classroom: string;
+}
+
+const dateKey = (date: Date | string): string => new Date(date).toISOString().slice(0, 10);
+
+export const expandScheduleInstances = (
+  classroom: ScheduleClassWindow,
+  schedules: ScheduleRecordInput[]
+): ScheduleInstance[] => {
+  const startDate = new Date(classroom.startDate);
+  const endDate = new Date(classroom.endDate);
+  startDate.setUTCHours(0, 0, 0, 0);
+  endDate.setUTCHours(0, 0, 0, 0);
+
+  const activeSchedules = schedules.filter((schedule) => schedule.status !== 'CANCELLED');
+  if (schedules.length === 0) {
+    const { startTime, endTime } = parseTimeSlot(classroom.timeSlot);
+    const selectedDays = new Set(classroom.scheduleDays.map(normalizeWeekday));
+    const instances: ScheduleInstance[] = [];
+    for (const date = new Date(startDate); date <= endDate; date.setUTCDate(date.getUTCDate() + 1)) {
+      if (selectedDays.has(weekdayForDate(date))) {
+        instances.push({
+          sessionDate: new Date(date),
+          startTime,
+          endTime,
+          classroom: classroom.room,
+        });
+      }
+    }
+    return instances;
+  }
+
+  const instances: ScheduleInstance[] = [];
+  for (const schedule of activeSchedules) {
+    if (schedule.sessionDate) {
+      const sessionDate = new Date(schedule.sessionDate);
+      if (sessionDate >= startDate && sessionDate <= endDate) {
+        instances.push({
+          sessionDate,
+          startTime: schedule.startTime,
+          endTime: schedule.endTime,
+          classroom: schedule.classroom,
+        });
+      }
+      continue;
+    }
+
+    const excludedDates = new Set((schedule.excludedDates ?? []).map(dateKey));
+    const dayOfWeek = normalizeWeekday(schedule.dayOfWeek);
+    for (const date = new Date(startDate); date <= endDate; date.setUTCDate(date.getUTCDate() + 1)) {
+      if (weekdayForDate(date) !== dayOfWeek || excludedDates.has(dateKey(date))) continue;
+      instances.push({
+        sessionDate: new Date(date),
+        startTime: schedule.startTime,
+        endTime: schedule.endTime,
+        classroom: schedule.classroom,
+      });
+    }
+  }
+  return instances;
+};
+
+export const findScheduleTimeConflict = (
+  left: ScheduleInstance[],
+  right: ScheduleInstance[]
+): { left: ScheduleInstance; right: ScheduleInstance } | undefined => {
+  const rightByDate = new Map<string, ScheduleInstance[]>();
+  for (const instance of right) {
+    const key = dateKey(instance.sessionDate);
+    const instances = rightByDate.get(key) ?? [];
+    instances.push(instance);
+    rightByDate.set(key, instances);
+  }
+
+  for (const leftInstance of left) {
+    const leftStart = timeToMinutes(leftInstance.startTime);
+    const leftEnd = timeToMinutes(leftInstance.endTime);
+    if (leftStart === null || leftEnd === null) continue;
+
+    for (const rightInstance of rightByDate.get(dateKey(leftInstance.sessionDate)) ?? []) {
+      const rightStart = timeToMinutes(rightInstance.startTime);
+      const rightEnd = timeToMinutes(rightInstance.endTime);
+      if (rightStart === null || rightEnd === null || leftStart >= rightEnd || rightStart >= leftEnd) continue;
+      return { left: leftInstance, right: rightInstance };
+    }
+  }
+  return undefined;
+};
+
 interface ConflictCheckOptions {
   teacherIds: Types.ObjectId[];
   candidates: ScheduleCandidate[];
@@ -97,7 +208,7 @@ export const validateScheduleConflicts = async ({
 
   const existingClasses = await Class.find({
     _id: { $in: existingSchedules.map((schedule) => schedule.class) },
-    status: { $ne: 'CANCELLED' },
+    status: { $in: ['OPEN', 'IN_PROGRESS'] },
   }).select('_id classCode startDate endDate teacher').lean();
   const classById = new Map(existingClasses.map((classItem) => [classItem._id.toString(), classItem]));
   const assignments = await ClassTeacher.find({
@@ -127,6 +238,7 @@ export const validateScheduleConflicts = async ({
           && candidate.sessionDate.toISOString().slice(0, 10) >= new Date(existingClass.startDate).toISOString().slice(0, 10)
           && candidate.sessionDate.toISOString().slice(0, 10) <= new Date(existingClass.endDate).toISOString().slice(0, 10);
       if (!isSameDate) continue;
+      if (!explicitDate && existing.excludedDates?.some((date) => sameUtcDay(new Date(date), candidate.sessionDate))) continue;
 
       const existingStart = timeToMinutes(existing.startTime);
       const existingEnd = timeToMinutes(existing.endTime);

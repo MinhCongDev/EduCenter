@@ -348,7 +348,7 @@ export const StudentPaymentsPage: React.FC = () => {
             }}
             onClick={fetchData}
           >
-            <span>🔄</span>
+
             <span>Làm Mới</span>
           </button>
         </div>
@@ -668,7 +668,7 @@ export const StudentPaymentsPage: React.FC = () => {
             <div style={{ position: 'relative' }}>
               <input
                 type="text"
-                placeholder="🔍 Tìm mã GD hoặc ghi chú..."
+                placeholder=" Tìm mã GD hoặc ghi chú..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={{
@@ -819,7 +819,7 @@ export const StudentPaymentsPage: React.FC = () => {
                               opacity: 0.6,
                             }}
                           >
-                            {copiedText === p._id ? '✅' : '📋'}
+                            {copiedText === p._id ? 'Đã chép' : 'Sao chép'}
                           </button>
                         </div>
                       </td>
@@ -914,7 +914,7 @@ export const StudentPaymentsPage: React.FC = () => {
                             onClick={() => handleOpenVietQRForPayment(p)}
                             title="Hiển thị mã QR thanh toán ngân hàng VietQR"
                           >
-                            <span>📱</span>
+
                             <span>Quét QR</span>
                           </button>
 
@@ -933,7 +933,7 @@ export const StudentPaymentsPage: React.FC = () => {
                             }}
                             onClick={() => handleViewReceipt(p._id)}
                           >
-                            <span>📄</span>
+
                             <span>Biên Lai</span>
                           </button>
                         </div>
@@ -1075,7 +1075,7 @@ export const StudentPaymentsPage: React.FC = () => {
                       handleViewReceipt(pId);
                     }}
                   >
-                    <span>📄</span>
+
                     <span>Xem Biên Lai Điện Tử</span>
                   </button>
                   <button
@@ -1156,7 +1156,6 @@ export const StudentPaymentsPage: React.FC = () => {
                         transition: 'all 0.2s ease',
                       }}
                     >
-                      <div style={{ fontSize: '1.3rem', marginBottom: '0.2rem' }}>💳</div>
                       <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#6d28d9' }}>Visa / Master</div>
                       <div style={{ fontSize: '0.675rem', color: '#64748b' }}>Thẻ thanh toán quốc tế</div>
                     </button>
@@ -1239,7 +1238,7 @@ export const StudentPaymentsPage: React.FC = () => {
                               onClick={() => handleCopy('988866889999', 'acc')}
                               style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '0.85rem' }}
                             >
-                              {copiedText === 'acc' ? '✅' : '📋'}
+                              {copiedText === 'acc' ? 'Đã chép' : 'Sao chép'}
                             </button>
                           </div>
                         </div>
@@ -1269,7 +1268,7 @@ export const StudentPaymentsPage: React.FC = () => {
                               }
                               style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '0.85rem' }}
                             >
-                              {copiedText === 'syntax' ? '✅' : '📋'}
+                              {copiedText === 'syntax' ? 'Đã chép' : 'Sao chép'}
                             </button>
                           </div>
                         </div>
@@ -1298,7 +1297,7 @@ export const StudentPaymentsPage: React.FC = () => {
                           gap: '0.4rem',
                         }}
                       >
-                        <span>🔍</span>
+
                         <span>Mở toàn màn hình VietQR & Tải ảnh</span>
                       </button>
                     </div>
@@ -1447,7 +1446,7 @@ export const StudentPaymentsPage: React.FC = () => {
                       </>
                     ) : (
                       <>
-                        <span>🔒</span>
+
                         <span>Xác Nhận Thanh Toán</span>
                       </>
                     )}
@@ -1679,7 +1678,7 @@ export const StudentPaymentsPage: React.FC = () => {
                 className="dash-quick-btn primary"
                 onClick={() => window.print()}
               >
-                <span>🖨️</span>
+
                 <span>In Biên Lai / Xuất PDF</span>
               </button>
             </div>

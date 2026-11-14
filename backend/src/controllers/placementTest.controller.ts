@@ -555,6 +555,80 @@ export const submitPlacementTest = async (
 };
 
 /**
+ * GET /api/placement-tests/my/history
+ * Học viên lấy lịch sử bài thi thử đã làm
+ */
+export const getMyPlacementHistory = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      throw createError('Vui lòng đăng nhập để xem lịch sử làm bài thi', 401);
+    }
+
+    const student = await Student.findOne({ user: req.user._id }).lean();
+    if (!student || !student.placementTestDate || student.placementTestScore === undefined) {
+      res.status(200).json({
+        success: true,
+        data: [],
+      });
+      return;
+    }
+
+    const score = student.placementTestScore;
+    let levelName = 'Mất gốc (0 - 3.5)';
+    let matchedLevel = '0 - 3.5';
+    if (score >= 8.0) {
+      levelName = 'Master (8.0+)';
+      matchedLevel = '8.0+';
+    } else if (score >= 6.5) {
+      levelName = 'Chuyên sâu (6.5 - 7.5+)';
+      matchedLevel = '6.5 - 7.5+';
+    } else if (score >= 5.5) {
+      levelName = 'Bứt phá (5.5 - 6.5)';
+      matchedLevel = '5.5 - 6.5';
+    } else if (score >= 4.5) {
+      levelName = 'Foundation (4.5 - 5.5)';
+      matchedLevel = '4.5 - 5.5';
+    } else if (score >= 3.5) {
+      levelName = 'Pre-IELTS (3.5 - 4.5)';
+      matchedLevel = '3.5 - 4.5';
+    }
+
+    let testTitle = 'Bài kiểm tra trình độ đầu vào';
+    if (student.placementNotes) {
+      const match = student.placementNotes.match(/bài test "([^"]+)"/i);
+      if (match && match[1]) {
+        testTitle = match[1];
+      }
+    }
+
+    const historyItem = {
+      id: `HIST-${student._id.toString()}`,
+      testId: 'diagnostic-test',
+      testTitle,
+      submittedAt: student.placementTestDate.toISOString(),
+      score: student.placementTestScore,
+      totalQuestions: 25,
+      scorePercentage: Math.round((student.placementTestScore / 9) * 100),
+      predictedBand: student.placementTestScore,
+      levelName,
+      matchedLevel,
+      recommendedCourse: `IELTS Trình Độ ${levelName}`,
+    };
+
+    res.status(200).json({
+      success: true,
+      data: [historyItem],
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * 4. POST /api/placement-tests
  * Giáo vụ / Giám đốc tạo bài kiểm tra mới và lưu vào MongoDB
  */

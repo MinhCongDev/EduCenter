@@ -9,7 +9,7 @@ const formatVND = (price: number) => {
 
 const defaultCourses: Course[] = [
   {
-    _id: 'c1',
+    _id: '6af80ad87196444ae0f96040',
     code: 'IELTS-BEGINNER',
     title: 'IELTS Beginner – Mất Gốc',
     description: 'Xây dựng nền tảng từ vựng, ngữ pháp, phát âm và kỹ năng tiếng Anh cơ bản.',
@@ -27,7 +27,7 @@ const defaultCourses: Course[] = [
     updatedAt: '',
   },
   {
-    _id: 'c2',
+    _id: '6af80ad87196444ae0f96047',
     code: 'IELTS-PRE',
     title: 'IELTS Pre',
     description: 'Làm quen cấu trúc đề thi IELTS và phát triển 4 kỹ năng Nghe, Nói, Đọc, Viết.',
@@ -45,7 +45,7 @@ const defaultCourses: Course[] = [
     updatedAt: '',
   },
   {
-    _id: 'c3',
+    _id: '6ad0e51dbba27df34719e8e4',
     code: 'IELTS-FOUNDATION',
     title: 'IELTS Foundation',
     description: 'Củng cố kỹ năng, mở rộng từ vựng và áp dụng chiến thuật làm bài cơ bản.',
@@ -63,7 +63,7 @@ const defaultCourses: Course[] = [
     updatedAt: '',
   },
   {
-    _id: 'c4',
+    _id: '6af80ad87196444ae0f9605c',
     code: 'IELTS-BREAKTHROUGH',
     title: 'IELTS Breakthrough – Bứt Phá',
     description: 'Nâng cao khả năng xử lý đề, luyện đề chuyên sâu và cải thiện band điểm.',
@@ -81,7 +81,7 @@ const defaultCourses: Course[] = [
     updatedAt: '',
   },
   {
-    _id: 'c5',
+    _id: '6ad0e51dbba27df34719e8e5',
     code: 'IELTS-ADVANCED',
     title: 'IELTS Advanced – Chuyên Sâu',
     description: 'Phát triển tư duy học thuật, nâng cao Writing và Speaking, luyện đề chuyên sâu.',
@@ -99,7 +99,7 @@ const defaultCourses: Course[] = [
     updatedAt: '',
   },
   {
-    _id: 'c6',
+    _id: '6af80ad97196444ae0f96071',
     code: 'IELTS-MASTER',
     title: 'IELTS Master',
     description: 'Hoàn thiện năng lực ngôn ngữ, tối ưu chiến thuật và nâng cao độ chính xác theo tiêu chí chấm thi IELTS.',
@@ -323,7 +323,7 @@ const HomePage: React.FC = () => {
                   marginBottom: '0.5rem',
                 }}
               >
-                <span>🎯</span>
+
                 <span>HỆ THỐNG KHẢO THÍ CHUẨN QUỐC TẾ</span>
               </div>
               <h2 style={{ fontFamily: 'var(--font-beanbag)', fontSize: '2rem', fontWeight: 900, color: '#07403F', margin: 0 }}>
@@ -374,7 +374,7 @@ const HomePage: React.FC = () => {
                   <span style={{ backgroundColor: '#ecfdf5', color: '#047857', fontSize: '0.75rem', fontWeight: 800, padding: '3px 8px', borderRadius: '6px' }}>
                     Band 0.0 - 5.5
                   </span>
-                  <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>⏱️ 30 phút • 25 câu</span>
+                  <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}> 30 phút • 25 câu</span>
                 </div>
                 <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>
                   IELTS Diagnostic Test - Ngữ Pháp &amp; Từ Vựng
@@ -420,7 +420,7 @@ const HomePage: React.FC = () => {
                   <span style={{ backgroundColor: '#059669', color: '#ffffff', fontSize: '0.75rem', fontWeight: 800, padding: '3px 8px', borderRadius: '6px' }}>
                     Band 5.0 - 7.5+ • ĐỀ THI THẬT
                   </span>
-                  <span style={{ fontSize: '0.8rem', color: '#047857', fontWeight: 700 }}>⏱️ 40 phút • 28 câu</span>
+                  <span style={{ fontSize: '0.8rem', color: '#047857', fontWeight: 700 }}> 40 phút • 28 câu</span>
                 </div>
                 <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.15rem', fontWeight: 800, color: '#064e3b' }}>
                   IELTS Academic Reading - Đọc Hiểu Thực Chiến
@@ -466,7 +466,7 @@ const HomePage: React.FC = () => {
                   <span style={{ backgroundColor: '#fef3c7', color: '#b45309', fontSize: '0.75rem', fontWeight: 800, padding: '3px 8px', borderRadius: '6px' }}>
                     Band 4.5 - 8.5+ • DỰ ĐOÁN TOÀN DIỆN
                   </span>
-                  <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>⏱️ 45 phút • 30 câu</span>
+                  <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}> 45 phút • 30 câu</span>
                 </div>
                 <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>
                   IELTS Comprehensive Band Predictor
@@ -679,7 +679,7 @@ const HomePage: React.FC = () => {
                     </div>
 
                     <Link
-                      to="/courses"
+                      to={`/courses?courseId=${course._id}&level=${encodeURIComponent(course.entryLevel)}`}
                       style={{
                         padding: '0.55rem 1.15rem',
                         borderRadius: '8px',
@@ -763,7 +763,7 @@ const HomePage: React.FC = () => {
       {/* Floating Action Buttons */}
       <div className="dmr-floating-actions">
         <Link to="/courses" className="dmr-fab-btn dmr-fab-test" title="Làm bài thi thử IELTS">
-          📝
+          Thi thử
         </Link>
         <a
           href="https://m.me/educenter"
@@ -772,7 +772,7 @@ const HomePage: React.FC = () => {
           className="dmr-fab-btn dmr-fab-chat"
           title="Tư vấn lộ trình IELTS 24/7"
         >
-          💬
+          Tư vấn
         </a>
       </div>
     </div>

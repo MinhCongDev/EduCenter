@@ -141,13 +141,13 @@ const SchedulePage: React.FC = () => {
           ← Chi Tiết Lớp
         </Link>
         <Link to={`/student/classes/${id}/assignments`} className="dash-quick-btn" style={{ textDecoration: 'none' }}>
-          📝 Bài Tập
+           Bài Tập
         </Link>
         <Link to={`/student/classes/${id}/attendance`} className="dash-quick-btn" style={{ textDecoration: 'none' }}>
-          📅 Điểm Danh
+           Điểm Danh
         </Link>
         <Link to={`/student/classes/${id}/grades`} className="dash-quick-btn" style={{ textDecoration: 'none' }}>
-          📊 Bảng Điểm
+           Bảng Điểm
         </Link>
       </div>
 

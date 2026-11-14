@@ -146,6 +146,24 @@ export const CoursesPage: React.FC = () => {
     }
   };
 
+  const handleCloseDetail = () => {
+    setSelectedCourse(null);
+    setRegistrationNotice(null);
+    if (searchParams.has('courseId')) {
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('courseId');
+      setSearchParams(newParams, { replace: true });
+    }
+  };
+
+  // Tự động mở chi tiết khóa học nếu có courseId trên URL query
+  useEffect(() => {
+    const courseIdParam = searchParams.get('courseId');
+    if (courseIdParam) {
+      handleOpenDetail(courseIdParam);
+    }
+  }, [searchParams]);
+
   const handleResetFilters = () => {
     setSearch('');
     setSelectedLevel('ALL');
@@ -746,7 +764,7 @@ export const CoursesPage: React.FC = () => {
       <CourseDetailModal
         course={selectedCourse}
         isOpen={Boolean(selectedCourse)}
-        onClose={() => setSelectedCourse(null)}
+        onClose={handleCloseDetail}
         onEnrollClass={handleEnroll}
         enrollingClassId={enrollingClassId}
         registrationNotice={registrationNotice}

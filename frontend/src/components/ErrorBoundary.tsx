@@ -129,7 +129,7 @@ export class ErrorBoundary extends Component<Props, State> {
                   transition: 'background-color 0.2s',
                 }}
               >
-                🔄 Tải lại trang
+                 Tải lại trang
               </button>
               <button
                 type="button"
@@ -145,7 +145,7 @@ export class ErrorBoundary extends Component<Props, State> {
                   cursor: 'pointer',
                 }}
               >
-                🚪 Đăng xuất & Đăng nhập lại
+                 Đăng xuất & Đăng nhập lại
               </button>
             </div>
           </div>

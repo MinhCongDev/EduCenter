@@ -109,14 +109,14 @@ const AssignmentsPage: React.FC = () => {
 
   const skillOptions: { value: string; label: string }[] = [
     { value: 'ALL', label: 'Tất cả kỹ năng' },
-    { value: 'LISTENING', label: '🎧 Listening' },
-    { value: 'READING', label: '📖 Reading' },
-    { value: 'WRITING', label: '✍️ Writing' },
-    { value: 'SPEAKING', label: '🎤 Speaking' },
-    { value: 'OVERALL', label: '📚 Overall' },
-    { value: 'VOCABULARY', label: '📝 Vocabulary' },
-    { value: 'GRAMMAR', label: '🔤 Grammar' },
-    { value: 'OTHER', label: '📌 Khác' },
+    { value: 'LISTENING', label: 'Listening' },
+    { value: 'READING', label: 'Reading' },
+    { value: 'WRITING', label: 'Writing' },
+    { value: 'SPEAKING', label: 'Speaking' },
+    { value: 'OVERALL', label: 'Overall' },
+    { value: 'VOCABULARY', label: 'Vocabulary' },
+    { value: 'GRAMMAR', label: 'Grammar' },
+    { value: 'OTHER', label: 'Khác' },
   ];
 
   const tabs: { key: FilterKey; label: string; count: number }[] = [
@@ -161,10 +161,10 @@ const AssignmentsPage: React.FC = () => {
           ← Chi Tiết Lớp
         </Link>
         <Link to={`/student/classes/${id}/attendance`} className="dash-quick-btn" style={{ textDecoration: 'none' }}>
-          📅 Điểm Danh
+           Điểm Danh
         </Link>
         <Link to={`/student/classes/${id}/grades`} className="dash-quick-btn" style={{ textDecoration: 'none' }}>
-          📊 Bảng Điểm
+           Bảng Điểm
         </Link>
       </div>
 
@@ -220,7 +220,7 @@ const AssignmentsPage: React.FC = () => {
           >
             <input
               type="text"
-              placeholder="🔍 Tìm theo tiêu đề, mô tả..."
+              placeholder=" Tìm theo tiêu đề, mô tả..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               style={{
@@ -348,7 +348,7 @@ const AssignmentsPage: React.FC = () => {
 
                   {!a.submissionStatus ? (
                     <Button variant="primary" onClick={() => openSubmitModal(a._id)}>
-                      📤 Nộp bài ngay
+                       Nộp bài ngay
                     </Button>
                   ) : (
                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -362,7 +362,7 @@ const AssignmentsPage: React.FC = () => {
                           size="sm"
                           onClick={() => openSubmitModal(a._id)}
                         >
-                          🔄 Nộp lại
+                           Nộp lại
                         </Button>
                       )}
                     </div>
@@ -390,7 +390,6 @@ const AssignmentsPage: React.FC = () => {
               variant="primary"
               onClick={handleSubmit}
               loading={submitting}
-              icon="📤"
             >
               Xác nhận nộp
             </Button>
