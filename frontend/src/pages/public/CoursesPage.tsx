@@ -141,6 +141,24 @@ export const CoursesPage: React.FC = () => {
     }
   };
 
+  const handleCloseDetail = () => {
+    setSelectedCourse(null);
+    setRegistrationNotice(null);
+    if (searchParams.has('courseId')) {
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('courseId');
+      setSearchParams(newParams, { replace: true });
+    }
+  };
+
+  // Tự động mở chi tiết khóa học nếu có courseId trên URL query
+  useEffect(() => {
+    const courseIdParam = searchParams.get('courseId');
+    if (courseIdParam) {
+      handleOpenDetail(courseIdParam);
+    }
+  }, [searchParams]);
+
   const handleResetFilters = () => {
     setSearch('');
     setSelectedLevel('ALL');
@@ -754,7 +772,7 @@ export const CoursesPage: React.FC = () => {
             padding: '1rem',
             backdropFilter: 'blur(3px)',
           }}
-          onClick={() => setSelectedCourse(null)}
+          onClick={handleCloseDetail}
         >
           <div
             style={{
@@ -781,7 +799,7 @@ export const CoursesPage: React.FC = () => {
               }}
             >
               <button
-                onClick={() => setSelectedCourse(null)}
+                onClick={handleCloseDetail}
                 style={{
                   position: 'absolute',
                   top: '16px',
@@ -984,7 +1002,7 @@ export const CoursesPage: React.FC = () => {
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
                   <button
                     type="button"
-                    onClick={() => setSelectedCourse(null)}
+                    onClick={handleCloseDetail}
                     style={{
                       padding: '0.65rem 1.25rem',
                       borderRadius: '8px',
