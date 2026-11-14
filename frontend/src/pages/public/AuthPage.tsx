@@ -42,7 +42,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
 
   // ── Login State ────────────────────────────────────────────────────────
   const stateData = location.state as { from?: { pathname: string }; message?: string } | null;
-  const from = stateData?.from?.pathname || null;
+  const from = stateData?.from?.pathname || (location.state as any)?.redirect || null;
   const initialSuccessMessage = stateData?.message || null;
 
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
@@ -112,7 +112,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
       }
     }
 
-    navigate(targetPath, { replace: true });
+    const passedCourse = (location.state as any)?.course;
+    navigate(targetPath, { state: passedCourse ? { course: passedCourse } : undefined, replace: true });
   };
 
   const handleLoginSubmit = async (e: React.FormEvent<HTMLFormElement>) => {

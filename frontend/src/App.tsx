@@ -308,6 +308,36 @@ const AppRouter: React.FC = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/student/attendance"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <DashboardLayout>
+                <AttendancePage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/grades"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <DashboardLayout>
+                <GradesPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/announcements"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <DashboardLayout>
+                <AnnouncementsPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
         {/* ── Teacher Routes ───────────────────────── */}
         <Route
           path="/teacher/dashboard"

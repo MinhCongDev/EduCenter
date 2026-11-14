@@ -377,32 +377,49 @@ export const submitPlacementTest = async (
     const totalQuestions = test.questions.length || 1;
     const scorePercentage = Math.round((correctCount / totalQuestions) * 100);
 
-    // Tính toán Band điểm dự đoán dựa trên tỉ lệ đúng
-    let predictedBand = 4.0;
-    let bandRange = '4.0 - 4.5';
-    let levelName = 'Mất gốc / Nền tảng cơ bản';
-    let summaryFeedback = 'Bạn cần củng cố lại ngữ pháp trọng tâm và mở rộng vốn từ vựng học thuật.';
+    // Tính toán Band điểm dự đoán và phân loại trình độ theo chuẩn khảo thí EduCenter
+    let predictedBand = 2.5;
+    let bandRange = '0 - 3.5';
+    let matchedLevel = '0 - 3.5';
+    let levelName = 'Mất gốc (0 - 3.5)';
+    let summaryFeedback =
+      'Kết quả phản ánh bạn đang bị mất gốc tiếng Anh hoặc chưa tiếp cận ngữ âm & ngữ pháp căn bản. Khóa học Mất gốc & Phát âm chuẩn sẽ giúp bạn xây lại nền móng vững chắc.';
 
     if (scorePercentage >= 90) {
-      predictedBand = 7.5;
-      bandRange = '7.5 - 8.5+';
-      levelName = 'Xuất sắc / Chuẩn cựu giám khảo';
-      summaryFeedback = 'Khả năng ngôn ngữ học thuật rất tốt, phản xạ chính xác các dạng bẫy phức tạp.';
+      predictedBand = 8.0;
+      bandRange = '8.0+';
+      matchedLevel = '8.0+';
+      levelName = 'Master (8.0+)';
+      summaryFeedback =
+        'Khả năng ngôn ngữ học thuật xuất sắc, tư duy phản biện sắc bén và độ chính xác gần như tuyệt đối.';
     } else if (scorePercentage >= 75) {
       predictedBand = 6.5;
-      bandRange = '6.5 - 7.5';
-      levelName = 'Khá giỏi / Sẵn sàng thi thật';
-      summaryFeedback = 'Nắm vững kiến thức cốt lõi, cần luyện tập chuyên sâu giải đề áp lực thời gian.';
+      bandRange = '6.5 - 7.5+';
+      matchedLevel = '6.5 - 7.5+';
+      levelName = 'Chuyên sâu (6.5 - 7.5+)';
+      summaryFeedback =
+        'Nắm vững kiến thức cốt lõi, cần luyện tập chuyên sâu giải đề áp lực thời gian và tối ưu hóa bài viết.';
     } else if (scorePercentage >= 55) {
       predictedBand = 5.5;
-      bandRange = '5.0 - 6.0';
-      levelName = 'Trung cấp / Đang phát triển';
-      summaryFeedback = 'Đã có nền tảng đọc hiểu tương đối, cần chú ý các cấu trúc ngữ pháp đảo ngữ và từ đồng nghĩa.';
+      bandRange = '5.5 - 6.5';
+      matchedLevel = '5.5 - 6.5';
+      levelName = 'Bứt phá (5.5 - 6.5)';
+      summaryFeedback =
+        'Đã có nền tảng đọc hiểu tương đối tốt, cần chú ý các cấu trúc câu phức và từ vựng học thuật theo chủ đề.';
     } else if (scorePercentage >= 35) {
       predictedBand = 4.5;
-      bandRange = '4.5 - 5.0';
-      levelName = 'Sơ cấp / Nền tảng';
-      summaryFeedback = 'Cần luyện tập thêm phương pháp Skimming / Scanning và phát hiện từ khóa trong bài đọc.';
+      bandRange = '4.5 - 5.5';
+      matchedLevel = '4.5 - 5.5';
+      levelName = 'Foundation (4.5 - 5.5)';
+      summaryFeedback =
+        'Bạn đã có nền tảng cơ bản nhưng cần củng cố thêm chiến thuật làm bài, kỹ năng Skimming/Scanning và ngữ pháp trọng tâm.';
+    } else if (scorePercentage >= 20) {
+      predictedBand = 3.5;
+      bandRange = '3.5 - 4.5';
+      matchedLevel = '3.5 - 4.5';
+      levelName = 'Pre-IELTS (3.5 - 4.5)';
+      summaryFeedback =
+        'Bạn nhận biết được một số từ vựng căn bản nhưng chưa quen với format đề thi IELTS chuẩn. Khóa học Pre-IELTS là bước khởi đầu phù hợp.';
     }
 
     const skillBreakdown = Object.entries(skillStats).map(([skill, stats]) => ({
@@ -412,19 +429,71 @@ export const submitPlacementTest = async (
       percentage: stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0,
     }));
 
-    // Gợi ý khóa học phù hợp từ database
-    const courseDoc: any = test.course;
+    // Gợi ý khóa học phù hợp trực tiếp từ database MongoDB theo trình độ vừa đạt được
+    const escapedMatchedLevel = escapeRegex(matchedLevel);
+    const matchedCourses = await Course.find({
+      status: { $ne: 'INACTIVE' },
+      $or: [
+        { entryLevel: new RegExp(escapedMatchedLevel, 'i') },
+        { targetLevel: new RegExp(escapedMatchedLevel, 'i') },
+        { title: new RegExp(escapedMatchedLevel, 'i') },
+      ],
+    })
+      .sort({ featured: -1, tuitionFee: 1 })
+      .lean();
+
+    // Chọn khóa học chính: ưu tiên khóa học có entryLevel khớp với matchedLevel
+    let primaryDoc: any =
+      matchedCourses.find((c: any) => c.entryLevel === matchedLevel) ||
+      matchedCourses[0];
+
+    // Fallback nếu chưa tìm thấy khóa học trong DB
+    if (!primaryDoc) {
+      primaryDoc = (test.course as any) || (await Course.findOne({ status: 'ACTIVE' }).lean());
+    }
+
     const primaryCourse = {
-      code: courseDoc?.code || 'IELTS-PRE',
-      title: courseDoc?.title || 'IELTS Pre - Làm Quen Format Đề Thi Chuẩn',
-      targetLevel: courseDoc?.targetLevel || bandRange,
-      tuitionFee: courseDoc?.tuitionFee || 5800000,
-      durationWeeks: 10,
-      badge: 'ĐỀ XUẤT TỐI ƯU',
-      description: courseDoc?.description || 'Khóa học được thiết kế sát với năng lực chẩn đoán hiện tại của bạn.',
-      whyRecommended: `Phù hợp với kết quả bài test đạt ${scorePercentage}% (Band ${predictedBand}).`,
-      highlights: ['Giáo viên bản ngữ và 8.5+ IELTS trực tiếp đứng lớp', 'Cam kết chuẩn đầu ra bằng văn bản', 'Lớp học sĩ số nhỏ tương tác cao'],
+      _id: primaryDoc?._id?.toString() || '',
+      code: primaryDoc?.code || `IELTS-${matchedLevel.replace(/[^a-zA-Z0-9]/g, '')}`,
+      title: primaryDoc?.title || `IELTS Khóa Học Trình Độ ${levelName}`,
+      targetLevel: primaryDoc?.targetLevel || bandRange,
+      entryLevel: primaryDoc?.entryLevel || matchedLevel,
+      tuitionFee: primaryDoc?.tuitionFee || 6500000,
+      durationWeeks: Math.max(8, Math.ceil((primaryDoc?.sessions || 30) / 3)),
+      sessions: primaryDoc?.sessions || 30,
+      badge: 'ĐỀ XUẤT TỐI ƯU NHẤT CHO BẠN',
+      description:
+        primaryDoc?.description ||
+        `Khóa học được thiết kế sát với kết quả khảo thí Band ${predictedBand} (${levelName}) của bạn.`,
+      whyRecommended: `Phù hợp chính xác với kết quả bài test đạt ${scorePercentage}% (Dự đoán Band ${predictedBand}). Lộ trình được thiết kế chuẩn theo trình độ ${levelName}.`,
+      highlights:
+        primaryDoc?.learningObjectives && primaryDoc.learningObjectives.length > 0
+          ? primaryDoc.learningObjectives.slice(0, 4)
+          : [
+              'Giáo viên bản ngữ và 8.5+ IELTS trực tiếp đứng lớp',
+              'Cam kết chuẩn đầu ra bằng văn bản',
+              'Lớp học sĩ số nhỏ tương tác cao',
+              'Lộ trình được thiết kế cá nhân hóa theo barem IDP & British Council',
+            ],
     };
+
+    // Các khóa học bổ trợ / lựa chọn khác cùng tầm điểm
+    const secondaryCourses = matchedCourses
+      .filter((c: any) => c._id.toString() !== primaryDoc?._id?.toString())
+      .map((c: any) => ({
+        _id: c._id.toString(),
+        code: c.code,
+        title: c.title,
+        targetLevel: c.targetLevel,
+        entryLevel: c.entryLevel,
+        tuitionFee: c.tuitionFee,
+        durationWeeks: Math.max(8, Math.ceil((c.sessions || 30) / 3)),
+        sessions: c.sessions,
+        badge: 'LỰA CHỌN PHÙ HỢP CÙNG TRÌNH ĐỘ',
+        description: c.description,
+        whyRecommended: `Khóa học cùng nhóm năng lực Band ${predictedBand} (${matchedLevel})`,
+        highlights: c.learningObjectives?.slice(0, 3) || ['Giáo trình cập nhật', 'Luyện tập thực chiến'],
+      }));
 
     const submittedAt = new Date();
     const placementResult = {
@@ -471,10 +540,11 @@ export const submitPlacementTest = async (
         scorePercentage,
         predictedBand,
         bandRange,
+        matchedLevel,
         levelName,
         summaryFeedback,
         primaryCourse,
-        secondaryCourses: [],
+        secondaryCourses,
         skillBreakdown,
         detailedResults,
       },

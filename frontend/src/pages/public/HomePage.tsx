@@ -9,7 +9,7 @@ const formatVND = (price: number) => {
 
 const defaultCourses: Course[] = [
   {
-    _id: 'c1',
+    _id: '6af80ad87196444ae0f96040',
     code: 'IELTS-BEGINNER',
     title: 'IELTS Beginner – Mất Gốc',
     description: 'Xây dựng nền tảng từ vựng, ngữ pháp, phát âm và kỹ năng tiếng Anh cơ bản.',
@@ -27,7 +27,7 @@ const defaultCourses: Course[] = [
     updatedAt: '',
   },
   {
-    _id: 'c2',
+    _id: '6af80ad87196444ae0f96047',
     code: 'IELTS-PRE',
     title: 'IELTS Pre',
     description: 'Làm quen cấu trúc đề thi IELTS và phát triển 4 kỹ năng Nghe, Nói, Đọc, Viết.',
@@ -45,7 +45,7 @@ const defaultCourses: Course[] = [
     updatedAt: '',
   },
   {
-    _id: 'c3',
+    _id: '6ad0e51dbba27df34719e8e4',
     code: 'IELTS-FOUNDATION',
     title: 'IELTS Foundation',
     description: 'Củng cố kỹ năng, mở rộng từ vựng và áp dụng chiến thuật làm bài cơ bản.',
@@ -63,7 +63,7 @@ const defaultCourses: Course[] = [
     updatedAt: '',
   },
   {
-    _id: 'c4',
+    _id: '6af80ad87196444ae0f9605c',
     code: 'IELTS-BREAKTHROUGH',
     title: 'IELTS Breakthrough – Bứt Phá',
     description: 'Nâng cao khả năng xử lý đề, luyện đề chuyên sâu và cải thiện band điểm.',
@@ -81,7 +81,7 @@ const defaultCourses: Course[] = [
     updatedAt: '',
   },
   {
-    _id: 'c5',
+    _id: '6ad0e51dbba27df34719e8e5',
     code: 'IELTS-ADVANCED',
     title: 'IELTS Advanced – Chuyên Sâu',
     description: 'Phát triển tư duy học thuật, nâng cao Writing và Speaking, luyện đề chuyên sâu.',
@@ -99,7 +99,7 @@ const defaultCourses: Course[] = [
     updatedAt: '',
   },
   {
-    _id: 'c6',
+    _id: '6af80ad97196444ae0f96071',
     code: 'IELTS-MASTER',
     title: 'IELTS Master',
     description: 'Hoàn thiện năng lực ngôn ngữ, tối ưu chiến thuật và nâng cao độ chính xác theo tiêu chí chấm thi IELTS.',
@@ -679,7 +679,7 @@ const HomePage: React.FC = () => {
                     </div>
 
                     <Link
-                      to="/courses"
+                      to={`/courses?courseId=${course._id}&level=${encodeURIComponent(course.entryLevel)}`}
                       style={{
                         padding: '0.55rem 1.15rem',
                         borderRadius: '8px',

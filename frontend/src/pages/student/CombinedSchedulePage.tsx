@@ -184,7 +184,12 @@ const CombinedSchedulePage: React.FC = () => {
         <EmptyState
           icon="📅"
           title="Chưa có lịch học"
-          description="Các lớp của bạn chưa được xếp lịch cố định. Vui lòng liên hệ trung tâm."
+          description="Hiện tại bạn chưa có lịch học nào. Nếu bạn vừa đăng ký khóa học mới, nhân viên giáo vụ (Staff) đang tiến hành xếp lớp học phù hợp cho bạn."
+          action={
+            <Link to="/student/classes" className="dash-quick-btn primary" style={{ textDecoration: 'none' }}>
+              📚 Xem khóa học của tôi
+            </Link>
+          }
         />
       ) : (
         <div className="dash-card" style={{ padding: 0, overflow: 'hidden' }}>

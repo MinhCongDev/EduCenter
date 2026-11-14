@@ -131,41 +131,66 @@ export const getMyClasses = async (req: AuthRequest, res: Response): Promise<voi
       student: user._id,
       status: { $ne: 'DROPPED' },
     })
+      .populate('course', 'code title description durationWeeks sessions tuitionFee level format')
       .populate({
         path: 'class',
         populate: [
-          { path: 'course', select: 'code title description durationWeeks sessions tuitionFee' },
+          { path: 'course', select: 'code title description durationWeeks sessions tuitionFee level format' },
           { path: 'teacher', select: 'fullName email phone avatarUrl' },
         ],
       })
       .sort({ createdAt: -1 });
 
-    const classes = enrollments
-      .filter((e: any) => e.class)
-      .map((e: any) => ({
+    const classes = enrollments.map((e: any) => {
+      const cls = e.class;
+      const course = cls?.course || e.course;
+      const isPendingClass = !cls || e.status === 'PENDING';
+
+      return {
         _id: e._id.toString(),
         enrollmentId: e._id.toString(),
-        class: {
-          _id: e.class._id,
-          classCode: e.class.classCode,
-          room: e.class.room,
-          scheduleDays: e.class.scheduleDays,
-          timeSlot: e.class.timeSlot,
-          startDate: e.class.startDate,
-          endDate: e.class.endDate,
-          capacity: e.class.capacity,
-          currentStudents: e.class.currentEnrollment ?? e.class.currentStudents ?? 0,
-          currentEnrollment: e.class.currentEnrollment ?? e.class.currentStudents ?? 0,
-          sessions: e.class.sessions,
-          status: e.class.status,
-          course: e.class.course,
-          teacher: e.class.teacher,
-        },
-        status: e.status,
-        enrollmentStatus: e.status,
+        isPendingClass,
+        class: cls
+          ? {
+              _id: cls._id,
+              classCode: cls.classCode,
+              room: cls.room,
+              scheduleDays: cls.scheduleDays,
+              timeSlot: cls.timeSlot,
+              startDate: cls.startDate,
+              endDate: cls.endDate,
+              capacity: cls.capacity,
+              currentStudents: cls.currentEnrollment ?? cls.currentStudents ?? 0,
+              currentEnrollment: cls.currentEnrollment ?? cls.currentStudents ?? 0,
+              sessions: cls.sessions,
+              status: cls.status,
+              course: cls.course || course,
+              teacher: cls.teacher,
+            }
+          : {
+              _id: '',
+              classCode: 'Chưa xếp lớp',
+              room: 'Đang xếp phòng',
+              scheduleDays: [],
+              timeSlot: 'Đang xếp ca',
+              startDate: null,
+              endDate: null,
+              capacity: 0,
+              currentStudents: 0,
+              currentEnrollment: 0,
+              sessions: course?.sessions || 0,
+              status: 'PENDING_CLASS',
+              course: course,
+              teacher: null,
+            },
+        course: course,
+        status: isPendingClass ? 'PENDING' : e.status,
+        enrollmentStatus: isPendingClass ? 'PENDING' : e.status,
         tuitionStatus: e.tuitionStatus,
         enrollmentDate: e.enrollmentDate,
-      }));
+        registrationDate: e.registrationDate || e.enrollmentDate,
+      };
+    });
 
     res.json({
       success: true,
@@ -1138,10 +1163,11 @@ export const getDashboard = async (req: AuthRequest, res: Response): Promise<voi
 
     const [enrollments, payments, requests] = await Promise.all([
       Enrollment.find({ student: user._id, status: { $ne: 'DROPPED' } })
+        .populate('course', 'code title tuitionFee durationWeeks sessions level')
         .populate({
           path: 'class',
           populate: [
-            { path: 'course', select: 'code title' },
+            { path: 'course', select: 'code title tuitionFee durationWeeks sessions level' },
             { path: 'teacher', select: 'fullName email' },
           ],
         })
@@ -1202,16 +1228,28 @@ export const getDashboard = async (req: AuthRequest, res: Response): Promise<voi
               enrollmentDate: (currentClass as any).enrollmentDate,
             }
           : null,
-        myClasses: enrollments
-          .filter((e: any) => e.class)
-          .map((e: any) => ({
+        myClasses: enrollments.map((e: any) => {
+          const cls = e.class;
+          const course = cls?.course || e.course;
+          const isPendingClass = !cls || e.status === 'PENDING';
+          return {
             _id: e._id,
             enrollmentId: e._id,
-            class: e.class,
-            status: e.status,
+            isPendingClass,
+            class: cls
+              ? e.class
+              : {
+                  _id: '',
+                  classCode: 'Chưa xếp lớp',
+                  course,
+                  teacher: null,
+                },
+            course,
+            status: isPendingClass ? 'PENDING' : e.status,
             tuitionStatus: e.tuitionStatus,
             enrollmentDate: e.enrollmentDate,
-          })),
+          };
+        }),
       },
     });
   } catch (error: any) {

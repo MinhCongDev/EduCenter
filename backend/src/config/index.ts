@@ -70,4 +70,14 @@ export const config = {
     url: process.env.PAYMENT_GATEWAY_URL || 'http://localhost:5001/mock-gateway',
     secret: process.env.PAYMENT_GATEWAY_SECRET || 'mock_payment_secret',
   },
+
+  // PayOS Payment Gateway
+  payos: {
+    clientId: process.env.PAYOS_CLIENT_ID || '',
+    apiKey: process.env.PAYOS_API_KEY || '',
+    checksumKey: process.env.PAYOS_CHECKSUM_KEY || '',
+  },
+  isPayOSConfigured: Boolean(
+    process.env.PAYOS_CLIENT_ID && process.env.PAYOS_API_KEY && process.env.PAYOS_CHECKSUM_KEY
+  ),
 } as const;

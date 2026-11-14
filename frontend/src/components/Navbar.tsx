@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import NotificationBell from './NotificationBell';
 import type { UserRole } from '../types';
 import { ProfileModal } from './ProfileModal';
 import { ChangePasswordModal } from './ChangePasswordModal';
@@ -165,60 +164,49 @@ const Navbar: React.FC = () => {
 
         {/* Right Action Widgets */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
-          {/* Cart Icon: Only display for guest or students */}
-          {(!isAuthenticated || user?.role === 'STUDENT') && (
-            <Link to="/courses" className="dmr-store-btn" title="Cửa hàng khóa học IELTS">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-                <circle cx="10" cy="21" r="1.5" />
-                <circle cx="19" cy="21" r="1.5" />
-              </svg>
-            </Link>
-          )}
-
           {/* Auth Section */}
           {isAuthenticated && user ? (
             <div style={{ position: 'relative' }}>
-              {/* Notification bell — chỉ dành cho học viên */}
-              {user.role === 'STUDENT' && <NotificationBell />}
-
               <div
                 className="dmr-user-pill"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
-                  padding: '4px 10px 4px 6px',
+                  padding: '4px 8px 4px 6px',
                   backgroundColor: 'rgba(255, 255, 255, 0.14)',
                   borderRadius: '30px',
                   border: '1px solid rgba(255, 255, 255, 0.22)',
+                  maxWidth: '340px',
+                  boxSizing: 'border-box',
                 }}
               >
                 {/* Clickable user profile trigger */}
                 <div
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', minWidth: 0 }}
                   title="Nhấp để mở menu tài khoản"
                 >
-                  <div className="dmr-user-avatar">
+                  <div className="dmr-user-avatar" style={{ flexShrink: 0 }}>
                     {user.fullName.charAt(0).toUpperCase()}
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                     <span
                       style={{
                         fontSize: '0.85rem',
                         fontWeight: 700,
-                        lineHeight: 1.1,
-                        maxWidth: '120px',
+                        lineHeight: 1.2,
+                        maxWidth: '170px',
                         whiteSpace: 'nowrap',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
+                        display: 'block',
                       }}
                       title={user.fullName}
                     >
                       {user.fullName}
                     </span>
-                    <span style={{ fontSize: '0.68rem', color: '#A0EC1D' }}>
+                    <span style={{ fontSize: '0.68rem', color: '#A0EC1D', lineHeight: 1 }}>
                       {user.role} ▾
                     </span>
                   </div>
@@ -236,12 +224,14 @@ const Navbar: React.FC = () => {
                     fontSize: '0.78rem',
                     cursor: 'pointer',
                     fontWeight: 700,
-                    padding: '4px 10px',
+                    padding: '4px 8px',
                     borderRadius: '16px',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '4px',
-                    marginLeft: '4px',
+                    marginLeft: '2px',
+                    flexShrink: 0,
+                    whiteSpace: 'nowrap',
                     transition: 'all 0.15s ease',
                   }}
                   onMouseEnter={(e) => {
