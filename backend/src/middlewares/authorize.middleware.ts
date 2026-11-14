@@ -13,7 +13,12 @@ export const authorize = (...roles: string[]) => {
       return;
     }
 
-    if (!roles.includes(req.user.role)) {
+    const userRole = req.user.role as string;
+    const isAllowed =
+      roles.includes(userRole) ||
+      (userRole === 'ADMIN' && (roles.includes('DIRECTOR') || roles.includes('ADMIN') || roles.includes('TRAINING_STAFF')));
+
+    if (!isAllowed) {
       res.status(403).json({
         success: false,
         message: 'Bạn không có quyền thực hiện hành động này',

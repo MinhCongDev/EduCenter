@@ -12,6 +12,7 @@ const getDashboardPath = (role: UserRole): string => {
     TEACHER: '/teacher/dashboard',
     TRAINING_STAFF: '/staff/dashboard',
     DIRECTOR: '/director/dashboard',
+    ADMIN: '/director/dashboard',
   };
   return paths[role] || '/';
 };
@@ -335,7 +336,7 @@ const Navbar: React.FC = () => {
                               ? '/teacher/profile'
                               : user.role === 'TRAINING_STAFF'
                               ? '/staff/profile'
-                              : user.role === 'DIRECTOR'
+                              : user.role === 'DIRECTOR' || user.role === 'ADMIN'
                               ? '/director/profile'
                               : '/student/profile';
                           navigate(profilePath);

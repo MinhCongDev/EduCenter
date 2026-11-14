@@ -588,7 +588,7 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
     } else if (req.user.role === 'TEACHER') {
       const teacherDoc = await Teacher.findOne({ user: req.user._id }).lean();
       teacherProfile = teacherDoc;
-    } else if (req.user.role === 'TRAINING_STAFF' || req.user.role === 'DIRECTOR') {
+    } else if (req.user.role === 'TRAINING_STAFF' || req.user.role === 'DIRECTOR' || req.user.role === 'ADMIN') {
       const staffDoc = await Staff.findOne({ user: req.user._id }).lean();
       staffProfile = staffDoc;
     }

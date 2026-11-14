@@ -75,7 +75,7 @@ export const optionalAuthenticate = async (req: AuthRequest, _res: Response, nex
 /**
  * Role-based access control (RBAC) middleware
  */
-export const authorize = (...roles: UserRole[]) => {
+export const authorize = (...roles: (UserRole | string)[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction): void => {
     if (!req.user) {
       res.status(401).json({
@@ -85,7 +85,12 @@ export const authorize = (...roles: UserRole[]) => {
       return;
     }
 
-    if (!roles.includes(req.user.role)) {
+    const userRole = req.user.role as string;
+    const isAllowed =
+      roles.includes(userRole as any) ||
+      (userRole === 'ADMIN' && (roles.includes('DIRECTOR') || roles.includes('ADMIN') || roles.includes('TRAINING_STAFF')));
+
+    if (!isAllowed) {
       res.status(403).json({
         success: false,
         message: 'Bạn không có quyền thực hiện hành động này',

@@ -88,10 +88,11 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
     }
 
     const dashboardPaths: Record<string, string> = {
-      STUDENT: '/student/dashboard',
+      STUDENT: '/',
       TEACHER: '/teacher/dashboard',
       TRAINING_STAFF: '/staff/dashboard',
       DIRECTOR: '/director/dashboard',
+      ADMIN: '/director/dashboard',
     };
 
     const rolePrefixes: Record<string, string> = {
@@ -99,6 +100,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
       TEACHER: '/teacher',
       TRAINING_STAFF: '/staff',
       DIRECTOR: '/director',
+      ADMIN: '/director',
     };
 
     let targetPath = dashboardPaths[storedUser.role] || '/';
