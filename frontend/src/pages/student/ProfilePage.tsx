@@ -192,11 +192,10 @@ export const ProfilePage: React.FC = () => {
 
   // Role metadata
   const roleBadgeMap: Record<string, { badge: string; icon: string; idLabel: string; bg: string; color: string }> = {
-    STUDENT: { badge: 'Học viên', icon: '🎓', idLabel: 'Mã học viên', bg: '#eaf7ef', color: '#27804a' },
-    TEACHER: { badge: 'Giảng viên IELTS', icon: '👨‍🏫', idLabel: 'Mã giảng viên', bg: '#eff6ff', color: '#1d4ed8' },
-    TRAINING_STAFF: { badge: 'Giáo vụ đào tạo', icon: '📋', idLabel: 'Mã nhân sự', bg: '#fef3c7', color: '#b45309' },
+    STUDENT: { badge: 'Học viên', icon: '', idLabel: 'Mã học viên', bg: '#eaf7ef', color: '#27804a' },
+    TEACHER: { badge: 'Giảng viên IELTS', icon: '', idLabel: 'Mã giảng viên', bg: '#eff6ff', color: '#1d4ed8' },
+    TRAINING_STAFF: { badge: 'Giáo vụ đào tạo', icon: '', idLabel: 'Mã nhân sự', bg: '#fef3c7', color: '#b45309' },
     DIRECTOR: { badge: 'Ban giám đốc', icon: '🏛️', idLabel: 'Mã quản trị', bg: '#f3e8ff', color: '#7e22ce' },
-    ADMIN: { badge: 'Ban giám đốc (Admin)', icon: '🏛️', idLabel: 'Mã quản trị', bg: '#f3e8ff', color: '#7e22ce' },
   };
 
   const currentRoleInfo = roleBadgeMap[role] || roleBadgeMap.STUDENT;
@@ -205,15 +204,15 @@ export const ProfilePage: React.FC = () => {
     role === 'STUDENT'
       ? student?.studentCode || user?.studentProfile?.studentCode || 'HV'
       : role === 'TEACHER'
-        ? user?.teacherProfile?.teacherCode || 'GV'
-        : user?.staffProfile?.staffCode || (role === 'DIRECTOR' || role === 'ADMIN' ? 'BGD' : 'NV');
+      ? user?.teacherProfile?.teacherCode || 'GV'
+      : user?.staffProfile?.staffCode || (role === 'DIRECTOR' ? 'BGD' : 'NV');
 
   const statusLabel =
     user?.status === 'ACTIVE'
       ? 'Đang hoạt động'
       : user?.status === 'INACTIVE'
-        ? 'Ngừng hoạt động'
-        : 'Đang hoạt động';
+      ? 'Ngừng hoạt động'
+      : 'Đang hoạt động';
 
   return (
     <div className="dash-container profile-page">
@@ -275,8 +274,8 @@ export const ProfilePage: React.FC = () => {
                   )}
                   <span style={{ position: 'absolute', width: 13, height: 13, right: 3, bottom: 6, borderRadius: '50%', background: '#10b981', border: '2px solid white' }} />
                   {isEditing && (
-                    <button className="profile-avatar-edit" type="button" aria-label="Đổi ảnh đại diện" title="Đổi ảnh đại diện" onClick={() => fileInputRef.current?.click()}>
-                      Đổi ảnh
+                    <button className="profile-avatar-edit" type="button" title="Đổi ảnh đại diện" onClick={() => fileInputRef.current?.click()}>
+                      📷
                     </button>
                   )}
                   <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/gif,image/webp" onChange={handleAvatarFile} disabled={uploadingAvatar} style={{ display: 'none' }} />
@@ -304,7 +303,7 @@ export const ProfilePage: React.FC = () => {
             <div className="profile-card-body">
               {role === 'STUDENT' ? (
                 <>
-                  <h3 className="profile-section-title"><span>🎓</span> Thông tin học tập</h3>
+                  <h3 className="profile-section-title"> Thông tin học tập</h3>
                   <div className="profile-info-row">
                     <span className="profile-info-label">Mã học viên</span>
                     <span className="profile-info-value">{student?.studentCode || user?.studentProfile?.studentCode || '—'}</span>
@@ -334,7 +333,7 @@ export const ProfilePage: React.FC = () => {
                 </>
               ) : role === 'TEACHER' ? (
                 <>
-                  <h3 className="profile-section-title"><span>👨‍🏫</span> Hồ sơ chuyên môn</h3>
+                  <h3 className="profile-section-title"> Hồ sơ chuyên môn</h3>
                   <div className="profile-info-row">
                     <span className="profile-info-label">Mã giảng viên</span>
                     <span className="profile-info-value">{user?.teacherProfile?.teacherCode || 'GV-IELTS'}</span>
@@ -362,18 +361,18 @@ export const ProfilePage: React.FC = () => {
                 </>
               ) : (
                 <>
-                  <h3 className="profile-section-title"><span>📋</span> Thông tin công tác</h3>
+                  <h3 className="profile-section-title"> Thông tin công tác</h3>
                   <div className="profile-info-row">
                     <span className="profile-info-label">Mã nhân sự</span>
-                    <span className="profile-info-value">{user?.staffProfile?.staffCode || (role === 'DIRECTOR' || role === 'ADMIN' ? 'BGD-01' : 'NV-01')}</span>
+                    <span className="profile-info-value">{user?.staffProfile?.staffCode || (role === 'DIRECTOR' ? 'BGD-01' : 'NV-01')}</span>
                   </div>
                   <div className="profile-info-row">
                     <span className="profile-info-label">Phòng ban</span>
-                    <span className="profile-info-value">{user?.staffProfile?.department || (role === 'DIRECTOR' || role === 'ADMIN' ? 'Ban Giám Đốc' : 'Phòng Giáo vụ - Đào tạo')}</span>
+                    <span className="profile-info-value">{user?.staffProfile?.department || (role === 'DIRECTOR' ? 'Ban Giám Đốc' : 'Phòng Giáo vụ - Đào tạo')}</span>
                   </div>
                   <div className="profile-info-row">
                     <span className="profile-info-label">Chức vụ</span>
-                    <span className="profile-info-value">{user?.staffProfile?.position || (role === 'DIRECTOR' || role === 'ADMIN' ? 'Giám đốc trung tâm' : 'Chuyên viên Đào tạo')}</span>
+                    <span className="profile-info-value">{user?.staffProfile?.position || (role === 'DIRECTOR' ? 'Giám đốc trung tâm' : 'Chuyên viên Đào tạo')}</span>
                   </div>
                   <div className="profile-info-row">
                     <span className="profile-info-label">Ngày gia nhập</span>
@@ -401,13 +400,13 @@ export const ProfilePage: React.FC = () => {
             </div>
 
             <form onSubmit={handleSave}>
-              <h3 className="profile-section-title"><span>👤</span> Thông tin cơ bản</h3>
+              <h3 className="profile-section-title"> Thông tin cơ bản</h3>
               <div className="profile-field">
                 <label>Họ và tên *</label>
                 <input type="text" value={form.fullName} onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))} disabled={!isEditing} required placeholder="Nhập họ và tên" />
               </div>
 
-              <h3 className="profile-section-title" style={{ marginTop: 24 }}><span>✉</span> Thông tin liên hệ</h3>
+              <h3 className="profile-section-title" style={{ marginTop: 24 }}> Thông tin liên hệ</h3>
               <div className="profile-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
                 <div className="profile-field">
                   <label>Địa chỉ email</label>
@@ -440,7 +439,7 @@ export const ProfilePage: React.FC = () => {
               {isEditing && (
                 <div className="profile-actions" style={{ borderTop: '1px solid #eeecf1', paddingTop: 20, marginTop: 10 }}>
                   <Button type="button" variant="secondary" onClick={handleCancelEdit} disabled={saving || uploadingAvatar}>Hủy</Button>
-                  <Button type="submit" variant="primary" loading={saving} disabled={uploadingAvatar}>Lưu thay đổi</Button>
+                  <Button type="submit" variant="primary"  loading={saving} disabled={uploadingAvatar}>Lưu thay đổi</Button>
                 </div>
               )}
             </form>
@@ -453,7 +452,7 @@ export const ProfilePage: React.FC = () => {
         <div className="profile-card-body">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
             <div>
-              <h2 style={{ margin: 0, color: '#302a3c', fontSize: 18, fontWeight: 800 }}>🔒 Bảo mật tài khoản</h2>
+              <h2 style={{ margin: 0, color: '#302a3c', fontSize: 18, fontWeight: 800 }}>Bảo mật tài khoản</h2>
               <p style={{ margin: '5px 0 0', color: '#858190', fontSize: 13 }}>Thay đổi mật khẩu đăng nhập định kỳ để tăng cường an toàn tài khoản.</p>
             </div>
             {!showPwd && (
@@ -477,7 +476,7 @@ export const ProfilePage: React.FC = () => {
               </div>
               <div className="profile-actions">
                 <Button type="button" variant="secondary" onClick={() => { setShowPwd(false); setPwdForm({ currentPassword: '', newPassword: '', confirmPassword: '' }); }} disabled={savingPwd}>Hủy</Button>
-                <Button type="submit" variant="primary" loading={savingPwd}>Xác nhận đổi mật khẩu</Button>
+                <Button type="submit" variant="primary"  loading={savingPwd}>Xác nhận đổi mật khẩu</Button>
               </div>
             </form>
           )}

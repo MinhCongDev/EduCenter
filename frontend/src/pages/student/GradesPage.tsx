@@ -116,7 +116,7 @@ const GradesPage: React.FC = () => {
             {avgBand ? (
               <>
                 <div>
-                  🎯 Band hiện tại:{' '}
+                  Band hiện tại:{' '}
                   <strong style={{ color: bandColor(parseFloat(avgBand)) }}>{avgBand}</strong>
                 </div>
                 <div className="sub">{bandLabel(parseFloat(avgBand))}</div>
@@ -197,7 +197,7 @@ const GradesPage: React.FC = () => {
                 {avgBand ? `${withBand.length} bài có band` : 'Chưa có điểm Overall'}
               </span>
             </div>
-            <div className="dash-metric-icon icon-emerald">🏆</div>
+            <div className="dash-metric-icon icon-emerald"></div>
           </div>
           <div className="dash-metric-card">
             <div className="dash-metric-info">
@@ -269,7 +269,7 @@ const GradesPage: React.FC = () => {
                       </span>
                     ) : (
                       <span className="badge-pill badge-blue">
-                        📝 Nhận xét
+                        Nhận xét
                       </span>
                     )}
                   </div>
