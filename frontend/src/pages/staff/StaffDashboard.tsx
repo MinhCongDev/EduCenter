@@ -48,57 +48,6 @@ const StaffDashboard: React.FC = () => {
     fetchStats();
   }, []);
 
-  const statCards = [
-    {
-      id: 'stat-total-courses',
-      icon: '📚',
-      label: 'Tổng khóa học',
-      value: loading ? '…' : stats.totalCourses.toString(),
-      color: 'var(--primary-500)',
-      bg: 'var(--primary-50)',
-    },
-    {
-      id: 'stat-active-courses',
-      icon: '✅',
-      label: 'Đang hoạt động',
-      value: loading ? '…' : stats.activeCourses.toString(),
-      color: 'var(--success)',
-      bg: 'rgba(16,185,129,0.08)',
-    },
-    {
-      id: 'stat-inactive-courses',
-      icon: '⏸️',
-      label: 'Tạm dừng',
-      value: loading ? '…' : stats.inactiveCourses.toString(),
-      color: 'var(--warning)',
-      bg: 'rgba(245,158,11,0.08)',
-    },
-    {
-      id: 'stat-students',
-      icon: '👩‍🎓',
-      label: 'Học viên',
-      value: loading ? '…' : stats.totalStudents.toString(),
-      color: 'var(--accent-500)',
-      bg: 'rgba(6,182,212,0.08)',
-    },
-    {
-      id: 'stat-teachers',
-      icon: '👨‍🏫',
-      label: 'Giảng viên',
-      value: '–',
-      color: 'var(--primary-600)',
-      bg: 'var(--primary-50)',
-    },
-    {
-      id: 'stat-enrollments',
-      icon: '📋',
-      label: 'Đăng ký',
-      value: '–',
-      color: 'var(--info)',
-      bg: 'rgba(59,130,246,0.08)',
-    },
-  ];
-
   // Get greeting based on current hour
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Chào buổi sáng' : hour < 18 ? 'Chào buổi chiều' : 'Chào buổi tối';
@@ -162,7 +111,7 @@ const StaffDashboard: React.FC = () => {
           <div className="dash-card">
             <div className="dash-card-header">
               <h2 className="dash-card-title">
-                <span></span> Tình Trạng Tuyển Sinh Các Lớp Sắp Mở
+                Tình Trạng Tuyển Sinh Các Lớp Sắp Mở
               </h2>
               <span className="dash-subcard-meta">Hạn chót: 28/10/2026</span>
             </div>
