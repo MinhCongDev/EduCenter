@@ -246,6 +246,7 @@ const ProfilePage: React.FC = () => {
                   </Button>
                 )}
               </div>
+
               <h2 style={{ margin: '0 0 5px', color: '#302a3c', fontSize: 20, fontWeight: 800 }}>{form.fullName || 'Học viên'}</h2>
               <p style={{ margin: '0 0 13px', color: '#858190', fontSize: 13, overflowWrap: 'anywhere' }}>✉ {user?.email || '—'}</p>
               <span className="profile-pill">🎓 Học viên</span>
