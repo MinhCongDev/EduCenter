@@ -66,9 +66,14 @@ const ProgressPage: React.FC = () => {
           title="Chưa có dữ liệu tiến độ học tập"
           description="Hiện tại bạn chưa có tiến độ học tập nào. Nếu bạn vừa đăng ký khóa học, nhân viên giáo vụ (Staff) đang xử lý xếp lớp học cho bạn. Tiến độ và các cột mốc sẽ được kích hoạt ngay khi lớp học bắt đầu."
           action={
-            <Link to="/student/classes" className="dash-quick-btn primary">
-              📚 Xem khóa học của tôi
-            </Link>
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', marginTop: '1rem', flexWrap: 'wrap' }}>
+              <Link to="/student/classes" className="dash-quick-btn primary">
+                📚 Xem khóa học của tôi
+              </Link>
+              <Link to="/courses" className="dash-quick-btn secondary" style={{ textDecoration: 'none' }}>
+                Khám phá thêm khóa học
+              </Link>
+            </div>
           }
         />
       </div>

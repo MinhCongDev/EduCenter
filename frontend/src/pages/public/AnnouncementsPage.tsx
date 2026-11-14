@@ -39,6 +39,7 @@ export const AnnouncementsPage: React.FC = () => {
   }, [search, selectedCategory]);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
     fetchAnnouncements();
   }, [fetchAnnouncements]);
 

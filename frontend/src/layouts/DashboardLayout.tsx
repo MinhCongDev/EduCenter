@@ -144,6 +144,7 @@ const getMenuItems = (role: UserRole): DashboardItem[] => {
       { label: 'Kết quả học tập', path: '/student/progress' },
       { label: 'Thông báo', path: '/student/announcements' },
       { label: 'Thanh toán học phí', path: '/student/payments' },
+      { label: 'Thi thử & Test đầu vào', path: '/placement-test' },
     ];
   }
 
@@ -262,32 +263,26 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
 
             {/* Danh sách cài đặt tài khoản (Account Settings Navigation) */}
             <nav className="dashboard-account-nav" aria-label="Cài đặt tài khoản">
-              {role === 'STUDENT' ? (
-                <NavLink
-                  to="/student/profile"
-                  className={({ isActive }) =>
-                    `dashboard-account-nav-item${isActive ? ' is-active' : ''}`
-                  }
-                >
-                  <svg className="dashboard-account-nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                    <circle cx="12" cy="7" r="4" />
-                  </svg>
-                  <span>Hồ sơ cá nhân</span>
-                </NavLink>
-              ) : (
-                <button
-                  type="button"
-                  className="dashboard-account-nav-item"
-                  onClick={() => setIsProfileOpen(true)}
-                >
-                  <svg className="dashboard-account-nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                    <circle cx="12" cy="7" r="4" />
-                  </svg>
-                  <span>Hồ sơ cá nhân</span>
-                </button>
-              )}
+              <NavLink
+                to={
+                  role === 'TEACHER'
+                    ? '/teacher/profile'
+                    : role === 'TRAINING_STAFF'
+                    ? '/staff/profile'
+                    : role === 'DIRECTOR'
+                    ? '/director/profile'
+                    : '/student/profile'
+                }
+                className={({ isActive }) =>
+                  `dashboard-account-nav-item${isActive ? ' is-active' : ''}`
+                }
+              >
+                <svg className="dashboard-account-nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                <span>Hồ sơ cá nhân</span>
+              </NavLink>
 
               <button
                 type="button"

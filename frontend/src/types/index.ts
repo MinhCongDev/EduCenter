@@ -25,6 +25,29 @@ export interface User {
     _id: string;
     name: string;
   };
+  studentProfile?: StudentProfile;
+  teacherProfile?: TeacherProfile;
+  staffProfile?: StaffProfile;
+}
+
+export interface TeacherProfile {
+  _id?: string;
+  teacherCode?: string;
+  specialization?: string[];
+  bio?: string;
+  qualifications?: string[];
+  ieltsBand?: number;
+  yearsOfExperience?: number;
+  status?: string;
+}
+
+export interface StaffProfile {
+  _id?: string;
+  staffCode?: string;
+  department?: string;
+  position?: string;
+  joinDate?: string;
+  status?: string;
 }
 
 // Student profile (datlt)
@@ -212,8 +235,11 @@ export interface CourseFormData {
   targetLevel?: string;
   sessions: number;
   tuitionFee: number;
+  format?: CourseFormat;
   status: CourseStatus;
+  bannerUrl?: string;
   syllabus: string[];
+  learningObjectives?: string[];
 }
 
 export interface CourseQueryParams {

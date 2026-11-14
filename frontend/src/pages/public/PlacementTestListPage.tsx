@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import { placementTestService, type PlacementTestSummary, type TestHistoryItem } from '../../services/placementTest.service';
 
 const getHistoryLevel = (item: TestHistoryItem): string => {
@@ -15,6 +16,7 @@ const getHistoryLevel = (item: TestHistoryItem): string => {
 
 export const PlacementTestListPage: React.FC = () => {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [tests, setTests] = useState<PlacementTestSummary[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -42,6 +44,19 @@ export const PlacementTestListPage: React.FC = () => {
     };
     fetchData();
   }, [loadAttempt]);
+
+  const handleStartTest = (testId: string) => {
+    if (!isAuthenticated) {
+      navigate('/login', {
+        state: {
+          from: { pathname: `/placement-test/${testId}` },
+          message: 'Vui lòng đăng nhập tài khoản học viên để bắt đầu làm bài thi thử.',
+        },
+      });
+      return;
+    }
+    navigate(`/placement-test/${testId}`);
+  };
 
   return (
     <div className="placement-list-page" style={{ backgroundColor: '#f8fafc', minHeight: '100vh', paddingBottom: '4rem' }}>
@@ -142,6 +157,48 @@ export const PlacementTestListPage: React.FC = () => {
 
       {/* Main Content Area */}
       <div style={{ maxWidth: '1200px', margin: '-2rem auto 0', padding: '0 1.25rem', position: 'relative', zIndex: 10 }}>
+        {/* Auth Required Notice Banner */}
+        {!isAuthenticated && (
+          <div
+            style={{
+              backgroundColor: '#FEF3C7',
+              border: '1.5px solid #F59E0B',
+              borderRadius: '16px',
+              padding: '14px 20px',
+              marginBottom: '1.5rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '12px',
+              boxShadow: '0 4px 14px rgba(245, 158, 11, 0.15)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '1.4rem' }}>🔒</span>
+              <span style={{ color: '#92400E', fontWeight: 700, fontSize: '0.92rem' }}>
+                Yêu cầu đăng nhập: Bạn cần đăng nhập tài khoản học viên để vào phòng thi thử và lưu trữ kết quả phân tích Band điểm.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate('/login', { state: { from: { pathname: '/placement-test' }, message: 'Vui lòng đăng nhập để làm bài thi thử.' } })}
+              style={{
+                backgroundColor: '#B45309',
+                color: '#FFFFFF',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '7px 16px',
+                fontWeight: 700,
+                fontSize: '0.88rem',
+                cursor: 'pointer',
+              }}
+            >
+              Đăng nhập ngay →
+            </button>
+          </div>
+        )}
+
         {/* Test Cards Grid */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '1.5rem' }}>
           {loading ? (
@@ -172,6 +229,7 @@ export const PlacementTestListPage: React.FC = () => {
             tests.map((test) => (
                 <div
                   key={test.id}
+                  onClick={() => handleStartTest(test.id)}
                   style={{
                     backgroundColor: '#ffffff',
                     borderRadius: '20px',
@@ -182,6 +240,7 @@ export const PlacementTestListPage: React.FC = () => {
                     overflow: 'hidden',
                     position: 'relative',
                     transition: 'transform 0.25s ease, box-shadow 0.25s ease',
+                    cursor: 'pointer',
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = 'translateY(-6px)';
@@ -308,9 +367,12 @@ export const PlacementTestListPage: React.FC = () => {
                     {/* Action Button */}
                     <button
                       type="button"
-                      onClick={() => navigate(`/placement-test/${test.id}`)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleStartTest(test.id);
+                      }}
                       style={{
-                        backgroundColor: '#047857',
+                        backgroundColor: isAuthenticated ? '#047857' : '#D97706',
                         color: '#ffffff',
                         border: 'none',
                         padding: '0.85rem 1.25rem',
@@ -326,7 +388,7 @@ export const PlacementTestListPage: React.FC = () => {
                         transition: 'background-color 0.2s',
                       }}
                     >
-                      <span>Bắt Đầu Làm Bài Ngay</span>
+                      <span>{isAuthenticated ? 'Bắt Đầu Làm Bài Ngay' : '🔒 Đăng Nhập Để Làm Bài'}</span>
                       <span>→</span>
                     </button>
                   </div>

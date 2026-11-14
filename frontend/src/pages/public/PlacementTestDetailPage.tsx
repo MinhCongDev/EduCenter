@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import {
   placementTestService,
   type PlacementTestDetail,
@@ -22,6 +23,8 @@ export const PlacementTestDetailPage: React.FC = () => {
   const { id, testId } = useParams<{ id?: string; testId?: string }>();
   const activeTestId = id || testId;
   const navigate = useNavigate();
+  const location = useLocation();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
 
   // Test state
   const [test, setTest] = useState<PlacementTestDetail | null>(null);
@@ -171,6 +174,79 @@ export const PlacementTestDetailPage: React.FC = () => {
       return true;
     });
   }, [result, reviewFilter]);
+
+  if (authLoading) {
+    return (
+      <div style={{ minHeight: '80vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="loading-spinner" />
+        <p style={{ marginTop: '1rem', color: '#64748b', fontWeight: 600 }}>Đang kiểm tra thông tin đăng nhập...</p>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem 1rem', backgroundColor: '#F8FAFC' }}>
+        <div style={{ maxWidth: '520px', width: '100%', backgroundColor: '#FFFFFF', borderRadius: '24px', padding: '2.5rem', boxShadow: '0 12px 36px rgba(0,0,0,0.08)', textAlign: 'center', border: '1px solid #E2E8F0' }}>
+          <div style={{ width: '68px', height: '68px', borderRadius: '50%', backgroundColor: '#FEF3C7', color: '#D97706', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.2rem', margin: '0 auto 1.25rem' }}>
+            🔒
+          </div>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0F172A', margin: '0 0 0.75rem' }}>
+            Yêu Cầu Đăng Nhập Để Làm Bài
+          </h2>
+          <p style={{ color: '#64748B', fontSize: '0.95rem', lineHeight: 1.6, margin: '0 0 1.75rem' }}>
+            Bạn cần đăng nhập tài khoản học viên để vào phòng thi thử, bấm giờ làm bài và lưu trữ kết quả phân tích năng lực chi tiết.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <button
+              onClick={() => navigate('/login', { state: { from: location, message: 'Vui lòng đăng nhập để bắt đầu làm bài thi thử.' } })}
+              style={{
+                backgroundColor: '#047857',
+                color: '#FFFFFF',
+                padding: '0.85rem 1.5rem',
+                borderRadius: '12px',
+                border: 'none',
+                fontWeight: 700,
+                fontSize: '1rem',
+                cursor: 'pointer',
+              }}
+            >
+              Đăng nhập ngay
+            </button>
+            <button
+              onClick={() => navigate('/register', { state: { from: location } })}
+              style={{
+                backgroundColor: '#F8FAFC',
+                color: '#047857',
+                padding: '0.85rem 1.5rem',
+                borderRadius: '12px',
+                border: '1.5px solid #047857',
+                fontWeight: 700,
+                fontSize: '0.95rem',
+                cursor: 'pointer',
+              }}
+            >
+              Chưa có tài khoản? Đăng ký miễn phí
+            </button>
+            <button
+              onClick={() => navigate('/placement-test')}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#64748B',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                marginTop: '0.5rem',
+              }}
+            >
+              ← Quay lại danh sách bài kiểm tra
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

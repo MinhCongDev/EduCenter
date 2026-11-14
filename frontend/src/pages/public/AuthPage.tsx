@@ -5,6 +5,7 @@ import { authService } from '../../services/auth.service';
 import { PASSWORD_POLICY_HINT, getPasswordError } from '../../utils/password';
 import { getMailboxUrl } from '../../utils/mailbox';
 import { getApiErrorMessage } from '../../utils/apiError';
+import { getPhoneValidationError, sanitizePhoneInput } from '../../utils/phoneValidation';
 import BrandLogo from '../../components/BrandLogo';
 import { ForgotPasswordModal } from '../../components/ForgotPasswordModal';
 import GoogleAuthButton, { GoogleAuthProvider } from '../../components/GoogleAuthButton';
@@ -74,7 +75,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
   };
 
   const handleRegisterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setRegisterForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    const value = e.target.name === 'phone' ? sanitizePhoneInput(e.target.value) : e.target.value;
+    setRegisterForm((prev) => ({ ...prev, [e.target.name]: value }));
     setRegisterError(null);
   };
 
@@ -186,6 +188,11 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
     }
     if (!registerForm.email) {
       setRegisterError('Vui lòng nhập địa chỉ email.');
+      return;
+    }
+    const phoneError = getPhoneValidationError(registerForm.phone);
+    if (phoneError) {
+      setRegisterError(phoneError);
       return;
     }
     const passwordError = getPasswordError(registerForm.password);
@@ -493,6 +500,9 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
                   <input
                     id="auth-register-phone"
                     type="tel"
+                    inputMode="numeric"
+                    maxLength={10}
+                    pattern="(03|05|07|08|09)[0-9]{8}"
                     name="phone"
                     value={registerForm.phone}
                     onChange={handleRegisterChange}

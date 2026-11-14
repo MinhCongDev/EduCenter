@@ -75,16 +75,21 @@
 }
 
 .dmr-logo-badge {
-  width: 44px;
-  height: 44px;
-  background: linear-gradient(135deg, var(--dmr-green-light), var(--dmr-lime));
+  width: 40px;
+  height: 40px;
+  background: #26743d;
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
-  box-shadow: 0 4px 10px rgba(87, 208, 97, 0.35);
+  color: #ffffff;
+  font-family: var(--font-heading, 'Montserrat', sans-serif);
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 4px 12px rgba(38, 116, 61, 0.35);
   transition: transform 0.3s ease;
+  user-select: none;
 }
 
 .dmr-logo-wrap:hover .dmr-logo-badge {

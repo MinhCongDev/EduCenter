@@ -62,13 +62,24 @@ export const CoursesPage: React.FC = () => {
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [registrationNotice, setRegistrationNotice] = useState<string | null>(null);
 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
+    const levelParam = searchParams.get('level');
+    if (levelParam) {
+      setSelectedLevel(levelParam);
+    }
+  }, [searchParams]);
+
   const levelOptions = [
     { label: 'Tất cả trình độ', value: 'ALL' },
-    { label: 'Mất gốc (0 - 3.5)', value: '0 - 3.5' },
+    { label: 'Beginner – Mất gốc (0 - 3.5)', value: '0 - 3.5' },
     { label: 'Pre-IELTS (3.5 - 4.5)', value: '3.5 - 4.5' },
     { label: 'Foundation (4.5 - 5.5)', value: '4.5 - 5.5' },
-    { label: 'Bứt phá (5.5 - 6.5)', value: '5.5 - 6.5' },
-    { label: 'Chuyên sâu (6.5 - 7.5+)', value: '6.5 - 7.5+' },
+    { label: 'Breakthrough – Bứt phá (5.5 - 6.5)', value: '5.5 - 6.5' },
+    { label: 'Advanced – Chuyên sâu (6.5 - 7.5)', value: '6.5 - 7.5' },
     { label: 'Master (8.0+)', value: '8.0+' },
   ];
 
@@ -554,6 +565,7 @@ export const CoursesPage: React.FC = () => {
             {courses.map((course) => (
               <div
                 key={course._id}
+                onClick={() => handleOpenDetail(course._id)}
                 style={{
                   backgroundColor: '#FFFFFF',
                   borderRadius: '16px',
@@ -563,6 +575,7 @@ export const CoursesPage: React.FC = () => {
                   display: 'flex',
                   flexDirection: 'column',
                   transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                  cursor: 'pointer',
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = 'translateY(-4px)';
@@ -838,13 +851,20 @@ export const CoursesPage: React.FC = () => {
               </div>
 
               {/* Learning Objectives */}
-              {selectedCourse.learningObjectives && selectedCourse.learningObjectives.length > 0 && (
+              {selectedCourse.learningObjectives &&
+                (Array.isArray(selectedCourse.learningObjectives)
+                  ? selectedCourse.learningObjectives
+                  : [selectedCourse.learningObjectives]
+                ).filter(Boolean).length > 0 && (
                 <div style={{ marginBottom: '1.5rem' }}>
                   <h4 style={{ margin: '0 0 0.5rem', color: '#07403F', fontSize: '1rem', fontWeight: 700 }}>
                     🎯 Mục tiêu học tập đạt được
                   </h4>
                   <ul style={{ margin: 0, paddingLeft: '1.25rem', fontSize: '0.875rem', color: '#334155', lineHeight: 1.6 }}>
-                    {selectedCourse.learningObjectives.map((obj, i) => (
+                    {(Array.isArray(selectedCourse.learningObjectives)
+                      ? selectedCourse.learningObjectives
+                      : [selectedCourse.learningObjectives]
+                    ).map((obj, i) => (
                       <li key={i} style={{ marginBottom: '0.25rem' }}>{obj}</li>
                     ))}
                   </ul>
@@ -852,13 +872,20 @@ export const CoursesPage: React.FC = () => {
               )}
 
               {/* Syllabus */}
-              {selectedCourse.syllabus && selectedCourse.syllabus.length > 0 && (
+              {selectedCourse.syllabus &&
+                (Array.isArray(selectedCourse.syllabus)
+                  ? selectedCourse.syllabus
+                  : [selectedCourse.syllabus]
+                ).filter(Boolean).length > 0 && (
                 <div style={{ marginBottom: '1.5rem' }}>
                   <h4 style={{ margin: '0 0 0.5rem', color: '#07403F', fontSize: '1rem', fontWeight: 700 }}>
                     📚 Khung chương trình chi tiết
                   </h4>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    {selectedCourse.syllabus.map((syl, i) => (
+                    {(Array.isArray(selectedCourse.syllabus)
+                      ? selectedCourse.syllabus
+                      : [selectedCourse.syllabus]
+                    ).map((syl, i) => (
                       <div
                         key={i}
                         style={{

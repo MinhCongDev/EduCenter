@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import { Course } from '../models/course.model';
 import { Class } from '../models/class.model';
 
+const escapeRegex = (str: string): string => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 /**
  * View Courses List
  * Search Courses
@@ -30,7 +32,6 @@ export const getCourses = async (req: Request, res: Response): Promise<void> => 
       query.status = 'ACTIVE';
     }
 
-    const escapeRegex = (val: string): string => val.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const andConditions: any[] = [];
 
     // Search Courses by keyword
@@ -275,6 +276,37 @@ export const deleteCourse = async (req: Request, res: Response): Promise<void> =
     res.status(500).json({
       success: false,
       message: error.message || 'Lỗi server khi xóa khóa học',
+    });
+  }
+};
+
+/**
+ * Upload Course Image (Staff/Director)
+ * POST /api/courses/upload-image
+ */
+export const uploadCourseImageHandler = async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!req.file) {
+      res.status(400).json({
+        success: false,
+        message: 'Vui lòng chọn file hình ảnh (JPG, PNG, GIF, WEBP)',
+      });
+      return;
+    }
+
+    const relativeUrl = `/uploads/courses/${req.file.filename}`;
+    res.status(200).json({
+      success: true,
+      message: 'Tải lên hình ảnh khóa học thành công',
+      data: {
+        filename: req.file.filename,
+        url: relativeUrl,
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Lỗi khi tải lên hình ảnh khóa học',
     });
   }
 };
