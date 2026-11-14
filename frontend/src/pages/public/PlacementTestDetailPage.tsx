@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import {
   placementTestService,
   type PlacementTestDetail,
@@ -22,6 +23,8 @@ export const PlacementTestDetailPage: React.FC = () => {
   const { id, testId } = useParams<{ id?: string; testId?: string }>();
   const activeTestId = id || testId;
   const navigate = useNavigate();
+  const location = useLocation();
+  const { isAuthenticated, isLoading: authLoading, user } = useAuth();
 
   // Test state
   const [test, setTest] = useState<PlacementTestDetail | null>(null);
@@ -133,7 +136,7 @@ export const PlacementTestDetailPage: React.FC = () => {
     if (timerRef.current) clearInterval(timerRef.current);
 
     try {
-      const evalResult = await placementTestService.submitTest(targetId, userAnswers);
+      const evalResult = await placementTestService.submitTest(targetId, userAnswers, user?._id);
       setResult(evalResult);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err: unknown) {
@@ -172,6 +175,79 @@ export const PlacementTestDetailPage: React.FC = () => {
     });
   }, [result, reviewFilter]);
 
+  if (authLoading) {
+    return (
+      <div style={{ minHeight: '80vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="loading-spinner" />
+        <p style={{ marginTop: '1rem', color: '#64748b', fontWeight: 600 }}>Đang kiểm tra thông tin đăng nhập...</p>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem 1rem', backgroundColor: '#F8FAFC' }}>
+        <div style={{ maxWidth: '520px', width: '100%', backgroundColor: '#FFFFFF', borderRadius: '24px', padding: '2.5rem', boxShadow: '0 12px 36px rgba(0,0,0,0.08)', textAlign: 'center', border: '1px solid #E2E8F0' }}>
+          <div style={{ width: '68px', height: '68px', borderRadius: '50%', backgroundColor: '#FEF3C7', color: '#D97706', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.2rem', margin: '0 auto 1.25rem' }}>
+            🔒
+          </div>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0F172A', margin: '0 0 0.75rem' }}>
+            Yêu Cầu Đăng Nhập Để Làm Bài
+          </h2>
+          <p style={{ color: '#64748B', fontSize: '0.95rem', lineHeight: 1.6, margin: '0 0 1.75rem' }}>
+            Bạn cần đăng nhập tài khoản học viên để vào phòng thi thử, bấm giờ làm bài và lưu trữ kết quả phân tích năng lực chi tiết.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <button
+              onClick={() => navigate('/login', { state: { from: location, message: 'Vui lòng đăng nhập để bắt đầu làm bài thi thử.' } })}
+              style={{
+                backgroundColor: '#047857',
+                color: '#FFFFFF',
+                padding: '0.85rem 1.5rem',
+                borderRadius: '12px',
+                border: 'none',
+                fontWeight: 700,
+                fontSize: '1rem',
+                cursor: 'pointer',
+              }}
+            >
+              Đăng nhập ngay
+            </button>
+            <button
+              onClick={() => navigate('/register', { state: { from: location } })}
+              style={{
+                backgroundColor: '#F8FAFC',
+                color: '#047857',
+                padding: '0.85rem 1.5rem',
+                borderRadius: '12px',
+                border: '1.5px solid #047857',
+                fontWeight: 700,
+                fontSize: '0.95rem',
+                cursor: 'pointer',
+              }}
+            >
+              Chưa có tài khoản? Đăng ký miễn phí
+            </button>
+            <button
+              onClick={() => navigate('/placement-test')}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#64748B',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                marginTop: '0.5rem',
+              }}
+            >
+              ← Quay lại danh sách bài kiểm tra
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div style={{ minHeight: '80vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
@@ -198,6 +274,21 @@ export const PlacementTestDetailPage: React.FC = () => {
   // RENDER: EXAM RESULT & COURSE RECOMMENDATION VIEW
   // =========================================================================
   if (result) {
+    const targetMatchedLevel =
+      result.matchedLevel ||
+      result.primaryCourse?.entryLevel ||
+      (result.predictedBand >= 7.5
+        ? '8.0+'
+        : result.predictedBand >= 6.5
+          ? '6.5 - 7.5+'
+          : result.predictedBand >= 5.5
+            ? '5.5 - 6.5'
+            : result.predictedBand >= 4.5
+              ? '4.5 - 5.5'
+              : result.predictedBand >= 3.5
+                ? '3.5 - 4.5'
+                : '0 - 3.5');
+
     return (
       <div style={{ backgroundColor: '#f8fafc', minHeight: '100vh', padding: '2.5rem 1rem 5rem' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
@@ -384,7 +475,7 @@ export const PlacementTestDetailPage: React.FC = () => {
               <span style={{ fontSize: '1.75rem' }}>🎯</span>
               <div>
                 <span style={{ color: '#047857', fontWeight: 800, fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                  GỢI Ý LỘ TRÌNH KHÓA HỌC DÀNH RIÊNG CHO BẠN
+                  GỢI Ý LỘ TRÌNH KHÓA HỌC DÀNH RIÊNG CHO BẠN (BAND {result.predictedBand} • {targetMatchedLevel})
                 </span>
                 <h2 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 900, color: '#0f172a' }}>
                   Khóa Học EduCenter Được Khuyến Nghị Tối Ưu Nhất
@@ -393,7 +484,7 @@ export const PlacementTestDetailPage: React.FC = () => {
             </div>
 
             <p style={{ margin: '0.5rem 0 1.75rem', color: '#64748b', fontSize: '0.95rem' }}>
-              Dựa trên kết quả bài thi kiểm tra đầu vào và phân tích các điểm cần cải thiện, EduCenter đề xuất lộ trình khóa học phù hợp nhất giúp bạn tiết kiệm thời gian và đảm bảo chuẩn đầu ra.
+              Dựa trên kết quả bài thi kiểm tra đầu vào (Band {result.predictedBand}), EduCenter đề xuất khóa học đúng với năng lực hiện tại của bạn giúp bạn tối ưu hóa thời gian và đảm bảo chuẩn đầu ra.
             </p>
 
             {/* Primary Recommended Course Card */}
@@ -425,7 +516,7 @@ export const PlacementTestDetailPage: React.FC = () => {
                     {result.primaryCourse.title}
                   </h3>
                   <div style={{ fontSize: '0.88rem', color: '#047857', fontWeight: 700 }}>
-                    Mã khóa: {result.primaryCourse.code} • Mục tiêu đầu ra: Band {result.primaryCourse.targetLevel} • Thời lượng: {result.primaryCourse.durationWeeks} tuần
+                    Mã khóa: {result.primaryCourse.code} • Trình độ mục tiêu: Band {result.primaryCourse.targetLevel} • Thời lượng: {result.primaryCourse.durationWeeks} tuần
                   </div>
                 </div>
 
@@ -471,29 +562,43 @@ export const PlacementTestDetailPage: React.FC = () => {
               </div>
 
               {/* Action Buttons */}
-              <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                <Link
-                  to="/courses"
+              <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const coursePayload = {
+                      _id: result.primaryCourse._id || result.primaryCourse.code,
+                      title: result.primaryCourse.title,
+                      code: result.primaryCourse.code,
+                      tuitionFee: result.primaryCourse.tuitionFee,
+                      format: 'OFFLINE',
+                      sessions: result.primaryCourse.sessions || 30,
+                    };
+                    navigate('/student/payments', { state: { course: coursePayload } });
+                  }}
                   style={{
                     backgroundColor: '#059669',
                     color: '#ffffff',
+                    border: 'none',
                     padding: '0.75rem 1.75rem',
                     borderRadius: '12px',
                     fontWeight: 800,
                     fontSize: '0.95rem',
-                    textDecoration: 'none',
+                    cursor: 'pointer',
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '8px',
                     boxShadow: '0 4px 14px rgba(5, 150, 105, 0.3)',
+                    transition: 'all 0.2s',
                   }}
                 >
-                  <span>Đăng Ký Khóa Học Ngay</span>
+                  <span>⚡ Đăng Ký Khóa Học Này Ngay</span>
                   <span>→</span>
-                </Link>
+                </button>
 
-                <a
-                  href="tel:19006868"
+                <Link
+                  to={`/courses?level=${encodeURIComponent(targetMatchedLevel)}&band=${result.predictedBand}`}
+                  state={{ recommendedLevel: targetMatchedLevel, band: result.predictedBand }}
                   style={{
                     backgroundColor: '#ffffff',
                     color: '#047857',
@@ -508,7 +613,27 @@ export const PlacementTestDetailPage: React.FC = () => {
                     gap: '6px',
                   }}
                 >
-                  <span> Tư Vấn Lịch Học &amp; Ưu Đãi</span>
+                  <span>🔍 Xem Tất Cả Khóa Học Band {result.predictedBand} ({targetMatchedLevel})</span>
+                  <span>→</span>
+                </Link>
+
+                <a
+                  href="tel:19006868"
+                  style={{
+                    backgroundColor: '#f8fafc',
+                    color: '#475569',
+                    border: '1px solid #cbd5e1',
+                    padding: '0.75rem 1.25rem',
+                    borderRadius: '12px',
+                    fontWeight: 600,
+                    fontSize: '0.9rem',
+                    textDecoration: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <span>📞 Tư Vấn Lịch Học</span>
                 </a>
               </div>
             </div>
@@ -517,7 +642,7 @@ export const PlacementTestDetailPage: React.FC = () => {
             {result.secondaryCourses.length > 0 && (
               <div style={{ marginTop: '1.5rem' }}>
                 <div style={{ fontSize: '0.88rem', fontWeight: 800, color: '#334155', marginBottom: '0.75rem' }}>
-                  📚 Khóa học bổ trợ hoặc mục tiêu kế tiếp:
+                  📚 Khóa học cùng trình độ Band {result.predictedBand} ({targetMatchedLevel}):
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
                   {result.secondaryCourses.map((sec) => (
@@ -548,9 +673,10 @@ export const PlacementTestDetailPage: React.FC = () => {
                         </p>
                       </div>
 
-                      <div style={{ marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid #e2e8f0' }}>
+                      <div style={{ marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid #e2e8f0', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
                         <Link
-                          to="/courses"
+                          to={`/courses?level=${encodeURIComponent(sec.entryLevel || targetMatchedLevel)}&band=${result.predictedBand}`}
+                          state={{ recommendedLevel: sec.entryLevel || targetMatchedLevel, band: result.predictedBand }}
                           style={{
                             color: '#047857',
                             fontWeight: 700,
@@ -561,7 +687,7 @@ export const PlacementTestDetailPage: React.FC = () => {
                             gap: '4px',
                           }}
                         >
-                          <span>Xem chi tiết khóa học</span>
+                          <span>Xem khóa học trình độ {sec.entryLevel || targetMatchedLevel}</span>
                           <span>→</span>
                         </Link>
                       </div>

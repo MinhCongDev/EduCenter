@@ -11,104 +11,100 @@ const Footer: React.FC = () => {
         <div className="dmr-footer-top">
           {/* Column 1: Về EduCenter IELTS */}
           <div>
-            <div className="dmr-footer-heading">Học Viện IELTS</div>
+            <div className="dmr-footer-heading">Về EduCenter</div>
             <ul className="dmr-footer-links">
-              <li><Link to="/#about">Về EduCenter IELTS</Link></li>
-              <li><Link to="/#teachers">Đội ngũ giảng viên 8.5+ - 9.0</Link></li>
-              <li><Link to="/#reviews">Bảng vàng học viên đạt 7.5+ - 8.5</Link></li>
-              <li><Link to="/courses">Cam kết đầu ra bằng hợp đồng</Link></li>
-              <li><Link to="/courses">Chính sách học lại miễn phí 100%</Link></li>
-              <li><Link to="/announcements">Tuyển dụng Giảng viên IELTS</Link></li>
+              <li><Link to="/#about">Giới thiệu Học viện EduCenter</Link></li>
+              <li><Link to="/courses">Lộ trình đào tạo chuẩn quốc tế</Link></li>
+              <li><Link to="/placement-test">Hệ thống khảo thí &amp; Thi thử</Link></li>
+              <li><Link to="/announcements">Bảng tin &amp; Thông báo mới</Link></li>
+              <li><Link to="/courses">Cam kết đầu ra theo hợp đồng</Link></li>
             </ul>
           </div>
 
-          {/* Column 2: Cộng đồng luyện thi */}
+          {/* Column 2: Các khóa học IELTS */}
           <div>
-            <div className="dmr-footer-heading">Cộng đồng IELTS</div>
+            <div className="dmr-footer-heading">Khóa học IELTS</div>
             <ul className="dmr-footer-links">
-              <li><a href="https://www.facebook.com" target="_blank" rel="noreferrer">Cộng đồng Tự học IELTS 8.0+</a></li>
-              <li><a href="https://www.facebook.com" target="_blank" rel="noreferrer">CLB Luyện Speaking Cùng Cựu Giám Khảo</a></li>
-              <li><a href="https://www.facebook.com" target="_blank" rel="noreferrer">Góc Chữa Writing Task 1 &amp; 2 Miễn Phí</a></li>
-              <li><a href="https://www.youtube.com" target="_blank" rel="noreferrer">Kênh Bài Giảng IELTS Chuyên Sâu</a></li>
-              <li><a href="https://www.facebook.com" target="_blank" rel="noreferrer">Săn Học Bổng Du Học UK, US, Australia</a></li>
+              <li><Link to="/courses">IELTS Beginner – Mất gốc (0 - 3.5)</Link></li>
+              <li><Link to="/courses">IELTS Pre – Làm quen format (3.5 - 4.5)</Link></li>
+              <li><Link to="/courses">IELTS Foundation – Nền tảng (4.5 - 5.5)</Link></li>
+              <li><Link to="/courses">IELTS Breakthrough – Bứt phá (5.5 - 6.5)</Link></li>
+              <li><Link to="/courses">IELTS Advanced &amp; Master (7.5 - 8.0+)</Link></li>
             </ul>
           </div>
 
-          {/* Column 3: Thi thử & Tài liệu */}
+          {/* Column 3: Khảo thí & Thi thử */}
           <div>
-            <div className="dmr-footer-heading">Thi thử &amp; Tài liệu</div>
+            <div className="dmr-footer-heading">Thi thử Online</div>
             <ul className="dmr-footer-links">
-              <li><Link to="/courses">Thi thử IELTS on Computer Chuẩn IDP</Link></li>
-              <li><Link to="/courses">Bộ đề Cambridge IELTS 10 - 19 Có Lời Giải</Link></li>
-              <li><Link to="/courses">Forecast Đề Thi Speaking Quý Mới Nhất</Link></li>
-              <li><Link to="/courses">100 Bài Mẫu Writing Task 2 Band 8.0+</Link></li>
-              <li><Link to="/courses">Tổng hợp 1.200 Từ Vựng Academic Cốt Lõi</Link></li>
+              <li><Link to="/placement-test">Danh sách bài thi thử IELTS</Link></li>
+              <li><Link to="/placement-test/ielts-diagnostic-01">Diagnostic Test: Ngữ pháp &amp; Từ vựng</Link></li>
+              <li><Link to="/placement-test/ielts-reading-real-02">Reading Test: Đọc hiểu thực chiến</Link></li>
+              <li><Link to="/placement-test/ielts-comprehensive-predictor-03">Comprehensive Band Predictor</Link></li>
+              <li><Link to="/courses">Tư vấn lộ trình điểm số cá nhân</Link></li>
             </ul>
           </div>
 
-          {/* Column 4: Đối tác & Kết nối */}
+          {/* Column 4: Cổng học viên & Quản trị */}
           <div>
-            <div className="dmr-footer-heading">Đối tác &amp; Ứng dụng</div>
-            <p style={{ fontSize: '0.88rem', color: '#CBD5E0', lineHeight: 1.5, marginBottom: '12px' }}>
-              Đối tác đăng ký thi chính thức của <b>IDP Education</b> &amp; <b>British Council</b> tại Việt Nam.
-            </p>
-            <div className="dmr-social-icons">
-              <a href="https://www.facebook.com" target="_blank" rel="noreferrer" className="dmr-social-btn" title="Facebook">
-                f
-              </a>
-              <a href="https://www.youtube.com" target="_blank" rel="noreferrer" className="dmr-social-btn" title="YouTube">
-                Y
-              </a>
-              <a href="https://www.tiktok.com" target="_blank" rel="noreferrer" className="dmr-social-btn" title="TikTok">
-                ♪
-              </a>
-              <a href="https://zalo.me" target="_blank" rel="noreferrer" className="dmr-social-btn" title="Zalo">
-                Z
-              </a>
-            </div>
-
-            <div className="dmr-app-btns">
-              <a href="https://apps.apple.com" target="_blank" rel="noreferrer" className="dmr-app-badge">
-                 App Store
-              </a>
-              <a href="https://play.google.com" target="_blank" rel="noreferrer" className="dmr-app-badge">
-                 Google Play
-              </a>
-            </div>
+            <div className="dmr-footer-heading">Cổng học tập &amp; Dịch vụ</div>
+            <ul className="dmr-footer-links">
+              <li><Link to="/login">Đăng nhập tài khoản hệ thống</Link></li>
+              <li><Link to="/register">Đăng ký tài khoản học viên mới</Link></li>
+              <li><Link to="/student/payments">Học phí &amp; Thanh toán QR chuyển khoản</Link></li>
+              <li><Link to="/student/dashboard">Không gian học tập cá nhân (LMS)</Link></li>
+              <li><Link to="/announcements">Lịch thi thử &amp; Khai giảng mới nhất</Link></li>
+            </ul>
           </div>
         </div>
 
-        {/* Middle: 4 Cơ sở IELTS Campus */}
-        <div className="dmr-footer-locations">
+        {/* Middle: Hệ thống Cơ sở Đào tạo EduCenter */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+            gap: '20px',
+            padding: '30px 0',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.15)',
+          }}
+        >
           <div className="dmr-location-item">
-            <div className="dmr-location-name">Campus 1 (Hà Đông):</div>
-            <div>Số 49 Galaxy 3, Vạn Phúc, Hà Đông, Hà Nội.</div>
-            <a href="tel:+84336283595" className="dmr-location-phone">
-               (+84) 336 283 595
+            <div className="dmr-location-name">🏢 Cơ sở 1 (Trụ sở Cầu Giấy):</div>
+            <div>EduCenter Tower, 128 Cầu Giấy, Q. Cầu Giấy, Hà Nội.</div>
+            <a href="tel:02437896868" className="dmr-location-phone">
+              📞 024 3789 6868
             </a>
           </div>
 
           <div className="dmr-location-item">
-            <div className="dmr-location-name">Campus 2 (Thanh Xuân):</div>
-            <div>Tòa nhà VNT TOWER, Số 19 Nguyễn Trãi, Thanh Xuân, Hà Nội.</div>
-            <a href="tel:+84969856116" className="dmr-location-phone">
-               (+84) 969 856 116
+            <div className="dmr-location-name">🏫 Cơ sở 2 (Đống Đa):</div>
+            <div>Số 254 Tây Sơn, P. Trung Liệt, Q. Đống Đa, Hà Nội.</div>
+            <a href="tel:02437896869" className="dmr-location-phone">
+              📞 024 3789 6869
             </a>
           </div>
 
           <div className="dmr-location-item">
-            <div className="dmr-location-name">Campus 3 (Cầu Giấy):</div>
-            <div>Số 457 Hoàng Quốc Việt, Cổ Nhuế, Bắc Từ Liêm, Hà Nội.</div>
-            <a href="tel:+84833532039" className="dmr-location-phone">
-               (+84) 833 532 039
+            <div className="dmr-location-name">🏫 Cơ sở 3 (Bách Khoa):</div>
+            <div>Số 86 Lê Thanh Nghị, P. Đồng Tâm, Q. Hai Bà Trưng, Hà Nội.</div>
+            <a href="tel:02437896870" className="dmr-location-phone">
+              📞 024 3789 6870
             </a>
           </div>
 
           <div className="dmr-location-item">
-            <div className="dmr-location-name">Campus 4 (TP. HCM):</div>
-            <div>Số 32 Đường số 2, P10, Q. Gò Vấp, TP. Hồ Chí Minh.</div>
-            <a href="tel:+84988938364" className="dmr-location-phone">
-               (+84) 988 938 364
+            <div className="dmr-location-name">🏫 Cơ sở 4 (TP. HCM - Quận 1):</div>
+            <div>Tòa nhà Bitexco Nam, 180 Nguyễn Thị Minh Khai, Q. 1, TP. HCM.</div>
+            <a href="tel:02839886868" className="dmr-location-phone">
+              📞 028 3988 6868
+            </a>
+          </div>
+
+          <div className="dmr-location-item">
+            <div className="dmr-location-name">🏫 Cơ sở 5 (TP. HCM - Quận 10):</div>
+            <div>Số 387 Sư Vạn Hạnh, P. 12, Q. 10, TP. HCM.</div>
+            <a href="tel:02839886869" className="dmr-location-phone">
+              📞 028 3988 6869
             </a>
           </div>
         </div>
@@ -127,17 +123,17 @@ const Footer: React.FC = () => {
             gap: '12px',
           }}
         >
-          <div><b>Giờ học &amp; Thi thử:</b> Thứ 2 - Thứ 6: 7h30 - 21h30 | Thứ 7 &amp; CN: 8h00 - 18h00</div>
-          <div><b>Email Học thuật:</b> academic@educenter.edu.vn</div>
-          <div><b>Hotline Test trình độ &amp; Tư vấn Lộ trình:</b> <span style={{ color: '#FCD34D', fontWeight: 800 }}>+84.981.060.702</span></div>
+          <div>⏰ <b>Giờ làm việc &amp; Thi thử:</b> Thứ 2 - Chủ Nhật: 08:00 - 21:30</div>
+          <div>✉️ <b>Email liên hệ:</b> contact@educenter.edu.vn</div>
+          <div>🔥 <b>Hotline Tuyển sinh &amp; Thi thử:</b> <span style={{ color: '#FCD34D', fontWeight: 800 }}>1900 6868 - 0988 123 456</span></div>
         </div>
 
         {/* Bottom Legal / Copyright */}
         <div className="dmr-footer-bottom">
           <div style={{ maxWidth: '820px', lineHeight: 1.6 }}>
-            <div><b>Copyright {currentYear} EduCenter IELTS Academy – Học viện Luyện thi IELTS Chuẩn Khảo thí Quốc tế</b></div>
-            <div style={{ fontSize: '0.78rem', marginTop: '4px' }}>
-              Quyết định thành lập và cấp phép hoạt động đào tạo khảo thí số 3920 do Sở Giáo dục &amp; Đào tạo cấp. Trung tâm khảo thí liên kết trực tiếp đối tác khảo thí quốc tế.
+            <div><b>Copyright © {currentYear} EduCenter IELTS Academy – Hệ sinh thái Quản lý Đào tạo &amp; Khảo thí IELTS Chuyên sâu</b></div>
+            <div style={{ fontSize: '0.78rem', marginTop: '4px', color: '#94A3B8' }}>
+              Quyết định thành lập và cấp phép hoạt động đào tạo số 3920 do Sở Giáo dục &amp; Đào tạo cấp. Nền tảng học tập trực tuyến tích hợp thi thử, quản lý điểm số và thanh toán học phí tự động.
             </div>
           </div>
           <div
@@ -151,9 +147,10 @@ const Footer: React.FC = () => {
               border: '1px solid rgba(255,255,255,0.2)',
             }}
           >
+            <span style={{ fontSize: '20px' }}>🎓</span>
             <div>
-              <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>ĐỐI TÁC CHÍNH THỨC</div>
-              <div style={{ fontWeight: 800, fontSize: '12px', color: '#FCD34D' }}>IDP &amp; BRITISH COUNCIL</div>
+              <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>HỆ THỐNG ĐÀO TẠO</div>
+              <div style={{ fontWeight: 800, fontSize: '12px', color: '#FCD34D' }}>EDUCENTER IELTS LMS</div>
             </div>
           </div>
         </div>

@@ -6,6 +6,7 @@ import GuestLayout from './layouts/GuestLayout';
 import DashboardLayout from './layouts/DashboardLayout';
 import ProtectedRoute from './routes/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
+import ScrollToTop from './components/ScrollToTop';
 
 // ===========================
 // Lazy-loaded pages
@@ -114,9 +115,11 @@ const AppRouter: React.FC = () => {
         <Route
           path="/placement-test/:id"
           element={
-            <GuestLayout>
-              <PlacementTestDetailPage />
-            </GuestLayout>
+            <ProtectedRoute>
+              <GuestLayout>
+                <PlacementTestDetailPage />
+              </GuestLayout>
+            </ProtectedRoute>
           }
         />
         <Route
@@ -130,9 +133,11 @@ const AppRouter: React.FC = () => {
         <Route
           path="/placement-tests/:id"
           element={
-            <GuestLayout>
-              <PlacementTestDetailPage />
-            </GuestLayout>
+            <ProtectedRoute>
+              <GuestLayout>
+                <PlacementTestDetailPage />
+              </GuestLayout>
+            </ProtectedRoute>
           }
         />
         <Route
@@ -303,6 +308,36 @@ const AppRouter: React.FC = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/student/attendance"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <DashboardLayout>
+                <AttendancePage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/grades"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <DashboardLayout>
+                <GradesPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/announcements"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <DashboardLayout>
+                <AnnouncementsPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
         {/* ── Teacher Routes ───────────────────────── */}
         <Route
           path="/teacher/dashboard"
@@ -459,6 +494,7 @@ const AppRouter: React.FC = () => {
           }
         />
 
+        {/* ── Common Profile Route for Any Role ─────── */}
         <Route
           path="/profile"
           element={
@@ -499,6 +535,7 @@ const App: React.FC = () => {
   return (
     <ErrorBoundary>
       <BrowserRouter>
+        <ScrollToTop />
         <ToastProvider>
           <AuthProvider>
             <AppRouter />

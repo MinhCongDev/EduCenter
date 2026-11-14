@@ -30,8 +30,9 @@ router.post('/google', googleLogin);
 router.get('/verify-email', verifyEmail);
 router.post('/resend-email-verify', resendVerificationEmail);
 
-// Get authenticated user
+// Get authenticated user & profile
 router.get('/me', authenticate, getMe);
+router.get('/profile', authenticate, getMe);
 
 // Update Personal Information
 router.put('/profile', authenticate, updateProfile);

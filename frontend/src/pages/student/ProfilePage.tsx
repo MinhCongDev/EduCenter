@@ -224,7 +224,7 @@ export const ProfilePage: React.FC = () => {
         .profile-page .profile-banner { height:104px; background:linear-gradient(120deg,#1e293b 0%,#0f766e 62%,#10b981 145%); }
         .profile-page .profile-avatar-wrap { position:relative; width:100px; height:100px; margin-top:-52px; }
         .profile-page .profile-avatar { width:100px; height:100px; border:4px solid #fff; border-radius:50%; background:linear-gradient(135deg,#059669,#10b981); box-shadow:0 4px 16px rgba(0,0,0,.14); object-fit:cover; display:flex; align-items:center; justify-content:center; color:#fff; font-size:30px; font-weight:800; }
-        .profile-page .profile-avatar-edit { position:absolute; inset:0; border:4px solid transparent; border-radius:50%; background:rgba(25,20,35,.55); color:#fff; font-size:12px; font-weight:700; cursor:pointer; opacity:0; transition:opacity .18s; display:flex; align-items:center; justify-content:center; }
+        .profile-page .profile-avatar-edit { position:absolute; inset:0; border:4px solid transparent; border-radius:50%; background:rgba(25,20,35,.55); color:#fff; font-size:22px; cursor:pointer; opacity:0; transition:opacity .18s; display:flex; align-items:center; justify-content:center; }
         .profile-page .profile-avatar-wrap:hover .profile-avatar-edit { opacity:1; }
         .profile-page .profile-section-title { display:flex; align-items:center; gap:9px; color:#302a3c; font-size:14px; font-weight:750; margin:0 0 17px; }
         .profile-page .profile-section-title:after { content:""; height:1px; background:#eceaf0; flex:1; margin-left:5px; }

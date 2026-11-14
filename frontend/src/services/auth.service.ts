@@ -155,6 +155,18 @@ export const authService = {
    * Logout – clear local storage
    */
   logout: (): void => {
+    try {
+      const userStr = localStorage.getItem(USER_KEY);
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        if (user?._id) {
+          localStorage.removeItem(`educenter_placement_history_${user._id}`);
+        }
+      }
+      localStorage.removeItem('educenter_placement_history');
+    } catch {
+      // Ignore errors in clearing storage
+    }
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
   },

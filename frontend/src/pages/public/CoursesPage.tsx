@@ -1,10 +1,21 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { courseService } from '../../services/course.service';
 import { studentService } from '../../services/student.service';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import type { Course, CourseQueryParams } from '../../types';
+
+const getLevelFromBand = (bandVal: string | number): string => {
+  const b = typeof bandVal === 'number' ? bandVal : parseFloat(String(bandVal));
+  if (isNaN(b)) return 'ALL';
+  if (b >= 7.5) return '8.0+';
+  if (b >= 6.5) return '6.5 - 7.5+';
+  if (b >= 5.5) return '5.5 - 6.5';
+  if (b >= 4.5) return '4.5 - 5.5';
+  if (b >= 3.5) return '3.5 - 4.5';
+  return '0 - 3.5';
+};
 
 export const CoursesPage: React.FC = () => {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -13,19 +24,47 @@ export const CoursesPage: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
   const [enrollingClassId, setEnrollingClassId] = useState<string | null>(null);
+
+  const queryLevel = searchParams.get('level');
+  const queryBand = searchParams.get('band');
+  const locationState = location.state as { recommendedLevel?: string; band?: number } | null;
+
+  const initialLevel =
+    queryLevel ||
+    (queryBand ? getLevelFromBand(queryBand) : null) ||
+    locationState?.recommendedLevel ||
+    (locationState?.band ? getLevelFromBand(locationState.band) : null) ||
+    'ALL';
 
   // Search & Filter state
   const [search, setSearch] = useState<string>('');
-  const [selectedLevel, setSelectedLevel] = useState<string>(() => searchParams.get('level') || 'ALL');
+  const [selectedLevel, setSelectedLevel] = useState<string>(initialLevel);
   const [selectedFormat, setSelectedFormat] = useState<string>('ALL');
   const [priceRange, setPriceRange] = useState<string>('ALL');
   const [sortBy, setSortBy] = useState<'newest' | 'price_asc' | 'price_desc' | 'duration'>('newest');
 
+  // Cập nhật selectedLevel khi URL param hoặc location.state thay đổi
+  useEffect(() => {
+    const activeLevel =
+      searchParams.get('level') ||
+      (searchParams.get('band') ? getLevelFromBand(searchParams.get('band')!) : null) ||
+      (location.state as any)?.recommendedLevel ||
+      ((location.state as any)?.band ? getLevelFromBand((location.state as any).band) : null);
+    if (activeLevel && activeLevel !== selectedLevel) {
+      setSelectedLevel(activeLevel);
+    }
+  }, [searchParams, location.state]);
+
   // Detail Modal state
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [registrationNotice, setRegistrationNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   useEffect(() => {
     const levelParam = searchParams.get('level');
@@ -102,12 +141,31 @@ export const CoursesPage: React.FC = () => {
     }
   };
 
+  const handleCloseDetail = () => {
+    setSelectedCourse(null);
+    setRegistrationNotice(null);
+    if (searchParams.has('courseId')) {
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('courseId');
+      setSearchParams(newParams, { replace: true });
+    }
+  };
+
+  // Tự động mở chi tiết khóa học nếu có courseId trên URL query
+  useEffect(() => {
+    const courseIdParam = searchParams.get('courseId');
+    if (courseIdParam) {
+      handleOpenDetail(courseIdParam);
+    }
+  }, [searchParams]);
+
   const handleResetFilters = () => {
     setSearch('');
     setSelectedLevel('ALL');
     setSelectedFormat('ALL');
     setPriceRange('ALL');
     setSortBy('newest');
+    setSearchParams({});
   };
 
   // M7: Ghi danh trực tiếp vào một lớp học (Student actor)
@@ -138,6 +196,32 @@ export const CoursesPage: React.FC = () => {
       toast.error(err.response?.data?.message || 'Ghi danh thất bại');
     } finally {
       setEnrollingClassId(null);
+    }
+  };
+
+  // Đăng kí học và truyền trực tiếp thông tin khóa học (Tên, Học phí chính xác, Mã) sang trang thanh toán (payments)
+  const handleRegisterCourse = (course: Course) => {
+    setSelectedCourse(null);
+
+    const coursePayload = {
+      _id: course._id,
+      title: course.title,
+      code: course.code,
+      tuitionFee: course.tuitionFee,
+      format: course.format,
+      sessions: course.sessions,
+    };
+
+    if (isAuthenticated) {
+      navigate('/student/payments', { state: { course: coursePayload } });
+    } else {
+      toast.info('Vui lòng đăng nhập tài khoản học viên để tiến hành thanh toán học phí');
+      navigate('/login', {
+        state: {
+          redirect: '/student/payments',
+          course: coursePayload,
+        },
+      });
     }
   };
 
@@ -282,7 +366,17 @@ export const CoursesPage: React.FC = () => {
                 <button
                   key={opt.value}
                   type="button"
-                  onClick={() => setSelectedLevel(opt.value)}
+                  onClick={() => {
+                    setSelectedLevel(opt.value);
+                    const newParams = new URLSearchParams(searchParams);
+                    if (opt.value === 'ALL') {
+                      newParams.delete('level');
+                      newParams.delete('band');
+                    } else {
+                      newParams.set('level', opt.value);
+                    }
+                    setSearchParams(newParams);
+                  }}
                   style={{
                     padding: '0.4rem 0.85rem',
                     borderRadius: '20px',
@@ -347,6 +441,74 @@ export const CoursesPage: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Banner thông báo lọc theo kết quả bài thi kiểm tra đầu vào */}
+        {selectedLevel !== 'ALL' && (Boolean(queryBand) || Boolean(queryLevel) || Boolean(locationState?.band) || Boolean(locationState?.recommendedLevel)) && (
+          <div
+            style={{
+              backgroundColor: '#ecfdf5',
+              border: '1.5px solid #a7f3d0',
+              borderRadius: '16px',
+              padding: '1.25rem 1.5rem',
+              marginBottom: '2rem',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '1rem',
+              boxShadow: '0 4px 15px rgba(5, 150, 105, 0.08)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div
+                style={{
+                  width: '44px',
+                  height: '44px',
+                  borderRadius: '12px',
+                  backgroundColor: '#059669',
+                  color: '#ffffff',
+                  display: 'grid',
+                  placeItems: 'center',
+                  fontSize: '1.4rem',
+                  fontWeight: 800,
+                  flexShrink: 0,
+                }}
+              >
+                🎯
+              </div>
+              <div>
+                <div style={{ fontWeight: 800, color: '#064e3b', fontSize: '1.05rem' }}>
+                  Đang lọc các khóa học phù hợp với kết quả thi thử: {queryBand || locationState?.band ? `Band ${queryBand || locationState?.band} • ` : ''}Trình độ {selectedLevel}
+                </div>
+                <div style={{ fontSize: '0.88rem', color: '#047857', marginTop: '2px' }}>
+                  Hệ thống EduCenter chỉ hiển thị các khóa học thuộc khung năng lực này giúp bạn học đúng lộ trình và tối ưu hóa thời gian đạt chuẩn đầu ra.
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleResetFilters}
+              style={{
+                backgroundColor: '#ffffff',
+                color: '#065f46',
+                border: '1.5px solid #6ee7b7',
+                padding: '8px 18px',
+                borderRadius: '10px',
+                fontWeight: 700,
+                fontSize: '0.88rem',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.2s',
+              }}
+            >
+              <span>Xem tất cả khóa học</span>
+              <span>✕</span>
+            </button>
+          </div>
+        )}
 
         {/* Course Cards Grid */}
         {isLoading ? (
@@ -421,6 +583,7 @@ export const CoursesPage: React.FC = () => {
             {courses.map((course) => (
               <div
                 key={course._id}
+                onClick={() => handleOpenDetail(course._id)}
                 style={{
                   backgroundColor: '#FFFFFF',
                   borderRadius: '16px',
@@ -430,6 +593,7 @@ export const CoursesPage: React.FC = () => {
                   display: 'flex',
                   flexDirection: 'column',
                   transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                  cursor: 'pointer',
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = 'translateY(-4px)';
@@ -535,29 +699,54 @@ export const CoursesPage: React.FC = () => {
                       </strong>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => handleOpenDetail(course._id)}
-                      style={{
-                        padding: '0.55rem 1.1rem',
-                        borderRadius: '8px',
-                        border: 'none',
-                        backgroundColor: '#07403F',
-                        color: '#FFFFFF',
-                        fontWeight: 700,
-                        fontSize: '0.85rem',
-                        cursor: 'pointer',
-                        transition: 'background-color 0.15s ease',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#052F2E';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = '#07403F';
-                      }}
-                    >
-                      Xem chi tiết
-                    </button>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenDetail(course._id)}
+                        style={{
+                          padding: '0.5rem 0.85rem',
+                          borderRadius: '8px',
+                          border: '1px solid #CBD5E1',
+                          backgroundColor: '#FFFFFF',
+                          color: '#334155',
+                          fontWeight: 700,
+                          fontSize: '0.82rem',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        Chi tiết
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleRegisterCourse(course)}
+                        style={{
+                          padding: '0.5rem 1.15rem',
+                          borderRadius: '8px',
+                          border: 'none',
+                          backgroundColor: '#07403F',
+                          color: '#FFFFFF',
+                          fontWeight: 700,
+                          fontSize: '0.85rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.35rem',
+                          boxShadow: '0 2px 6px rgba(7, 64, 63, 0.25)',
+                          transition: 'all 0.15s ease',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#052F2E';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = '#07403F';
+                        }}
+                      >
+                        <span>✍️</span>
+                        <span>Đăng kí học</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -583,7 +772,7 @@ export const CoursesPage: React.FC = () => {
             padding: '1rem',
             backdropFilter: 'blur(3px)',
           }}
-          onClick={() => setSelectedCourse(null)}
+          onClick={handleCloseDetail}
         >
           <div
             style={{
@@ -610,7 +799,7 @@ export const CoursesPage: React.FC = () => {
               }}
             >
               <button
-                onClick={() => setSelectedCourse(null)}
+                onClick={handleCloseDetail}
                 style={{
                   position: 'absolute',
                   top: '16px',
@@ -680,13 +869,20 @@ export const CoursesPage: React.FC = () => {
               </div>
 
               {/* Learning Objectives */}
-              {selectedCourse.learningObjectives && selectedCourse.learningObjectives.length > 0 && (
+              {selectedCourse.learningObjectives &&
+                (Array.isArray(selectedCourse.learningObjectives)
+                  ? selectedCourse.learningObjectives
+                  : [selectedCourse.learningObjectives]
+                ).filter(Boolean).length > 0 && (
                 <div style={{ marginBottom: '1.5rem' }}>
                   <h4 style={{ margin: '0 0 0.5rem', color: '#07403F', fontSize: '1rem', fontWeight: 700 }}>
                     🎯 Mục tiêu học tập đạt được
                   </h4>
                   <ul style={{ margin: 0, paddingLeft: '1.25rem', fontSize: '0.875rem', color: '#334155', lineHeight: 1.6 }}>
-                    {selectedCourse.learningObjectives.map((obj, i) => (
+                    {(Array.isArray(selectedCourse.learningObjectives)
+                      ? selectedCourse.learningObjectives
+                      : [selectedCourse.learningObjectives]
+                    ).map((obj, i) => (
                       <li key={i} style={{ marginBottom: '0.25rem' }}>{obj}</li>
                     ))}
                   </ul>
@@ -694,13 +890,20 @@ export const CoursesPage: React.FC = () => {
               )}
 
               {/* Syllabus */}
-              {selectedCourse.syllabus && selectedCourse.syllabus.length > 0 && (
+              {selectedCourse.syllabus &&
+                (Array.isArray(selectedCourse.syllabus)
+                  ? selectedCourse.syllabus
+                  : [selectedCourse.syllabus]
+                ).filter(Boolean).length > 0 && (
                 <div style={{ marginBottom: '1.5rem' }}>
                   <h4 style={{ margin: '0 0 0.5rem', color: '#07403F', fontSize: '1rem', fontWeight: 700 }}>
                     📚 Khung chương trình chi tiết
                   </h4>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    {selectedCourse.syllabus.map((syl, i) => (
+                    {(Array.isArray(selectedCourse.syllabus)
+                      ? selectedCourse.syllabus
+                      : [selectedCourse.syllabus]
+                    ).map((syl, i) => (
                       <div
                         key={i}
                         style={{
@@ -799,7 +1002,7 @@ export const CoursesPage: React.FC = () => {
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
                   <button
                     type="button"
-                    onClick={() => setSelectedCourse(null)}
+                    onClick={handleCloseDetail}
                     style={{
                       padding: '0.65rem 1.25rem',
                       borderRadius: '8px',
@@ -815,11 +1018,9 @@ export const CoursesPage: React.FC = () => {
 
                   <button
                     type="button"
-                    onClick={() => {
-                      setRegistrationNotice('Đã ghi nhận yêu cầu tư vấn & ghi danh cho khóa học ' + selectedCourse.title + '! Chuyên viên khảo thí sẽ liên hệ với bạn trong 15 phút.');
-                    }}
+                    onClick={() => handleRegisterCourse(selectedCourse)}
                     style={{
-                      padding: '0.65rem 1.5rem',
+                      padding: '0.65rem 1.75rem',
                       borderRadius: '8px',
                       border: 'none',
                       backgroundColor: '#EC6E23',
@@ -828,9 +1029,20 @@ export const CoursesPage: React.FC = () => {
                       cursor: 'pointer',
                       fontSize: '0.95rem',
                       boxShadow: '0 4px 12px rgba(236, 110, 35, 0.3)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.45rem',
+                      transition: 'all 0.15s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#d35b15';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#EC6E23';
                     }}
                   >
-                    Đăng Ký Tư Vấn &amp; Giữ Chỗ
+                    <span>✍️</span>
+                    <span>Đăng kí học</span>
                   </button>
                 </div>
               </div>

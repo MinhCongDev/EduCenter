@@ -13,8 +13,9 @@ const tuitionLabel = (s: TuitionStatus) => {
 };
 
 const enrollmentLabel = (s: string) => {
-  if (s === 'ENROLLED') return { label: 'Đang học', cls: 'badge-green' };
-  if (s === 'COMPLETED') return { label: 'Hoàn thành', cls: 'badge-blue' };
+  if (s === 'PENDING') return { label: '⏳ Đang chờ staff xếp lớp', cls: 'badge-amber' };
+  if (s === 'ENROLLED') return { label: '🎓 Đang học', cls: 'badge-green' };
+  if (s === 'COMPLETED') return { label: '🏆 Hoàn thành', cls: 'badge-blue' };
   return { label: s, cls: 'badge-purple' };
 };
 
@@ -25,7 +26,7 @@ const MyClassesPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [tuitionFilter, setTuitionFilter] = useState<'ALL' | TuitionStatus>('ALL');
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'ENROLLED' | 'COMPLETED'>('ALL');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'ENROLLED' | 'COMPLETED'>('ALL');
 
   useEffect(() => {
     fetchClasses();
@@ -177,12 +178,13 @@ const MyClassesPage: React.FC = () => {
                 onChange={(e) => setStatusFilter(e.target.value as any)}
                 style={selectStyle}
               >
-                <option value="ALL"> Tất cả trạng thái</option>
-                <option value="ENROLLED"> Đang học</option>
-                <option value="COMPLETED"> Hoàn thành</option>
+                <option value="ALL">📊 Tất cả trạng thái</option>
+                <option value="PENDING">⏳ Chờ xếp lớp</option>
+                <option value="ENROLLED">🎓 Đang học</option>
+                <option value="COMPLETED">🏆 Hoàn thành</option>
               </select>
               <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
-                {filtered.length}/{classes.length} lớp
+                {filtered.length}/{classes.length} khóa học
               </span>
             </div>
           </div>
@@ -199,6 +201,96 @@ const MyClassesPage: React.FC = () => {
             const tuition = tuitionLabel(item.tuitionStatus);
             const enrollment = enrollmentLabel(item.enrollmentStatus);
             const cls = item.class as any;
+            const isPending = item.isPendingClass || item.enrollmentStatus === 'PENDING' || !cls?._id;
+            const courseData = cls?.course || item.course;
+
+            if (isPending) {
+              return (
+                <div key={item._id} className="dash-card" style={{ borderLeft: '4px solid #f59e0b' }}>
+                  <div className="dash-card-header">
+                    <h2 className="dash-card-title">
+                      <span>📘</span>
+                      {courseData?.code || 'Khóa học'} — {courseData?.title || 'Khóa học đã đăng ký'}
+                    </h2>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      <span className="badge-pill badge-amber">⏳ Đang chờ staff xếp lớp</span>
+                      <span className={`badge-pill ${tuition.cls}`}>{tuition.label}</span>
+                    </div>
+                  </div>
+
+                  <div className="dash-subcard">
+                    <div
+                      style={{
+                        background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
+                        border: '1px solid #fde68a',
+                        padding: '0.9rem 1.15rem',
+                        borderRadius: '10px',
+                        marginBottom: '1rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem',
+                      }}
+                    >
+                      <span style={{ fontSize: '1.4rem' }}>⏳</span>
+                      <div>
+                        <strong style={{ color: '#92400e', fontSize: '0.9rem', display: 'block' }}>
+                          Khóa học đã được đăng ký thành công – Đang chờ phòng giáo vụ xếp lớp
+                        </strong>
+                        <span style={{ color: '#b45309', fontSize: '0.82rem', marginTop: '2px', display: 'block' }}>
+                          Hệ thống đã ghi nhận đăng ký và học phí của bạn. Nhân viên giáo vụ (Staff) sẽ xếp bạn vào lớp học phù hợp trong thời gian sớm nhất. Lịch học và giảng viên sẽ tự động cập nhật ngay sau khi xếp lớp.
+                        </span>
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                        gap: '0.75rem 1.5rem',
+                      }}
+                    >
+                      <Field label="Khóa học" value={courseData?.title || '—'} />
+                      <Field label="Mã khóa" value={courseData?.code || '—'} />
+                      <Field
+                        label="Trạng thái lớp"
+                        value={<span style={{ color: '#d97706', fontWeight: 700 }}>Đang chờ staff xếp lớp</span>}
+                      />
+                      <Field label="Lịch học & Phòng" value="Sẽ cập nhật sau khi xếp lớp" />
+                      <Field label="Giảng viên" value="Đang chỉ định" />
+                      {courseData?.tuitionFee !== undefined && (
+                        <Field label="Học phí" value={formatVND(courseData.tuitionFee)} />
+                      )}
+                      <Field label="Ngày đăng ký" value={formatDate(item.registrationDate || item.enrollmentDate)} />
+                    </div>
+
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: '0.75rem',
+                        marginTop: '1.25rem',
+                        flexWrap: 'wrap',
+                      }}
+                    >
+                      <Link
+                        to="/courses"
+                        className="dash-quick-btn"
+                        style={{ textDecoration: 'none' }}
+                      >
+                        📖 Xem Thông Tin Khóa Học
+                      </Link>
+                      <Link
+                        to="/student/payments"
+                        className="dash-quick-btn primary"
+                        style={{ textDecoration: 'none' }}
+                      >
+                        💳 Xem Hóa Đơn &amp; Lịch Sử Thanh Toán
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+
             return (
               <div key={item._id} className="dash-card">
                 <div className="dash-card-header">
