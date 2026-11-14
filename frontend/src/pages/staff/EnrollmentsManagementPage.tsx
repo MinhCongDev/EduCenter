@@ -27,7 +27,10 @@ const formatDate = (value?: string | null) => {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? '—' : date.toLocaleDateString('vi-VN');
 };
-const formatCurrency = (value: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
+const formatCurrency = (value?: number | null) => {
+  if (value == null || Number.isNaN(Number(value))) return '—';
+  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(Number(value));
+};
 
 const paymentBadgeClass = (status?: PaymentRecordStatus) => {
   if (status === 'SUCCESS') return 'badge-active';
@@ -192,9 +195,7 @@ const EnrollmentDetailModal: React.FC<{
                   ? 'Đang lưu…'
                   : alreadyAssigned
                     ? 'Đã xếp lớp'
-                    : enrollment.class
-                      ? 'Chuyển lớp'
-                      : 'Xếp lớp'}
+                    : 'Xếp lớp'}
               </button>
             </div>
           </>
@@ -411,41 +412,112 @@ const EnrollmentsManagementPage: React.FC = () => {
       {detailError && <div className="form-error-banner" role="alert">{detailError}</div>}
       {detailLoading && <div className="courses-loading"><div className="loading-spinner" /><p>Đang tải chi tiết ghi danh…</p></div>}
 
-      <div className="courses-table-wrap class-table-wrap">
+      <div className="courses-table-wrap class-table-wrap" style={{ overflowX: 'auto', width: '100%', position: 'relative' }}>
         {loading ? (
           <div className="courses-loading"><div className="loading-spinner" /><p>Đang tải danh sách ghi danh…</p></div>
         ) : enrollments.length === 0 ? (
           <div className="courses-empty"><h3>Không có ghi danh phù hợp</h3><p>Thử thay đổi điều kiện tìm kiếm hoặc bộ lọc.</p></div>
         ) : (
           <table className="courses-table enrollment-table" aria-label="Danh sách ghi danh">
-            <thead><tr><th>Mã ghi danh</th><th>Học viên</th><th>Khóa học</th><th>Điểm đầu vào / Chuẩn</th><th>Học phí</th><th>Lớp</th><th>Ngày đăng ký</th><th>Trạng thái ghi danh</th><th>Thanh toán gần nhất</th><th>Thao tác</th></tr></thead>
+            <thead>
+              <tr>
+                <th style={{ minWidth: '85px' }}>Mã</th>
+                <th style={{ minWidth: '150px' }}>Học viên</th>
+                <th style={{ minWidth: '170px' }}>Khóa học</th>
+                <th style={{ minWidth: '130px' }}>Đầu vào / Chuẩn</th>
+                <th style={{ minWidth: '105px' }}>Học phí</th>
+                <th style={{ minWidth: '120px' }}>Lớp</th>
+                <th style={{ minWidth: '95px' }}>Ngày ĐK</th>
+                <th style={{ minWidth: '110px' }}>Trạng thái</th>
+                <th style={{ minWidth: '125px' }}>Thanh toán</th>
+                <th
+                  style={{
+                    position: 'sticky',
+                    right: 0,
+                    background: '#f6faf7',
+                    zIndex: 3,
+                    boxShadow: '-3px 0 6px rgba(0,0,0,0.06)',
+                    textAlign: 'center',
+                    minWidth: '100px',
+                  }}
+                >
+                  Thao tác
+                </th>
+              </tr>
+            </thead>
             <tbody>
               {enrollments.map((enrollment) => {
                 const latestPayment = enrollment.payments[0];
                 return (
                   <tr key={enrollment._id} className="courses-table-row">
-                    <td><span className="course-code-chip">{enrollment._id}</span></td>
-                    <td><div className="course-title-cell"><strong>{enrollment.student?.fullName ?? 'Không có dữ liệu'}</strong><span className="course-desc-preview">{enrollment.studentProfile?.studentCode ?? enrollment.student?.email ?? '—'}</span></div></td>
-                    <td>{enrollment.course?.title ?? 'Chưa có thông tin'}</td>
                     <td>
-                      <div style={{ fontSize: '0.82rem' }}>
-                        <div>Đầu vào: <strong>{enrollment.studentProfile?.placementTestScore != null ? `Band ${enrollment.studentProfile.placementTestScore}` : 'Chưa thi'}</strong></div>
-                        <div style={{ fontSize: '0.74rem', color: '#64748b' }}>Hiện tại: {enrollment.studentProfile?.currentBand ?? '—'}</div>
-                        <div style={{ fontSize: '0.74rem', color: '#64748b' }}>Y/c: {enrollment.course?.entryLevel ?? '—'}</div>
-                        {enrollment.studentProfile?.placementTestDate && (
-                          <div style={{ fontSize: '0.74rem', color: '#64748b' }}>Ngày thi: {formatDate(enrollment.studentProfile.placementTestDate)}</div>
-                        )}
+                      <span className="course-code-chip" title={enrollment._id} style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
+                        #{enrollment._id.slice(-6)}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="course-title-cell">
+                        <strong>{enrollment.student?.fullName ?? 'Không có dữ liệu'}</strong>
+                        <span className="course-desc-preview">{enrollment.studentProfile?.studentCode ?? enrollment.student?.email ?? '—'}</span>
                       </div>
                     </td>
-                    <td>{enrollment.course ? formatCurrency(enrollment.course.tuitionFee) : '—'}</td>
-                    <td>{enrollment.class?.classCode ?? 'Chưa xếp lớp'}</td>
-                    <td>{formatDate(enrollment.registrationDate)}</td>
-                    <td><span className={`course-status-badge ${enrollmentBadgeClass(enrollment.status)}`}>{ENROLLMENT_STATUS[enrollment.status]}</span></td>
+                    <td style={{ maxWidth: '200px' }}>
+                      <strong style={{ fontSize: '0.88rem', color: '#0f172a' }}>{enrollment.course?.title ?? 'Chưa có thông tin'}</strong>
+                      {enrollment.course?.code && (
+                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{enrollment.course.code}</div>
+                      )}
+                    </td>
+                    <td>
+                      <div style={{ fontSize: '0.8rem', lineHeight: 1.35 }}>
+                        <div>Đầu vào: <strong>{enrollment.studentProfile?.placementTestScore != null ? `Band ${enrollment.studentProfile.placementTestScore}` : 'Chưa thi'}</strong></div>
+                        <div style={{ color: '#64748b', fontSize: '0.74rem' }}>Y/c: {enrollment.course?.entryLevel ?? '—'}</div>
+                      </div>
+                    </td>
+                    <td style={{ whiteSpace: 'nowrap' }}>
+                      {enrollment.course ? formatCurrency(enrollment.course.tuitionFee) : '—'}
+                    </td>
+                    <td>
+                      {enrollment.class?.classCode ? (
+                        <span style={{ fontWeight: 800, color: '#047857' }}>
+                          {enrollment.class.classCode}
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn btn-sm"
+                          style={{
+                            backgroundColor: '#fef3c7',
+                            color: '#92400e',
+                            border: '1px solid #fde68a',
+                            fontWeight: 700,
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                            fontSize: '0.78rem',
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap',
+                          }}
+                          onClick={() => void openDetails(enrollment._id)}
+                          title="Bấm để mở xếp lớp cho học viên này"
+                        >
+                          Chưa xếp lớp ✎
+                        </button>
+                      )}
+                    </td>
+                    <td style={{ whiteSpace: 'nowrap', fontSize: '0.82rem' }}>
+                      {formatDate(enrollment.registrationDate)}
+                    </td>
+                    <td>
+                      <span className={`course-status-badge ${enrollmentBadgeClass(enrollment.status)}`}>
+                        {ENROLLMENT_STATUS[enrollment.status]}
+                      </span>
+                    </td>
                     <td>
                       {latestPayment ? (
                         <div className="course-title-cell">
                           <strong>{formatCurrency(latestPayment.amount)}</strong>
-                          <span className={`course-status-badge ${paymentBadgeClass(latestPayment.status)}`}>{PAYMENT_STATUS[latestPayment.status]}</span>
+                          <span className={`course-status-badge ${paymentBadgeClass(latestPayment.status)}`}>
+                            {PAYMENT_STATUS[latestPayment.status]}
+                          </span>
                         </div>
                       ) : enrollment.tuitionStatus === 'PAID' ? (
                         <span className="course-status-badge badge-active">Đã thanh toán</span>
@@ -455,7 +527,33 @@ const EnrollmentsManagementPage: React.FC = () => {
                         <span className="course-desc-preview">Chưa có thanh toán</span>
                       )}
                     </td>
-                    <td><button className="btn btn-outline btn-sm" onClick={() => void openDetails(enrollment._id)}>Xem chi tiết</button></td>
+                    <td
+                      style={{
+                        position: 'sticky',
+                        right: 0,
+                        background: '#ffffff',
+                        zIndex: 2,
+                        boxShadow: '-3px 0 6px rgba(0,0,0,0.06)',
+                        textAlign: 'center',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      <button
+                        type="button"
+                        className={`btn btn-sm ${enrollment.class ? 'btn-outline' : 'btn-primary'}`}
+                        style={{
+                          fontWeight: 700,
+                          padding: '5px 12px',
+                          whiteSpace: 'nowrap',
+                          backgroundColor: enrollment.class ? undefined : '#059669',
+                          borderColor: enrollment.class ? undefined : '#059669',
+                          color: enrollment.class ? undefined : '#ffffff',
+                        }}
+                        onClick={() => void openDetails(enrollment._id)}
+                      >
+                        {enrollment.class ? 'Chi tiết' : 'Xếp lớp'}
+                      </button>
+                    </td>
                   </tr>
                 );
               })}
