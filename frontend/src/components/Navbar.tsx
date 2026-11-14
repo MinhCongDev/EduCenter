@@ -408,11 +408,15 @@ const Navbar: React.FC = () => {
                         type="button"
                         onClick={() => {
                           setIsUserMenuOpen(false);
-                          if (user.role === 'STUDENT') {
-                            navigate('/student/profile');
-                          } else {
-                            setIsProfileOpen(true);
-                          }
+                          const profilePath =
+                            user.role === 'TEACHER'
+                              ? '/teacher/profile'
+                              : user.role === 'TRAINING_STAFF'
+                              ? '/staff/profile'
+                              : user.role === 'DIRECTOR'
+                              ? '/director/profile'
+                              : '/student/profile';
+                          navigate(profilePath);
                         }}
                         style={{
                           display: 'flex',
