@@ -413,7 +413,7 @@ const MyClassesPage: React.FC = () => {
                           📅 Điểm Danh
                         </Link>
                         <Link
-                          to={`/student/classes/${cls._id}/grades`}
+                          to={`/student/progress?classId=${cls._id}&tab=grades`}
                           className="dash-quick-btn"
                           style={{ textDecoration: 'none' }}
                         >

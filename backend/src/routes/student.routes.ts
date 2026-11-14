@@ -10,6 +10,7 @@ import {
   getAssignments,
   getAttendance,
   getGrades,
+  getAcademicResults,
   getSchedule,
   getCombinedSchedule,
   getPayments,
@@ -34,6 +35,8 @@ router.use(authorize('STUDENT'));
 // Aggregate
 router.get('/dashboard', getDashboard);
 router.get('/profile', getMyProfile);
+router.get('/academic-results', getAcademicResults);
+router.get('/grades', getAcademicResults);
 
 // My classes
 router.get('/classes', getMyClasses);

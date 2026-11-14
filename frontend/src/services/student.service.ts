@@ -20,9 +20,11 @@ import type {
   TuitionStatus,
   User,
   ClassSchedule,
+  AcademicResultsData,
+  PlacementTestResult,
 } from '../types';
 
-export type { Enrollment, ClassSchedule };
+export type { Enrollment, ClassSchedule, AcademicResultsData, PlacementTestResult };
 
 // =====================================================
 // Student Service
@@ -84,6 +86,17 @@ export const studentService = {
   getGrades: async (classId: string): Promise<ApiResponse<{ grades: Grade[] }>> => {
     const res = await api.get<ApiResponse<{ grades: Grade[] }>>(
       `/student/classes/${classId}/grades`
+    );
+    return res.data;
+  },
+
+  /** GET /api/student/academic-results (Kết quả bài test đầu vào & dữ liệu điểm từ teacher) */
+  getAcademicResults: async (
+    classId?: string
+  ): Promise<ApiResponse<AcademicResultsData>> => {
+    const res = await api.get<ApiResponse<AcademicResultsData>>(
+      '/student/academic-results',
+      { params: classId ? { classId } : {} }
     );
     return res.data;
   },

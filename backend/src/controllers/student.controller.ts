@@ -12,6 +12,7 @@ import { ChangeRequest } from '../models/changeRequest.model';
 import { ClassSchedule } from '../models/classSchedule.model';
 import { Class } from '../models/class.model';
 import { Notification } from '../models/notification.model';
+import { Student } from '../models/student.model';
 import { cleanupExpiredPendingEnrollments } from './payment.controller';
 
 // =====================================================
@@ -396,6 +397,162 @@ export const getAttendance = async (req: AuthRequest, res: Response): Promise<vo
     res.status(500).json({
       success: false,
       message: error.message || 'Lỗi server khi lấy điểm danh',
+    });
+  }
+};
+
+// =====================================================
+//  GET /api/student/academic-results
+//  Lấy kết quả học tập tổng hợp:
+//  1) Kết quả bài test đầu vào (Placement Test)
+//  2) Dữ liệu điểm số từ bên Teacher (Grades)
+//  3) Danh sách các lớp học đã tham gia để lọc
+// =====================================================
+export const getAcademicResults = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const user = requireUser(req);
+
+    // 1. Lấy thông tin bài test đầu vào từ hồ sơ học viên
+    const studentDoc = await Student.findOne({ user: user._id }).lean();
+
+    let placementTest: any = null;
+    if (
+      studentDoc &&
+      (studentDoc.placementTestScore !== undefined ||
+        studentDoc.currentBand !== undefined ||
+        studentDoc.placementTestDate)
+    ) {
+      const score = studentDoc.placementTestScore ?? studentDoc.currentBand ?? 0;
+      let levelName = 'Mất gốc (0 - 3.5)';
+      let matchedLevel = '0 - 3.5';
+      if (score >= 8.0) {
+        levelName = 'Master (8.0+)';
+        matchedLevel = '8.0+';
+      } else if (score >= 6.5) {
+        levelName = 'Chuyên sâu (6.5 - 7.5+)';
+        matchedLevel = '6.5 - 7.5+';
+      } else if (score >= 5.5) {
+        levelName = 'Bứt phá (5.5 - 6.5)';
+        matchedLevel = '5.5 - 6.5';
+      } else if (score >= 4.5) {
+        levelName = 'Foundation (4.5 - 5.5)';
+        matchedLevel = '4.5 - 5.5';
+      } else if (score >= 3.5) {
+        levelName = 'Pre-IELTS (3.5 - 4.5)';
+        matchedLevel = '3.5 - 4.5';
+      }
+
+      let testTitle = 'Bài Kiểm Tra Chẩn Đoán Trình Độ Đầu Vào (Placement Test)';
+      if (studentDoc.placementNotes) {
+        const match = studentDoc.placementNotes.match(/bài test "([^"]+)"/i);
+        if (match && match[1]) {
+          testTitle = match[1];
+        }
+      }
+
+      placementTest = {
+        hasTest: true,
+        testTitle,
+        score,
+        predictedBand: score,
+        currentBand: studentDoc.currentBand || score,
+        targetBand: studentDoc.targetBand || 6.5,
+        testDate: studentDoc.placementTestDate || (studentDoc as any).createdAt,
+        levelName,
+        matchedLevel,
+        notes:
+          studentDoc.placementNotes ||
+          studentDoc.learningGoal ||
+          `Đánh giá năng lực đầu vào đạt Band ${score}.`,
+        learningGoal: studentDoc.learningGoal,
+      };
+    }
+
+    // 2. Lấy tất cả điểm số từ phía giảng viên đã công bố (PUBLISHED)
+    const { classId } = req.query;
+    const gradeQuery: any = {
+      student: user._id,
+      status: 'PUBLISHED',
+    };
+    if (classId && isValidId(String(classId))) {
+      gradeQuery.class = classId;
+    }
+
+    const grades = await Grade.find(gradeQuery)
+      .populate('teacher', 'fullName email title avatar avatarUrl')
+      .populate({
+        path: 'class',
+        select: 'classCode name course room timeSlot startDate endDate',
+        populate: {
+          path: 'course',
+          select: 'code title level targetLevel tuitionFee sessions',
+        },
+      })
+      .sort({ testDate: -1, createdAt: -1 });
+
+    // 3. Lấy danh sách các lớp học của học viên để phục vụ lọc điểm theo lớp
+    const enrollments = await Enrollment.find({
+      student: user._id,
+      status: { $ne: 'DROPPED' },
+    })
+      .populate({
+        path: 'class',
+        select: 'classCode name course room timeSlot',
+        populate: {
+          path: 'course',
+          select: 'code title',
+        },
+      })
+      .populate('course', 'code title');
+
+    const classesList = enrollments
+      .map((enr: any) => {
+        const cls = enr.class as any;
+        if (cls) {
+          return {
+            _id: cls._id,
+            classCode: cls.classCode,
+            name: cls.name || cls.classCode,
+            courseTitle: cls.course?.title || (enr.course as any)?.title || 'Khóa học',
+          };
+        }
+        return null;
+      })
+      .filter(Boolean);
+
+    // 4. Tính toán số liệu thống kê điểm số
+    const withBand = grades.filter((g) => g.overallBand !== undefined && g.overallBand !== null);
+    const avgBand =
+      withBand.length > 0
+        ? Number((withBand.reduce((sum, g) => sum + (g.overallBand || 0), 0) / withBand.length).toFixed(1))
+        : null;
+    const maxBand = withBand.length > 0 ? Math.max(...withBand.map((g) => g.overallBand!)) : null;
+
+    const byType: Record<string, number> = {};
+    grades.forEach((g: any) => {
+      byType[g.evaluationType] = (byType[g.evaluationType] || 0) + 1;
+    });
+
+    res.json({
+      success: true,
+      message: 'Lấy dữ liệu kết quả học tập và điểm số thành công',
+      data: {
+        placementTest,
+        grades,
+        classes: classesList,
+        stats: {
+          total: grades.length,
+          avgBand,
+          maxBand,
+          byType,
+          latestTestDate: grades[0]?.testDate || null,
+        },
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Lỗi server khi lấy kết quả học tập',
     });
   }
 };

@@ -210,6 +210,7 @@ const StudentDashboard: React.FC = () => {
               📚 Khóa học
             </Link>
             <Link
+<<<<<<< Updated upstream
               to="/student/grades"
               className="dash-quick-btn"
               style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
@@ -217,6 +218,8 @@ const StudentDashboard: React.FC = () => {
               📊 Điểm số
             </Link>
             <Link
+=======
+>>>>>>> Stashed changes
               to="/student/attendance"
               className="dash-quick-btn"
               style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
@@ -281,7 +284,7 @@ const StudentDashboard: React.FC = () => {
               <div className="dash-metric-icon icon-emerald">✅</div>
             </div>
 
-            <div className="dash-metric-card" onClick={() => navigate('/student/grades')} style={{ cursor: 'pointer' }}>
+            <div className="dash-metric-card" onClick={() => navigate('/student/progress?tab=grades')} style={{ cursor: 'pointer' }}>
               <div className="dash-metric-info">
                 <span className="dash-metric-label">Band trung bình</span>
                 <span
@@ -846,9 +849,13 @@ const StudentDashboard: React.FC = () => {
                       <button
                         type="button"
                         className="dash-quick-btn"
-                        onClick={() => navigate(`/student/classes/${cls?._id}/grades`)}
+                        onClick={() => navigate(`/student/progress?classId=${cls?._id}&tab=grades`)}
                       >
+<<<<<<< Updated upstream
                          Điểm
+=======
+                        📊 Điểm & Kết quả
+>>>>>>> Stashed changes
                       </button>
                     </div>
                   </div>

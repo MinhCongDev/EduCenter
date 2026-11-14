@@ -808,6 +808,38 @@ export interface Grade {
   status: GradeStatus;
 }
 
+export interface PlacementTestResult {
+  hasTest: boolean;
+  testTitle: string;
+  score: number;
+  predictedBand: number;
+  currentBand: number;
+  targetBand: number;
+  testDate: string;
+  levelName: string;
+  matchedLevel: string;
+  notes: string;
+  learningGoal?: string;
+}
+
+export interface AcademicResultsData {
+  placementTest: PlacementTestResult | null;
+  grades: Grade[];
+  classes: Array<{
+    _id: string;
+    classCode: string;
+    name: string;
+    courseTitle: string;
+  }>;
+  stats: {
+    total: number;
+    avgBand: number | null;
+    maxBand: number | null;
+    byType: Record<string, number>;
+    latestTestDate: string | null;
+  };
+}
+
 // Attendance (datlt – aligned with main's schema)
 export type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED';
 export interface Attendance {

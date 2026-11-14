@@ -139,7 +139,6 @@ const getMenuItems = (role: UserRole): DashboardItem[] => {
       { label: 'Tổng quan', path: '/student/dashboard' },
       { label: 'Xem lịch học', path: '/student/schedule' },
       { label: 'Khóa học', path: '/student/classes' },
-      { label: 'Điểm số', path: '/student/grades' },
       { label: 'Chuyên cần', path: '/student/attendance' },
       { label: 'Kết quả học tập', path: '/student/progress' },
       { label: 'Thông báo', path: '/student/announcements' },
