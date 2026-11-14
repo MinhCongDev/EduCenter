@@ -61,7 +61,20 @@ const SchedulePage: React.FC = () => {
     try {
       setIsLoading(true);
       const res = await studentService.getSchedule(id);
-      if (res.success && res.data) setSchedules(res.data.schedule);
+      if (res.success && res.data) {
+        const raw = res.data.schedule || [];
+        const seen = new Set<string>();
+        const deduped = raw.filter((s: any) => {
+          const day = canonicalDay(s.dayOfWeek);
+          const start = (s.startTime || '').trim();
+          const end = (s.endTime || '').trim();
+          const key = `${day}-${start}-${end}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        setSchedules(deduped);
+      }
       else toast.error(res.message || 'Không thể tải lịch học');
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Không thể tải lịch học');
@@ -72,11 +85,18 @@ const SchedulePage: React.FC = () => {
 
   const grouped = useMemo(() => {
     const map: Record<string, ClassSchedule[]> = {};
+    const seen = new Set<string>();
     schedules.forEach((s) => {
       // Gom theo ngày đã chuẩn hoá để 'Chủ Nhật' và 'Chủ nhật' là một nhóm.
       const key = canonicalDay(s.dayOfWeek);
-      if (!map[key]) map[key] = [];
-      map[key].push(s);
+      const start = (s.startTime || '').trim();
+      const end = (s.endTime || '').trim();
+      const slotKey = `${key}-${start}-${end}`;
+      if (!seen.has(slotKey)) {
+        seen.add(slotKey);
+        if (!map[key]) map[key] = [];
+        map[key].push(s);
+      }
     });
     return map;
   }, [schedules]);
@@ -196,7 +216,7 @@ const SchedulePage: React.FC = () => {
                       background: 'var(--dash-card-subtle)',
                       borderRadius: '10px',
                       padding: '0.75rem 1rem',
-                        borderLeft: `3px solid ${dayColor(day)}`,
+                      borderLeft: `3px solid ${dayColor(day)}`,
                     }}
                   >
                     <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '0.25rem' }}>

@@ -161,5 +161,20 @@ export const paymentService = {
     }
     return response.data.data;
   },
+
+  /**
+   * Hủy đơn thanh toán và tự động hủy đăng ký khóa học khi hết thời gian 10 phút
+   * POST /api/payments/cancel-expired
+   */
+  cancelExpiredPayment: async (payload: {
+    orderCode?: number | null;
+    paymentId?: string;
+    enrollmentId?: string;
+    courseId?: string;
+    reason?: string;
+  }): Promise<any> => {
+    const response = await api.post<ApiResponse<any>>('/payments/cancel-expired', payload);
+    return response.data;
+  },
 };
 

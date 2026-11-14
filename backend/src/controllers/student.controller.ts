@@ -12,6 +12,7 @@ import { ChangeRequest } from '../models/changeRequest.model';
 import { ClassSchedule } from '../models/classSchedule.model';
 import { Class } from '../models/class.model';
 import { Notification } from '../models/notification.model';
+import { cleanupExpiredPendingEnrollments } from './payment.controller';
 
 // =====================================================
 //  Helpers
@@ -127,15 +128,19 @@ export const getMyClasses = async (req: AuthRequest, res: Response): Promise<voi
   try {
     const user = requireUser(req);
 
+    // Tự động dọn dẹp các đăng ký quá hạn 10 phút chưa thanh toán
+    await cleanupExpiredPendingEnrollments(user._id);
+
     const enrollments = await Enrollment.find({
       student: user._id,
       status: { $ne: 'DROPPED' },
+      tuitionStatus: 'PAID',
     })
-      .populate('course', 'code title description durationWeeks sessions tuitionFee level format')
+      .populate('course', 'code title description durationWeeks sessions tuitionFee level format entryLevel targetLevel learningObjectives syllabus bannerUrl')
       .populate({
         path: 'class',
         populate: [
-          { path: 'course', select: 'code title description durationWeeks sessions tuitionFee level format' },
+          { path: 'course', select: 'code title description durationWeeks sessions tuitionFee level format entryLevel targetLevel learningObjectives syllabus bannerUrl' },
           { path: 'teacher', select: 'fullName email phone avatarUrl' },
         ],
       })
@@ -152,37 +157,37 @@ export const getMyClasses = async (req: AuthRequest, res: Response): Promise<voi
         isPendingClass,
         class: cls
           ? {
-              _id: cls._id,
-              classCode: cls.classCode,
-              room: cls.room,
-              scheduleDays: cls.scheduleDays,
-              timeSlot: cls.timeSlot,
-              startDate: cls.startDate,
-              endDate: cls.endDate,
-              capacity: cls.capacity,
-              currentStudents: cls.currentEnrollment ?? cls.currentStudents ?? 0,
-              currentEnrollment: cls.currentEnrollment ?? cls.currentStudents ?? 0,
-              sessions: cls.sessions,
-              status: cls.status,
-              course: cls.course || course,
-              teacher: cls.teacher,
-            }
+            _id: cls._id,
+            classCode: cls.classCode,
+            room: cls.room,
+            scheduleDays: cls.scheduleDays,
+            timeSlot: cls.timeSlot,
+            startDate: cls.startDate,
+            endDate: cls.endDate,
+            capacity: cls.capacity,
+            currentStudents: cls.currentEnrollment ?? cls.currentStudents ?? 0,
+            currentEnrollment: cls.currentEnrollment ?? cls.currentStudents ?? 0,
+            sessions: cls.sessions,
+            status: cls.status,
+            course: cls.course || course,
+            teacher: cls.teacher,
+          }
           : {
-              _id: '',
-              classCode: 'Chưa xếp lớp',
-              room: 'Đang xếp phòng',
-              scheduleDays: [],
-              timeSlot: 'Đang xếp ca',
-              startDate: null,
-              endDate: null,
-              capacity: 0,
-              currentStudents: 0,
-              currentEnrollment: 0,
-              sessions: course?.sessions || 0,
-              status: 'PENDING_CLASS',
-              course: course,
-              teacher: null,
-            },
+            _id: '',
+            classCode: 'Chưa xếp lớp',
+            room: 'Đang xếp phòng',
+            scheduleDays: [],
+            timeSlot: 'Đang xếp ca',
+            startDate: null,
+            endDate: null,
+            capacity: 0,
+            currentStudents: 0,
+            currentEnrollment: 0,
+            sessions: course?.sessions || 0,
+            status: 'PENDING_CLASS',
+            course: course,
+            teacher: null,
+          },
         course: course,
         status: isPendingClass ? 'PENDING' : e.status,
         enrollmentStatus: isPendingClass ? 'PENDING' : e.status,
@@ -449,6 +454,7 @@ export const getCombinedSchedule = async (req: AuthRequest, res: Response): Prom
     const enrollments = await Enrollment.find({
       student: user._id,
       status: { $ne: 'DROPPED' },
+      tuitionStatus: 'PAID',
     })
       .populate({
         path: 'class',
@@ -474,9 +480,24 @@ export const getCombinedSchedule = async (req: AuthRequest, res: Response): Prom
       })
       .sort({ dayOfWeek: 1, startTime: 1 });
 
+    // Loại bỏ các buổi học trùng lặp cùng lớp, cùng thứ, cùng khung giờ (cho thời khóa biểu tuần)
+    const seenSlots = new Set<string>();
+    const uniqueSchedule: any[] = [];
+    for (const s of schedule) {
+      const clsId = (s.class as any)?._id?.toString() || (s.class as any)?.toString() || '';
+      const day = (s.dayOfWeek || '').trim().toLowerCase();
+      const start = (s.startTime || '').trim();
+      const end = (s.endTime || '').trim();
+      const slotKey = `${clsId}-${day}-${start}-${end}`;
+      if (!seenSlots.has(slotKey)) {
+        seenSlots.add(slotKey);
+        uniqueSchedule.push(s);
+      }
+    }
+
     // Fallback: nếu bảng ClassSchedule chưa có dữ liệu, dựng lịch từ
     // class.scheduleDays + class.timeSlot (dữ liệu lớp học hiện có trong seed).
-    let scheduleList: any[] = schedule;
+    let scheduleList: any[] = uniqueSchedule;
     if (!scheduleList.length) {
       const timeParts = (slot?: string) => {
         const [s, e] = (slot || '').split('-').map((x) => x.trim());
@@ -541,8 +562,22 @@ export const getSchedule = async (req: AuthRequest, res: Response): Promise<void
       startTime: 1,
     });
 
+    // Loại bỏ các buổi học trùng lặp cùng thứ, cùng khung giờ (cho thời khóa biểu tuần)
+    const seenSlotsSingle = new Set<string>();
+    const uniqueScheduleSingle: any[] = [];
+    for (const s of schedule) {
+      const day = (s.dayOfWeek || '').trim().toLowerCase();
+      const start = (s.startTime || '').trim();
+      const end = (s.endTime || '').trim();
+      const slotKey = `${day}-${start}-${end}`;
+      if (!seenSlotsSingle.has(slotKey)) {
+        seenSlotsSingle.add(slotKey);
+        uniqueScheduleSingle.push(s);
+      }
+    }
+
     // Fallback khi bảng ClassSchedule chưa có dữ liệu cho lớp này
-    let scheduleList: any[] = schedule;
+    let scheduleList: any[] = uniqueScheduleSingle;
     if (!scheduleList.length && classDoc?.scheduleDays?.length) {
       const [s, e] = (classDoc.timeSlot || '').split('-').map((x) => x.trim());
       const clsPlain =
@@ -665,6 +700,7 @@ export const getTuition = async (req: AuthRequest, res: Response): Promise<void>
     const enrollments = await Enrollment.find({
       student: user._id,
       status: { $ne: 'DROPPED' },
+      tuitionStatus: 'PAID',
     })
       .populate({
         path: 'class',
@@ -695,23 +731,23 @@ export const getTuition = async (req: AuthRequest, res: Response): Promise<void>
           endDate: cls.endDate,
           course: course
             ? {
-                _id: course._id,
-                code: course.code,
-                title: course.title,
-                description: course.description,
-                durationWeeks: course.durationWeeks,
-                sessions: course.sessions,
-                tuitionFee: course.tuitionFee,
-              }
+              _id: course._id,
+              code: course.code,
+              title: course.title,
+              description: course.description,
+              durationWeeks: course.durationWeeks,
+              sessions: course.sessions,
+              tuitionFee: course.tuitionFee,
+            }
             : null,
           teacher: cls.teacher
             ? {
-                _id: cls.teacher._id,
-                fullName: cls.teacher.fullName,
-                email: cls.teacher.email,
-                phone: cls.teacher.phone,
-                avatarUrl: cls.teacher.avatarUrl,
-              }
+              _id: cls.teacher._id,
+              fullName: cls.teacher.fullName,
+              email: cls.teacher.email,
+              phone: cls.teacher.phone,
+              avatarUrl: cls.teacher.avatarUrl,
+            }
             : null,
           tuitionFee,
           tuitionStatus,
@@ -1221,12 +1257,12 @@ export const getDashboard = async (req: AuthRequest, res: Response): Promise<voi
         },
         currentClass: currentClass
           ? {
-              enrollmentId: (currentClass as any)._id,
-              class: (currentClass as any).class,
-              status: (currentClass as any).status,
-              tuitionStatus: (currentClass as any).tuitionStatus,
-              enrollmentDate: (currentClass as any).enrollmentDate,
-            }
+            enrollmentId: (currentClass as any)._id,
+            class: (currentClass as any).class,
+            status: (currentClass as any).status,
+            tuitionStatus: (currentClass as any).tuitionStatus,
+            enrollmentDate: (currentClass as any).enrollmentDate,
+          }
           : null,
         myClasses: enrollments.map((e: any) => {
           const cls = e.class;
@@ -1239,11 +1275,11 @@ export const getDashboard = async (req: AuthRequest, res: Response): Promise<voi
             class: cls
               ? e.class
               : {
-                  _id: '',
-                  classCode: 'Chưa xếp lớp',
-                  course,
-                  teacher: null,
-                },
+                _id: '',
+                classCode: 'Chưa xếp lớp',
+                course,
+                teacher: null,
+              },
             course,
             status: isPendingClass ? 'PENDING' : e.status,
             tuitionStatus: e.tuitionStatus,
@@ -1292,14 +1328,14 @@ export const getMyProfile = async (req: AuthRequest, res: Response): Promise<voi
         },
         student: student
           ? {
-              studentCode: student.studentCode,
-              dob: student.dob,
-              currentBand: student.currentBand,
-              targetBand: student.targetBand,
-              learningGoal: student.learningGoal,
-              emergencyContact: student.emergencyContact,
-              status: student.status,
-            }
+            studentCode: student.studentCode,
+            dob: student.dob,
+            currentBand: student.currentBand,
+            targetBand: student.targetBand,
+            learningGoal: student.learningGoal,
+            emergencyContact: student.emergencyContact,
+            status: student.status,
+          }
           : null,
       },
     });

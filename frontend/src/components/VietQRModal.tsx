@@ -21,6 +21,7 @@ export interface VietQRModalProps {
   onClose: () => void;
   data: VietQRData | null;
   onPaymentSuccess?: (payment: any) => void;
+  onPaymentExpired?: () => void;
 }
 
 interface BankOption {
@@ -56,6 +57,7 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
   onClose,
   data,
   onPaymentSuccess,
+  onPaymentExpired,
 }) => {
   const [selectedBank, setSelectedBank] = useState<BankOption>(SUPPORTED_BANKS[0]);
   const [template, setTemplate] = useState<'compact2' | 'qr_only'>('compact2');
@@ -63,6 +65,12 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
   const [confirmSuccess, setConfirmSuccess] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
   const [customAmount, setCustomAmount] = useState<number>(0);
+
+  // Quản lý thời gian thanh toán: 10 phút (600 giây)
+  const TOTAL_PAYMENT_TIME = 600;
+  const [timeLeft, setTimeLeft] = useState<number>(TOTAL_PAYMENT_TIME);
+  const [isExpired, setIsExpired] = useState<boolean>(false);
+  const [isCancelling, setIsCancelling] = useState<boolean>(false);
 
   // Quản lý bản ghi giao dịch thanh toán trên cơ sở dữ liệu
   const [pendingPayment, setPendingPayment] = useState<any>(null);
@@ -75,6 +83,40 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
   const [payosAccountNo, setPayosAccountNo] = useState<string>('');
   const [payosAccountName, setPayosAccountName] = useState<string>('');
   const [payosBin, setPayosBin] = useState<string>('');
+
+  const timerStorageKey = data
+    ? `pay_timer_${data.invoiceCode || data.orderCode || data.courseId || 'pending'}`
+    : null;
+
+  const formatCountdown = (totalSeconds: number): string => {
+    const mins = Math.floor(Math.max(0, totalSeconds) / 60);
+    const secs = Math.max(0, totalSeconds) % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const handleExpire = async () => {
+    setIsExpired(true);
+    setIsCancelling(true);
+    try {
+      await paymentService.cancelExpiredPayment({
+        orderCode: payosOrderCode || data?.orderCode,
+        paymentId: pendingPayment?._id || data?.paymentId,
+        enrollmentId: data?.enrollmentId,
+        courseId: data?.courseId,
+        reason: 'Hết thời gian thanh toán (10 phút) - Tự động hủy đăng ký',
+      });
+      if (timerStorageKey) {
+        sessionStorage.removeItem(timerStorageKey);
+      }
+      if (onPaymentExpired) {
+        onPaymentExpired();
+      }
+    } catch (err) {
+      console.warn('Lỗi khi tự động hủy thanh toán hết hạn:', err);
+    } finally {
+      setIsCancelling(false);
+    }
+  };
 
   // Thông tin tài khoản thụ hưởng hiển thị: "EduCenter" theo yêu cầu thương hiệu trung tâm
   const DEFAULT_ACCOUNT_NO = '988866889999';
@@ -176,6 +218,9 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
       setPayosAccountNo('');
       setPayosAccountName('');
       setPayosBin('');
+      setIsExpired(false);
+      setIsCancelling(false);
+      setTimeLeft(TOTAL_PAYMENT_TIME);
     } else {
       const initialAmount = data?.amount && data.amount > 0 ? data.amount : 0;
       setCustomAmount(initialAmount);
@@ -187,10 +232,54 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
     }
   }, [isOpen, data]);
 
+  // Bộ đếm ngược thời gian thanh toán 10 phút (600 giây)
+  useEffect(() => {
+    if (!isOpen || !data || confirmSuccess) {
+      return;
+    }
+
+    if (!timerStorageKey) return;
+
+    let startTimeStr = sessionStorage.getItem(timerStorageKey);
+    const now = Date.now();
+    if (!startTimeStr) {
+      startTimeStr = String(now);
+      sessionStorage.setItem(timerStorageKey, startTimeStr);
+    }
+
+    const elapsedSeconds = Math.floor((now - Number(startTimeStr)) / 1000);
+    const remainingSeconds = Math.max(0, TOTAL_PAYMENT_TIME - elapsedSeconds);
+
+    setTimeLeft(remainingSeconds);
+
+    if (remainingSeconds <= 0) {
+      handleExpire();
+      return;
+    }
+
+    setIsExpired(false);
+
+    const interval = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          handleExpire();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isOpen, data, timerStorageKey, confirmSuccess]);
+
   // Xử lý tự động khi phát hiện thanh toán thành công (tự đối soát PayOS)
   const triggerSuccessFlow = (paymentRecord?: any) => {
     if (confirmSuccess) return;
     setConfirmSuccess(true);
+    if (timerStorageKey) {
+      sessionStorage.removeItem(timerStorageKey);
+    }
     setToastMessage('🎉 PayOS đã xác nhận thanh toán thành công!');
     if (onPaymentSuccess) {
       onPaymentSuccess(paymentRecord || pendingPayment);
@@ -202,7 +291,7 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
 
   // Polling tự động đối chiếu trạng thái giao dịch với PayOS sau mỗi 2.5 giây
   useEffect(() => {
-    if (!isOpen || !payosOrderCode || confirmSuccess) return;
+    if (!isOpen || !payosOrderCode || confirmSuccess || isExpired) return;
 
     let isMounted = true;
 
@@ -512,9 +601,193 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
               <div style={{ fontSize: '0.85rem', color: '#047857', marginTop: '0.5rem', fontWeight: 600 }}>
                 🚀 Khóa học đã được đưa vào mục <strong>"Khóa học của tôi"</strong> (chờ xếp lớp). Đang tự động chuyển trang...
               </div>
+
+              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.25rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    window.location.href = '/student/classes';
+                  }}
+                  style={{
+                    backgroundColor: '#059669',
+                    color: '#ffffff',
+                    padding: '0.75rem 1.5rem',
+                    borderRadius: '12px',
+                    fontWeight: 800,
+                    fontSize: '0.92rem',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: '0 4px 14px rgba(5, 150, 105, 0.3)',
+                  }}
+                >
+                  <span>📚 Xem Thông Tin &amp; Khóa Học Vừa Đăng Ký</span>
+                  <span>→</span>
+                </button>
+              </div>
+            </div>
+          ) : isExpired ? (
+            <div
+              style={{
+                padding: '3rem 2rem',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textAlign: 'center',
+                gap: '1.25rem',
+                minHeight: '380px',
+                animation: 'dashFadeIn 0.3s ease-out',
+              }}
+            >
+              <div
+                style={{
+                  width: '90px',
+                  height: '90px',
+                  borderRadius: '50%',
+                  backgroundColor: '#fee2e2',
+                  color: '#dc2626',
+                  fontSize: '3.2rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 12px 28px -6px rgba(220, 38, 38, 0.35)',
+                  border: '4px solid #fca5a5',
+                }}
+              >
+                ⏰
+              </div>
+              <div>
+                <h3 style={{ fontSize: '1.65rem', fontWeight: 800, color: '#991b1b', margin: '0 0 0.5rem' }}>
+                  Hết Thời Gian Thanh Toán (10 Phút)
+                </h3>
+                <p style={{ fontSize: '0.96rem', color: '#7f1d1d', maxWidth: '480px', margin: '0 auto', lineHeight: '1.6' }}>
+                  Đơn thanh toán cho khóa học <strong>{data?.courseTitle || 'vừa đăng ký'}</strong> đã quá thời hạn quy định (10 phút).
+                  <br />
+                  <span style={{ fontWeight: 700, color: '#b91c1c' }}>
+                    Hệ thống đã tự động hủy lượt đăng ký khóa học này
+                  </span>{' '}
+                  để giải phóng slot giữ chỗ.
+                </p>
+              </div>
+
+              <div
+                style={{
+                  padding: '0.85rem 1.5rem',
+                  borderRadius: '12px',
+                  backgroundColor: '#fef2f2',
+                  border: '1px solid #fca5a5',
+                  fontSize: '0.88rem',
+                  color: '#991b1b',
+                  fontWeight: 600,
+                  display: 'flex',
+                  gap: '0.5rem',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <span>ℹ️</span>
+                <span>{isCancelling ? 'Đang hoàn tất hủy đơn trên hệ thống...' : 'Đơn đăng ký khóa học đã được tự động hủy thành công'}</span>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.25rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (timerStorageKey) sessionStorage.removeItem(timerStorageKey);
+                    onClose();
+                    window.location.href = '/courses';
+                  }}
+                  style={{
+                    backgroundColor: '#ea580c',
+                    color: '#ffffff',
+                    padding: '0.75rem 1.6rem',
+                    borderRadius: '12px',
+                    fontWeight: 800,
+                    fontSize: '0.92rem',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: '0 4px 14px rgba(234, 88, 12, 0.3)',
+                  }}
+                >
+                  <span>🔄 Đăng Ký Lại Khóa Học</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (timerStorageKey) sessionStorage.removeItem(timerStorageKey);
+                    onClose();
+                  }}
+                  style={{
+                    backgroundColor: '#f1f5f9',
+                    color: '#475569',
+                    padding: '0.75rem 1.4rem',
+                    borderRadius: '12px',
+                    fontWeight: 700,
+                    fontSize: '0.92rem',
+                    border: '1px solid #cbd5e1',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Đóng
+                </button>
+              </div>
             </div>
           ) : (
             <>
+              {/* Thanh đếm ngược thời gian thanh toán (10 phút) */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '0.75rem 1.25rem',
+                  borderRadius: '12px',
+                  backgroundColor: timeLeft <= 120 ? '#fef2f2' : '#f0fdf4',
+                  border: `1.5px solid ${timeLeft <= 120 ? '#f87171' : '#86efac'}`,
+                  color: timeLeft <= 120 ? '#991b1b' : '#166534',
+                  fontWeight: 700,
+                  fontSize: '0.92rem',
+                  transition: 'all 0.3s ease',
+                  flexWrap: 'wrap',
+                  gap: '0.5rem',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '1.3rem' }}>{timeLeft <= 120 ? '🔥' : '⏱️'}</span>
+                  <span>
+                    {timeLeft <= 120
+                      ? 'Khẩn cấp! Sắp hết thời hạn thanh toán:'
+                      : 'Thời gian hoàn tất thanh toán (10 phút):'}
+                  </span>
+                </div>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '1.25rem',
+                    fontWeight: 900,
+                    fontFamily: 'monospace',
+                    letterSpacing: '1px',
+                    color: timeLeft <= 120 ? '#dc2626' : '#059669',
+                    backgroundColor: '#ffffff',
+                    padding: '3px 12px',
+                    borderRadius: '8px',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                    border: `1px solid ${timeLeft <= 120 ? '#fca5a5' : '#bbf7d0'}`,
+                  }}
+                >
+                  <span>{formatCountdown(timeLeft)}</span>
+                </div>
+              </div>
+
               {/* Thông tin gói học phí / khóa học được truyền động */}
               <div
                 style={{
@@ -1017,10 +1290,23 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
               <span style={{ color: '#059669', fontWeight: 700 }}>
                 🎉 Xác nhận thanh toán thành công! Hệ thống đang cập nhật...
               </span>
+            ) : isExpired ? (
+              <span style={{ color: '#dc2626', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#ef4444', display: 'inline-block' }} />
+                ⏰ Đã quá hạn 10 phút thanh toán — Khóa học đã tự động bị hủy.
+              </span>
             ) : (
               <span style={{ color: '#047857', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', fontWeight: 600 }}>
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10b981', display: 'inline-block' }} />
-                Đang chờ chuyển khoản — hệ thống tự động nhận diện thanh toán qua PayOS
+                <span
+                  style={{
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    backgroundColor: timeLeft <= 120 ? '#ef4444' : '#10b981',
+                    display: 'inline-block',
+                  }}
+                />
+                Đang chờ chuyển khoản (còn {formatCountdown(timeLeft)}) — tự động hủy nếu quá 10 phút
               </span>
             )}
           </div>

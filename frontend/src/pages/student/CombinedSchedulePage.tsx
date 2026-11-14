@@ -58,7 +58,19 @@ const CombinedSchedulePage: React.FC = () => {
         setIsLoading(true);
         const res = await studentService.getCombinedSchedule();
         if (res.success && res.data) {
-          setItems(res.data.schedule || []);
+          const raw = res.data.schedule || [];
+          const seen = new Set<string>();
+          const deduped = raw.filter((s: any) => {
+            const classId = s.class?._id || s.class || '';
+            const day = normDay(s.dayOfWeek);
+            const start = (s.startTime || '').trim();
+            const end = (s.endTime || '').trim();
+            const key = `${classId}-${day}-${start}-${end}`;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
+          setItems(deduped);
           setClassCount(res.data.classCount || 0);
         } else {
           toast.error(res.message || 'Không thể tải lịch học');
@@ -102,9 +114,19 @@ const CombinedSchedulePage: React.FC = () => {
   const byDay = useMemo(() => {
     const m: Record<string, any[]> = {};
     DAYS.forEach((d) => (m[d.key] = []));
+    const seen = new Set<string>();
+
     filteredItems.forEach((it: any) => {
       const k = normDay(it.dayOfWeek);
-      if (m[k]) m[k].push(it);
+      const classId = it.class?._id || it.class || '';
+      const start = (it.startTime || '').trim();
+      const end = (it.endTime || '').trim();
+      const dedupeKey = `${classId}-${k}-${start}-${end}`;
+
+      if (m[k] && !seen.has(dedupeKey)) {
+        seen.add(dedupeKey);
+        m[k].push(it);
+      }
     });
     Object.values(m).forEach((arr) =>
       arr.sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''))

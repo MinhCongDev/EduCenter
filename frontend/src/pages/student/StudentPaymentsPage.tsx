@@ -25,7 +25,6 @@ export const StudentPaymentsPage: React.FC = () => {
     pendingTuitionCount: 0,
     totalPendingTuitionAmount: 0,
   });
-  const [pendingTuitions, setPendingTuitions] = useState<PendingTuitionItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -215,17 +214,13 @@ export const StudentPaymentsPage: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const [paymentsRes, pendingRes] = await Promise.all([
-        paymentService.getMyPayments({
-          status: statusFilter !== 'ALL' ? statusFilter : undefined,
-          search: searchTerm.trim() || undefined,
-        }),
-        paymentService.getPendingTuition(),
-      ]);
+      const paymentsRes = await paymentService.getMyPayments({
+        status: statusFilter !== 'ALL' ? statusFilter : undefined,
+        search: searchTerm.trim() || undefined,
+      });
 
       setPayments(paymentsRes.payments);
       setSummary(paymentsRes.summary);
-      setPendingTuitions(pendingRes);
     } catch (err: any) {
       console.error('Lỗi khi tải dữ liệu thanh toán:', err);
       setError(err?.response?.data?.message || 'Không thể kết nối đến máy chủ. Vui lòng thử lại!');
@@ -312,7 +307,7 @@ export const StudentPaymentsPage: React.FC = () => {
       <div className="dash-banner" style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #6366f1 100%)' }}>
         <div className="dash-banner-content">
           <div className="dash-banner-badge" style={{ backgroundColor: 'rgba(255,255,255,0.2)', color: '#fff' }}>
-            Tài Chính & Học Phí • EduCenter Portal
+            💳 Tài Chính & Học Phí • EduCenter Portal
           </div>
           <h1 style={{ color: '#fff', margin: '0.4rem 0' }}>
             Cổng Thanh Toán & Hóa Đơn Điện Tử
@@ -338,7 +333,7 @@ export const StudentPaymentsPage: React.FC = () => {
             }}
             onClick={handleOpenGatewayQR}
           >
-            
+            <span>📱</span>
             <span>{activeCoursePayment ? 'Quét Mã VietQR' : 'Cổng Thanh Toán QR'}</span>
           </button>
           <button
@@ -353,7 +348,7 @@ export const StudentPaymentsPage: React.FC = () => {
             }}
             onClick={fetchData}
           >
-            
+
             <span>Làm Mới</span>
           </button>
         </div>
@@ -371,6 +366,7 @@ export const StudentPaymentsPage: React.FC = () => {
               ✅ {summary.successCount} giao dịch thành công
             </span>
           </div>
+          <div className="dash-metric-icon icon-emerald">💰</div>
         </div>
 
         <div className="dash-metric-card" style={{ borderLeft: activeCoursePayment ? '4px solid #ef4444' : '4px solid #6366f1' }}>
@@ -385,6 +381,9 @@ export const StudentPaymentsPage: React.FC = () => {
                 : '✨ Chưa có khoản thanh toán nào cần thực hiện'}
             </span>
           </div>
+          <div className="dash-metric-icon icon-amber">
+            {activeCoursePayment ? '⏳' : '🎉'}
+          </div>
         </div>
 
         <div className="dash-metric-card" style={{ borderLeft: '4px solid #3b82f6' }}>
@@ -393,6 +392,7 @@ export const StudentPaymentsPage: React.FC = () => {
             <span className="dash-metric-val">{payments.length} Hóa đơn</span>
             <span className="dash-metric-trend neutral">Lịch sử giao dịch lưu trữ</span>
           </div>
+          <div className="dash-metric-icon icon-blue">📋</div>
         </div>
 
         <div
@@ -436,6 +436,7 @@ export const StudentPaymentsPage: React.FC = () => {
               </span>
             </span>
           </div>
+          <div className="dash-metric-icon icon-emerald">{activeCoursePayment ? '📱' : '🔒'}</div>
         </div>
       </div>
 
@@ -463,7 +464,7 @@ export const StudentPaymentsPage: React.FC = () => {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-              
+              <span style={{ fontSize: '1.5rem' }}>💳</span>
               <div>
                 <h2 className="dash-card-title" style={{ color: '#064e3b', margin: 0, fontSize: '1.15rem' }}>
                   Hóa Đơn & Đơn Đăng Ký Khóa Học
@@ -569,7 +570,7 @@ export const StudentPaymentsPage: React.FC = () => {
                   }}
                   onClick={() => setIsVietQRModalOpen(true)}
                 >
-                  
+                  <span>📱</span>
                   <span>Mở Popup VietQR Toàn Màn Hình</span>
                 </button>
 
@@ -621,168 +622,32 @@ export const StudentPaymentsPage: React.FC = () => {
           </div>
         </div>
       ) : (
-        /* ── Trạng thái mặc định (Reset về 0 / Trống) ── */
-        <div
-          className="dash-card"
-          style={{
-            padding: '2.5rem 1.5rem',
-            textAlign: 'center',
-            backgroundColor: '#ffffff',
-            borderRadius: '16px',
-            border: '1px dashed #cbd5e1',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
-            marginBottom: '1.5rem',
-          }}
-        >
-          <div
-            style={{
-              width: '64px',
-              height: '64px',
-              borderRadius: '50%',
-              backgroundColor: '#f1f5f9',
-              color: '#64748b',
-              fontSize: '2rem',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto 1rem',
-            }}
-          >
-            💳
-          </div>
-          <h3 style={{ margin: '0 0 0.5rem', color: '#1e293b', fontSize: '1.25rem', fontWeight: 800 }}>
-            Chưa có khoản thanh toán nào cần thực hiện
-          </h3>
-          <p style={{ margin: '0 0 0.5rem', color: '#64748b', fontSize: '0.95rem' }}>
-            Hệ thống hiện không có khoản học phí nào đang chờ thanh toán. Số tiền cần đóng: <strong style={{ color: '#0f172a' }}>0 đ</strong>.
-          </p>
-          <p style={{ margin: '0 auto 1.5rem', color: '#94a3b8', fontSize: '0.85rem', maxWidth: '580px' }}>
-            Để thanh toán học phí, vui lòng truy cập trang <strong>Danh sách khóa học</strong> và nhấn nút <strong>"Đăng kí học"</strong> tại khóa học bạn muốn tham gia.
-          </p>
+        /* ── Nút Xem Danh Sách Khóa Học & Đăng Kí Học ── */
+        <div style={{ marginBottom: '1.5rem' }}>
           <button
             type="button"
             className="dash-quick-btn primary"
             style={{
-              padding: '0.65rem 1.5rem',
-              fontSize: '0.9rem',
+              width: '100%',
+              padding: '0.85rem 1.5rem',
+              fontSize: '0.95rem',
               fontWeight: 700,
               backgroundColor: '#07403F',
               borderColor: '#07403F',
-              borderRadius: '10px',
-              display: 'inline-flex',
+              borderRadius: '12px',
+              display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem',
+              justifyContent: 'center',
+              gap: '0.6rem',
               cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(7, 64, 63, 0.2)',
+              transition: 'all 0.2s ease',
             }}
             onClick={() => navigate('/courses')}
           >
-            
-            <span>Xem Danh Sách Khóa Học & Đăng Kí Học</span>
+            <span>📚</span>
+            <span>Xem Danh Sách Khóa Học &amp; Đăng Kí Học</span>
           </button>
-        </div>
-      )}
-
-      {/* ── Danh sách lớp học đang chờ đóng học phí (nếu có trong hệ thống) ── */}
-      {!activeCoursePayment && pendingTuitions.length > 0 && (
-        <div
-          className="dash-card"
-          style={{
-            border: '1px solid #fed7aa',
-            backgroundColor: '#fffaf5',
-            marginBottom: '1.5rem',
-          }}
-        >
-          <div className="dash-card-header" style={{ borderBottomColor: '#fed7aa' }}>
-            <h3 style={{ color: '#c2410c', margin: 0, fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              
-              <span>Lớp học đã ghi danh chờ hoàn thành học phí ({pendingTuitions.length})</span>
-            </h3>
-            <span className="badge-pill badge-amber" style={{ fontSize: '0.75rem' }}>
-              Chờ thanh toán
-            </span>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.75rem' }}>
-            {pendingTuitions.map((item) => (
-              <div
-                key={item._id}
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '0.85rem 1.15rem',
-                  backgroundColor: '#ffffff',
-                  borderRadius: '10px',
-                  border: '1px solid #fed7aa',
-                  flexWrap: 'wrap',
-                  gap: '0.75rem',
-                }}
-              >
-                <div>
-                  <strong style={{ color: '#1e293b', fontSize: '0.95rem' }}>{item.course?.title}</strong>
-                  <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '2px' }}>
-                    Mã khóa: <strong>{item.course?.code}</strong>
-                    {item.class && <span> • Lớp: <strong>{item.class.classCode}</strong></span>}
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#dc2626' }}>
-                      {formatCurrency(item.course?.tuitionFee)}
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    className="dash-quick-btn primary"
-                    style={{
-                      backgroundColor: '#059669',
-                      borderColor: '#059669',
-                      padding: '0.45rem 1rem',
-                      fontSize: '0.82rem',
-                      fontWeight: 700,
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                    }}
-                    onClick={() => {
-                      const studentLastName = user?.fullName ? user.fullName.trim().split(' ').pop()?.toUpperCase() : 'HV';
-                      const courseCode = item.course?.code || 'IELTS';
-                      const invoiceCode = item.class?.classCode
-                        ? `${item.class.classCode}-${item._id.slice(-4).toUpperCase()}`
-                        : `HP-${item._id.slice(-6).toUpperCase()}`;
-                      const transferContent = `HP ${studentLastName} ${courseCode}`;
-                      const tuitionFee = item.course?.tuitionFee || 0;
-
-                      setActiveCoursePayment({
-                        courseId: item.course?._id || '',
-                        courseTitle: item.course?.title || '',
-                        courseCode,
-                        tuitionFee,
-                        invoiceCode,
-                        transferContent,
-                      });
-
-                      setVietQRData({
-                        amount: tuitionFee,
-                        description: transferContent,
-                        invoiceCode,
-                        courseTitle: item.course?.title,
-                        courseId: item.course?._id,
-                        studentName: user?.fullName,
-                        classCode: item.class?.classCode,
-                        enrollmentId: item._id,
-                      });
-                      setIsVietQRModalOpen(true);
-                    }}
-                  >
-                    
-                    <span>Thanh toán ngay</span>
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
       )}
 
@@ -791,7 +656,7 @@ export const StudentPaymentsPage: React.FC = () => {
         <div className="dash-card-header" style={{ flexWrap: 'wrap', gap: '1rem' }}>
           <div>
             <h2 className="dash-card-title">
-              Lịch Sử Giao Dịch & Hóa Đơn Điện Tử
+              <span>🧾</span> Lịch Sử Giao Dịch & Hóa Đơn Điện Tử
             </h2>
             <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem', color: '#64748b' }}>
               Danh sách chi tiết tất cả các giao dịch đóng học phí của học viên
@@ -803,7 +668,7 @@ export const StudentPaymentsPage: React.FC = () => {
             <div style={{ position: 'relative' }}>
               <input
                 type="text"
-                placeholder="Tìm mã GD hoặc ghi chú..."
+                placeholder=" Tìm mã GD hoặc ghi chú..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={{
@@ -886,7 +751,7 @@ export const StudentPaymentsPage: React.FC = () => {
           </div>
         ) : payments.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '3.5rem 1rem', color: '#64748b' }}>
-            
+            <div style={{ fontSize: '3rem', marginBottom: '0.75rem' }}>📭</div>
             <h3 style={{ margin: '0 0 0.5rem', color: '#1e293b' }}>Chưa có giao dịch thanh toán nào</h3>
             <p style={{ margin: 0, fontSize: '0.9rem' }}>
               Khi bạn đăng ký và thanh toán khóa học tại EduCenter, lịch sử và biên lai sẽ hiển thị ở đây.
@@ -954,7 +819,7 @@ export const StudentPaymentsPage: React.FC = () => {
                               opacity: 0.6,
                             }}
                           >
-                            {copiedText === p._id ? '✅' : '📋'}
+                            {copiedText === p._id ? 'Đã chép' : 'Sao chép'}
                           </button>
                         </div>
                       </td>
@@ -992,10 +857,10 @@ export const StudentPaymentsPage: React.FC = () => {
                             color: '#334155',
                           }}
                         >
-                          {p.method === 'VNPAY' && 'VNPAY QR'}
-                          {p.method === 'BANK_TRANSFER' && 'Chuyển khoản MB'}
-                          {p.method === 'CREDIT_CARD' && 'Thẻ Quốc tế'}
-                          {p.method === 'CASH' && 'Tiền mặt tại quầy'}
+                          {p.method === 'VNPAY' && '🔴 VNPAY QR'}
+                          {p.method === 'BANK_TRANSFER' && '🏦 Chuyển khoản MB'}
+                          {p.method === 'CREDIT_CARD' && '💳 Thẻ Quốc tế'}
+                          {p.method === 'CASH' && '💵 Tiền mặt tại quầy'}
                         </span>
                       </td>
 
@@ -1049,7 +914,7 @@ export const StudentPaymentsPage: React.FC = () => {
                             onClick={() => handleOpenVietQRForPayment(p)}
                             title="Hiển thị mã QR thanh toán ngân hàng VietQR"
                           >
-                            
+
                             <span>Quét QR</span>
                           </button>
 
@@ -1068,7 +933,7 @@ export const StudentPaymentsPage: React.FC = () => {
                             }}
                             onClick={() => handleViewReceipt(p._id)}
                           >
-                            
+
                             <span>Biên Lai</span>
                           </button>
                         </div>
@@ -1210,7 +1075,7 @@ export const StudentPaymentsPage: React.FC = () => {
                       handleViewReceipt(pId);
                     }}
                   >
-                    
+
                     <span>Xem Biên Lai Điện Tử</span>
                   </button>
                   <button
@@ -1272,7 +1137,7 @@ export const StudentPaymentsPage: React.FC = () => {
                         transition: 'all 0.2s ease',
                       }}
                     >
-                      
+                      <div style={{ fontSize: '1.3rem', marginBottom: '0.2rem' }}>⚡</div>
                       <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#065f46' }}>VietQR (Napas 24/7)</div>
                       <div style={{ fontSize: '0.675rem', color: '#059669' }}>Quét mã & Chuyển khoản tự động</div>
                     </button>
@@ -1291,7 +1156,6 @@ export const StudentPaymentsPage: React.FC = () => {
                         transition: 'all 0.2s ease',
                       }}
                     >
-                      
                       <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#6d28d9' }}>Visa / Master</div>
                       <div style={{ fontSize: '0.675rem', color: '#64748b' }}>Thẻ thanh toán quốc tế</div>
                     </button>
@@ -1315,7 +1179,7 @@ export const StudentPaymentsPage: React.FC = () => {
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div style={{ fontWeight: 800, color: '#064e3b', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                        
+                        <span>⚡</span>
                         <span>QUÉT MÃ VIETQR CHUYỂN KHOẢN NGÂN HÀNG</span>
                       </div>
                       <span className="badge-pill badge-green" style={{ fontSize: '0.75rem', fontWeight: 800 }}>
@@ -1374,7 +1238,7 @@ export const StudentPaymentsPage: React.FC = () => {
                               onClick={() => handleCopy('988866889999', 'acc')}
                               style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '0.85rem' }}
                             >
-                              {copiedText === 'acc' ? '✅' : '📋'}
+                              {copiedText === 'acc' ? 'Đã chép' : 'Sao chép'}
                             </button>
                           </div>
                         </div>
@@ -1404,7 +1268,7 @@ export const StudentPaymentsPage: React.FC = () => {
                               }
                               style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '0.85rem' }}
                             >
-                              {copiedText === 'syntax' ? '✅' : '📋'}
+                              {copiedText === 'syntax' ? 'Đã chép' : 'Sao chép'}
                             </button>
                           </div>
                         </div>
@@ -1433,7 +1297,7 @@ export const StudentPaymentsPage: React.FC = () => {
                           gap: '0.4rem',
                         }}
                       >
-                        
+
                         <span>Mở toàn màn hình VietQR & Tải ảnh</span>
                       </button>
                     </div>
@@ -1582,7 +1446,7 @@ export const StudentPaymentsPage: React.FC = () => {
                       </>
                     ) : (
                       <>
-                        
+
                         <span>Xác Nhận Thanh Toán</span>
                       </>
                     )}
@@ -1814,7 +1678,7 @@ export const StudentPaymentsPage: React.FC = () => {
                 className="dash-quick-btn primary"
                 onClick={() => window.print()}
               >
-                
+
                 <span>In Biên Lai / Xuất PDF</span>
               </button>
             </div>
@@ -1872,9 +1736,15 @@ export const StudentPaymentsPage: React.FC = () => {
           handleResetPaymentState();
           fetchData();
           showToast(
-            `Thanh toán học phí ${payment?.amount ? payment.amount.toLocaleString('vi-VN') + ' đ ' : ''
+            `Thanh toán học phí ${
+              payment?.amount ? payment.amount.toLocaleString('vi-VN') + ' đ ' : ''
             }thành công! Khóa học đã xuất hiện trong 'Khóa học của tôi' (Trạng thái: Đang chờ staff xếp lớp).`
           );
+        }}
+        onPaymentExpired={() => {
+          handleResetPaymentState();
+          fetchData();
+          showToast('⚠️ Đơn đăng ký khóa học đã tự động bị hủy do quá thời gian thanh toán (10 phút).');
         }}
       />
     </div>
