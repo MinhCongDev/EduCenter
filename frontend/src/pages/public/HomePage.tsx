@@ -205,7 +205,7 @@ const HomePage: React.FC = () => {
       setCouponMessage('Vui lòng nhập mã ưu đãi IELTS.');
       return;
     }
-    setCouponMessage(`🎉 Chúc mừng! Mã "${couponCode.toUpperCase()}" đã mở khóa trọn bộ Ebook "1.000 Từ vựng Academic" & 01 suất Mock Test Full 4 kỹ năng!`);
+    setCouponMessage(` Chúc mừng! Mã "${couponCode.toUpperCase()}" đã mở khóa trọn bộ Ebook "1.000 Từ vựng Academic" & 01 suất Mock Test Full 4 kỹ năng!`);
   };
 
   const selectedTeacher = teachers.find((t) => t.id === activeTeacher) || teachers[0];
@@ -282,7 +282,6 @@ const HomePage: React.FC = () => {
       <section className="dmr-coupon-section" aria-label="Nhận tài liệu IELTS miễn phí">
         <div className="dmr-coupon-container">
           <div className="dmr-coupon-info">
-            <span className="dmr-coupon-icon">🎁</span>
             <div>
               <div className="dmr-coupon-title">Có mã ưu đãi học viên IELTS?</div>
               <div className="dmr-coupon-sub">
@@ -314,11 +313,6 @@ const HomePage: React.FC = () => {
           3. MAIN CONTENT BODY
           ------------------------------------------------------------------ */}
       <div className="dmr-main-body">
-        {/* Floating Motifs */}
-        <div className="dmr-floating-shape" style={{ top: '80px', left: '20px', fontSize: '28px' }}>🎓</div>
-        <div className="dmr-floating-shape" style={{ top: '350px', right: '30px', fontSize: '24px' }}>🎯</div>
-        <div className="dmr-floating-shape" style={{ top: '800px', left: '40px', fontSize: '26px' }}>🇬🇧</div>
-
         {/* SECTION: BÀI TEST ĐẦU VÀO GỢI Ý KHÓA HỌC */}
         <section
           style={{
@@ -357,7 +351,7 @@ const HomePage: React.FC = () => {
                   marginBottom: '0.5rem',
                 }}
               >
-                <span>🎯</span>
+
                 <span>HỆ THỐNG KHẢO THÍ CHUẨN QUỐC TẾ</span>
               </div>
               <h2 style={{ fontFamily: 'var(--font-beanbag)', fontSize: '2rem', fontWeight: 900, color: '#07403F', margin: 0 }}>
@@ -408,7 +402,7 @@ const HomePage: React.FC = () => {
                   <span style={{ backgroundColor: '#ecfdf5', color: '#047857', fontSize: '0.75rem', fontWeight: 800, padding: '3px 8px', borderRadius: '6px' }}>
                     Band 0.0 - 5.5
                   </span>
-                  <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>⏱️ 30 phút • 25 câu</span>
+                  <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}> 30 phút • 25 câu</span>
                 </div>
                 <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>
                   IELTS Diagnostic Test - Ngữ Pháp &amp; Từ Vựng
@@ -454,7 +448,7 @@ const HomePage: React.FC = () => {
                   <span style={{ backgroundColor: '#059669', color: '#ffffff', fontSize: '0.75rem', fontWeight: 800, padding: '3px 8px', borderRadius: '6px' }}>
                     Band 5.0 - 7.5+ • ĐỀ THI THẬT
                   </span>
-                  <span style={{ fontSize: '0.8rem', color: '#047857', fontWeight: 700 }}>⏱️ 40 phút • 28 câu</span>
+                  <span style={{ fontSize: '0.8rem', color: '#047857', fontWeight: 700 }}> 40 phút • 28 câu</span>
                 </div>
                 <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.15rem', fontWeight: 800, color: '#064e3b' }}>
                   IELTS Academic Reading - Đọc Hiểu Thực Chiến
@@ -500,7 +494,7 @@ const HomePage: React.FC = () => {
                   <span style={{ backgroundColor: '#fef3c7', color: '#b45309', fontSize: '0.75rem', fontWeight: 800, padding: '3px 8px', borderRadius: '6px' }}>
                     Band 4.5 - 8.5+ • DỰ ĐOÁN TOÀN DIỆN
                   </span>
-                  <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>⏱️ 45 phút • 30 câu</span>
+                  <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}> 45 phút • 30 câu</span>
                 </div>
                 <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>
                   IELTS Comprehensive Band Predictor
@@ -698,23 +692,8 @@ const HomePage: React.FC = () => {
             <div className="dmr-tier-card">
               <div>
                 <div className="dmr-tier-header">
-                  <div
-                    style={{
-                      width: '120px',
-                      height: '120px',
-                      borderRadius: '18px',
-                      backgroundColor: '#E6FFFA',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '52px',
-                      flexShrink: 0,
-                    }}
-                  >
-                    🏫
-                  </div>
                   <div>
-                    <div className="dmr-tier-name">Lớp Học Trực Tiếp Tại Trung Tâm ⭐</div>
+                    <div className="dmr-tier-name">Lớp Học Trực Tiếp Tại Trung Tâm</div>
                     <div className="dmr-tier-tagline">Học trực tiếp cùng Giảng viên 8.5+ IELTS</div>
                     <div className="dmr-tier-desc">
                       Phòng học hiện đại tiêu chuẩn quốc tế, tương tác thực hành 2 chiều liên tục. Giáo viên chỉnh âm Speaking và sửa bài Writing trực tiếp trên lớp.
@@ -741,23 +720,8 @@ const HomePage: React.FC = () => {
             <div className="dmr-tier-card">
               <div>
                 <div className="dmr-tier-header">
-                  <div
-                    style={{
-                      width: '120px',
-                      height: '120px',
-                      borderRadius: '18px',
-                      backgroundColor: '#FEF3C7',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '52px',
-                      flexShrink: 0,
-                    }}
-                  >
-                    🎯
-                  </div>
                   <div>
-                    <div className="dmr-tier-name">Mô Hình Blended Learning 🚀</div>
+                    <div className="dmr-tier-name">Mô Hình Blended Learning</div>
                     <div className="dmr-tier-tagline">Đào tạo bài bản theo tiến độ &amp; Khảo thí định kỳ</div>
                     <div className="dmr-tier-desc">
                       Lộ trình học theo từng mốc hoàn thành rõ ràng, điểm danh chuyên cần, kiểm tra đầu vào xếp lớp và thi thử Mock Test 4 kỹ năng như thi thật.
@@ -813,7 +777,7 @@ const HomePage: React.FC = () => {
 
           <div className="dmr-offline-card">
             <div style={{ maxWidth: '680px' }}>
-              <div className="dmr-offline-title">Môi Trường Học Tập Chuẩn Quốc Tế 🏫</div>
+              <div className="dmr-offline-title">Môi Trường Học Tập Chuẩn Quốc Tế </div>
               <p style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1A202C', marginBottom: '6px' }}>
                 Phòng máy tính trang bị tai nghe chuyên dụng mô phỏng 100% phòng thi thật của IDP &amp; British Council
               </p>
@@ -849,7 +813,7 @@ const HomePage: React.FC = () => {
             {/* Speaking */}
             <div className="dmr-tier-card">
               <div>
-                <div className="dmr-tier-name orange">SPEAKING COACHING 1:1 🎙️</div>
+                <div className="dmr-tier-name orange">SPEAKING COACHING 1:1 </div>
                 <div className="dmr-tier-tagline">Luyện phản xạ trực tiếp cùng cựu Giám khảo khảo thí</div>
                 <div className="dmr-tier-desc">
                   Thực chiến trọn bộ đề thi Forecast Speaking theo quý mới nhất. Giáo viên trực tiếp chỉnh sửa phát âm, trọng âm câu và cách phát triển ý Part 3 mạch lạc.
@@ -880,7 +844,7 @@ const HomePage: React.FC = () => {
             {/* Writing */}
             <div className="dmr-tier-card">
               <div>
-                <div className="dmr-tier-name orange">WRITING INTENSIVE ✍️</div>
+                <div className="dmr-tier-name orange">WRITING INTENSIVE </div>
                 <div className="dmr-tier-tagline">Sửa bài chi tiết theo chuẩn 4 tiêu chí Band Descriptors</div>
                 <div className="dmr-tier-desc">
                   Chấm chữa chi tiết từng lỗi dùng từ, ngữ pháp và lập luận luận điểm Task 1 &amp; Task 2. Cung cấp bài mẫu Band 8.0+ viết lại cho từng bài nộp của học viên.
@@ -951,15 +915,14 @@ const HomePage: React.FC = () => {
                 boxShadow: '0 2px 8px rgba(5, 150, 105, 0.25)',
               }}
             >
-              <span>📚</span>
-              <span>Khám Phá Khóa Học IELTS ↗</span>
+              <span>Khám Phá Khóa Học IELTS </span>
             </Link>
           </div>
 
           <div className="dmr-book-card">
             <div>
               <div style={{ fontFamily: 'var(--font-beanbag)', fontSize: '2.5rem', fontWeight: 800, color: '#1E9AA5', lineHeight: 1, marginBottom: '14px' }}>
-                Bộ Sách IELTS Breakthrough 📚
+                Bộ Sách IELTS Breakthrough
               </div>
               <p style={{ fontSize: '1.1rem', fontWeight: 700, color: '#2D3748', marginBottom: '8px' }}>
                 Trọn bộ giáo trình từ Foundation đến Master Band 8.0+
@@ -991,7 +954,7 @@ const HomePage: React.FC = () => {
                     marginLeft: '4px',
                   }}
                 >
-                  🚀 Đăng ký học ngay ➔
+                  Đăng ký học ngay ➔
                 </Link>
               </div>
             </div>
@@ -1207,7 +1170,7 @@ const HomePage: React.FC = () => {
                     </span>
                     {item.isPinned && (
                       <span style={{ fontSize: '0.75rem', color: '#B45309', fontWeight: 700 }}>
-                        📌 Nổi bật
+                         Nổi bật
                       </span>
                     )}
                   </div>
@@ -1317,7 +1280,7 @@ const HomePage: React.FC = () => {
                   cursor: 'pointer',
                 }}
               >
-                🏢 Hệ thống {centerInfo?.branches?.length || 5} Cơ sở đào tạo
+                 Hệ thống {centerInfo?.branches?.length || 5} Cơ sở đào tạo
               </button>
 
               <button
@@ -1334,7 +1297,7 @@ const HomePage: React.FC = () => {
                   cursor: 'pointer',
                 }}
               >
-                🏫 Cơ sở vật chất phòng thi chuẩn quốc tế
+                 Cơ sở vật chất phòng thi chuẩn quốc tế
               </button>
 
               <button
@@ -1351,7 +1314,7 @@ const HomePage: React.FC = () => {
                   cursor: 'pointer',
                 }}
               >
-                🎯 Tầm nhìn &amp; Cam kết đầu ra
+                 Tầm nhìn &amp; Cam kết đầu ra
               </button>
             </div>
 
@@ -1377,10 +1340,10 @@ const HomePage: React.FC = () => {
                       )}
                     </div>
                     <p style={{ margin: '0 0 6px', fontSize: '0.85rem', color: '#475569' }}>
-                      📍 {b.address}
+                       {b.address}
                     </p>
                     <span style={{ fontSize: '0.85rem', color: '#EC6E23', fontWeight: 700 }}>
-                      📞 {b.phone}
+                       {b.phone}
                     </span>
                   </div>
                 ))}
@@ -1425,7 +1388,7 @@ const HomePage: React.FC = () => {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
                 <div style={{ backgroundColor: '#F0FDF4', padding: '24px', borderRadius: '16px', border: '1px solid #BBF7D0' }}>
                   <h4 style={{ color: '#166534', fontSize: '1.1rem', margin: '0 0 8px', fontWeight: 800 }}>
-                    🌟 Tầm nhìn chiến lược
+                     Tầm nhìn chiến lược
                   </h4>
                   <p style={{ color: '#374151', fontSize: '0.95rem', lineHeight: 1.6, margin: 0 }}>
                     {centerInfo?.vision}
@@ -1433,7 +1396,7 @@ const HomePage: React.FC = () => {
                 </div>
                 <div style={{ backgroundColor: '#FFF7ED', padding: '24px', borderRadius: '16px', border: '1px solid #FED7AA' }}>
                   <h4 style={{ color: '#9A3412', fontSize: '1.1rem', margin: '0 0 8px', fontWeight: 800 }}>
-                    🎯 Sứ mệnh giáo dục
+                     Sứ mệnh giáo dục
                   </h4>
                   <p style={{ color: '#374151', fontSize: '0.95rem', lineHeight: 1.6, margin: 0 }}>
                     {centerInfo?.mission}
@@ -1505,7 +1468,7 @@ const HomePage: React.FC = () => {
       {/* Floating Action Buttons */}
       <div className="dmr-floating-actions">
         <Link to="/courses" className="dmr-fab-btn dmr-fab-test" title="Làm bài thi thử IELTS">
-          📝
+          Thi thử
         </Link>
         <a
           href="https://m.me/educenter"
@@ -1514,7 +1477,7 @@ const HomePage: React.FC = () => {
           className="dmr-fab-btn dmr-fab-chat"
           title="Tư vấn lộ trình IELTS 24/7"
         >
-          💬
+          Tư vấn
         </a>
       </div>
     </div>

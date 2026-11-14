@@ -758,10 +758,10 @@ export const TeacherDashboard: React.FC = () => {
 
           <div className="dash-actions-row">
             <button type="button" className="dash-quick-btn" onClick={() => handleTabChange('schedule')}>
-              🗓️ Lịch dạy tuần này ({thisWeekSchedules.length})
+               Lịch dạy tuần này ({thisWeekSchedules.length})
             </button>
             <button type="button" className="dash-quick-btn" onClick={() => handleTabChange('attendance')}>
-              ✅ Điểm danh buổi học
+               Điểm danh buổi học
             </button>
             <button
               type="button"
@@ -771,7 +771,7 @@ export const TeacherDashboard: React.FC = () => {
                 openNewGradeModal('TEST');
               }}
             >
-              📊 Nhập điểm định kỳ
+               Nhập điểm định kỳ
             </button>
             <button
               type="button"
@@ -781,14 +781,14 @@ export const TeacherDashboard: React.FC = () => {
                 openNewGradeModal('EVALUATION');
               }}
             >
-              📝 Nhận xét tháng / khóa
+               Nhận xét tháng / khóa
             </button>
             <button
               type="button"
               className="dash-quick-btn"
               onClick={() => handleTabChange('classes_students')}
             >
-              🏫 Lớp học &amp; Học viên ({students.length})
+               Lớp học &amp; Học viên ({students.length})
             </button>
             <button
               type="button"
@@ -798,7 +798,7 @@ export const TeacherDashboard: React.FC = () => {
                 setRequestTab('submit');
               }}
             >
-              🔄 Xin đổi lịch dạy
+               Xin đổi lịch dạy
             </button>
           </div>
 
@@ -949,7 +949,7 @@ export const TeacherDashboard: React.FC = () => {
                             whiteSpace: 'nowrap',
                           }}
                         >
-                          ✅ Điểm danh buổi này
+                           Điểm danh buổi này
                         </button>
                       </div>
                     ))
@@ -1206,17 +1206,17 @@ export const TeacherDashboard: React.FC = () => {
               boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
             }}
           >
-            <span>⬅</span>
+            <span></span>
             <span>Tổng quan</span>
           </button>
 
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {(
               [
-                { id: 'classes_students', label: '🏫 Lớp học & Học viên' },
-                { id: 'schedule', label: '🗓️ Lịch dạy' },
-                { id: 'attendance', label: '✅ Điểm danh buổi học' },
-                { id: 'grades', label: '📊 Điểm định kỳ & Nhận xét' },
+                { id: 'classes_students', label: ' Lớp học & Học viên' },
+                { id: 'schedule', label: ' Lịch dạy' },
+                { id: 'attendance', label: ' Điểm danh buổi học' },
+                { id: 'grades', label: ' Điểm định kỳ & Nhận xét' },
               ] as const
             ).map((tab) => (
               <button
@@ -1338,7 +1338,7 @@ export const TeacherDashboard: React.FC = () => {
                   cursor: 'pointer',
                 }}
               >
-                🔄 Xin đổi lịch dạy
+                 Xin đổi lịch dạy
               </button>
             </div>
           </div>
@@ -1381,7 +1381,7 @@ export const TeacherDashboard: React.FC = () => {
                       cursor: 'pointer',
                     }}
                   >
-                    ◀ Tuần trước
+                     Tuần trước
                   </button>
                   <button
                     type="button"
@@ -1412,7 +1412,7 @@ export const TeacherDashboard: React.FC = () => {
                       cursor: 'pointer',
                     }}
                   >
-                    Tuần sau ▶
+                    Tuần sau
                   </button>
                 </div>
               </div>
@@ -1508,7 +1508,7 @@ export const TeacherDashboard: React.FC = () => {
                                 cursor: 'pointer',
                               }}
                             >
-                              ✅ Điểm danh buổi này
+                               Điểm danh buổi này
                             </button>
                           </div>
                         ))
@@ -1595,7 +1595,7 @@ export const TeacherDashboard: React.FC = () => {
                               cursor: 'pointer',
                             }}
                           >
-                            ✅ Điểm danh
+                             Điểm danh
                           </button>
                         </td>
                       </tr>
@@ -1718,7 +1718,7 @@ export const TeacherDashboard: React.FC = () => {
                   cursor: 'pointer',
                 }}
               >
-                {attendanceViewMode === 'check' ? '📜 Xem Lịch Sử Điểm Danh' : '✏️ Điểm Danh Buổi Học'}
+                {attendanceViewMode === 'check' ? ' Xem Lịch Sử Điểm Danh' : ' Điểm Danh Buổi Học'}
               </button>
             </div>
           </div>
@@ -1805,7 +1805,7 @@ export const TeacherDashboard: React.FC = () => {
                       cursor: savingAttendance ? 'not-allowed' : 'pointer',
                     }}
                   >
-                    {savingAttendance ? 'Đang lưu...' : '💾 Lưu Điểm Danh'}
+                    {savingAttendance ? 'Đang lưu...' : ' Lưu Điểm Danh'}
                   </button>
                 </div>
               </div>
@@ -2102,7 +2102,7 @@ export const TeacherDashboard: React.FC = () => {
               </h2>
               <input
                 type="text"
-                placeholder="🔍 Tìm theo tên, email hoặc mã HV..."
+                placeholder=" Tìm theo tên, email hoặc mã HV..."
                 value={studentSearch}
                 onChange={(e) => setStudentSearch(e.target.value)}
                 style={{
@@ -2197,7 +2197,7 @@ export const TeacherDashboard: React.FC = () => {
                               cursor: 'pointer',
                             }}
                           >
-                            👁️ Chi tiết
+                             Chi tiết
                           </button>
                         </td>
                       </tr>
@@ -2246,7 +2246,7 @@ export const TeacherDashboard: React.FC = () => {
                   cursor: 'pointer',
                 }}
               >
-                ➕ Nhập Điểm Kiểm Tra Định Kỳ
+                 Nhập Điểm Kiểm Tra Định Kỳ
               </button>
               <button
                 type="button"
@@ -2262,7 +2262,7 @@ export const TeacherDashboard: React.FC = () => {
                   cursor: 'pointer',
                 }}
               >
-                📝 Đánh Giá / Nhận Xét Tháng &amp; Khóa
+                 Đánh Giá / Nhận Xét Tháng &amp; Khóa
               </button>
             </div>
           </div>
@@ -2332,7 +2332,7 @@ export const TeacherDashboard: React.FC = () => {
 
               <input
                 type="text"
-                placeholder="🔍 Tìm học viên, kỳ thi, tháng..."
+                placeholder=" Tìm học viên, kỳ thi, tháng..."
                 value={gradeSearch}
                 onChange={(e) => setGradeSearch(e.target.value)}
                 style={{
@@ -2505,7 +2505,7 @@ export const TeacherDashboard: React.FC = () => {
                                 cursor: 'pointer',
                               }}
                             >
-                              ✏️ Sửa
+                               Sửa
                             </button>
                             <button
                               type="button"
@@ -2521,7 +2521,7 @@ export const TeacherDashboard: React.FC = () => {
                                 cursor: 'pointer',
                               }}
                             >
-                              🗑️
+                              Xóa
                             </button>
                           </div>
                         </td>
@@ -2596,7 +2596,7 @@ export const TeacherDashboard: React.FC = () => {
                     color: gradeModalMode === 'TEST' ? '#047857' : '#64748b',
                   }}
                 >
-                  📊 Điểm kiểm tra định kỳ
+                   Điểm kiểm tra định kỳ
                 </button>
                 <button
                   type="button"
@@ -2622,7 +2622,7 @@ export const TeacherDashboard: React.FC = () => {
                     color: gradeModalMode === 'EVALUATION' ? '#1d4ed8' : '#64748b',
                   }}
                 >
-                  📝 Nhận xét tháng / cuối khóa
+                   Nhận xét tháng / cuối khóa
                 </button>
               </div>
             )}
@@ -2824,7 +2824,7 @@ export const TeacherDashboard: React.FC = () => {
                           cursor: 'pointer',
                         }}
                       >
-                        🧮 Tự tính Overall từ 4 kỹ năng
+                         Tự tính Overall từ 4 kỹ năng
                       </button>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.5rem' }}>
@@ -3020,7 +3020,7 @@ export const TeacherDashboard: React.FC = () => {
                   color: requestTab === 'submit' ? '#064e3b' : '#64748b',
                 }}
               >
-                📝 Gửi Đơn Mới
+                 Gửi Đơn Mới
               </button>
               <button
                 type="button"
@@ -3037,7 +3037,7 @@ export const TeacherDashboard: React.FC = () => {
                   color: requestTab === 'history' ? '#064e3b' : '#64748b',
                 }}
               >
-                📋 Lịch Sử ({scheduleRequests.length})
+                 Lịch Sử ({scheduleRequests.length})
               </button>
             </div>
 

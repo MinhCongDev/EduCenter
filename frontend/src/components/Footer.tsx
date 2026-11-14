@@ -57,7 +57,7 @@ const Footer: React.FC = () => {
                 f
               </a>
               <a href="https://www.youtube.com" target="_blank" rel="noreferrer" className="dmr-social-btn" title="YouTube">
-                ▶
+                Y
               </a>
               <a href="https://www.tiktok.com" target="_blank" rel="noreferrer" className="dmr-social-btn" title="TikTok">
                 ♪
@@ -69,10 +69,10 @@ const Footer: React.FC = () => {
 
             <div className="dmr-app-btns">
               <a href="https://apps.apple.com" target="_blank" rel="noreferrer" className="dmr-app-badge">
-                <span>🍎</span> App Store
+                 App Store
               </a>
               <a href="https://play.google.com" target="_blank" rel="noreferrer" className="dmr-app-badge">
-                <span>🤖</span> Google Play
+                 Google Play
               </a>
             </div>
           </div>
@@ -81,34 +81,34 @@ const Footer: React.FC = () => {
         {/* Middle: 4 Cơ sở IELTS Campus */}
         <div className="dmr-footer-locations">
           <div className="dmr-location-item">
-            <div className="dmr-location-name">🏢 Campus 1 (Hà Đông):</div>
+            <div className="dmr-location-name">Campus 1 (Hà Đông):</div>
             <div>Số 49 Galaxy 3, Vạn Phúc, Hà Đông, Hà Nội.</div>
             <a href="tel:+84336283595" className="dmr-location-phone">
-              📞 (+84) 336 283 595
+               (+84) 336 283 595
             </a>
           </div>
 
           <div className="dmr-location-item">
-            <div className="dmr-location-name">🏫 Campus 2 (Thanh Xuân):</div>
+            <div className="dmr-location-name">Campus 2 (Thanh Xuân):</div>
             <div>Tòa nhà VNT TOWER, Số 19 Nguyễn Trãi, Thanh Xuân, Hà Nội.</div>
             <a href="tel:+84969856116" className="dmr-location-phone">
-              📞 (+84) 969 856 116
+               (+84) 969 856 116
             </a>
           </div>
 
           <div className="dmr-location-item">
-            <div className="dmr-location-name">🏫 Campus 3 (Cầu Giấy):</div>
+            <div className="dmr-location-name">Campus 3 (Cầu Giấy):</div>
             <div>Số 457 Hoàng Quốc Việt, Cổ Nhuế, Bắc Từ Liêm, Hà Nội.</div>
             <a href="tel:+84833532039" className="dmr-location-phone">
-              📞 (+84) 833 532 039
+               (+84) 833 532 039
             </a>
           </div>
 
           <div className="dmr-location-item">
-            <div className="dmr-location-name">🏫 Campus 4 (TP. HCM):</div>
+            <div className="dmr-location-name">Campus 4 (TP. HCM):</div>
             <div>Số 32 Đường số 2, P10, Q. Gò Vấp, TP. Hồ Chí Minh.</div>
             <a href="tel:+84988938364" className="dmr-location-phone">
-              📞 (+84) 988 938 364
+               (+84) 988 938 364
             </a>
           </div>
         </div>
@@ -127,15 +127,15 @@ const Footer: React.FC = () => {
             gap: '12px',
           }}
         >
-          <div>⏰ <b>Giờ học &amp; Thi thử:</b> Thứ 2 - Thứ 6: 7h30 - 21h30 | Thứ 7 &amp; CN: 8h00 - 18h00</div>
-          <div>✉️ <b>Email Học thuật:</b> academic@educenter.edu.vn</div>
-          <div>🔥 <b>Hotline Test trình độ &amp; Tư vấn Lộ trình:</b> <span style={{ color: '#FCD34D', fontWeight: 800 }}>+84.981.060.702</span></div>
+          <div><b>Giờ học &amp; Thi thử:</b> Thứ 2 - Thứ 6: 7h30 - 21h30 | Thứ 7 &amp; CN: 8h00 - 18h00</div>
+          <div><b>Email Học thuật:</b> academic@educenter.edu.vn</div>
+          <div><b>Hotline Test trình độ &amp; Tư vấn Lộ trình:</b> <span style={{ color: '#FCD34D', fontWeight: 800 }}>+84.981.060.702</span></div>
         </div>
 
         {/* Bottom Legal / Copyright */}
         <div className="dmr-footer-bottom">
           <div style={{ maxWidth: '820px', lineHeight: 1.6 }}>
-            <div><b>Copyright © {currentYear} EduCenter IELTS Academy – Học viện Luyện thi IELTS Chuẩn Khảo thí Quốc tế</b></div>
+            <div><b>Copyright {currentYear} EduCenter IELTS Academy – Học viện Luyện thi IELTS Chuẩn Khảo thí Quốc tế</b></div>
             <div style={{ fontSize: '0.78rem', marginTop: '4px' }}>
               Quyết định thành lập và cấp phép hoạt động đào tạo khảo thí số 3920 do Sở Giáo dục &amp; Đào tạo cấp. Trung tâm khảo thí liên kết trực tiếp đối tác khảo thí quốc tế.
             </div>
@@ -151,7 +151,6 @@ const Footer: React.FC = () => {
               border: '1px solid rgba(255,255,255,0.2)',
             }}
           >
-            <span style={{ fontSize: '20px' }}>🎖️</span>
             <div>
               <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>ĐỐI TÁC CHÍNH THỨC</div>
               <div style={{ fontWeight: 800, fontSize: '12px', color: '#FCD34D' }}>IDP &amp; BRITISH COUNCIL</div>

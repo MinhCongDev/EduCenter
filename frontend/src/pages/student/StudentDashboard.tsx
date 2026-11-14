@@ -200,7 +200,7 @@ const StudentDashboard: React.FC = () => {
               className="dash-quick-btn primary"
               style={{ textDecoration: 'none', background: 'linear-gradient(135deg, #1e40af, #3b82f6)', color: '#fff', fontWeight: 700 }}
             >
-              <span>💳</span>
+
               <span>Học Phí & Cổng Thanh Toán</span>
             </Link>
             <button
@@ -208,35 +208,35 @@ const StudentDashboard: React.FC = () => {
               className="dash-quick-btn"
               onClick={() => handleTabChange('courses')}
             >
-              📚 Khóa học của tôi
+               Khóa học của tôi
             </button>
             <button
               type="button"
               className="dash-quick-btn"
               onClick={() => handleTabChange('assignments')}
             >
-              📝 Nộp bài tập về nhà
+               Nộp bài tập về nhà
             </button>
             <button
               type="button"
               className="dash-quick-btn"
               onClick={() => handleTabChange('schedule')}
             >
-              🗓️ Xem lịch học
+               Xem lịch học
             </button>
             <button
               type="button"
               className="dash-quick-btn"
               onClick={() => handleTabChange('grades')}
             >
-              📊 Kết quả học tập
+               Kết quả học tập
             </button>
             <Link
               to="/student/progress"
               className="dash-quick-btn"
               style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
             >
-              🎯 Tiến độ khóa học
+               Tiến độ khóa học
             </Link>
           </div>
 
@@ -371,7 +371,7 @@ const StudentDashboard: React.FC = () => {
                           className="dash-quick-btn primary"
                           onClick={() => navigate('/student/schedule')}
                         >
-                          🗓️ Xem lịch học đầy đủ
+                           Xem lịch học đầy đủ
                         </button>
                         {(nextSession as any).class?._id && (
                           <button
@@ -379,7 +379,7 @@ const StudentDashboard: React.FC = () => {
                             className="dash-quick-btn"
                             onClick={() => navigate(`/student/classes/${(nextSession as any).class._id}/assignments`)}
                           >
-                            📝 Bài tập lớp này
+                             Bài tập lớp này
                           </button>
                         )}
                       </div>
@@ -567,7 +567,7 @@ const StudentDashboard: React.FC = () => {
               boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
             }}
           >
-            <span>⬅</span>
+
             <span>Quay lại Bảng điều khiển Tổng quan</span>
           </button>
         </div>
@@ -596,7 +596,7 @@ const StudentDashboard: React.FC = () => {
                   className="dash-quick-btn primary"
                   onClick={() => navigate('/courses')}
                 >
-                  📖 Xem các khóa học
+                   Xem các khóa học
                 </button>
               }
             />
@@ -708,21 +708,21 @@ const StudentDashboard: React.FC = () => {
                         className="dash-quick-btn primary"
                         onClick={() => navigate(`/student/classes/${cls?._id}`)}
                       >
-                        ℹ️ Chi Tiết
+                         Chi Tiết
                       </button>
                       <button
                         type="button"
                         className="dash-quick-btn"
                         onClick={() => navigate(`/student/classes/${cls?._id}/assignments`)}
                       >
-                        📝 Bài Tập
+                         Bài Tập
                       </button>
                       <button
                         type="button"
                         className="dash-quick-btn"
                         onClick={() => navigate(`/student/classes/${cls?._id}/grades`)}
                       >
-                        📊 Điểm
+                         Điểm
                       </button>
                     </div>
                   </div>
@@ -882,7 +882,7 @@ const StudentDashboard: React.FC = () => {
                       className="dash-quick-btn primary"
                       style={{ padding: '0.45rem 1rem', fontSize: '0.82rem' }}
                     >
-                      🚀 Nộp bài ngay
+                       Nộp bài ngay
                     </button>
                   ) : (
                     <button
@@ -893,7 +893,7 @@ const StudentDashboard: React.FC = () => {
                       className="dash-quick-btn"
                       style={{ padding: '0.45rem 0.85rem', fontSize: '0.8rem' }}
                     >
-                      👁️ Xem nhận xét
+                       Xem nhận xét
                     </button>
                   )}
                 </div>

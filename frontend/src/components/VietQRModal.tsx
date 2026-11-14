@@ -332,7 +332,7 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                 transition: 'all 0.2s ease',
               }}
             >
-              <span>🏦</span>
+
               <span>VietQR (Chuyển khoản Napas 24/7)</span>
             </button>
 
@@ -358,7 +358,7 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                 transition: 'all 0.2s ease',
               }}
             >
-              <span>🔴</span>
+
               <span>VNPAY QR (Cổng VNPAY)</span>
             </button>
           </div>
@@ -617,7 +617,7 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                       gap: '4px',
                     }}
                   >
-                    <span>🔄</span>
+
                     <span>{template === 'compact2' ? 'Dạng Đơn giản' : 'Dạng Chi tiết'}</span>
                   </button>
                 )}
@@ -642,7 +642,7 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                     gap: '4px',
                   }}
                 >
-                  <span>📥</span>
+
                   <span>Tải ảnh mã QR</span>
                 </button>
               </div>
@@ -779,7 +779,7 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                       gap: '4px',
                     }}
                   >
-                    {copiedKey === 'acc' ? '✅ Đã chép' : '📋 Sao chép'}
+                    {copiedKey === 'acc' ? ' Đã chép' : ' Sao chép'}
                   </button>
                 </div>
 
@@ -813,7 +813,7 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                       cursor: 'pointer',
                     }}
                   >
-                    {copiedKey === 'name' ? '✅ Đã chép' : '📋 Sao chép'}
+                    {copiedKey === 'name' ? ' Đã chép' : ' Sao chép'}
                   </button>
                 </div>
 
@@ -853,7 +853,7 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                       cursor: 'pointer',
                     }}
                   >
-                    {copiedKey === 'amt' ? '✅ Đã chép' : '📋 Sao chép'}
+                    {copiedKey === 'amt' ? ' Đã chép' : ' Sao chép'}
                   </button>
                 </div>
 
@@ -895,7 +895,7 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                       cursor: 'pointer',
                     }}
                   >
-                    {copiedKey === 'syntax' ? '✅ Đã chép' : '📋 Sao chép'}
+                    {copiedKey === 'syntax' ? ' Đã chép' : ' Sao chép'}
                   </button>
                 </div>
               </div>
@@ -980,7 +980,7 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                 opacity: isConfirming ? 0.75 : 1,
               }}
             >
-              <span>{confirmSuccess ? '✅' : isConfirming ? '⏳' : '🚀'}</span>
+              <span>{confirmSuccess ? '' : isConfirming ? '' : ''}</span>
               <span>
                 {confirmSuccess
                   ? 'Đã Thanh Toán Thành Công'

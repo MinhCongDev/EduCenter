@@ -147,7 +147,7 @@ const CombinedSchedulePage: React.FC = () => {
           ← Dashboard
         </Link>
         <Link to="/student/classes" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
-          📚 Lớp Học
+           Lớp Học
         </Link>
       </div>
 
@@ -257,12 +257,12 @@ const CombinedSchedulePage: React.FC = () => {
                               {s.startTime}–{s.endTime}
                             </div>
                             <div style={{ fontSize: '0.7rem', color: '#64748b' }}>
-                              {slot === 'MORNING' ? '🌅' : slot === 'AFTERNOON' ? '☀️' : '🌙'}{' '}
+                              {slot === 'MORNING' ? '' : slot === 'AFTERNOON' ? '' : ''}{' '}
                               {s.class?.course?.code || s.class?.classCode}
                             </div>
                             {s.room && (
                               <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: 2 }}>
-                                📍 {s.room}
+                                 {s.room}
                               </div>
                             )}
                           </Link>

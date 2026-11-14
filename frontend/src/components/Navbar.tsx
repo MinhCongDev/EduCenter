@@ -53,9 +53,6 @@ const Navbar: React.FC = () => {
       <div className="dmr-header-container">
         {/* Brand Logo */}
         <Link to="/" className="dmr-logo-wrap" aria-label="EduCenter IELTS Trang chủ">
-          <div className="dmr-logo-badge">
-            <span style={{ fontSize: '20px' }}>🇬🇧</span>
-          </div>
           <div className="dmr-logo-text">
             <span className="dmr-logo-title">
               Edu<span>Center</span>
@@ -144,11 +141,11 @@ const Navbar: React.FC = () => {
               </div>
               <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', gap: '8px' }}>
                 <Link to="/courses" className="dmr-dropdown-link" style={{ flex: 1 }}>
-                  <span className="dmr-dropdown-title">🎯 Lớp Online VIP 1:1</span>
+                  <span className="dmr-dropdown-title"> Lớp Online VIP 1:1</span>
                   <span className="dmr-dropdown-desc">Học qua Zoom cùng giáo viên 8.5+</span>
                 </Link>
                 <Link to="/courses" className="dmr-dropdown-link" style={{ flex: 1 }}>
-                  <span className="dmr-dropdown-title">🏫 Lớp Offline Campus</span>
+                  <span className="dmr-dropdown-title"> Lớp Offline Campus</span>
                   <span className="dmr-dropdown-desc">Phòng máy chuẩn thi IDP / BC</span>
                 </Link>
               </div>
@@ -162,19 +159,19 @@ const Navbar: React.FC = () => {
             </span>
             <div className="dmr-dropdown">
               <Link to="/courses" className="dmr-dropdown-link">
-                <span className="dmr-dropdown-title">🎙️ IELTS Speaking Coaching 1:1</span>
+                <span className="dmr-dropdown-title"> IELTS Speaking Coaching 1:1</span>
                 <span className="dmr-dropdown-desc">Sửa phát âm và phản xạ tự nhiên</span>
               </Link>
               <Link to="/courses" className="dmr-dropdown-link">
-                <span className="dmr-dropdown-title">✍️ IELTS Writing Intensive</span>
+                <span className="dmr-dropdown-title"> IELTS Writing Intensive</span>
                 <span className="dmr-dropdown-desc">Chữa bài chi tiết theo 4 tiêu chí chấm điểm</span>
               </Link>
               <Link to="/courses" className="dmr-dropdown-link">
-                <span className="dmr-dropdown-title">🎧 IELTS Listening Master</span>
+                <span className="dmr-dropdown-title"> IELTS Listening Master</span>
                 <span className="dmr-dropdown-desc">Bắt trọn keyword &amp; bẫy đề thi</span>
               </Link>
               <Link to="/courses" className="dmr-dropdown-link">
-                <span className="dmr-dropdown-title">📖 IELTS Reading Skim &amp; Scan</span>
+                <span className="dmr-dropdown-title"> IELTS Reading Skim &amp; Scan</span>
                 <span className="dmr-dropdown-desc">Kỹ thuật định vị thông tin chuẩn xác</span>
               </Link>
             </div>
@@ -188,7 +185,7 @@ const Navbar: React.FC = () => {
             <div className="dmr-dropdown">
               <Link to="/placement-test" className="dmr-dropdown-link">
                 <span className="dmr-dropdown-title">
-                  🎯 Test Đầu Vào &amp; Gợi Ý Lộ Trình <span className="dmr-badge-orange">HOT</span>
+                   Test Đầu Vào &amp; Gợi Ý Lộ Trình <span className="dmr-badge-orange">HOT</span>
                 </span>
                 <span className="dmr-dropdown-desc">3 bài test thực chiến chuẩn Cambridge, dự đoán Band và gợi ý khóa học</span>
               </Link>
@@ -232,7 +229,6 @@ const Navbar: React.FC = () => {
               onClick={handleCycleTarget}
               title="Nhấp để thay đổi Target Band điểm mục tiêu của bạn!"
             >
-              <span style={{ fontSize: '15px' }}>🎯</span>
               <span>Target {targetScore}+</span>
             </div>
           )}
@@ -326,7 +322,7 @@ const Navbar: React.FC = () => {
                   }}
                   title="Đăng xuất khỏi hệ thống"
                 >
-                  <span>🚪</span>
+
                   <span>Đăng xuất</span>
                 </button>
               </div>
@@ -383,7 +379,7 @@ const Navbar: React.FC = () => {
                           textDecoration: 'none',
                         }}
                       >
-                        <span>📊</span>
+
                         <span>Dashboard của tôi</span>
                       </Link>
 
@@ -403,7 +399,7 @@ const Navbar: React.FC = () => {
                             textDecoration: 'none',
                           }}
                         >
-                          <span>💳</span>
+
                           <span>Học phí & Thanh toán</span>
                         </Link>
                       )}
@@ -434,7 +430,7 @@ const Navbar: React.FC = () => {
                           textAlign: 'left',
                         }}
                       >
-                        <span>👤</span>
+
                         <span>Hồ sơ cá nhân</span>
                       </button>
 
@@ -460,7 +456,7 @@ const Navbar: React.FC = () => {
                           textAlign: 'left',
                         }}
                       >
-                        <span>🔐</span>
+
                         <span>Đổi mật khẩu</span>
                       </button>
                     </div>
@@ -485,7 +481,7 @@ const Navbar: React.FC = () => {
                           textAlign: 'left',
                         }}
                       >
-                        <span>🚪</span>
+
                         <span>Đăng xuất (Thoát)</span>
                       </button>
                     </div>
@@ -539,21 +535,21 @@ const Navbar: React.FC = () => {
             onClick={() => setMobileMenuOpen(false)}
             style={{ color: '#FFF', fontWeight: 700, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}
           >
-            🎯 Khóa học IELTS theo Band (4.5 - 8.0+)
+             Khóa học IELTS theo Band (4.5 - 8.0+)
           </Link>
           <Link
             to="/courses"
             onClick={() => setMobileMenuOpen(false)}
             style={{ color: '#FFF', fontWeight: 700, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}
           >
-            🎙️ Luyện Speaking &amp; Writing Coaching 1:1
+             Luyện Speaking &amp; Writing Coaching 1:1
           </Link>
           <Link
             to="/courses"
             onClick={() => setMobileMenuOpen(false)}
             style={{ color: '#FFF', fontWeight: 700, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}
           >
-            💻 Thi thử IELTS Mock Test (Computer) Miễn phí
+             Thi thử IELTS Mock Test (Computer) Miễn phí
           </Link>
           <Link
             to="/#books"
@@ -563,14 +559,14 @@ const Navbar: React.FC = () => {
             }}
             style={{ color: '#FFF', fontWeight: 700, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}
           >
-            📚 Bộ đề Cambridge IELTS &amp; Forecast Speaking
+             Bộ đề Cambridge IELTS &amp; Forecast Speaking
           </Link>
           <Link
             to="/announcements"
             onClick={() => setMobileMenuOpen(false)}
             style={{ color: '#FFF', fontWeight: 700, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}
           >
-            📢 Thông báo
+             Thông báo
           </Link>
           <Link
             to="/#teachers"
@@ -580,7 +576,7 @@ const Navbar: React.FC = () => {
             }}
             style={{ color: '#FFF', fontWeight: 700, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}
           >
-            👨‍🏫 Đội ngũ Giảng viên 8.5+ - 9.0 IELTS
+             Đội ngũ Giảng viên 8.5+ - 9.0 IELTS
           </Link>
           {isAuthenticated && user ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
@@ -609,7 +605,7 @@ const Navbar: React.FC = () => {
                     textDecoration: 'none',
                   }}
                 >
-                  📊 Dashboard
+                   Dashboard
                 </Link>
                 <button
                   type="button"
@@ -630,7 +626,7 @@ const Navbar: React.FC = () => {
                     cursor: 'pointer',
                   }}
                 >
-                  🚪 Đăng xuất
+                   Đăng xuất
                 </button>
               </div>
             </div>

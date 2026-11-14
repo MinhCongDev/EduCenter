@@ -142,7 +142,7 @@ const getMenuItems = (role: UserRole): DashboardItem[] => {
       { label: 'Lịch học', path: '/student/dashboard?tab=schedule' },
       { label: 'Bài tập về nhà', path: '/student/dashboard?tab=assignments' },
       { label: 'Kết quả học tập', path: '/student/dashboard?tab=grades' },
-      { label: '🎯 Thi thử & Test đầu vào', path: '/placement-tests' },
+      { label: 'Thi thử & Test đầu vào', path: '/placement-tests' },
     ];
   }
 

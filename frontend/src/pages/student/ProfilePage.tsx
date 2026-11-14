@@ -222,7 +222,6 @@ const ProfilePage: React.FC = () => {
                 <Button
                   type="button"
                   variant="secondary"
-                  icon={uploadingAvatar ? '⏳' : '📷'}
                   loading={uploadingAvatar}
                   onClick={() => fileInputRef.current?.click()}
                 >
@@ -327,7 +326,7 @@ const ProfilePage: React.FC = () => {
               </div>
 
               <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                <Button type="submit" variant="primary" loading={saving} icon="💾">
+                <Button type="submit" variant="primary" loading={saving}>
                   Lưu thay đổi
                 </Button>
                 <Button
@@ -336,7 +335,7 @@ const ProfilePage: React.FC = () => {
                   onClick={fetchProfile}
                   disabled={saving}
                 >
-                  🔄 Tải lại
+                   Tải lại
                 </Button>
               </div>
             </form>
@@ -352,7 +351,7 @@ const ProfilePage: React.FC = () => {
           </h2>
           {!showPwd && (
             <Button type="button" variant="secondary" onClick={() => setShowPwd(true)}>
-              🔑 Đổi mật khẩu
+               Đổi mật khẩu
             </Button>
           )}
         </div>
@@ -397,7 +396,7 @@ const ProfilePage: React.FC = () => {
                 />
               </div>
               <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                <Button type="submit" variant="primary" loading={savingPwd} icon="🔐">
+                <Button type="submit" variant="primary" loading={savingPwd}>
                   Xác nhận đổi mật khẩu
                 </Button>
                 <Button
@@ -409,7 +408,7 @@ const ProfilePage: React.FC = () => {
                   }}
                   disabled={savingPwd}
                 >
-                  ❌ Hủy
+                   Hủy
                 </Button>
               </div>
             </form>

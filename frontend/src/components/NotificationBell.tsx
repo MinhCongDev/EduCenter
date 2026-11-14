@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { studentService } from '../services/student.service';
 import { useToast } from '../contexts/ToastContext';
 import type { NotificationItem } from '../types';
-import { NOTIFICATION_META } from '../types';
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -122,7 +121,20 @@ const NotificationBell: React.FC = () => {
           color: 'inherit',
         }}
       >
-        🔔
+        <svg
+          aria-hidden="true"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+          <path d="M10 21h4" />
+        </svg>
         {unread > 0 && (
           <span
             style={{
@@ -171,7 +183,7 @@ const NotificationBell: React.FC = () => {
               alignItems: 'center',
             }}
           >
-            <strong style={{ fontSize: '0.95rem' }}>🔔 Thông báo</strong>
+            <strong style={{ fontSize: '0.95rem' }}>Thông báo</strong>
             {unread > 0 && (
               <button
                 type="button"
@@ -195,13 +207,11 @@ const NotificationBell: React.FC = () => {
             </div>
           ) : items.length === 0 ? (
             <div style={{ padding: '1.5rem', textAlign: 'center', color: '#94a3b8' }}>
-              <div style={{ fontSize: '2rem' }}>📭</div>
-              <div style={{ marginTop: '0.5rem' }}>Chưa có thông báo</div>
+              <div>Chưa có thông báo</div>
             </div>
           ) : (
             <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
               {items.map((n) => {
-                const meta = NOTIFICATION_META[n.type] ?? NOTIFICATION_META.INFO;
                 return (
                   <li
                     key={n._id}
@@ -211,28 +221,9 @@ const NotificationBell: React.FC = () => {
                       borderBottom: '1px solid #f1f5f9',
                       cursor: 'pointer',
                       background: n.isRead ? 'white' : 'rgba(59,130,246,0.05)',
-                      display: 'flex',
-                      gap: '0.75rem',
-                      alignItems: 'flex-start',
                     }}
                   >
-                    <div
-                      style={{
-                        fontSize: '1.25rem',
-                        width: 32,
-                        height: 32,
-                        borderRadius: '50%',
-                        background: meta.color + '20',
-                        color: meta.color,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                      }}
-                    >
-                      {meta.icon}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ minWidth: 0 }}>
                       <div
                         style={{
                           fontSize: '0.875rem',

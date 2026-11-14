@@ -74,10 +74,10 @@ const AttendancePage: React.FC = () => {
           ← Chi Tiết Lớp
         </Link>
         <Link to={`/student/classes/${id}/assignments`} className="dash-quick-btn" style={{ textDecoration: 'none' }}>
-          📝 Bài Tập
+           Bài Tập
         </Link>
         <Link to={`/student/classes/${id}/grades`} className="dash-quick-btn" style={{ textDecoration: 'none' }}>
-          📊 Bảng Điểm
+           Bảng Điểm
         </Link>
       </div>
 
