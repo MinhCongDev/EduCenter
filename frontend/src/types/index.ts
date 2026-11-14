@@ -979,20 +979,6 @@ export interface NotificationItem {
   updatedAt: string;
 }
 
-export const NOTIFICATION_META: Record<NotificationType, { icon: string; color: string; label: string }> = {
-  INFO: { icon: 'ℹ️', color: '#3b82f6', label: 'Thông tin' },
-  ALERT: { icon: '🚨', color: '#f59e0b', label: 'Cảnh báo' },
-  SUCCESS: { icon: '✅', color: '#10b981', label: 'Thành công' },
-  WARNING: { icon: '⚠️', color: '#f97316', label: 'Cảnh báo' },
-  GRADE_PUBLISHED: { icon: '📊', color: '#3b82f6', label: 'Điểm mới' },
-  ASSIGNMENT_GRADED: { icon: '✅', color: '#10b981', label: 'Chấm bài' },
-  REQUEST_APPROVED: { icon: '👍', color: '#10b981', label: 'Duyệt yêu cầu' },
-  REQUEST_REJECTED: { icon: '⛔', color: '#ef4444', label: 'Từ chối' },
-  PAYMENT_RECEIVED: { icon: '💰', color: '#10b981', label: 'Thanh toán' },
-  CLASS_ANNOUNCEMENT: { icon: '📢', color: '#8b5cf6', label: 'Thông báo lớp' },
-  ATTENDANCE_MARKED: { icon: '🗓️', color: '#f59e0b', label: 'Điểm danh' },
-};
-
 // ─── Toast & UI ──────────────────────────
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 export interface Toast {
@@ -1049,6 +1035,7 @@ export interface EnrollmentRecord {
   registrationDate: string;
   status: EnrollmentStatus;
   tuitionStatus?: TuitionStatus;
+  scheduleConflictClassIds?: string[];
   payments: EnrollmentPayment[];
   createdAt: string;
 }

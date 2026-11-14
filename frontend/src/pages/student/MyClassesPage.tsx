@@ -133,7 +133,7 @@ const MyClassesPage: React.FC = () => {
           description="Bạn chưa đăng ký lớp học nào. Vui lòng liên hệ trung tâm để được tư vấn."
           action={
             <Link to="/courses" className="dash-quick-btn primary" style={{ textDecoration: 'none' }}>
-              📖 Xem các khóa học
+               Xem các khóa học
             </Link>
           }
         />
@@ -154,7 +154,7 @@ const MyClassesPage: React.FC = () => {
             >
               <input
                 type="text"
-                placeholder="🔍 Tìm theo mã lớp, tên khóa học, giảng viên..."
+                placeholder=" Tìm theo mã lớp, tên khóa học, giảng viên..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 style={{
@@ -169,9 +169,9 @@ const MyClassesPage: React.FC = () => {
                 onChange={(e) => setTuitionFilter(e.target.value as any)}
                 style={selectStyle}
               >
-                <option value="ALL">💳 Tất cả học phí</option>
-                <option value="PAID">✅ Đã thanh toán</option>
-                <option value="PENDING">⏳ Chưa thanh toán</option>
+                <option value="ALL"> Tất cả học phí</option>
+                <option value="PAID"> Đã thanh toán</option>
+                <option value="PENDING"> Chưa thanh toán</option>
               </select>
               <select
                 value={statusFilter}
@@ -340,35 +340,35 @@ const MyClassesPage: React.FC = () => {
                       className="dash-quick-btn primary"
                       style={{ textDecoration: 'none' }}
                     >
-                      ℹ️ Xem Chi Tiết
+                       Xem Chi Tiết
                     </Link>
                     <Link
                       to={`/student/classes/${cls._id}/assignments`}
                       className="dash-quick-btn"
                       style={{ textDecoration: 'none' }}
                     >
-                      📝 Bài Tập
+                       Bài Tập
                     </Link>
                     <Link
                       to={`/student/classes/${cls._id}/attendance`}
                       className="dash-quick-btn"
                       style={{ textDecoration: 'none' }}
                     >
-                      📅 Điểm Danh
+                       Điểm Danh
                     </Link>
                     <Link
                       to={`/student/classes/${cls._id}/grades`}
                       className="dash-quick-btn"
                       style={{ textDecoration: 'none' }}
                     >
-                      📊 Bảng Điểm
+                       Bảng Điểm
                     </Link>
                     <Link
                       to={`/student/classes/${cls._id}/schedule`}
                       className="dash-quick-btn"
                       style={{ textDecoration: 'none' }}
                     >
-                      🗓️ Lịch Học
+                       Lịch Học
                     </Link>
                   </div>
                 </div>

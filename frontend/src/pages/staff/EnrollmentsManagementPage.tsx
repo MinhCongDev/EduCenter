@@ -51,11 +51,13 @@ const EnrollmentDetailModal: React.FC<{
   assignmentMessage: string;
 }> = ({ enrollment, classes, onClose, onAssignClass, assigning, assignmentError, assignmentMessage }) => {
   const [selectedClassId, setSelectedClassId] = useState(enrollment.class?._id ?? '');
+  const scheduleConflictClassIds = new Set(enrollment.scheduleConflictClassIds ?? []);
   const availableClasses = classes.filter((classItem) =>
     classItem.course?._id === enrollment.course?._id
     && (
       classItem._id === enrollment.class?._id
       || ((classItem.status === 'OPEN' || classItem.status === 'IN_PROGRESS')
+        && !scheduleConflictClassIds.has(classItem._id)
         && (classItem.currentEnrollment ?? 0) < classItem.capacity)
     )
   );
@@ -160,7 +162,12 @@ const EnrollmentDetailModal: React.FC<{
                 </option>
               ))}
             </select>
-            {!availableClasses.length && <p className="form-hint">Khóa học này hiện chưa có lớp còn chỗ để xếp.</p>}
+            {!availableClasses.length && (
+              <p className="form-hint">Khóa học này hiện chưa có lớp còn chỗ hoặc không trùng lịch để xếp.</p>
+            )}
+            {scheduleConflictClassIds.size > 0 && (
+              <p className="form-hint" role="status">Các lớp có lịch trùng với lớp học viên đã ghi danh được ẩn khỏi danh sách.</p>
+            )}
             {selectedClassId === enrollment.class?._id && enrollment.class && (
               <p className="form-hint">Học viên hiện đã được xếp vào lớp này.</p>
             )}

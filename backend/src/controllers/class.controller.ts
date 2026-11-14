@@ -10,6 +10,7 @@ import { Attendance } from '../models/attendance.model';
 import { ClassSchedule } from '../models/classSchedule.model';
 import { Grade } from '../models/grade.model';
 import { Student } from '../models/student.model';
+import { ClassTeacher } from '../models/classTeacher.model';
 import {
   buildScheduleCandidates,
   generateSessionDates,
@@ -39,15 +40,49 @@ const validateAssignments = async (courseId?: string, teacherId?: string) => {
 
 export const getClassOptions = async (_req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const [courses, teachers] = await Promise.all([
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    const [courses, teachers, schedulingClasses] = await Promise.all([
       Course.find({ status: 'ACTIVE' }).select('code title sessions').sort({ title: 1 }),
       User.find({ role: 'TEACHER', status: 'ACTIVE' }).select('fullName email').sort({ fullName: 1 }),
+      Class.find({ status: { $in: ['OPEN', 'IN_PROGRESS'] }, endDate: { $gte: today } })
+        .select('classCode teacher room scheduleDays timeSlot startDate endDate status')
+        .lean(),
     ]);
+    const classIds = schedulingClasses.map((classroom) => classroom._id);
+    const [schedules, teacherAssignments] = await Promise.all([
+      ClassSchedule.find({ class: { $in: classIds } })
+        .select('class sessionDate excludedDates dayOfWeek startTime endTime classroom status')
+        .lean(),
+      ClassTeacher.find({ class: { $in: classIds }, status: 'ACTIVE' }).select('class teacher').lean(),
+    ]);
+    const schedulesByClassId = new Map<string, typeof schedules>();
+    for (const schedule of schedules) {
+      const classId = schedule.class.toString();
+      const classSchedules = schedulesByClassId.get(classId) ?? [];
+      classSchedules.push(schedule);
+      schedulesByClassId.set(classId, classSchedules);
+    }
+    const teachersByClassId = new Map<string, Set<string>>();
+    for (const classroom of schedulingClasses) {
+      teachersByClassId.set(classroom._id.toString(), new Set([classroom.teacher.toString()]));
+    }
+    for (const assignment of teacherAssignments) {
+      teachersByClassId.get(assignment.class.toString())?.add(assignment.teacher.toString());
+    }
 
     res.status(200).json({
       success: true,
       message: 'Lấy danh sách khóa học và giảng viên thành công',
-      data: { courses, teachers },
+      data: {
+        courses,
+        teachers,
+        schedulingClasses: schedulingClasses.map((classroom) => ({
+          ...classroom,
+          teacherIds: [...(teachersByClassId.get(classroom._id.toString()) ?? [])],
+          schedules: schedulesByClassId.get(classroom._id.toString()) ?? [],
+        })),
+      },
     });
   } catch (error) {
     next(error);

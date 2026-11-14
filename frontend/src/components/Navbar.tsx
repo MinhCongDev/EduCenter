@@ -244,7 +244,7 @@ const Navbar: React.FC = () => {
                   }}
                   title="Đăng xuất khỏi hệ thống"
                 >
-                  <span>🚪</span>
+
                   <span>Đăng xuất</span>
                 </button>
               </div>
@@ -301,7 +301,7 @@ const Navbar: React.FC = () => {
                           textDecoration: 'none',
                         }}
                       >
-                        <span>📊</span>
+
                         <span>Dashboard của tôi</span>
                       </Link>
 
@@ -321,7 +321,7 @@ const Navbar: React.FC = () => {
                             textDecoration: 'none',
                           }}
                         >
-                          <span>💳</span>
+
                           <span>Học phí & Thanh toán</span>
                         </Link>
                       )}
@@ -356,7 +356,7 @@ const Navbar: React.FC = () => {
                           textAlign: 'left',
                         }}
                       >
-                        <span>👤</span>
+
                         <span>Hồ sơ cá nhân</span>
                       </button>
 
@@ -382,7 +382,7 @@ const Navbar: React.FC = () => {
                           textAlign: 'left',
                         }}
                       >
-                        <span>🔐</span>
+
                         <span>Đổi mật khẩu</span>
                       </button>
                     </div>
@@ -407,7 +407,7 @@ const Navbar: React.FC = () => {
                           textAlign: 'left',
                         }}
                       >
-                        <span>🚪</span>
+
                         <span>Đăng xuất (Thoát)</span>
                       </button>
                     </div>
@@ -533,7 +533,7 @@ const Navbar: React.FC = () => {
                     textDecoration: 'none',
                   }}
                 >
-                  📊 Dashboard
+                   Dashboard
                 </Link>
                 <button
                   type="button"
@@ -554,7 +554,7 @@ const Navbar: React.FC = () => {
                     cursor: 'pointer',
                   }}
                 >
-                  🚪 Đăng xuất
+                   Đăng xuất
                 </button>
               </div>
             </div>

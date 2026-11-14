@@ -896,7 +896,7 @@ export const PlacementTestDetailPage: React.FC = () => {
                 className="dash-quick-btn"
                 style={{ padding: '0.75rem 1.5rem', fontWeight: 700 }}
               >
-                🔄 Làm Lại Bài Thi Này
+                 Làm Lại Bài Thi Này
               </button>
 
               <Link
@@ -904,7 +904,7 @@ export const PlacementTestDetailPage: React.FC = () => {
                 className="dash-quick-btn primary"
                 style={{ padding: '0.75rem 1.5rem', fontWeight: 700, textDecoration: 'none' }}
               >
-                🎯 Chọn Bài Test Khác
+                 Chọn Bài Test Khác
               </Link>
             </div>
           </div>
@@ -1150,7 +1150,7 @@ export const PlacementTestDetailPage: React.FC = () => {
                     gap: '4px',
                   }}
                 >
-                  <span>{flaggedQuestions[currentQuestion.id] ? '🚩 Đã cắm cờ' : '🏳️ Đặt cờ xem lại'}</span>
+                  <span>{flaggedQuestions[currentQuestion.id] ? ' Đã cắm cờ' : ' Đặt cờ xem lại'}</span>
                 </button>
               </div>
 
@@ -1351,15 +1351,19 @@ export const PlacementTestDetailPage: React.FC = () => {
                     {idx + 1}
                     {isFlagged && (
                       <span
+                        aria-label="Đã đánh dấu xem lại"
+                        title="Đã đánh dấu xem lại"
                         style={{
                           position: 'absolute',
                           top: '-3px',
                           right: '-3px',
-                          fontSize: '0.6rem',
+                          width: '7px',
+                          height: '7px',
+                          borderRadius: '50%',
+                          backgroundColor: '#f59e0b',
+                          border: '2px solid #ffffff',
                         }}
-                      >
-                        🚩
-                      </span>
+                      />
                     )}
                   </button>
                 );
