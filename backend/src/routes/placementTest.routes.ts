@@ -12,9 +12,11 @@ import {
 
 export const placementTestRouter = Router();
 
-// Public / Student / Staff: Xem danh sách bài test từ CSDL và làm bài
+// Public: Xem danh sách bài test từ CSDL
 placementTestRouter.get('/', optionalAuthenticate, getPlacementTests);
-placementTestRouter.get('/:id', optionalAuthenticate, getPlacementTestById);
+
+// Student / Staff / Director: Phải đăng nhập mới được xem chi tiết câu hỏi và làm bài thi thử
+placementTestRouter.get('/:id', authenticate, getPlacementTestById);
 placementTestRouter.post('/:id/submit', authenticate, submitPlacementTest);
 
 // Staff / Director: Quản trị, tạo mới, cập nhật, xóa bài test trong CSDL

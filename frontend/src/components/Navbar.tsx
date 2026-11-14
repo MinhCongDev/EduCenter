@@ -22,7 +22,6 @@ const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [targetScore, setTargetScore] = useState(7.5);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -33,8 +32,35 @@ const Navbar: React.FC = () => {
     navigate('/login', { replace: true });
   };
 
-  const handleCycleTarget = () => {
-    setTargetScore((prev) => (prev >= 8.5 ? 6.5 : Number((prev + 0.5).toFixed(1))));
+  const handleHomeClick = (e: React.MouseEvent) => {
+    if (location.pathname === '/') {
+      e.preventDefault();
+      window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+      if (location.hash) {
+        window.history.pushState(null, '', '/');
+      }
+    }
+  };
+
+  const handleCoursesClick = (e: React.MouseEvent) => {
+    if (location.pathname === '/courses') {
+      e.preventDefault();
+      window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handlePlacementTestClick = (e: React.MouseEvent) => {
+    if (location.pathname === '/placement-test') {
+      e.preventDefault();
+      window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handleAnnouncementsClick = (e: React.MouseEvent) => {
+    if (location.pathname === '/announcements') {
+      e.preventDefault();
+      window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+    }
   };
 
   const handleScrollTo = (targetId: string) => (e: React.MouseEvent) => {
@@ -52,9 +78,9 @@ const Navbar: React.FC = () => {
     <nav className="dmr-header" role="navigation" aria-label="Main IELTS navigation">
       <div className="dmr-header-container">
         {/* Brand Logo */}
-        <Link to="/" className="dmr-logo-wrap" aria-label="EduCenter IELTS Trang chủ">
+        <Link to="/" onClick={handleHomeClick} className="dmr-logo-wrap" aria-label="EduCenter IELTS Trang chủ">
           <div className="dmr-logo-badge">
-            <span style={{ fontSize: '20px' }}>🇬🇧</span>
+            <span>E</span>
           </div>
           <div className="dmr-logo-text">
             <span className="dmr-logo-title">
@@ -66,158 +92,72 @@ const Navbar: React.FC = () => {
           </div>
         </Link>
 
-        {/* Desktop Navigation Menu */}
+        {/* Desktop Navigation Menu: 5 mục tinh gọn chuẩn xác */}
         <ul className="dmr-nav-menu">
-          {/* Về EduCenter */}
+          {/* Trang chủ */}
           <li className="dmr-nav-item">
-            <span className="dmr-nav-link">
-              Về EduCenter ▾
-            </span>
-            <div className="dmr-dropdown">
-              <Link to="/#about" onClick={handleScrollTo('about')} className="dmr-dropdown-link">
-                <span className="dmr-dropdown-title">VỀ CHÚNG TÔI</span>
-                <span className="dmr-dropdown-desc">Tổ chức đào tạo IELTS chuẩn khảo thí quốc tế</span>
-              </Link>
-              <Link to="/#teachers" onClick={handleScrollTo('teachers')} className="dmr-dropdown-link">
-                <span className="dmr-dropdown-title">Đội ngũ giảng viên 8.5+</span>
-                <span className="dmr-dropdown-desc">100% giáo viên đạt 8.5 - 9.0 IELTS Overall</span>
-              </Link>
-              <Link to="/#reviews" onClick={handleScrollTo('reviews')} className="dmr-dropdown-link">
-                <span className="dmr-dropdown-title">Bảng vàng học viên</span>
-                <span className="dmr-dropdown-desc">Hơn 50.000 học viên đạt 6.5 - 8.5 IELTS</span>
-              </Link>
-              <Link to="/#partners" onClick={handleScrollTo('partners')} className="dmr-dropdown-link">
-                <span className="dmr-dropdown-title">Đối tác IDP &amp; British Council</span>
-                <span className="dmr-dropdown-desc">Đối tác đăng ký thi IELTS chính thức</span>
-              </Link>
-            </div>
+            <Link
+              to="/"
+              onClick={handleHomeClick}
+              className="dmr-nav-link"
+              style={{
+                color: location.pathname === '/' && !location.hash ? '#57D061' : undefined,
+              }}
+            >
+              <span>Trang chủ</span>
+            </Link>
           </li>
 
-          {/* Lộ trình IELTS with Mega Dropdown */}
+          {/* Khóa học */}
           <li className="dmr-nav-item">
-            <span className="dmr-nav-link">
-              Lộ trình IELTS ▾
-            </span>
-            <div className="dmr-dropdown dmr-mega-dropdown" style={{ minWidth: '460px' }}>
-              <div style={{ padding: '4px 10px 10px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                <span style={{ fontSize: '11px', color: '#FCD34D', textTransform: 'uppercase', fontWeight: 800 }}>
-                  CHỌN KHÓA HỌC THEO BAND ĐIỂM MỤC TIÊU
-                </span>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '10px' }}>
-                <Link to="/courses?level=0 - 3.5" className="dmr-dropdown-link">
-                  <span className="dmr-dropdown-title">
-                    IELTS Beginner – Mất Gốc <span className="dmr-badge-green">0–3.5</span>
-                  </span>
-                  <span className="dmr-dropdown-desc">Nền tảng từ vựng, ngữ pháp, phát âm cơ bản</span>
-                </Link>
-                <Link to="/courses?level=3.5 - 4.5" className="dmr-dropdown-link">
-                  <span className="dmr-dropdown-title">
-                    IELTS Pre <span className="dmr-badge-green">3.5–4.5</span>
-                  </span>
-                  <span className="dmr-dropdown-desc">Làm quen format đề thi và 4 kỹ năng</span>
-                </Link>
-                <Link to="/courses?level=4.5 - 5.5" className="dmr-dropdown-link">
-                  <span className="dmr-dropdown-title">
-                    IELTS Foundation <span className="dmr-badge-green">4.5–5.5</span>
-                  </span>
-                  <span className="dmr-dropdown-desc">Củng cố kỹ năng &amp; chiến thuật làm bài</span>
-                </Link>
-                <Link to="/courses?level=5.5 - 6.5" className="dmr-dropdown-link">
-                  <span className="dmr-dropdown-title">
-                    IELTS Breakthrough – Bứt Phá <span className="dmr-badge-green">5.5–6.5</span>
-                  </span>
-                  <span className="dmr-dropdown-desc">Xử lý đề, luyện đề chuyên sâu nâng Band</span>
-                </Link>
-                <Link to="/courses?level=6.5 - 7.5" className="dmr-dropdown-link">
-                  <span className="dmr-dropdown-title">
-                    IELTS Advanced – Chuyên Sâu <span className="dmr-badge-green">6.5–7.5</span>
-                  </span>
-                  <span className="dmr-dropdown-desc">Tư duy học thuật, nâng cao Writing &amp; Speaking</span>
-                </Link>
-                <Link to="/courses?level=8.0%2B" className="dmr-dropdown-link">
-                  <span className="dmr-dropdown-title">
-                    IELTS Master <span className="dmr-badge-orange" style={{ background: '#7e22ce' }}>8.0+</span>
-                  </span>
-                  <span className="dmr-dropdown-desc">Tối ưu chiến thuật &amp; tiêu chí chấm thi</span>
-                </Link>
-              </div>
-              <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', gap: '8px' }}>
-                <Link to="/courses" className="dmr-dropdown-link" style={{ flex: 1 }}>
-                  <span className="dmr-dropdown-title">🎯 Lớp Online VIP 1:1</span>
-                  <span className="dmr-dropdown-desc">Học qua Zoom cùng giáo viên 8.5+</span>
-                </Link>
-                <Link to="/courses" className="dmr-dropdown-link" style={{ flex: 1 }}>
-                  <span className="dmr-dropdown-title">🏫 Lớp Offline Campus</span>
-                  <span className="dmr-dropdown-desc">Phòng máy chuẩn thi IDP / BC</span>
-                </Link>
-              </div>
-            </div>
+            <Link
+              to="/courses"
+              onClick={handleCoursesClick}
+              className="dmr-nav-link"
+              style={{
+                color: location.pathname.startsWith('/courses') ? '#57D061' : undefined,
+              }}
+            >
+              <span>Khóa học</span>
+            </Link>
           </li>
 
-          {/* 4 Kỹ năng (Skills) */}
+          {/* Thi thử */}
           <li className="dmr-nav-item">
-            <span className="dmr-nav-link">
-              4 Kỹ năng ▾
-            </span>
-            <div className="dmr-dropdown">
-              <Link to="/courses" className="dmr-dropdown-link">
-                <span className="dmr-dropdown-title">🎙️ IELTS Speaking Coaching 1:1</span>
-                <span className="dmr-dropdown-desc">Sửa phát âm và phản xạ tự nhiên</span>
-              </Link>
-              <Link to="/courses" className="dmr-dropdown-link">
-                <span className="dmr-dropdown-title">✍️ IELTS Writing Intensive</span>
-                <span className="dmr-dropdown-desc">Chữa bài chi tiết theo 4 tiêu chí chấm điểm</span>
-              </Link>
-              <Link to="/courses" className="dmr-dropdown-link">
-                <span className="dmr-dropdown-title">🎧 IELTS Listening Master</span>
-                <span className="dmr-dropdown-desc">Bắt trọn keyword &amp; bẫy đề thi</span>
-              </Link>
-              <Link to="/courses" className="dmr-dropdown-link">
-                <span className="dmr-dropdown-title">📖 IELTS Reading Skim &amp; Scan</span>
-                <span className="dmr-dropdown-desc">Kỹ thuật định vị thông tin chuẩn xác</span>
-              </Link>
-            </div>
+            <Link
+              to="/placement-test"
+              onClick={handlePlacementTestClick}
+              className="dmr-nav-link"
+              style={{
+                color: location.pathname.startsWith('/placement-test') ? '#57D061' : undefined,
+              }}
+            >
+              <span>Thi thử</span>
+            </Link>
           </li>
 
-          {/* Thi thử IELTS (Mock Test) */}
+          {/* Giới thiệu */}
           <li className="dmr-nav-item">
-            <span className="dmr-nav-link">
-              Thi thử IELTS ▾
-            </span>
-            <div className="dmr-dropdown">
-              <Link to="/placement-test" className="dmr-dropdown-link">
-                <span className="dmr-dropdown-title">
-                  🎯 Test Đầu Vào &amp; Gợi Ý Lộ Trình <span className="dmr-badge-orange">HOT</span>
-                </span>
-                <span className="dmr-dropdown-desc">3 bài test thực chiến chuẩn Cambridge, dự đoán Band và gợi ý khóa học</span>
-              </Link>
-              <Link to="/placement-test" className="dmr-dropdown-link">
-                <span className="dmr-dropdown-title">
-                  Mock Test Online (Computer) <span className="dmr-badge-orange">MIỄN PHÍ</span>
-                </span>
-                <span className="dmr-dropdown-desc">Mô phỏng 100% giao diện thi IELTS trực tuyến trên máy tính</span>
-              </Link>
-              <Link to="/placement-test/ielts-reading-real-02" className="dmr-dropdown-link">
-                <span className="dmr-dropdown-title">
-                  Thi thử Học Thuật Real Test <span className="dmr-badge-orange">MIỄN PHÍ</span>
-                </span>
-                <span className="dmr-dropdown-desc">Đề thi thật Cambridge có phân tích chi tiết theo từng kỹ năng</span>
-              </Link>
-            </div>
-          </li>
-
-          {/* Thư viện đề & Sách */}
-          <li className="dmr-nav-item">
-            <Link to="/#books" onClick={handleScrollTo('books')} className="dmr-nav-link">
-              <span>Tài liệu &amp; Sách</span>
+            <Link
+              to="/#about"
+              onClick={handleScrollTo('about')}
+              className="dmr-nav-link"
+            >
+              <span>Giới thiệu</span>
             </Link>
           </li>
 
           {/* Thông báo */}
           <li className="dmr-nav-item">
-            <Link to="/announcements" className="dmr-nav-link">
-              <span>Thông Báo</span>
+            <Link
+              to="/announcements"
+              onClick={handleAnnouncementsClick}
+              className="dmr-nav-link"
+              style={{
+                color: location.pathname.startsWith('/announcements') ? '#57D061' : undefined,
+              }}
+            >
+              <span>Thông báo</span>
               <span className="dmr-pulse-dot" />
             </Link>
           </li>
@@ -225,18 +165,6 @@ const Navbar: React.FC = () => {
 
         {/* Right Action Widgets */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
-          {/* Target Score Widget: Only display for guest or students to avoid header crowding */}
-          {(!isAuthenticated || user?.role === 'STUDENT') && (
-            <div
-              className="dmr-leaf-points"
-              onClick={handleCycleTarget}
-              title="Nhấp để thay đổi Target Band điểm mục tiêu của bạn!"
-            >
-              <span style={{ fontSize: '15px' }}>🎯</span>
-              <span>Target {targetScore}+</span>
-            </div>
-          )}
-
           {/* Cart Icon: Only display for guest or students */}
           {(!isAuthenticated || user?.role === 'STUDENT') && (
             <Link to="/courses" className="dmr-store-btn" title="Cửa hàng khóa học IELTS">
@@ -412,11 +340,15 @@ const Navbar: React.FC = () => {
                         type="button"
                         onClick={() => {
                           setIsUserMenuOpen(false);
-                          if (user.role === 'STUDENT') {
-                            navigate('/student/profile');
-                          } else {
-                            setIsProfileOpen(true);
-                          }
+                          const profilePath =
+                            user.role === 'TEACHER'
+                              ? '/teacher/profile'
+                              : user.role === 'TRAINING_STAFF'
+                              ? '/staff/profile'
+                              : user.role === 'DIRECTOR'
+                              ? '/director/profile'
+                              : '/student/profile';
+                          navigate(profilePath);
                         }}
                         style={{
                           display: 'flex',
@@ -535,52 +467,54 @@ const Navbar: React.FC = () => {
           }}
         >
           <Link
-            to="/courses"
-            onClick={() => setMobileMenuOpen(false)}
-            style={{ color: '#FFF', fontWeight: 700, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}
-          >
-            🎯 Khóa học IELTS theo Band (4.5 - 8.0+)
-          </Link>
-          <Link
-            to="/courses"
-            onClick={() => setMobileMenuOpen(false)}
-            style={{ color: '#FFF', fontWeight: 700, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}
-          >
-            🎙️ Luyện Speaking &amp; Writing Coaching 1:1
-          </Link>
-          <Link
-            to="/courses"
-            onClick={() => setMobileMenuOpen(false)}
-            style={{ color: '#FFF', fontWeight: 700, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}
-          >
-            💻 Thi thử IELTS Mock Test (Computer) Miễn phí
-          </Link>
-          <Link
-            to="/#books"
+            to="/"
             onClick={(e) => {
               setMobileMenuOpen(false);
-              handleScrollTo('books')(e);
+              handleHomeClick(e);
             }}
             style={{ color: '#FFF', fontWeight: 700, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}
           >
-            📚 Bộ đề Cambridge IELTS &amp; Forecast Speaking
+            🏠 Trang chủ
+          </Link>
+          <Link
+            to="/courses"
+            onClick={(e) => {
+              setMobileMenuOpen(false);
+              handleCoursesClick(e);
+            }}
+            style={{ color: '#FFF', fontWeight: 700, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}
+          >
+            📚 Khóa học
+          </Link>
+          <Link
+            to="/placement-test"
+            onClick={(e) => {
+              setMobileMenuOpen(false);
+              handlePlacementTestClick(e);
+            }}
+            style={{ color: '#FFF', fontWeight: 700, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}
+          >
+            🎯 Thi thử
+          </Link>
+          <Link
+            to="/#about"
+            onClick={(e) => {
+              setMobileMenuOpen(false);
+              handleScrollTo('about')(e);
+            }}
+            style={{ color: '#FFF', fontWeight: 700, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}
+          >
+            ℹ️ Giới thiệu
           </Link>
           <Link
             to="/announcements"
-            onClick={() => setMobileMenuOpen(false)}
-            style={{ color: '#FFF', fontWeight: 700, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}
-          >
-            📢 Thông báo
-          </Link>
-          <Link
-            to="/#teachers"
             onClick={(e) => {
               setMobileMenuOpen(false);
-              handleScrollTo('teachers')(e);
+              handleAnnouncementsClick(e);
             }}
             style={{ color: '#FFF', fontWeight: 700, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}
           >
-            👨‍🏫 Đội ngũ Giảng viên 8.5+ - 9.0 IELTS
+            📢 Thông báo
           </Link>
           {isAuthenticated && user ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>

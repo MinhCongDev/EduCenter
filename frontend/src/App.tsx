@@ -6,6 +6,7 @@ import GuestLayout from './layouts/GuestLayout';
 import DashboardLayout from './layouts/DashboardLayout';
 import ProtectedRoute from './routes/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
+import ScrollToTop from './components/ScrollToTop';
 
 // ===========================
 // Lazy-loaded pages
@@ -114,9 +115,11 @@ const AppRouter: React.FC = () => {
         <Route
           path="/placement-test/:id"
           element={
-            <GuestLayout>
-              <PlacementTestDetailPage />
-            </GuestLayout>
+            <ProtectedRoute>
+              <GuestLayout>
+                <PlacementTestDetailPage />
+              </GuestLayout>
+            </ProtectedRoute>
           }
         />
         <Route
@@ -130,9 +133,11 @@ const AppRouter: React.FC = () => {
         <Route
           path="/placement-tests/:id"
           element={
-            <GuestLayout>
-              <PlacementTestDetailPage />
-            </GuestLayout>
+            <ProtectedRoute>
+              <GuestLayout>
+                <PlacementTestDetailPage />
+              </GuestLayout>
+            </ProtectedRoute>
           }
         />
         <Route
@@ -314,6 +319,16 @@ const AppRouter: React.FC = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/teacher/profile"
+          element={
+            <ProtectedRoute allowedRoles={['TEACHER']}>
+              <DashboardLayout>
+                <ProfilePage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
 
         {/* ── Training Staff Routes ────────────────── */}
         <Route
@@ -416,6 +431,16 @@ const AppRouter: React.FC = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/staff/profile"
+          element={
+            <ProtectedRoute allowedRoles={['TRAINING_STAFF']}>
+              <DashboardLayout>
+                <ProfilePage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
 
         {/* ── Director Routes ──────────────────────── */}
         <Route
@@ -424,6 +449,28 @@ const AppRouter: React.FC = () => {
             <ProtectedRoute allowedRoles={['DIRECTOR']}>
               <DashboardLayout>
                 <DirectorDashboard />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/director/profile"
+          element={
+            <ProtectedRoute allowedRoles={['DIRECTOR']}>
+              <DashboardLayout>
+                <ProfilePage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ── Common Profile Route for Any Role ─────── */}
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT', 'TEACHER', 'TRAINING_STAFF', 'DIRECTOR']}>
+              <DashboardLayout>
+                <ProfilePage />
               </DashboardLayout>
             </ProtectedRoute>
           }
@@ -458,6 +505,7 @@ const App: React.FC = () => {
   return (
     <ErrorBoundary>
       <BrowserRouter>
+        <ScrollToTop />
         <ToastProvider>
           <AuthProvider>
             <AppRouter />
