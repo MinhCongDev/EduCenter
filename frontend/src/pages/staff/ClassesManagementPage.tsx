@@ -486,10 +486,26 @@ const ClassesManagementPage: React.FC = () => {
     const fetchOptions = async () => {
       try {
         const response = await classService.getOptions();
-        setOptions(response.data ?? { courses: [], teachers: [], schedulingClasses: [] });
+        const data = response.data;
+        if (
+          !response.success
+          || !data
+          || !Array.isArray(data.courses)
+          || !Array.isArray(data.teachers)
+          || !Array.isArray(data.schedulingClasses)
+        ) {
+          setOptionsError(
+            data && Array.isArray(data.courses) && Array.isArray(data.teachers) && !Array.isArray(data.schedulingClasses)
+              ? 'Backend chưa trả về danh sách lịch lớp. Hãy khởi động lại backend mới nhất rồi tải lại trang.'
+              : response.message || 'Dữ liệu tạo lớp từ backend không hợp lệ.'
+          );
+          return;
+        }
+
+        setOptions(data);
         setOptionsError('');
       } catch {
-        setOptionsError('Không tải được danh sách khóa học và giảng viên.');
+        setOptionsError('Không tải được khóa học, giảng viên và lịch lớp. Vui lòng kiểm tra backend.');
       }
     };
     void fetchOptions();
@@ -569,7 +585,7 @@ const ClassesManagementPage: React.FC = () => {
         <button
           className="btn btn-primary btn-lg"
           onClick={() => { setEditingClass(null); setFormError(''); setShowForm(true); }}
-          disabled={options.courses.length === 0 || options.teachers.length === 0}
+          disabled={Boolean(optionsError) || options.courses.length === 0 || options.teachers.length === 0}
         >
           + Thêm lớp học
         </button>
@@ -624,7 +640,13 @@ const ClassesManagementPage: React.FC = () => {
                   <td>
                     <div className="courses-actions">
                       <button className="btn btn-outline btn-sm" onClick={() => void openClassDetail(classItem._id)}>Chi tiết</button>
-                      <button className="btn btn-outline btn-sm" onClick={() => { setEditingClass(classItem); setFormError(''); setShowForm(true); }}>Sửa</button>
+                      <button
+                        className="btn btn-outline btn-sm"
+                        onClick={() => { setEditingClass(classItem); setFormError(''); setShowForm(true); }}
+                        disabled={Boolean(optionsError)}
+                      >
+                        Sửa
+                      </button>
                       <button className="btn btn-danger-outline btn-sm" onClick={() => setDeletingClass(classItem)}>Xóa</button>
                     </div>
                   </td>
