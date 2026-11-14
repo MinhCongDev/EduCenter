@@ -141,7 +141,7 @@ const StaffDashboard: React.FC = () => {
             <span className="dash-metric-val">4 lớp</span>
             <span className="dash-metric-trend up">Sắp đủ sĩ số</span>
           </div>
-          <div className="dash-metric-icon icon-blue">🏫</div>
+          
         </div>
 
         <div className="dash-metric-card">
@@ -150,7 +150,7 @@ const StaffDashboard: React.FC = () => {
             <span className="dash-metric-val">{loading ? '…' : stats.totalStudents}</span>
             <span className="dash-metric-trend up">Tài khoản học viên trong hệ thống</span>
           </div>
-          <div className="dash-metric-icon icon-emerald">👩‍🎓</div>
+          
         </div>
       </div>
 
@@ -162,7 +162,7 @@ const StaffDashboard: React.FC = () => {
           <div className="dash-card">
             <div className="dash-card-header">
               <h2 className="dash-card-title">
-                <span>🏫</span> Tình Trạng Tuyển Sinh Các Lớp Sắp Mở
+                <span></span> Tình Trạng Tuyển Sinh Các Lớp Sắp Mở
               </h2>
               <span className="dash-subcard-meta">Hạn chót: 28/10/2026</span>
             </div>
@@ -206,37 +206,10 @@ const StaffDashboard: React.FC = () => {
       </div>
 
       {/* ── Stats Grid ── */}
-      <section className="staff-section" aria-label="Thống kê tổng quan">
-        <div className="staff-stats-grid">
-          {statCards.map((card) => (
-            <div
-              key={card.id}
-              id={card.id}
-              className="staff-stat-card"
-              style={{ '--card-color': card.color, '--card-bg': card.bg } as React.CSSProperties}
-            >
-              <div className="staff-stat-icon-wrap">
-                <span className="staff-stat-icon">{card.icon}</span>
-              </div>
-              <div className="staff-stat-info">
-                <span className="staff-stat-value">{card.value}</span>
-                <span className="staff-stat-label">{card.label}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+      
 
       {/* ── Recent Activity placeholder ── */}
-      <section className="staff-section" aria-label="Hoạt động gần đây">
-        <div className="staff-section-header">
-          <h2 className="staff-section-title">Hoạt động gần đây</h2>
-        </div>
-        <div className="staff-empty-state">
-          <span className="staff-empty-icon">📡</span>
-          <p>Kết nối backend để hiển thị dữ liệu thực tế.</p>
-        </div>
-      </section>
+      
     </div>
   );
 };

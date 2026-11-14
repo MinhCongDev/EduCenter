@@ -19,6 +19,27 @@ export interface ClassFilters {
 export interface ClassOptions {
   courses: ClassCourseOption[];
   teachers: ClassTeacherOption[];
+  schedulingClasses: ClassSchedulingOption[];
+}
+
+export interface ClassSchedulingOption {
+  _id: string;
+  classCode: string;
+  room: string;
+  scheduleDays: string[];
+  timeSlot: string;
+  startDate: string;
+  endDate: string;
+  teacherIds: string[];
+  schedules: {
+    sessionDate?: string | null;
+    excludedDates?: string[];
+    dayOfWeek: string;
+    startTime: string;
+    endTime: string;
+    classroom: string;
+    status: 'ACTIVE' | 'CANCELLED';
+  }[];
 }
 
 export const classService = {

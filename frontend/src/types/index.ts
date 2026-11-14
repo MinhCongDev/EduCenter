@@ -976,6 +976,7 @@ export interface EnrollmentRecord {
   registrationDate: string;
   status: EnrollmentStatus;
   tuitionStatus?: TuitionStatus;
+  scheduleConflictClassIds?: string[];
   payments: EnrollmentPayment[];
   createdAt: string;
 }
