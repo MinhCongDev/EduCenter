@@ -12,6 +12,10 @@ const avatarDir = path.join(process.cwd(), 'uploads', 'avatars');
 if (!fs.existsSync(avatarDir)) {
   fs.mkdirSync(avatarDir, { recursive: true });
 }
+const courseDir = path.join(process.cwd(), 'uploads', 'courses');
+if (!fs.existsSync(courseDir)) {
+  fs.mkdirSync(courseDir, { recursive: true });
+}
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, uploadDir),
@@ -28,6 +32,15 @@ const avatarStorage = multer.diskStorage({
     const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
     const ext = path.extname(file.originalname).toLowerCase();
     cb(null, `${unique}${ext}`);
+  },
+});
+
+const courseStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, courseDir),
+  filename: (_req, file, cb) => {
+    const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `course-${unique}${ext}`);
   },
 });
 
@@ -78,6 +91,14 @@ export const uploadAvatar = multer({
   },
 });
 
+export const uploadCourseImage = multer({
+  storage: courseStorage,
+  fileFilter: avatarFileFilter,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB
+  },
+});
+
 export const handleUploadError = (err: any, _req: any, res: any, next: any) => {
   if (err instanceof multer.MulterError) {
     if (err.code === 'LIMIT_FILE_SIZE') {
@@ -101,4 +122,10 @@ export const buildAvatarUrl = (req: Request, filename: string): string => {
   const protocol = req.protocol;
   const host = req.get('host');
   return `${protocol}://${host}/uploads/avatars/${filename}`;
+};
+
+export const buildCourseImageUrl = (req: Request, filename: string): string => {
+  const protocol = req.protocol;
+  const host = req.get('host');
+  return `${protocol}://${host}/uploads/courses/${filename}`;
 };
