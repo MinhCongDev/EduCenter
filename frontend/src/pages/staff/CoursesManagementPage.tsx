@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { courseService } from '../../services/course.service';
-import type { Course, CourseFormData } from '../../types';
+import type { Course, CourseFormData, CourseStatus } from '../../types';
 
 // =====================================================================
 // Constants
@@ -41,13 +41,6 @@ const EMPTY_FORM: CourseFormData = {
 // =====================================================================
 // Sub-components
 // =====================================================================
-
-/** Badge for course status */
-const StatusBadge: React.FC<{ status: string }> = ({ status }) => (
-  <span className={`course-status-badge ${status === 'ACTIVE' ? 'badge-active' : 'badge-inactive'}`}>
-    {status === 'ACTIVE' ? '✅ Hoạt động' : '⏸ Tạm dừng'}
-  </span>
-);
 
 /** Badge for IELTS Band / Level */
 const LevelBadge: React.FC<{ level?: string }> = ({ level }) => {
@@ -551,6 +544,7 @@ const CoursesManagementPage: React.FC = () => {
   const [deletingCourse, setDeletingCourse] = useState<Course | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [updatingStatusCourseId, setUpdatingStatusCourseId] = useState<string | null>(null);
   const [formError, setFormError] = useState('');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
@@ -618,6 +612,23 @@ const CoursesManagementPage: React.FC = () => {
       setDeletingCourse(null);
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleCourseStatusChange = async (course: Course, status: Extract<CourseStatus, 'ACTIVE' | 'INACTIVE'>) => {
+    setUpdatingStatusCourseId(course._id);
+    try {
+      await courseService.updateCourse(course._id, { status });
+      showToast(
+        `Đã chuyển khóa học ${course.title} sang ${status === 'ACTIVE' ? 'Đang hoạt động' : 'Tạm dừng'}.`,
+        'success'
+      );
+      await fetchCourses();
+    } catch (err: unknown) {
+      const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      showToast(message ?? 'Không thể tạm dừng khóa học. Vui lòng thử lại.', 'error');
+    } finally {
+      setUpdatingStatusCourseId(null);
     }
   };
 
@@ -787,7 +798,21 @@ const CoursesManagementPage: React.FC = () => {
                   </td>
                   <td className="course-fee">{formatCurrency(course.tuitionFee)}</td>
                   <td>
-                    <StatusBadge status={course.status} />
+                    <select
+                      className="form-input courses-filter-select"
+                      value={course.status === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE'}
+                      onChange={(event) => {
+                        const status = event.target.value;
+                        if (status === 'ACTIVE' || status === 'INACTIVE') {
+                          void handleCourseStatusChange(course, status);
+                        }
+                      }}
+                      disabled={updatingStatusCourseId === course._id}
+                      aria-label={`Trạng thái khóa học ${course.title}`}
+                    >
+                      <option value="ACTIVE">Đang hoạt động</option>
+                      <option value="INACTIVE">Tạm dừng</option>
+                    </select>
                   </td>
                   <td style={{ textAlign: 'right' }}>
                     <div className="courses-actions" style={{ justifyContent: 'flex-end' }}>

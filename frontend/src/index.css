@@ -1323,7 +1323,43 @@ h1, h2, h3, h4, h5, h6 {
   min-width: 1050px;
 }
 .enrollment-table {
-  min-width: 1160px;
+  width: 100%;
+  min-width: 0;
+  table-layout: fixed;
+  font-size: 0.8rem;
+}
+.enrollment-table th,
+.enrollment-table td {
+  padding: 8px 6px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.enrollment-table th:nth-child(1) { width: 8%; }
+.enrollment-table th:nth-child(2) { width: 14%; }
+.enrollment-table th:nth-child(3) { width: 11%; }
+.enrollment-table th:nth-child(4) { width: 12%; }
+.enrollment-table th:nth-child(5) { width: 9%; }
+.enrollment-table th:nth-child(6) { width: 7%; }
+.enrollment-table th:nth-child(7) { width: 8%; }
+.enrollment-table th:nth-child(8) { width: 10%; }
+.enrollment-table th:nth-child(9) { width: 13%; }
+.enrollment-table th:nth-child(10) { width: 8%; }
+.enrollment-table .course-code-chip {
+  padding: 2px 4px;
+  font-size: 0.68rem;
+}
+.enrollment-table .course-title-cell {
+  min-width: 0;
+}
+.enrollment-table .course-status-badge {
+  justify-content: center;
+  padding: 3px 6px;
+  white-space: normal;
+  text-align: center;
+}
+.enrollment-table td:last-child .btn {
+  padding: 6px;
+  white-space: normal;
 }
 .enrollment-filter-bar {
   align-items: center;

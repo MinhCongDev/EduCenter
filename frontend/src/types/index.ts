@@ -403,8 +403,8 @@ export interface TrainingClass {
   _id: string;
   classCode: string;
   name?: string;
-  course: ClassCourseOption;
-  teacher: ClassTeacherOption;
+  course: ClassCourseOption | null;
+  teacher: ClassTeacherOption | null;
   room: string;
   scheduleDays: string[];
   timeSlot: string;
@@ -412,6 +412,7 @@ export interface TrainingClass {
   endDate: string;
   capacity: number;
   currentEnrollment?: number;
+  hasAttendance?: boolean;
   status: ClassStatus;
   createdAt: string;
   updatedAt: string;
