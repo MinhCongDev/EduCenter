@@ -43,4 +43,18 @@ export const courseService = {
     const response = await api.delete<ApiResponse<void>>(`/courses/${id}`);
     return response.data;
   },
+
+  /**
+   * Upload Course banner image (Staff / Director)
+   */
+  uploadCourseImage: async (file: File): Promise<ApiResponse<{ filename: string; url: string }>> => {
+    const formData = new FormData();
+    formData.append('image', file);
+    const response = await api.post<ApiResponse<{ filename: string; url: string }>>('/courses/upload-image', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
 };

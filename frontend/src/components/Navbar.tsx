@@ -105,41 +105,41 @@ const Navbar: React.FC = () => {
                 </span>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '10px' }}>
-                <Link to="/courses" className="dmr-dropdown-link">
+                <Link to="/courses?level=0 - 3.5" className="dmr-dropdown-link">
                   <span className="dmr-dropdown-title">
-                    IELTS Mất Gốc (0 - 3.5) <span className="dmr-badge-green">Cơ bản</span>
+                    IELTS Beginner – Mất Gốc <span className="dmr-badge-green">0–3.5</span>
                   </span>
-                  <span className="dmr-dropdown-desc">Lấy lại nền tảng phát âm &amp; ngữ pháp</span>
+                  <span className="dmr-dropdown-desc">Nền tảng từ vựng, ngữ pháp, phát âm cơ bản</span>
                 </Link>
-                <Link to="/courses" className="dmr-dropdown-link">
+                <Link to="/courses?level=3.5 - 4.5" className="dmr-dropdown-link">
                   <span className="dmr-dropdown-title">
-                    IELTS Pre (3.5 - 4.5)
+                    IELTS Pre <span className="dmr-badge-green">3.5–4.5</span>
                   </span>
-                  <span className="dmr-dropdown-desc">Làm quen format 4 kỹ năng</span>
+                  <span className="dmr-dropdown-desc">Làm quen format đề thi và 4 kỹ năng</span>
                 </Link>
-                <Link to="/courses" className="dmr-dropdown-link">
+                <Link to="/courses?level=4.5 - 5.5" className="dmr-dropdown-link">
                   <span className="dmr-dropdown-title">
-                    IELTS Foundation (4.5 - 5.5)
+                    IELTS Foundation <span className="dmr-badge-green">4.5–5.5</span>
                   </span>
-                  <span className="dmr-dropdown-desc">Chiến thuật làm bài cơ bản</span>
+                  <span className="dmr-dropdown-desc">Củng cố kỹ năng &amp; chiến thuật làm bài</span>
                 </Link>
-                <Link to="/courses" className="dmr-dropdown-link">
+                <Link to="/courses?level=5.5 - 6.5" className="dmr-dropdown-link">
                   <span className="dmr-dropdown-title">
-                    IELTS Bứt Phá (5.5 - 6.5) <span className="dmr-badge-orange">HOT</span>
+                    IELTS Breakthrough – Bứt Phá <span className="dmr-badge-green">5.5–6.5</span>
                   </span>
-                  <span className="dmr-dropdown-desc">Đạt chuẩn du học &amp; xét tuyển ĐH</span>
+                  <span className="dmr-dropdown-desc">Xử lý đề, luyện đề chuyên sâu nâng Band</span>
                 </Link>
-                <Link to="/courses" className="dmr-dropdown-link">
+                <Link to="/courses?level=6.5 - 7.5" className="dmr-dropdown-link">
                   <span className="dmr-dropdown-title">
-                    IELTS Chuyên Sâu (6.5 - 7.5+) <span className="dmr-badge-orange">MỚI</span>
+                    IELTS Advanced – Chuyên Sâu <span className="dmr-badge-green">6.5–7.5</span>
                   </span>
-                  <span className="dmr-dropdown-desc">Chấm chữa Writing &amp; Speaking 1:1</span>
+                  <span className="dmr-dropdown-desc">Tư duy học thuật, nâng cao Writing &amp; Speaking</span>
                 </Link>
-                <Link to="/courses" className="dmr-dropdown-link">
+                <Link to="/courses?level=8.0%2B" className="dmr-dropdown-link">
                   <span className="dmr-dropdown-title">
-                    IELTS Master 8.0+
+                    IELTS Master <span className="dmr-badge-orange" style={{ background: '#7e22ce' }}>8.0+</span>
                   </span>
-                  <span className="dmr-dropdown-desc">Luyện cùng cựu giám khảo chấm thi</span>
+                  <span className="dmr-dropdown-desc">Tối ưu chiến thuật &amp; tiêu chí chấm thi</span>
                 </Link>
               </div>
               <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', gap: '8px' }}>
