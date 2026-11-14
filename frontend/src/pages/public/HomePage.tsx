@@ -136,7 +136,7 @@ const slides: CarouselSlide[] = [
     title: 'Luyện Thi IELTS Chuyên Sâu',
     highlight: 'Chinh Phục Band 7.5+ Thần Tốc',
     desc: 'Hơn 50.000 học viên đã tin tưởng lựa chọn khóa học IELTS tại EduCenter. Cam kết bứt phá 1.0 - 1.5 Band điểm chỉ sau 3 tháng với hợp đồng đào tạo pháp lý.',
-    buttonText: 'Test trình độ 4 kỹ năng miễn phí',
+    buttonText: 'Đăng ký học',
     buttonLink: '/courses',
     bgUrl: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?q=80&w=1600&auto=format&fit=crop',
   },
@@ -146,8 +146,8 @@ const slides: CarouselSlide[] = [
     title: 'Phòng Thi Thử IELTS On Computer',
     highlight: 'Chuẩn 100% Format IDP & British Council',
     desc: 'Trải nghiệm giao diện thi máy tính thực chiến, tai nghe khử ồn chuyên dụng, nhận kết quả và phân tích chi tiết điểm mạnh - điểm yếu trong 24 giờ.',
-    buttonText: 'Đặt lịch thi thử máy tính ngay',
-    buttonLink: '/courses',
+    buttonText: 'Thi thử',
+    buttonLink: '/placement-test',
     bgUrl: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1600&auto=format&fit=crop',
   },
   {
@@ -156,7 +156,7 @@ const slides: CarouselSlide[] = [
     title: 'Chấm Chữa Writing & Mock Speaking',
     highlight: 'Cùng Giảng Viên 8.5+ - 9.0 IELTS',
     desc: 'Chữa chi tiết từng câu chữ theo 4 tiêu chí chấm điểm IELTS của Cambridge: Task Achievement, Coherence, Lexical Resource và Grammatical Range.',
-    buttonText: 'Đăng ký sửa bài 1:1',
+    buttonText: 'Đăng ký học',
     buttonLink: '/courses',
     bgUrl: 'https://images.unsplash.com/photo-1577896851231-70ef18881754?q=80&w=1600&auto=format&fit=crop',
   },
@@ -166,8 +166,8 @@ const slides: CarouselSlide[] = [
     title: 'Hợp Đồng Đào Tạo Minh Bạch',
     highlight: 'Học Lại Miễn Phí 100% Nếu Không Đạt Band',
     desc: 'An tâm tuyệt đối trên con đường du học, săn học bổng, xét tuyển thẳng Đại học Top đầu và định cư quốc tế.',
-    buttonText: 'Tìm hiểu lộ trình cam kết',
-    buttonLink: '/courses',
+    buttonText: 'Thi thử',
+    buttonLink: '/placement-test',
     bgUrl: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?q=80&w=1600&auto=format&fit=crop',
   },
 ];
@@ -330,7 +330,7 @@ const HomePage: React.FC = () => {
                 Kiểm Tra Trình Độ Đầu Vào &amp; Gợi Ý Khóa Học Cá Nhân Hóa
               </h2>
               <p style={{ margin: '0.4rem 0 0', color: '#4a5568', fontSize: '0.95rem' }}>
-                Hoàn thành 1 trong 3 bài test thật dài để chẩn đoán chính xác Band điểm hiện tại và nhận gợi ý khóa học phù hợp nhất.
+                Hoàn thành 1 trong 6 bài test để chẩn đoán chính xác Band điểm hiện tại và nhận gợi ý khóa học phù hợp nhất.
               </p>
             </div>
 
@@ -350,7 +350,7 @@ const HomePage: React.FC = () => {
                 boxShadow: '0 4px 14px rgba(5, 150, 105, 0.3)',
               }}
             >
-              <span>Xem Cả 3 Bài Test</span>
+              <span>Xem tất cả 6 bài test</span>
               <span>→</span>
             </Link>
           </div>
@@ -762,7 +762,7 @@ const HomePage: React.FC = () => {
 
       {/* Floating Action Buttons */}
       <div className="dmr-floating-actions">
-        <Link to="/courses" className="dmr-fab-btn dmr-fab-test" title="Làm bài thi thử IELTS">
+        <Link to="/placement-test" className="dmr-fab-btn dmr-fab-test" title="Làm bài thi thử IELTS">
           Thi thử
         </Link>
         <a
