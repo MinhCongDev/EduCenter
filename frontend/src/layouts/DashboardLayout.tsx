@@ -109,7 +109,6 @@ const roleLabels: Record<UserRole, string> = {
   TEACHER: 'Giảng viên',
   TRAINING_STAFF: 'Phòng giáo vụ',
   DIRECTOR: 'Ban giám đốc',
-  ADMIN: 'Ban giám đốc (Admin)',
   ADMIN: 'Admin',
 };
 
@@ -271,10 +270,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                   role === 'TEACHER'
                     ? '/teacher/profile'
                     : role === 'TRAINING_STAFF'
-                    ? '/staff/profile'
-                    : role === 'DIRECTOR' || role === 'ADMIN'
-                    ? '/director/profile'
-                    : '/student/profile'
+                      ? '/staff/profile'
+                      : role === 'DIRECTOR' || role === 'ADMIN'
+                        ? '/director/profile'
+                        : '/student/profile'
                 }
                 className={({ isActive }) =>
                   `dashboard-account-nav-item${isActive ? ' is-active' : ''}`

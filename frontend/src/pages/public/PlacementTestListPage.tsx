@@ -665,7 +665,7 @@ export const PlacementTestListPage: React.FC = () => {
                 gap: '6px',
               }}
             >
-              <span>📞</span>
+
               <span>Hotline: 1900 6868</span>
             </a>
           </div>

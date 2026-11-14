@@ -88,7 +88,7 @@ export const Button: React.FC<ButtonProps> = ({
         (e.currentTarget as HTMLButtonElement).style.boxShadow = 'none';
       }}
     >
-      {loading ? <span>⏳</span> : icon}
+      {!loading && icon}
       {children}
     </button>
   );

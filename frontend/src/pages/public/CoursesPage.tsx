@@ -971,7 +971,7 @@ export const CoursesPage: React.FC = () => {
                               cursor: enrollingClassId === cls._id ? 'default' : 'pointer',
                             }}
                           >
-                            {enrollingClassId === cls._id ? 'Đang ghi danh...' : '✍️ Ghi danh lớp này'}
+                            {enrollingClassId === cls._id ? 'Đang ghi danh...' : ' Ghi danh lớp này'}
                           </button>
                         )}
                       </div>

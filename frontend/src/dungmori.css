@@ -593,10 +593,6 @@
   gap: 14px;
 }
 
-.dmr-coupon-icon {
-  font-size: 2rem;
-}
-
 .dmr-coupon-title {
   font-family: var(--font-beanbag);
   font-weight: 800;
@@ -715,14 +711,6 @@
   font-size: 1.5rem;
   font-weight: 600;
   color: #A0AEC0;
-}
-
-/* Floating Motifs */
-.dmr-floating-shape {
-  position: absolute;
-  pointer-events: none;
-  z-index: 1;
-  opacity: 0.85;
 }
 
 /* Product Highlight Grid */
@@ -1405,9 +1393,9 @@
 }
 
 .dmr-fab-btn {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
+  min-height: 48px;
+  padding: 0 16px;
+  border-radius: 999px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1415,7 +1403,9 @@
   cursor: pointer;
   transition: transform 0.25s, box-shadow 0.25s;
   text-decoration: none;
-  font-size: 24px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .dmr-fab-btn:hover {

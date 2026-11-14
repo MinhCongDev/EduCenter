@@ -275,8 +275,8 @@ export const ProfilePage: React.FC = () => {
                   )}
                   <span style={{ position: 'absolute', width: 13, height: 13, right: 3, bottom: 6, borderRadius: '50%', background: '#10b981', border: '2px solid white' }} />
                   {isEditing && (
-                    <button className="profile-avatar-edit" type="button" title="Đổi ảnh đại diện" onClick={() => fileInputRef.current?.click()}>
-                      📷
+                    <button className="profile-avatar-edit" type="button" aria-label="Đổi ảnh đại diện" title="Đổi ảnh đại diện" onClick={() => fileInputRef.current?.click()}>
+                      Đổi ảnh
                     </button>
                   )}
                   <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/gif,image/webp" onChange={handleAvatarFile} disabled={uploadingAvatar} style={{ display: 'none' }} />
@@ -440,7 +440,7 @@ export const ProfilePage: React.FC = () => {
               {isEditing && (
                 <div className="profile-actions" style={{ borderTop: '1px solid #eeecf1', paddingTop: 20, marginTop: 10 }}>
                   <Button type="button" variant="secondary" onClick={handleCancelEdit} disabled={saving || uploadingAvatar}>Hủy</Button>
-                  <Button type="submit" variant="primary" icon="💾" loading={saving} disabled={uploadingAvatar}>Lưu thay đổi</Button>
+                  <Button type="submit" variant="primary" loading={saving} disabled={uploadingAvatar}>Lưu thay đổi</Button>
                 </div>
               )}
             </form>
@@ -477,7 +477,7 @@ export const ProfilePage: React.FC = () => {
               </div>
               <div className="profile-actions">
                 <Button type="button" variant="secondary" onClick={() => { setShowPwd(false); setPwdForm({ currentPassword: '', newPassword: '', confirmPassword: '' }); }} disabled={savingPwd}>Hủy</Button>
-                <Button type="submit" variant="primary" icon="🔐" loading={savingPwd}>Xác nhận đổi mật khẩu</Button>
+                <Button type="submit" variant="primary" loading={savingPwd}>Xác nhận đổi mật khẩu</Button>
               </div>
             </form>
           )}

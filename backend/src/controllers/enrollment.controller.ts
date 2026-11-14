@@ -1,13 +1,100 @@
 import { Response, NextFunction } from 'express';
-import mongoose, { PipelineStage } from 'mongoose';
+import mongoose, { PipelineStage, Types } from 'mongoose';
 import { AuthRequest } from '../middlewares/auth.middleware';
 import { createError } from '../middlewares/error.middleware';
-import { Class } from '../models/class.model';
+import { Class, IClass } from '../models/class.model';
+import { ClassSchedule } from '../models/classSchedule.model';
 import { Course } from '../models/course.model';
 import { Enrollment } from '../models/enrollment.model';
 import { Payment } from '../models/payment.model';
+import {
+  expandScheduleInstances,
+  findScheduleTimeConflict,
+  ScheduleRecordInput,
+} from '../utils/classSchedule.utils';
 
 const escapeRegex = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+interface StudentScheduleConflict {
+  classId: string;
+  classCode: string;
+  conflictingClassCode: string;
+  sessionDate: string;
+  startTime: string;
+  endTime: string;
+  room: string;
+}
+
+const getStudentScheduleConflicts = async (
+  studentId: Types.ObjectId,
+  excludedEnrollmentId: Types.ObjectId,
+  candidateClasses: IClass[],
+  session?: mongoose.ClientSession
+): Promise<StudentScheduleConflict[]> => {
+  const enrollmentsQuery = Enrollment.find({
+    student: studentId,
+    status: 'ENROLLED',
+    class: { $exists: true, $ne: null },
+    _id: { $ne: excludedEnrollmentId },
+  }).select('class');
+  if (session) enrollmentsQuery.session(session);
+  const activeEnrollments = await enrollmentsQuery.lean();
+  const enrolledClassIds = [...new Set(activeEnrollments
+    .map((enrollment) => enrollment.class?.toString())
+    .filter((classId): classId is string => Boolean(classId)))];
+  if (enrolledClassIds.length === 0 || candidateClasses.length === 0) return [];
+
+  const classesQuery = Class.find({
+    _id: { $in: enrolledClassIds },
+    status: { $in: ['OPEN', 'IN_PROGRESS'] },
+  });
+  if (session) classesQuery.session(session);
+  const enrolledClasses = await classesQuery;
+  if (enrolledClasses.length === 0) return [];
+
+  const allClassIds = [...new Set([
+    ...enrolledClasses.map((classroom) => classroom._id.toString()),
+    ...candidateClasses.map((classroom) => classroom._id.toString()),
+  ])].map((classId) => new Types.ObjectId(classId));
+  const schedulesQuery = ClassSchedule.find({ class: { $in: allClassIds } });
+  if (session) schedulesQuery.session(session);
+  const schedules = await schedulesQuery.lean();
+  const schedulesByClassId = new Map<string, ScheduleRecordInput[]>();
+  for (const schedule of schedules) {
+    const classId = schedule.class.toString();
+    const classSchedules = schedulesByClassId.get(classId) ?? [];
+    classSchedules.push(schedule);
+    schedulesByClassId.set(classId, classSchedules);
+  }
+
+  const enrolledInstances = enrolledClasses.map((classroom) => ({
+    classroom,
+    instances: expandScheduleInstances(classroom, schedulesByClassId.get(classroom._id.toString()) ?? []),
+  }));
+  const conflicts: StudentScheduleConflict[] = [];
+  for (const candidateClass of candidateClasses) {
+    const candidateInstances = expandScheduleInstances(
+      candidateClass,
+      schedulesByClassId.get(candidateClass._id.toString()) ?? []
+    );
+    for (const enrolledClass of enrolledInstances) {
+      if (candidateClass._id.equals(enrolledClass.classroom._id)) continue;
+      const overlap = findScheduleTimeConflict(candidateInstances, enrolledClass.instances);
+      if (!overlap) continue;
+      conflicts.push({
+        classId: candidateClass._id.toString(),
+        classCode: candidateClass.classCode,
+        conflictingClassCode: enrolledClass.classroom.classCode,
+        sessionDate: overlap.left.sessionDate.toISOString().slice(0, 10),
+        startTime: overlap.left.startTime,
+        endTime: overlap.left.endTime,
+        room: overlap.left.classroom,
+      });
+      break;
+    }
+  }
+  return conflicts;
+};
 
 const enrollmentLookupPipeline: PipelineStage[] = [
   {
@@ -261,6 +348,25 @@ export const getEnrollmentById = async (req: AuthRequest, res: Response, next: N
       return;
     }
 
+    const sourceEnrollment = await Enrollment.findById(enrollment._id).select('student').lean();
+    if (sourceEnrollment?.student && enrollment.course?._id) {
+      const today = new Date();
+      today.setUTCHours(0, 0, 0, 0);
+      const candidateClasses = await Class.find({
+        course: enrollment.course._id,
+        status: { $in: ['OPEN', 'IN_PROGRESS'] },
+        endDate: { $gte: today },
+      });
+      const scheduleConflicts = await getStudentScheduleConflicts(
+        sourceEnrollment.student,
+        new Types.ObjectId(enrollment._id),
+        candidateClasses
+      );
+      enrollment.scheduleConflictClassIds = scheduleConflicts.map((conflict) => conflict.classId);
+    } else {
+      enrollment.scheduleConflictClassIds = [];
+    }
+
     res.status(200).json({ success: true, message: 'Lấy chi tiết ghi danh thành công', data: enrollment });
   } catch (error) {
     next(error);
@@ -336,6 +442,20 @@ export const assignEnrollmentClass = async (req: AuthRequest, res: Response, nex
         if (duplicateEnrollment) {
           throw createError('Học viên đã có ghi danh vào lớp này', 409);
         }
+      }
+
+      const scheduleConflicts = await getStudentScheduleConflicts(
+        enrollment.student,
+        enrollment._id,
+        [targetClass],
+        transactionSession
+      );
+      const scheduleConflict = scheduleConflicts[0];
+      if (scheduleConflict) {
+        throw createError(
+          `Lịch học bị trùng với lớp ${scheduleConflict.conflictingClassCode} vào ${scheduleConflict.sessionDate} (${scheduleConflict.startTime} - ${scheduleConflict.endTime}, ${scheduleConflict.room})`,
+          409
+        );
       }
 
       await Class.updateOne(
