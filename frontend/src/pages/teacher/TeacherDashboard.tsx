@@ -813,7 +813,6 @@ export const TeacherDashboard: React.FC = () => {
                 <span className="dash-metric-val">{classes.length} lớp</span>
                 <span className="dash-metric-trend up">Xem danh sách lớp ➔</span>
               </div>
-              <div className="dash-metric-icon icon-blue"></div>
             </div>
 
             <div
@@ -826,7 +825,6 @@ export const TeacherDashboard: React.FC = () => {
                 <span className="dash-metric-val">{thisWeekSchedules.length} buổi</span>
                 <span className="dash-metric-trend up">Xem thời khóa biểu ➔</span>
               </div>
-              <div className="dash-metric-icon icon-purple"></div>
             </div>
 
             <div
@@ -839,7 +837,6 @@ export const TeacherDashboard: React.FC = () => {
                 <span className="dash-metric-val">{students.length} HV</span>
                 <span className="dash-metric-trend up">Điểm danh buổi học ➔</span>
               </div>
-              <div className="dash-metric-icon icon-emerald"></div>
             </div>
 
             <div
@@ -854,7 +851,6 @@ export const TeacherDashboard: React.FC = () => {
                   {periodicTestCount} bài thi • {evaluationCount} nhận xét
                 </span>
               </div>
-              <div className="dash-metric-icon icon-amber"></div>
             </div>
           </div>
 

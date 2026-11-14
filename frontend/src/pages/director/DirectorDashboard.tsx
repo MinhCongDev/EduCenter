@@ -907,7 +907,7 @@ export const DirectorDashboard: React.FC = () => {
               className="dash-quick-btn"
               onClick={() => handleTabChange('account_permissions')}
             >
-              Tài khoản &amp; Phân quyền ({staffAccounts.length || summary.staffCount + summary.teachersCount})
+              Quản lý tài khoản ({staffAccounts.length || summary.staffCount + summary.teachersCount})
             </button>
             <button
               type="button"
@@ -972,7 +972,6 @@ export const DirectorDashboard: React.FC = () => {
                   {summary.totalRevenue > 0 ? '↗ Ghi nhận từ giao dịch học phí thực tế' : 'Chưa phát sinh doanh thu'}
                 </span>
               </div>
-              <div className="dash-metric-icon icon-emerald"></div>
             </div>
 
             <div className="dash-metric-card" onClick={() => handleTabChange('student_reports')} style={{ cursor: 'pointer' }}>
@@ -983,7 +982,6 @@ export const DirectorDashboard: React.FC = () => {
                 </span>
                 <span className="dash-metric-trend up">Học viên ghi danh thực tế</span>
               </div>
-              <div className="dash-metric-icon icon-blue"></div>
             </div>
 
             <div className="dash-metric-card" onClick={() => handleTabChange('class_course_reports')} style={{ cursor: 'pointer' }}>
@@ -994,7 +992,6 @@ export const DirectorDashboard: React.FC = () => {
                 </span>
                 <span className="dash-metric-trend up">{summary.activeClassesCount} lớp đang diễn ra</span>
               </div>
-              <div className="dash-metric-icon icon-purple"></div>
             </div>
 
             <div className="dash-metric-card" onClick={() => handleTabChange('account_permissions')} style={{ cursor: 'pointer' }}>
@@ -1003,9 +1000,8 @@ export const DirectorDashboard: React.FC = () => {
                 <span className="dash-metric-val">
                   {loading ? 'Đang tải...' : `${staffAccounts.length || summary.staffCount + summary.teachersCount} thành viên`}
                 </span>
-                <span className="dash-metric-trend neutral">⭐ Đánh giá 4.88 / 5.0</span>
+                <span className="dash-metric-trend neutral">Đánh giá 4.88 / 5.0</span>
               </div>
-              <div className="dash-metric-icon icon-amber"></div>
             </div>
           </div>
 
@@ -1209,7 +1205,7 @@ export const DirectorDashboard: React.FC = () => {
                     onClick={() => handleTabChange('account_permissions')}
                   >
                     
-                    <span>Quản Lý Tài Khoản, Nhân Sự &amp; Phân Quyền</span>
+                    <span>Quản Lý Tài Khoản</span>
                   </button>
                   <button
                     type="button"
@@ -1573,14 +1569,14 @@ export const DirectorDashboard: React.FC = () => {
       )}
 
       {/* ─────────────────────────────────────────────────────────────
-          2. QUẢN LÝ TÀI KHOẢN, NHÂN SỰ & PHÂN QUYỀN
+          2. QUẢN LÝ TÀI KHOẢN
           ───────────────────────────────────────────────────────────── */}
       {activeTab === 'account_permissions' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
             <div>
               <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>
-                Quản Lý Tài Khoản &amp; Phân Quyền Hệ Thống
+                Quản Lý Tài Khoản
               </h2>
               <span style={{ fontSize: '0.82rem', color: '#64748b' }}>
                 Tổng quan phạm vi quyền hạn theo từng vai trò và kiểm soát trạng thái tài khoản toàn trung tâm
@@ -1612,7 +1608,7 @@ export const DirectorDashboard: React.FC = () => {
                 badge: 'Toàn quyền hệ thống',
                 color: '#7c3aed',
                 bg: '#f5f3ff',
-                perms: ['Phê duyệt đề xuất & thông báo', 'Quản lý nhân sự & phân quyền', 'Giám sát vận hành & báo cáo doanh thu'],
+                perms: ['Phê duyệt đề xuất & thông báo', 'Quản lý tài khoản nhân sự', 'Giám sát vận hành & báo cáo doanh thu'],
               },
               {
                 role: 'TRAINING_STAFF',
@@ -3405,7 +3401,7 @@ export const DirectorDashboard: React.FC = () => {
                     Cấp Tài Khoản Nhân Sự Mới
                   </h3>
                   <p style={{ margin: '2px 0 0', fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.85)' }}>
-                    Khởi tạo thông tin, phân quyền và thiết lập mật khẩu truy cập hệ thống
+                    Khởi tạo thông tin tài khoản và thiết lập mật khẩu truy cập hệ thống
                   </p>
                 </div>
               </div>

@@ -258,7 +258,6 @@ const StudentDashboard: React.FC = () => {
                   {myClasses[0]?.class?.course?.code || '—'} ➔
                 </span>
               </div>
-              <div className="dash-metric-icon icon-blue"></div>
             </div>
 
             <div className="dash-metric-card" onClick={() => navigate('/student/schedule')} style={{ cursor: 'pointer' }}>
@@ -271,7 +270,6 @@ const StudentDashboard: React.FC = () => {
                     : 'Chưa có lịch'}
                 </span>
               </div>
-              <div className="dash-metric-icon icon-emerald"></div>
             </div>
 
             <div className="dash-metric-card" onClick={() => navigate('/student/progress?tab=grades')} style={{ cursor: 'pointer' }}>
@@ -284,10 +282,9 @@ const StudentDashboard: React.FC = () => {
                   {avgBand || '—'}
                 </span>
                 <span className="dash-metric-trend up">
-                  {avgBand ? `⭐ ${bandLabel(parseFloat(avgBand))}` : 'Chưa có điểm'} ➔
+                  {avgBand ? bandLabel(parseFloat(avgBand)) : 'Chưa có điểm'} ➔
                 </span>
               </div>
-              <div className="dash-metric-icon icon-amber"></div>
             </div>
 
             <div className="dash-metric-card" onClick={() => handleTabChange('assignments')} style={{ cursor: 'pointer' }}>
@@ -300,7 +297,6 @@ const StudentDashboard: React.FC = () => {
                     : 'Đã nộp đủ'}
                 </span>
               </div>
-              <div className="dash-metric-icon icon-purple">⏰</div>
             </div>
 
             <div
@@ -322,7 +318,6 @@ const StudentDashboard: React.FC = () => {
                     : 'Đã thanh toán đủ ➔'}
                 </span>
               </div>
-              <div className="dash-metric-icon icon-blue"></div>
             </div>
           </div>
 
