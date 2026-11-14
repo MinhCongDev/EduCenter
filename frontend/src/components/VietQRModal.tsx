@@ -512,6 +512,33 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
               <div style={{ fontSize: '0.85rem', color: '#047857', marginTop: '0.5rem', fontWeight: 600 }}>
                 🚀 Khóa học đã được đưa vào mục <strong>"Khóa học của tôi"</strong> (chờ xếp lớp). Đang tự động chuyển trang...
               </div>
+
+              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.25rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    window.location.href = '/student/classes';
+                  }}
+                  style={{
+                    backgroundColor: '#059669',
+                    color: '#ffffff',
+                    padding: '0.75rem 1.5rem',
+                    borderRadius: '12px',
+                    fontWeight: 800,
+                    fontSize: '0.92rem',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: '0 4px 14px rgba(5, 150, 105, 0.3)',
+                  }}
+                >
+                  <span>📚 Xem Thông Tin &amp; Khóa Học Vừa Đăng Ký</span>
+                  <span>→</span>
+                </button>
+              </div>
             </div>
           ) : (
             <>
