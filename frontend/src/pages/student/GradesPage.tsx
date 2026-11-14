@@ -8,17 +8,17 @@ import { formatDate, bandColor, bandLabel } from '../../utils/format';
 
 const typeCfg = (t: GradeEvaluationType) => {
   const map: Record<GradeEvaluationType, { label: string; color: string; icon: string }> = {
-    ENTRY_TEST: { label: 'Kiểm tra đầu vào', color: '#0ea5e9', icon: '🎯' },
-    MOCK_TEST: { label: 'Mock Test', color: '#3b82f6', icon: '🎧' },
-    MID_TERM: { label: 'Giữa kỳ', color: '#ec4899', icon: '📋' },
-    FINAL_TEST: { label: 'Cuối kỳ', color: '#dc2626', icon: '🎓' },
-    MONTHLY_EVALUATION: { label: 'Nhận xét theo tháng', color: '#10b981', icon: '🗓️' },
-    COURSE_EVALUATION: { label: 'Đánh giá cuối khóa', color: '#6366f1', icon: '🏅' },
-    ASSIGNMENT: { label: 'Bài tập', color: '#06b6d4', icon: '📝' },
-    SPEAKING_ASSESSMENT: { label: 'Speaking', color: '#8b5cf6', icon: '🎙️' },
-    WRITING_ASSESSMENT: { label: 'Writing', color: '#f59e0b', icon: '✍️' },
+    ENTRY_TEST: { label: 'Kiểm tra đầu vào', color: '#0ea5e9', icon: '' },
+    MOCK_TEST: { label: 'Mock Test', color: '#3b82f6', icon: '' },
+    MID_TERM: { label: 'Giữa kỳ', color: '#ec4899', icon: '' },
+    FINAL_TEST: { label: 'Cuối kỳ', color: '#dc2626', icon: '' },
+    MONTHLY_EVALUATION: { label: 'Nhận xét theo tháng', color: '#10b981', icon: '' },
+    COURSE_EVALUATION: { label: 'Đánh giá cuối khóa', color: '#6366f1', icon: '' },
+    ASSIGNMENT: { label: 'Bài tập', color: '#06b6d4', icon: '' },
+    SPEAKING_ASSESSMENT: { label: 'Speaking', color: '#8b5cf6', icon: '' },
+    WRITING_ASSESSMENT: { label: 'Writing', color: '#f59e0b', icon: '' },
   };
-  return map[t] ?? { label: t, color: '#64748b', icon: '📊' };
+  return map[t] ?? { label: t, color: '#64748b', icon: '' };
 };
 
 const GradesPage: React.FC = () => {
@@ -103,7 +103,7 @@ const GradesPage: React.FC = () => {
     <div className="dash-container">
       <div className="dash-banner">
         <div className="dash-banner-content">
-          <div className="dash-banner-badge">📊 Điểm Số & Khảo Thí</div>
+          <div className="dash-banner-badge">Điểm Số & Khảo Thí</div>
           <h1>Bảng Điểm & Đánh Giá Năng Lực</h1>
           <p>
             {grades.length > 0
@@ -123,7 +123,7 @@ const GradesPage: React.FC = () => {
               </>
             ) : (
               <div>
-                📊 {currentClassData?.classCode ? `Lớp ${currentClassData.classCode}` : 'Bảng điểm'}
+                {currentClassData?.classCode ? `Lớp ${currentClassData.classCode}` : 'Bảng điểm'}
               </div>
             )}
           </div>
@@ -135,16 +135,16 @@ const GradesPage: React.FC = () => {
           ← Dashboard
         </Link>
         <Link to="/student/classes" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
-          📚 Khóa Học
+          Khóa Học
         </Link>
         <Link to="/student/schedule" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
-          🗓️ Xem Lịch Học
+          Xem Lịch Học
         </Link>
         <Link to="/student/attendance" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
-          📅 Chuyên Cần
+          Chuyên Cần
         </Link>
         <Link to="/student/progress" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
-          🎯 Kết Quả Học Tập
+          Kết Quả Học Tập
         </Link>
       </div>
 
@@ -153,7 +153,7 @@ const GradesPage: React.FC = () => {
         <div className="dash-card" style={{ marginBottom: '1.25rem', padding: '0.85rem 1.25rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
             <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1e293b' }}>
-              🏫 Chọn lớp học cần xem điểm số:
+              Chọn lớp học cần xem điểm số:
             </span>
             <select
               value={selectedClassId}
@@ -212,7 +212,7 @@ const GradesPage: React.FC = () => {
                 {maxBand ? bandLabel(parseFloat(maxBand)) : '—'}
               </span>
             </div>
-            <div className="dash-metric-icon icon-amber">⭐</div>
+            <div className="dash-metric-icon icon-amber"></div>
           </div>
           <div className="dash-metric-card">
             <div className="dash-metric-info">
@@ -220,19 +220,19 @@ const GradesPage: React.FC = () => {
               <span className="dash-metric-val">{grades.length} bài</span>
               <span className="dash-metric-trend">{withBand.length} đã chấm</span>
             </div>
-            <div className="dash-metric-icon icon-blue">📋</div>
+            <div className="dash-metric-icon icon-blue"></div>
           </div>
         </div>
       )}
 
       {grades.length === 0 ? (
         <EmptyState
-          icon="📊"
+          icon=""
           title="Chưa có dữ liệu điểm số"
           description="Hiện tại chưa có dữ liệu điểm số. Nếu bạn vừa đăng ký khóa học, nhân viên giáo vụ (Staff) đang xử lý xếp lớp cho bạn. Bảng điểm sẽ hiển thị ngay khi lớp bắt đầu và giảng viên nhập điểm các bài kiểm tra."
           action={
             <Link to="/student/classes" className="dash-quick-btn primary">
-              📚 Xem khóa học của tôi
+              Xem khóa học của tôi
             </Link>
           }
         />
@@ -284,10 +284,10 @@ const GradesPage: React.FC = () => {
                       marginBottom: '0.75rem',
                     }}
                   >
-                    <SkillBand label="🎧 Listening" band={grade.listening} />
-                    <SkillBand label="📖 Reading"   band={grade.reading} />
-                    <SkillBand label="✍️ Writing"   band={grade.writing} />
-                    <SkillBand label="🎙️ Speaking"  band={grade.speaking} />
+                    <SkillBand label="Listening" band={grade.listening} />
+                    <SkillBand label="Reading"   band={grade.reading} />
+                    <SkillBand label="Writing"   band={grade.writing} />
+                    <SkillBand label="Speaking"  band={grade.speaking} />
                     {grade.score !== undefined && (
                       <div className="dash-field">
                         <span className="dash-field-label">Điểm số</span>

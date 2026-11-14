@@ -256,11 +256,11 @@ const MyClassesPage: React.FC = () => {
                     <div key={item._id} className="dash-card" style={{ borderLeft: '4px solid #f59e0b' }}>
                       <div className="dash-card-header">
                         <h2 className="dash-card-title">
-                          <span>📘</span>
+                          
                           {courseData?.code || 'Khóa học'} — {courseData?.title || 'Khóa học đã đăng ký'}
                         </h2>
                         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                          <span className="badge-pill badge-amber">⏳ Đang chờ staff xếp lớp</span>
+                          <span className="badge-pill badge-amber">Đang chờ staff xếp lớp</span>
                           <span className={`badge-pill ${tuition.cls}`}>{tuition.label}</span>
                         </div>
                       </div>
@@ -278,7 +278,7 @@ const MyClassesPage: React.FC = () => {
                             gap: '0.75rem',
                           }}
                         >
-                          <span style={{ fontSize: '1.4rem' }}>⏳</span>
+                          
                           <div>
                             <strong style={{ color: '#92400e', fontSize: '0.9rem', display: 'block' }}>
                               Khóa học đã được đăng ký thành công – Đang chờ phòng giáo vụ xếp lớp

@@ -245,7 +245,7 @@ const ClassFormModal: React.FC<ClassFormModalProps> = ({ classItem, options, onS
           <button type="button" className="modal-close-btn" onClick={onClose}>Đóng</button>
         </div>
 
-        {error && <div className="form-error-banner" role="alert">⚠️ {error}</div>}
+        {error && <div className="form-error-banner" role="alert">{error}</div>}
         {scheduleError && <div className="form-error-banner" role="alert">{scheduleError}</div>}
         <form className="modal-form" onSubmit={handleSubmit}>
           <div className="form-row">
@@ -591,7 +591,7 @@ const ClassesManagementPage: React.FC = () => {
         </button>
       </div>
 
-      {optionsError && <div className="form-error-banner" role="alert">⚠️ {optionsError}</div>}
+      {optionsError && <div className="form-error-banner" role="alert">{optionsError}</div>}
       {!optionsError && (options.courses.length === 0 || options.teachers.length === 0) && (
         <div className="form-error-banner" role="status">
           Cần có ít nhất một khóa học đang hoạt động và một giảng viên đang hoạt động để tạo lớp.
@@ -671,7 +671,7 @@ const ClassesManagementPage: React.FC = () => {
       {deletingClass && (
         <div className="modal-overlay" role="dialog" aria-modal="true" aria-label="Xác nhận xóa lớp học">
           <div className="modal-box modal-sm">
-            <div className="modal-delete-icon">🗑️</div>
+            <div className="modal-delete-icon"></div>
             <h2 className="modal-title">Xóa lớp học?</h2>
             <p className="modal-desc">Bạn có chắc muốn xóa lớp <strong>{deletingClass.classCode}</strong>? Lớp có học viên đang ghi danh sẽ không thể xóa.</p>
             <div className="modal-footer">

@@ -8,12 +8,12 @@ import { formatDate } from '../../utils/format';
 
 const statusCfg = (s: AttendanceStatus) => {
   const map: Record<AttendanceStatus, { label: string; cls: string; icon: string }> = {
-    PRESENT: { label: 'Có mặt', cls: 'badge-green', icon: '✅' },
-    ABSENT: { label: 'Vắng mặt', cls: 'badge-purple', icon: '❌' },
-    LATE: { label: 'Đi trễ', cls: 'badge-amber', icon: '⏰' },
-    EXCUSED: { label: 'Có phép', cls: 'badge-blue', icon: '📋' },
+    PRESENT: { label: 'Có mặt', cls: 'badge-green', icon: '' },
+    ABSENT: { label: 'Vắng mặt', cls: 'badge-purple', icon: '' },
+    LATE: { label: 'Đi trễ', cls: 'badge-amber', icon: '' },
+    EXCUSED: { label: 'Có phép', cls: 'badge-blue', icon: '' },
   };
-  return map[s] || { label: s, cls: 'badge-amber', icon: '❓' };
+  return map[s] || { label: s, cls: 'badge-amber', icon: '' };
 };
 
 const DAY_NAMES = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
@@ -95,7 +95,7 @@ const AttendancePage: React.FC = () => {
     <div className="dash-container">
       <div className="dash-banner">
         <div className="dash-banner-content">
-          <div className="dash-banner-badge">📅 Chuyên Cần & Điểm Danh</div>
+          <div className="dash-banner-badge">Chuyên Cần & Điểm Danh</div>
           <h1>Bảng Chuyên Cần & Điểm Danh</h1>
           <p>
             {stats && stats.total > 0
@@ -118,13 +118,13 @@ const AttendancePage: React.FC = () => {
           ← Dashboard
         </Link>
         <Link to="/student/classes" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
-          📚 Khóa Học
+          Khóa Học
         </Link>
         <Link to="/student/schedule" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
-          🗓️ Xem Lịch Học
+          Xem Lịch Học
         </Link>
         <Link to="/student/progress" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
-          🎯 Kết Quả Học Tập
+          Kết Quả Học Tập
         </Link>
       </div>
 
@@ -133,7 +133,7 @@ const AttendancePage: React.FC = () => {
         <div className="dash-card" style={{ marginBottom: '1.25rem', padding: '0.85rem 1.25rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
             <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1e293b' }}>
-              🏫 Chọn lớp học cần xem chuyên cần:
+              Chọn lớp học cần xem chuyên cần:
             </span>
             <select
               value={selectedClassId}
@@ -199,12 +199,12 @@ const AttendancePage: React.FC = () => {
 
       {records.length === 0 ? (
         <EmptyState
-          icon="📅"
+          icon=""
           title="Chưa có dữ liệu chuyên cần & điểm danh"
           description="Hiện tại chưa có dữ liệu điểm danh. Nếu bạn vừa đăng ký khóa học, nhân viên giáo vụ (Staff) đang xử lý xếp lớp cho bạn. Dữ liệu chuyên cần sẽ tự động hiển thị sau khi lớp học chính thức bắt đầu."
           action={
             <Link to="/student/classes" className="dash-quick-btn primary">
-              📚 Xem khóa học của tôi
+              Xem khóa học của tôi
             </Link>
           }
         />

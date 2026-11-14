@@ -293,21 +293,21 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
             {/* Alerts */}
             {loginSuccessNotice && (
               <div className="auth-alert auth-alert-success" role="status">
-                <span>✅</span>
+                
                 <span>{loginSuccessNotice}</span>
               </div>
             )}
 
             {loginError && (
               <div className="auth-alert auth-alert-error" role="alert">
-                <span>⚠️</span>
+                
                 <span>{loginError}</span>
               </div>
             )}
 
             {unverifiedEmail && (
               <div className="auth-alert auth-alert-info" role="status">
-                <span>📧</span>
+                
                 <span>
                   Chưa nhận được email?{' '}
                   <Link
@@ -464,7 +464,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
             />
             {registerError && (
               <div className="auth-alert auth-alert-error" role="alert">
-                <span>⚠️</span>
+                
                 <span>{registerError}</span>
               </div>
             )}
@@ -698,7 +698,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ defaultMode }) => {
 
             {/* Bottom Details */}
             <div className="auth-overlay-footer">
-              <span>🔒 Bảo mật SSL 256-bit</span>
+              <span>Bảo mật SSL 256-bit</span>
               <span>Đối tác IDP &amp; British Council</span>
             </div>
 

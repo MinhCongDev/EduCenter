@@ -280,7 +280,7 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
     if (timerStorageKey) {
       sessionStorage.removeItem(timerStorageKey);
     }
-    setToastMessage('🎉 PayOS đã xác nhận thanh toán thành công!');
+    setToastMessage('PayOS đã xác nhận thanh toán thành công!');
     if (onPaymentSuccess) {
       onPaymentSuccess(paymentRecord || pendingPayment);
     }
@@ -413,7 +413,7 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
             animation: 'dashFadeIn 0.25s ease-out',
           }}
         >
-          <span>✅</span>
+          
           <span>{toastMessage}</span>
         </div>
       )}
@@ -459,7 +459,7 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                 backdropFilter: 'blur(4px)',
               }}
             >
-              📱
+              
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -599,7 +599,7 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
               </div>
 
               <div style={{ fontSize: '0.85rem', color: '#047857', marginTop: '0.5rem', fontWeight: 600 }}>
-                🚀 Khóa học đã được đưa vào mục <strong>"Khóa học của tôi"</strong> (chờ xếp lớp). Đang tự động chuyển trang...
+                Khóa học đã được đưa vào mục <strong>"Khóa học của tôi"</strong> (chờ xếp lớp). Đang tự động chuyển trang...
               </div>
 
               <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.25rem', flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -624,7 +624,7 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                     boxShadow: '0 4px 14px rgba(5, 150, 105, 0.3)',
                   }}
                 >
-                  <span>📚 Xem Thông Tin &amp; Khóa Học Vừa Đăng Ký</span>
+                  <span>Xem Thông Tin &amp; Khóa Học Vừa Đăng Ký</span>
                   <span>→</span>
                 </button>
               </div>
@@ -658,7 +658,7 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                   border: '4px solid #fca5a5',
                 }}
               >
-                ⏰
+                
               </div>
               <div>
                 <h3 style={{ fontSize: '1.65rem', fontWeight: 800, color: '#991b1b', margin: '0 0 0.5rem' }}>
@@ -716,7 +716,7 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                     boxShadow: '0 4px 14px rgba(234, 88, 12, 0.3)',
                   }}
                 >
-                  <span>🔄 Đăng Ký Lại Khóa Học</span>
+                  <span>Đăng Ký Lại Khóa Học</span>
                 </button>
                 <button
                   type="button"
@@ -760,7 +760,7 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '1.3rem' }}>{timeLeft <= 120 ? '🔥' : '⏱️'}</span>
+                  <span style={{ fontSize: '1.3rem' }}>''</span>
                   <span>
                     {timeLeft <= 120
                       ? 'Khẩn cấp! Sắp hết thời hạn thanh toán:'
@@ -980,7 +980,7 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                         gap: '4px',
                       }}
                     >
-                      <span>🔄</span>
+                      
                       <span>{template === 'compact2' ? 'Dạng Đơn giản' : 'Dạng Chi tiết'}</span>
                     </button>
 
@@ -1003,7 +1003,7 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                         gap: '4px',
                       }}
                     >
-                      <span>📥</span>
+                      
                       <span>Tải ảnh mã QR</span>
                     </button>
                   </div>
@@ -1029,13 +1029,13 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                         boxShadow: '0 2px 4px rgba(2, 132, 199, 0.2)',
                       }}
                     >
-                      <span>🌐</span>
+                      
                       <span>Mở Cổng Thanh Toán PayOS Web</span>
                     </a>
                   )}
 
                   <div style={{ fontSize: '0.75rem', color: '#64748b', textAlign: 'center' }}>
-                    💡 Quét bằng mọi app Mobile Banking (MB, VCB, TCB, ACB, VPB,...) hoặc Ví điện tử (MoMo, ZaloPay, ViettelMoney)
+                    Quét bằng mọi app Mobile Banking (MB, VCB, TCB, ACB, VPB,...) hoặc Ví điện tử (MoMo, ZaloPay, ViettelMoney)
                   </div>
                 </div>
 
@@ -1125,7 +1125,7 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                           gap: '4px',
                         }}
                       >
-                        {copiedKey === 'acc' ? '✅ Đã chép' : '📋 Sao chép'}
+                        {copiedKey === 'acc' ? 'Đã sao chép' : 'Sao chép'}
                       </button>
                     </div>
 
@@ -1164,7 +1164,7 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                           cursor: 'pointer',
                         }}
                       >
-                        {copiedKey === 'name' ? '✅ Đã chép' : '📋 Sao chép'}
+                        {copiedKey === 'name' ? 'Đã sao chép' : 'Sao chép'}
                       </button>
                     </div>
 
@@ -1204,7 +1204,7 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                           cursor: 'pointer',
                         }}
                       >
-                        {copiedKey === 'amt' ? '✅ Đã chép' : '📋 Sao chép'}
+                        {copiedKey === 'amt' ? 'Đã sao chép' : 'Sao chép'}
                       </button>
                     </div>
 
@@ -1246,7 +1246,7 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                           cursor: 'pointer',
                         }}
                       >
-                        {copiedKey === 'syntax' ? '✅ Đã chép' : '📋 Sao chép'}
+                        {copiedKey === 'syntax' ? 'Đã sao chép' : 'Sao chép'}
                       </button>
                     </div>
                   </div>
@@ -1263,7 +1263,7 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
                       lineHeight: '1.45',
                     }}
                   >
-                    ⚠️ <strong>Lưu ý:</strong> Vui lòng giữ nguyên nội dung chuyển khoản để hệ thống tự
+                    <strong>Lưu ý:</strong> Vui lòng giữ nguyên nội dung chuyển khoản để hệ thống tự
                     động gạch nợ hóa đơn và kích hoạt khóa học trong vòng 1-3 phút.
                   </div>
                 </div>
@@ -1288,12 +1288,12 @@ export const VietQRModal: React.FC<VietQRModalProps> = ({
           <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
             {confirmSuccess ? (
               <span style={{ color: '#059669', fontWeight: 700 }}>
-                🎉 Xác nhận thanh toán thành công! Hệ thống đang cập nhật...
+                Xác nhận thanh toán thành công! Hệ thống đang cập nhật...
               </span>
             ) : isExpired ? (
               <span style={{ color: '#dc2626', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#ef4444', display: 'inline-block' }} />
-                ⏰ Đã quá hạn 10 phút thanh toán — Khóa học đã tự động bị hủy.
+                 Đã quá hạn 10 phút thanh toán — Khóa học đã tự động bị hủy.
               </span>
             ) : (
               <span style={{ color: '#047857', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', fontWeight: 600 }}>

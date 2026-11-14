@@ -160,7 +160,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                 marginBottom: '1rem',
               }}
             >
-              ⚠️ {error}
+              {error}
             </div>
           )}
 
@@ -175,7 +175,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                 marginBottom: '1rem',
               }}
             >
-              ✅ {success}
+              {success}
             </div>
           )}
 

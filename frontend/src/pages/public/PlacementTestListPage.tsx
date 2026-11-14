@@ -185,7 +185,7 @@ export const PlacementTestListPage: React.FC = () => {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ fontSize: '1.4rem' }}>🔒</span>
+              
               <span style={{ color: '#92400E', fontWeight: 700, fontSize: '0.92rem' }}>
                 Yêu cầu đăng nhập: Bạn cần đăng nhập tài khoản học viên để vào phòng thi thử và lưu trữ kết quả phân tích Band điểm.
               </span>
@@ -345,7 +345,7 @@ export const PlacementTestListPage: React.FC = () => {
                       <div>
                         <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600 }}>Thời gian</div>
                         <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0f172a', marginTop: '2px' }}>
-                          ⏱️ {test.durationMinutes}p
+                          {test.durationMinutes} phút
                         </div>
                       </div>
                       <div>

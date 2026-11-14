@@ -536,7 +536,7 @@ export const CoursesPage: React.FC = () => {
                   flexShrink: 0,
                 }}
               >
-                🎯
+                
               </div>
               <div>
                 <div style={{ fontWeight: 800, color: '#064e3b', fontSize: '1.05rem' }}>
@@ -738,8 +738,8 @@ export const CoursesPage: React.FC = () => {
 
                   {/* Highlights */}
                   <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', fontSize: '0.8rem', color: '#475569' }}>
-                    <span>📅 {course.sessions} buổi</span>
-                    <span>🎯 Đầu vào: {course.entryLevel}</span>
+                    <span>{course.sessions} buổi</span>
+                    <span>Đầu vào: {course.entryLevel}</span>
                   </div>
 
                   {/* Price & CTA */}
@@ -804,7 +804,7 @@ export const CoursesPage: React.FC = () => {
                           e.currentTarget.style.backgroundColor = '#07403F';
                         }}
                       >
-                        <span>✍️</span>
+                        
                         <span>Đăng kí học</span>
                       </button>
                     </div>
@@ -892,9 +892,9 @@ export const CoursesPage: React.FC = () => {
               </h2>
 
               <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.85rem', color: '#E2E8F0', flexWrap: 'wrap' }}>
-                <span>🎯 Đầu vào: <strong>{selectedCourse.entryLevel}</strong></span>
-                <span>🏆 Mục tiêu: <strong>{selectedCourse.targetLevel || 'IELTS 6.5+'}</strong></span>
-                <span>⏱️ Thời lượng: <strong>{selectedCourse.sessions} buổi học</strong></span>
+                <span>Đầu vào: <strong>{selectedCourse.entryLevel}</strong></span>
+                <span>Mục tiêu: <strong>{selectedCourse.targetLevel || 'IELTS 6.5+'}</strong></span>
+                <span>Thời lượng: <strong>{selectedCourse.sessions} buổi học</strong></span>
               </div>
             </div>
 
@@ -914,7 +914,7 @@ export const CoursesPage: React.FC = () => {
                     gap: '0.5rem',
                   }}
                 >
-                  <span>🎉</span>
+                  
                   <span>{registrationNotice}</span>
                 </div>
               )}
@@ -922,7 +922,7 @@ export const CoursesPage: React.FC = () => {
               {/* Description */}
               <div style={{ marginBottom: '1.5rem' }}>
                 <h4 style={{ margin: '0 0 0.5rem', color: '#07403F', fontSize: '1rem', fontWeight: 700 }}>
-                  📖 Giới thiệu khóa học
+                  Giới thiệu khóa học
                 </h4>
                 <p style={{ margin: 0, fontSize: '0.9rem', color: '#475569', lineHeight: 1.6 }}>
                   {selectedCourse.description}
@@ -937,7 +937,7 @@ export const CoursesPage: React.FC = () => {
                 ).filter(Boolean).length > 0 && (
                 <div style={{ marginBottom: '1.5rem' }}>
                   <h4 style={{ margin: '0 0 0.5rem', color: '#07403F', fontSize: '1rem', fontWeight: 700 }}>
-                    🎯 Mục tiêu học tập đạt được
+                    Mục tiêu học tập đạt được
                   </h4>
                   <ul style={{ margin: 0, paddingLeft: '1.25rem', fontSize: '0.875rem', color: '#334155', lineHeight: 1.6 }}>
                     {(Array.isArray(selectedCourse.learningObjectives)
@@ -958,7 +958,7 @@ export const CoursesPage: React.FC = () => {
                 ).filter(Boolean).length > 0 && (
                 <div style={{ marginBottom: '1.5rem' }}>
                   <h4 style={{ margin: '0 0 0.5rem', color: '#07403F', fontSize: '1rem', fontWeight: 700 }}>
-                    📚 Khung chương trình chi tiết
+                    Khung chương trình chi tiết
                   </h4>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     {(Array.isArray(selectedCourse.syllabus)
@@ -987,7 +987,7 @@ export const CoursesPage: React.FC = () => {
               {selectedCourse.classes && selectedCourse.classes.length > 0 && (
                 <div style={{ marginBottom: '1.5rem' }}>
                   <h4 style={{ margin: '0 0 0.5rem', color: '#07403F', fontSize: '1rem', fontWeight: 700 }}>
-                    🏫 Các lớp học đang mở tuyển sinh
+                    Các lớp học đang mở tuyển sinh
                   </h4>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     {selectedCourse.classes.map((cls) => (
@@ -1010,7 +1010,7 @@ export const CoursesPage: React.FC = () => {
                             {cls.classCode} - {cls.name || 'Lớp IELTS'}
                           </strong>
                           <div style={{ fontSize: '0.8rem', color: '#4B5563', marginTop: '2px' }}>
-                            📍 {cls.room} | ⏰ {cls.scheduleDays?.join(', ')} ({cls.timeSlot})
+                            Phòng {cls.room} | {cls.scheduleDays?.join(', ')} ({cls.timeSlot})
                           </div>
                         </div>
                         <div style={{ fontSize: '0.8rem', color: '#15803D', fontWeight: 700 }}>
@@ -1032,7 +1032,7 @@ export const CoursesPage: React.FC = () => {
                               cursor: enrollingClassId === cls._id ? 'default' : 'pointer',
                             }}
                           >
-                            {enrollingClassId === cls._id ? 'Đang ghi danh...' : '✍️ Ghi danh lớp này'}
+                            {enrollingClassId === cls._id ? 'Đang ghi danh...' : 'Ghi danh lớp này'}
                           </button>
                         )}
                       </div>
@@ -1102,7 +1102,7 @@ export const CoursesPage: React.FC = () => {
                       e.currentTarget.style.backgroundColor = '#EC6E23';
                     }}
                   >
-                    <span>✍️</span>
+                    
                     <span>Đăng kí học</span>
                   </button>
                 </div>

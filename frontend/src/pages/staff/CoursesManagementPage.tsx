@@ -45,7 +45,7 @@ const EMPTY_FORM: CourseFormData = {
 /** Badge for course status */
 const StatusBadge: React.FC<{ status: string }> = ({ status }) => (
   <span className={`course-status-badge ${status === 'ACTIVE' ? 'badge-active' : 'badge-inactive'}`}>
-    {status === 'ACTIVE' ? '✅ Hoạt động' : '⏸ Tạm dừng'}
+    {status === 'ACTIVE' ? 'Hoạt động' : 'Tạm dừng'}
   </span>
 );
 
@@ -84,7 +84,7 @@ interface ConfirmDeleteProps {
 const ConfirmDeleteDialog: React.FC<ConfirmDeleteProps> = ({ course, onConfirm, onCancel, loading }) => (
   <div className="modal-overlay" role="dialog" aria-modal="true" aria-label="Xác nhận xóa">
     <div className="modal-box modal-sm">
-      <div className="modal-delete-icon">🗑️</div>
+      <div className="modal-delete-icon"></div>
       <h2 className="modal-title">Xóa khóa học?</h2>
       <p className="modal-desc">
         Bạn có chắc muốn xóa khóa học <strong>{course.title}</strong> ({course.code})?
@@ -201,7 +201,7 @@ const CourseFormModal: React.FC<CourseFormModalProps> = ({ course, onSave, onClo
         </div>
 
         {/* Error banner */}
-        {error && <div className="form-error-banner" role="alert">⚠️ {error}</div>}
+        {error && <div className="form-error-banner" role="alert">{error}</div>}
 
         {/* Form */}
         <form id="course-form" onSubmit={handleSubmit} className="modal-form">
@@ -281,7 +281,7 @@ const CourseFormModal: React.FC<CourseFormModalProps> = ({ course, onSave, onClo
                     fontSize: '28px',
                   }}
                 >
-                  🖼️
+                  
                 </div>
               )}
 
@@ -300,7 +300,7 @@ const CourseFormModal: React.FC<CourseFormModalProps> = ({ course, onSave, onClo
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isUploadingImage}
                   >
-                    {isUploadingImage ? <><span className="spinner-sm" /> Đang tải ảnh…</> : '📁 Tải ảnh từ máy tính'}
+                    {isUploadingImage ? <><span className="spinner-sm" /> Đang tải ảnh…</> : 'Tải ảnh từ máy tính'}
                   </button>
                   {form.bannerUrl && (
                     <button
@@ -322,7 +322,7 @@ const CourseFormModal: React.FC<CourseFormModalProps> = ({ course, onSave, onClo
                 />
                 {uploadImageError && (
                   <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
-                    ⚠️ {uploadImageError}
+                    {uploadImageError}
                   </div>
                 )}
                 <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
@@ -499,7 +499,7 @@ const CourseFormModal: React.FC<CourseFormModalProps> = ({ course, onSave, onClo
               <ul className="syllabus-list">
                 {form.syllabus.map((item, idx) => (
                   <li key={idx} className="syllabus-item">
-                    <span className="syllabus-bullet">📌</span>
+                    <span className="syllabus-bullet">•</span>
                     <span className="syllabus-text">{item}</span>
                     <button
                       type="button"
@@ -755,7 +755,7 @@ const CoursesManagementPage: React.FC = () => {
                           color: '#64748b',
                         }}
                       >
-                        🎓
+                        
                       </div>
                     )}
                   </td>
@@ -862,7 +862,7 @@ const CoursesManagementPage: React.FC = () => {
       {/* ── Toast ── */}
       {toast && (
         <div className={`courses-toast ${toast.type === 'success' ? 'toast-success' : 'toast-error'}`} role="status">
-          {toast.type === 'success' ? '✅' : '❌'} {toast.message}
+          '' {toast.message}
         </div>
       )}
     </div>

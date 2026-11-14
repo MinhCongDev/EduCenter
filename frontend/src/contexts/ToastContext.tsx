@@ -21,10 +21,10 @@ interface ToastContextValue {
 const ToastContext = createContext<ToastContextValue | undefined>(undefined);
 
 const ICONS: Record<ToastType, string> = {
-  success: '✅',
-  error: '❌',
-  warning: '⚠️',
-  info: 'ℹ️',
+  success: '✓',
+  error: '✕',
+  warning: '!',
+  info: 'i',
 };
 
 const COLORS: Record<ToastType, { bg: string; border: string; icon: string }> = {

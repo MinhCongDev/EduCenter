@@ -84,7 +84,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 margin: '0 auto 1.5rem',
               }}
             >
-              ⚠️
+              !
             </div>
 
             <h2 style={{ fontSize: '1.5rem', fontWeight: 700, margin: '0 0 0.5rem', color: '#ffffff' }}>

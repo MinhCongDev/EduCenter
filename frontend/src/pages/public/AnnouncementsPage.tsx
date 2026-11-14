@@ -188,7 +188,7 @@ export const AnnouncementsPage: React.FC = () => {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="🔍 Tìm kiếm thông báo theo tiêu đề, nội dung..."
+              placeholder="Tìm kiếm thông báo theo tiêu đề, nội dung..."
               style={{
                 width: '100%',
                 padding: '0.75rem 1rem',
@@ -271,7 +271,7 @@ export const AnnouncementsPage: React.FC = () => {
               color: '#64748B',
             }}
           >
-            <span style={{ fontSize: '3rem' }}>📣</span>
+            
             <h3>Chưa có thông báo nào trong mục này</h3>
             <p>Vui lòng chọn danh mục khác hoặc đặt lại từ khóa tìm kiếm.</p>
           </div>
@@ -317,7 +317,7 @@ export const AnnouncementsPage: React.FC = () => {
                       gap: '4px',
                     }}
                   >
-                    📌 Ghim nổi bật
+                    Ghim nổi bật
                   </div>
                 )}
 
@@ -375,7 +375,7 @@ export const AnnouncementsPage: React.FC = () => {
                   }}
                 >
                   <span>
-                    ✍️ Tác giả: <strong>{item.author?.fullName || 'Ban Giám Đốc EduCenter'}</strong>
+                    Tác giả: <strong>{item.author?.fullName || 'Ban Giám Đốc EduCenter'}</strong>
                   </span>
                   <span style={{ color: '#2563EB', fontWeight: 600 }}>
                     Đọc tiếp →

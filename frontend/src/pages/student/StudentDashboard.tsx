@@ -329,7 +329,7 @@ const StudentDashboard: React.FC = () => {
               <div className="dash-card">
                 <div className="dash-card-header">
                   <h2 className="dash-card-title">
-                    <span>⏰</span> Buổi Học Kế Tiếp
+                    Buổi Học Kế Tiếp
                   </h2>
                   {nextSession && (
                     <span className="badge-pill badge-green">
@@ -433,10 +433,10 @@ const StudentDashboard: React.FC = () => {
                             >
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <span style={{ fontWeight: 700, color: '#92400e', fontSize: '0.9rem' }}>
-                                  📘 {courseTitle}
+                                  {courseTitle}
                                 </span>
                                 <span className="badge-pill badge-amber" style={{ fontSize: '0.75rem' }}>
-                                  ⏳ Đang chờ staff xếp lớp
+                                  Đang chờ staff xếp lớp
                                 </span>
                               </div>
                               <div style={{ marginTop: '0.35rem', fontSize: '0.78rem', color: '#b45309' }}>
@@ -502,15 +502,6 @@ const StudentDashboard: React.FC = () => {
                     assignments.slice(0, 6).map((item) => (
                       <div key={item.id} className="dash-item">
                         <div className="dash-item-main">
-                          <div className="dash-item-icon">
-                            {item.status === 'PENDING'
-                              ? '⏳'
-                              : item.status === 'GRADED'
-                                ? '🏆'
-                                : item.status === 'LATE'
-                                  ? '⏰'
-                                  : '✅'}
-                          </div>
                           <div>
                             <div className="dash-item-title">{item.title}</div>
                             <div className="dash-item-sub">
@@ -668,7 +659,7 @@ const StudentDashboard: React.FC = () => {
                       >
                         <div>
                           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            <span className="badge-pill badge-amber">⏳ Đang chờ staff xếp lớp</span>
+                            <span className="badge-pill badge-amber">Đang chờ staff xếp lớp</span>
                             <span className={`badge-pill ${e.tuitionStatus === 'PAID' ? 'badge-green' : 'badge-amber'}`}>
                               {e.tuitionStatus === 'PAID' ? 'Đã thanh toán' : 'Chưa thanh toán'}
                             </span>
@@ -709,14 +700,14 @@ const StudentDashboard: React.FC = () => {
                           className="dash-quick-btn"
                           onClick={() => navigate('/courses')}
                         >
-                          📖 Thông tin khóa học
+                          Thông tin khóa học
                         </button>
                         <button
                           type="button"
                           className="dash-quick-btn primary"
                           onClick={() => navigate('/student/payments')}
                         >
-                          💳 Hóa đơn học phí
+                          Hóa đơn học phí
                         </button>
                       </div>
                     </div>
@@ -860,7 +851,7 @@ const StudentDashboard: React.FC = () => {
 
           {schedule.length === 0 ? (
             <EmptyState
-              icon="📅"
+              icon=""
               title="Chưa có lịch học"
               description="Các lớp của bạn chưa được xếp lịch cố định. Vui lòng liên hệ trung tâm."
             />
@@ -892,14 +883,14 @@ const StudentDashboard: React.FC = () => {
                     <span className="badge-pill badge-blue">{s.startTime} – {s.endTime}</span>
                   </div>
                   <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
-                    📍 Phòng: {s.room || s.classroom || '—'}
+                    Phòng: {s.room || s.classroom || '—'}
                   </div>
                   <div style={{ fontSize: '0.85rem', color: '#334155', marginTop: '0.35rem', fontWeight: 600 }}>
                     {s.class?.course?.title || s.class?.course?.code || s.class?.classCode || '—'}
                   </div>
                   {s.topic && (
                     <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.35rem' }}>
-                      🎯 {s.topic}
+                      Chủ đề: {s.topic}
                     </div>
                   )}
                   <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
@@ -1032,7 +1023,7 @@ const StudentDashboard: React.FC = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem' }}>
               <div>
                 <span className="badge-pill badge-green">
-                  {avgBand ? `⭐ ${bandLabel(parseFloat(avgBand))}` : '⭐ Chưa có điểm'}
+                  {avgBand ? bandLabel(parseFloat(avgBand)) : 'Chưa có điểm'}
                 </span>
                 <h3 style={{ margin: '0.4rem 0 0', fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>
                   Band Trung Bình:{' '}
@@ -1048,7 +1039,7 @@ const StudentDashboard: React.FC = () => {
 
             {grades.length === 0 ? (
               <EmptyState
-                icon="📭"
+                icon=""
                 title="Chưa có kết quả đánh giá"
                 description="Kết quả học tập sẽ được cập nhật sau mỗi bài kiểm tra."
               />
@@ -1111,7 +1102,7 @@ const StudentDashboard: React.FC = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div>
             <h2 style={{ margin: '0 0 0.35rem', fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>
-              📅 Điểm Danh &amp; Chuyên Cần
+              Điểm Danh &amp; Chuyên Cần
             </h2>
             <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
               Theo dõi lịch sử điểm danh, số buổi có mặt, vắng mặt và tỷ lệ chuyên cần
@@ -1130,7 +1121,6 @@ const StudentDashboard: React.FC = () => {
               textAlign: 'center',
             }}
           >
-            <div style={{ fontSize: '3rem' }}>📅</div>
             <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>
               Trang Quản Lý Chuyên Cần &amp; Điểm Danh
             </h3>

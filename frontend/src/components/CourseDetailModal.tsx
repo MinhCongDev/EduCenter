@@ -120,9 +120,9 @@ export const CourseDetailModal: React.FC<CourseDetailModalProps> = ({
           </h2>
 
           <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.85rem', color: '#E2E8F0', flexWrap: 'wrap' }}>
-            <span>🎯 Đầu vào: <strong>{course.entryLevel || 'Nền tảng'}</strong></span>
-            <span>🏆 Mục tiêu: <strong>{course.targetLevel || 'IELTS 6.5+'}</strong></span>
-            <span>⏱️ Thời lượng: <strong>{course.sessions || 30} buổi học</strong></span>
+            <span>Đầu vào: <strong>{course.entryLevel || 'Nền tảng'}</strong></span>
+            <span>Mục tiêu: <strong>{course.targetLevel || 'IELTS 6.5+'}</strong></span>
+            <span>Thời lượng: <strong>{course.sessions || 30} buổi học</strong></span>
           </div>
         </div>
 
@@ -142,7 +142,7 @@ export const CourseDetailModal: React.FC<CourseDetailModalProps> = ({
                 gap: '0.5rem',
               }}
             >
-              <span>🎉</span>
+              
               <span>{registrationNotice}</span>
             </div>
           )}
@@ -150,7 +150,7 @@ export const CourseDetailModal: React.FC<CourseDetailModalProps> = ({
           {/* Description */}
           <div style={{ marginBottom: '1.5rem' }}>
             <h4 style={{ margin: '0 0 0.5rem', color: '#07403F', fontSize: '1rem', fontWeight: 700 }}>
-              📖 Giới thiệu khóa học
+              Giới thiệu khóa học
             </h4>
             <p style={{ margin: 0, fontSize: '0.9rem', color: '#475569', lineHeight: 1.6 }}>
               {course.description || 'Khóa học được thiết kế chuẩn quốc tế theo khung năng lực IELTS.'}
@@ -165,7 +165,7 @@ export const CourseDetailModal: React.FC<CourseDetailModalProps> = ({
             ).filter(Boolean).length > 0 && (
             <div style={{ marginBottom: '1.5rem' }}>
               <h4 style={{ margin: '0 0 0.5rem', color: '#07403F', fontSize: '1rem', fontWeight: 700 }}>
-                🎯 Mục tiêu học tập đạt được
+                Mục tiêu học tập đạt được
               </h4>
               <ul style={{ margin: 0, paddingLeft: '1.25rem', fontSize: '0.875rem', color: '#334155', lineHeight: 1.6 }}>
                 {(Array.isArray(course.learningObjectives)
@@ -186,7 +186,7 @@ export const CourseDetailModal: React.FC<CourseDetailModalProps> = ({
             ).filter(Boolean).length > 0 && (
             <div style={{ marginBottom: '1.5rem' }}>
               <h4 style={{ margin: '0 0 0.5rem', color: '#07403F', fontSize: '1rem', fontWeight: 700 }}>
-                📊 Khung chương trình chi tiết
+                Khung chương trình chi tiết
               </h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {(Array.isArray(course.syllabus)
@@ -215,7 +215,7 @@ export const CourseDetailModal: React.FC<CourseDetailModalProps> = ({
           {course.classes && course.classes.length > 0 && (
             <div style={{ marginBottom: '1.5rem' }}>
               <h4 style={{ margin: '0 0 0.5rem', color: '#07403F', fontSize: '1rem', fontWeight: 700 }}>
-                🏫 Các lớp học đang mở tuyển sinh
+                Các lớp học đang mở tuyển sinh
               </h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {course.classes.map((cls) => (
@@ -238,7 +238,7 @@ export const CourseDetailModal: React.FC<CourseDetailModalProps> = ({
                         {cls.classCode} - {cls.name || 'Lớp IELTS'}
                       </strong>
                       <div style={{ fontSize: '0.8rem', color: '#4B5563', marginTop: '2px' }}>
-                        📍 {cls.room} | ⏰ {cls.scheduleDays?.join(', ')} ({cls.timeSlot})
+                        Phòng {cls.room} | {cls.scheduleDays?.join(', ')} ({cls.timeSlot})
                       </div>
                     </div>
                     <div style={{ fontSize: '0.8rem', color: '#15803D', fontWeight: 700 }}>
@@ -260,7 +260,7 @@ export const CourseDetailModal: React.FC<CourseDetailModalProps> = ({
                           cursor: enrollingClassId === cls._id ? 'default' : 'pointer',
                         }}
                       >
-                        {enrollingClassId === cls._id ? 'Đang ghi danh...' : '✍️ Ghi danh lớp này'}
+                        {enrollingClassId === cls._id ? 'Đang ghi danh...' : 'Ghi danh lớp này'}
                       </button>
                     )}
                   </div>
@@ -349,7 +349,7 @@ export const CourseDetailModal: React.FC<CourseDetailModalProps> = ({
                     e.currentTarget.style.backgroundColor = '#EC6E23';
                   }}
                 >
-                  <span>✍️</span>
+                  
                   <span>Đăng kí học</span>
                 </button>
               ) : null}

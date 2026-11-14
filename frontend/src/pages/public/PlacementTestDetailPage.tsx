@@ -189,7 +189,7 @@ export const PlacementTestDetailPage: React.FC = () => {
       <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'calc(76px + 2rem) 1rem 2rem', backgroundColor: '#F8FAFC' }}>
         <div style={{ maxWidth: '520px', width: '100%', backgroundColor: '#FFFFFF', borderRadius: '24px', padding: '2.5rem', boxShadow: '0 12px 36px rgba(0,0,0,0.08)', textAlign: 'center', border: '1px solid #E2E8F0' }}>
           <div style={{ width: '68px', height: '68px', borderRadius: '50%', backgroundColor: '#FEF3C7', color: '#D97706', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.2rem', margin: '0 auto 1.25rem' }}>
-            🔒
+            
           </div>
           <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0F172A', margin: '0 0 0.75rem' }}>
             Yêu Cầu Đăng Nhập Để Làm Bài
@@ -509,7 +509,7 @@ export const PlacementTestDetailPage: React.FC = () => {
                       letterSpacing: '0.02em',
                     }}
                   >
-                    ⭐ {result.primaryCourse.badge}
+                    {result.primaryCourse.badge}
                   </span>
                   <h3 style={{ margin: '0.75rem 0 0.35rem', fontSize: '1.45rem', fontWeight: 900, color: '#064e3b' }}>
                     {result.primaryCourse.title}
@@ -985,7 +985,7 @@ export const PlacementTestDetailPage: React.FC = () => {
               gap: '6px',
             }}
           >
-            <span>⏱️</span>
+            
             <span>{formatTime(timeLeftSeconds)}</span>
           </div>
 
@@ -1357,7 +1357,7 @@ export const PlacementTestDetailPage: React.FC = () => {
                           fontSize: '0.6rem',
                         }}
                       >
-                        🚩
+                        Đánh dấu
                       </span>
                     )}
                   </button>

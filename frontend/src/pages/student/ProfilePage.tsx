@@ -276,7 +276,7 @@ export const ProfilePage: React.FC = () => {
                   <span style={{ position: 'absolute', width: 13, height: 13, right: 3, bottom: 6, borderRadius: '50%', background: '#10b981', border: '2px solid white' }} />
                   {isEditing && (
                     <button className="profile-avatar-edit" type="button" title="Đổi ảnh đại diện" onClick={() => fileInputRef.current?.click()}>
-                      📷
+                      
                     </button>
                   )}
                   <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/gif,image/webp" onChange={handleAvatarFile} disabled={uploadingAvatar} style={{ display: 'none' }} />
@@ -289,7 +289,7 @@ export const ProfilePage: React.FC = () => {
               </div>
 
               <h2 style={{ margin: '0 0 5px', color: '#302a3c', fontSize: 20, fontWeight: 800 }}>{form.fullName || 'Người dùng'}</h2>
-              <p style={{ margin: '0 0 13px', color: '#858190', fontSize: 13, overflowWrap: 'anywhere' }}>✉ {user?.email || '—'}</p>
+              <p style={{ margin: '0 0 13px', color: '#858190', fontSize: 13, overflowWrap: 'anywhere' }}>{user?.email || '—'}</p>
               <span className="profile-pill" style={{ background: currentRoleInfo.bg, color: currentRoleInfo.color }}>
                 {currentRoleInfo.icon} {currentRoleInfo.badge}
               </span>

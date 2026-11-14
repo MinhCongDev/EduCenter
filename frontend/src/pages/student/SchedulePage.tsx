@@ -166,7 +166,7 @@ const SchedulePage: React.FC = () => {
 
       {schedules.length === 0 ? (
         <EmptyState
-          icon="📭"
+          icon=""
           title="Chưa có lịch học"
           description="Lịch học sẽ được cập nhật bởi trung tâm."
         />

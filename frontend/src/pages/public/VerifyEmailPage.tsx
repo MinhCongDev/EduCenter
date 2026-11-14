@@ -73,7 +73,7 @@ const VerifyEmailPage: React.FC = () => {
     <div className="verify-wrapper">
       <div className="verify-card">
         <div className="verify-brand">
-          <span className="verify-brand-mark">🎓</span>
+          <span className="verify-brand-mark">E</span>
           <span className="verify-brand-name">EduCenter</span>
         </div>
 

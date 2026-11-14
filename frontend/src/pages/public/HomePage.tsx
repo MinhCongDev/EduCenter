@@ -656,8 +656,8 @@ const HomePage: React.FC = () => {
                   </p>
 
                   <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.25rem', fontSize: '0.82rem', color: '#475569' }}>
-                    <span>📅 {course.sessions} buổi</span>
-                    <span>🎯 Đầu vào: <strong>{course.entryLevel}</strong></span>
+                    <span>{course.sessions} buổi</span>
+                    <span>Đầu vào: <strong>{course.entryLevel}</strong></span>
                   </div>
 
                   {/* Price & CTA */}

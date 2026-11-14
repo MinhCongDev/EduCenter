@@ -41,7 +41,7 @@ const ClassDetailsPage: React.FC = () => {
     return (
       <div className="dash-container">
         <EmptyState
-          icon="❌"
+          icon=""
           title="Không tìm thấy lớp học"
           description="Bạn không có quyền truy cập lớp học này."
           action={
@@ -73,7 +73,7 @@ const ClassDetailsPage: React.FC = () => {
         </div>
         <div className="dash-banner-right">
           <div className="dash-date-pill">
-            <div>📍 {c.classCode}</div>
+            <div>{c.classCode}</div>
             <div className="sub">{c.teacher?.fullName || 'Chưa có giảng viên'}</div>
           </div>
         </div>
@@ -102,13 +102,13 @@ const ClassDetailsPage: React.FC = () => {
           <div className="dash-metric-info">
             <span className="dash-metric-label">Trạng thái học phí</span>
             <span className="dash-metric-val">
-              {cls.tuitionStatus === 'PAID' ? '✅ Đã thanh toán' : '⚠️ Chưa thanh toán'}
+              {cls.tuitionStatus === 'PAID' ? 'Đã thanh toán' : 'Chưa thanh toán'}
             </span>
             <span className={`dash-metric-trend ${cls.tuitionStatus === 'PAID' ? 'up' : ''}`}>
               {cls.tuitionStatus === 'PAID' ? 'Hoàn tất' : 'Cần thanh toán sớm'}
             </span>
           </div>
-          <div className="dash-metric-icon icon-emerald">💰</div>
+          <div className="dash-metric-icon icon-emerald"></div>
         </div>
         <div className="dash-metric-card">
           <div className="dash-metric-info">
@@ -118,7 +118,7 @@ const ClassDetailsPage: React.FC = () => {
             </span>
             <span className="dash-metric-trend">{pending.length} bài chưa nộp</span>
           </div>
-          <div className="dash-metric-icon icon-amber">📝</div>
+          <div className="dash-metric-icon icon-amber"></div>
         </div>
         <div className="dash-metric-card">
           <div className="dash-metric-info">
@@ -128,13 +128,13 @@ const ClassDetailsPage: React.FC = () => {
               {c.course?.durationWeeks || '—'} tuần • {c.sessions || c.course?.sessions || '—'} buổi
             </span>
           </div>
-          <div className="dash-metric-icon icon-purple">🎓</div>
+          <div className="dash-metric-icon icon-purple"></div>
         </div>
       </div>
 
       <div className="dash-card" style={{ marginBottom: '1.5rem' }}>
         <div className="dash-card-header">
-          <h2 className="dash-card-title"><span>📘</span> Thông Tin Khóa Học</h2>
+          <h2 className="dash-card-title">Thông Tin Khóa Học</h2>
         </div>
         <div className="dash-subcard">
           {c.course?.description && (
@@ -161,7 +161,7 @@ const ClassDetailsPage: React.FC = () => {
 
       <div className="dash-card" style={{ marginBottom: '1.5rem' }}>
         <div className="dash-card-header">
-          <h2 className="dash-card-title"><span>🏫</span> Thông Tin Lớp Học</h2>
+          <h2 className="dash-card-title">Thông Tin Lớp Học</h2>
         </div>
         <div className="dash-subcard">
           <div
@@ -189,7 +189,7 @@ const ClassDetailsPage: React.FC = () => {
       {assignments.length > 0 && (
         <div className="dash-card">
           <div className="dash-card-header">
-            <h2 className="dash-card-title"><span>📝</span> Bài Tập Gần Đây</h2>
+            <h2 className="dash-card-title">Bài Tập Gần Đây</h2>
             <Link
               to={`/student/classes/${id}/assignments`}
               className="dash-quick-btn"
@@ -204,12 +204,12 @@ const ClassDetailsPage: React.FC = () => {
                 <div className="dash-item-main">
                   <div className="dash-item-icon">
                     {!a.submissionStatus
-                      ? '⏳'
+                      ? ''
                       : a.submissionStatus === 'LATE'
-                      ? '⏰'
+                      ? ''
                       : a.submissionStatus === 'GRADED'
-                      ? '🏆'
-                      : '✅'}
+                      ? ''
+                      : ''}
                   </div>
                   <div>
                     <div className="dash-item-title">{a.title}</div>

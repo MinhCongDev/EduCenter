@@ -156,7 +156,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <span style={{ fontSize: '1.4rem' }}>🔑</span>
+            
             <div>
               <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700 }}>
                 Quên Mật Khẩu
@@ -198,7 +198,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
                 marginBottom: '1rem',
               }}
             >
-              ⚠️ {error}
+              {error}
             </div>
           )}
 
@@ -214,7 +214,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
                 border: '1px solid #a7f3d0',
               }}
             >
-              ✅ {message}
+              {message}
             </div>
           )}
 

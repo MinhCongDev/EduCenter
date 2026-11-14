@@ -127,10 +127,10 @@ export const StudentPaymentsPage: React.FC = () => {
           .checkPayOSStatus(orderCode)
           .then((res) => {
             if (res.isPaid || res.status === 'PAID') {
-              showToast(`🎉 PayOS: Đơn hàng #${orderCode} đã thanh toán thành công! Khóa học đã được kích hoạt.`);
+              showToast(`PayOS: Đơn hàng #${orderCode} đã thanh toán thành công! Khóa học đã được kích hoạt.`);
               fetchData();
             } else if (statusParam === 'CANCELLED') {
-              showToast(`⚠️ Bạn đã hủy thanh toán đơn hàng #${orderCode}`);
+              showToast(`Bạn đã hủy thanh toán đơn hàng #${orderCode}`);
             }
           })
           .catch((err) => {
@@ -368,7 +368,7 @@ export const StudentPaymentsPage: React.FC = () => {
               {formatCurrency(summary.totalPaid)}
             </span>
             <span className="dash-metric-trend up">
-              ✅ {summary.successCount} giao dịch thành công
+              {summary.successCount} giao dịch thành công
             </span>
           </div>
           <div className="dash-metric-icon icon-emerald"></div>
@@ -382,12 +382,12 @@ export const StudentPaymentsPage: React.FC = () => {
             </span>
             <span className="dash-metric-trend" style={{ color: activeCoursePayment ? '#ef4444' : '#10b981' }}>
               {activeCoursePayment
-                ? `⚠️ Khóa học: ${activeCoursePayment.courseCode} (${formatCurrency(activeCoursePayment.tuitionFee)})`
-                : '✨ Chưa có khoản thanh toán nào cần thực hiện'}
+                ? `Khóa học: ${activeCoursePayment.courseCode} (${formatCurrency(activeCoursePayment.tuitionFee)})`
+                : 'Chưa có khoản thanh toán nào cần thực hiện'}
             </span>
           </div>
           <div className="dash-metric-icon icon-amber">
-            {activeCoursePayment ? '⏳' : '🎉'}
+            ''
           </div>
         </div>
 
@@ -433,7 +433,7 @@ export const StudentPaymentsPage: React.FC = () => {
                 fontSize: '0.78rem',
               }}
             >
-              <span>{activeCoursePayment ? '⚡' : 'ℹ️'}</span>
+              
               <span>
                 {activeCoursePayment
                   ? 'Bấm để quét mã QR thanh toán ➔'
@@ -642,19 +642,20 @@ export const StudentPaymentsPage: React.FC = () => {
         >
           <div
             style={{
-              width: '64px',
-              height: '64px',
+              width: '54px',
+              height: '54px',
               borderRadius: '50%',
-              backgroundColor: '#f1f5f9',
-              color: '#64748b',
-              fontSize: '2rem',
+              backgroundColor: '#ecfdf5',
+              color: '#059669',
+              fontSize: '1.5rem',
+              fontWeight: 800,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               margin: '0 auto 1rem',
             }}
           >
-            💳
+            ✓
           </div>
           <h3 style={{ margin: '0 0 0.5rem', color: '#1e293b', fontSize: '1.25rem', fontWeight: 800 }}>
             Chưa có khoản thanh toán nào cần thực hiện
@@ -885,7 +886,7 @@ export const StudentPaymentsPage: React.FC = () => {
           </div>
         ) : error ? (
           <div style={{ textAlign: 'center', padding: '2rem', color: '#ef4444' }}>
-            <p>❌ {error}</p>
+            <p>{error}</p>
             <button type="button" className="dash-quick-btn" onClick={fetchData}>
               Thử lại
             </button>
@@ -960,7 +961,7 @@ export const StudentPaymentsPage: React.FC = () => {
                               opacity: 0.6,
                             }}
                           >
-                            {copiedText === p._id ? '✅' : '📋'}
+                            {copiedText === p._id ? 'Đã sao chép' : 'Sao chép'}
                           </button>
                         </div>
                       </td>
@@ -1380,7 +1381,7 @@ export const StudentPaymentsPage: React.FC = () => {
                               onClick={() => handleCopy('988866889999', 'acc')}
                               style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '0.85rem' }}
                             >
-                              {copiedText === 'acc' ? '✅' : '📋'}
+                              {copiedText === 'acc' ? 'Đã sao chép' : 'Sao chép'}
                             </button>
                           </div>
                         </div>
@@ -1410,7 +1411,7 @@ export const StudentPaymentsPage: React.FC = () => {
                               }
                               style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '0.85rem' }}
                             >
-                              {copiedText === 'syntax' ? '✅' : '📋'}
+                              {copiedText === 'syntax' ? 'Đã sao chép' : 'Sao chép'}
                             </button>
                           </div>
                         </div>
@@ -1661,7 +1662,7 @@ export const StudentPaymentsPage: React.FC = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid #e2e8f0', paddingBottom: '1.25rem' }}>
               <div>
                 <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#1e3a8a', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <span>🇬🇧</span>
+                  
                   <span>{selectedReceipt.center?.name || 'EduCenter IELTS Academy'}</span>
                 </div>
                 <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.25rem' }}>
@@ -1849,7 +1850,7 @@ export const StudentPaymentsPage: React.FC = () => {
             animation: 'dashFadeIn 0.3s ease-out',
           }}
         >
-          <span>🎉</span>
+          
           <span>{toastMessage}</span>
           <button
             type="button"

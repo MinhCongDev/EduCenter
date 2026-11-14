@@ -11,12 +11,12 @@ type FilterKey = 'ALL' | PaymentStatus;
 
 const statusCfg = (s: PaymentStatus) => {
   const map: Record<PaymentStatus, { label: string; cls: string; icon: string }> = {
-    SUCCESS: { label: 'Đã thanh toán', cls: 'badge-green', icon: '✅' },
-    PENDING: { label: 'Chờ thanh toán', cls: 'badge-amber', icon: '⏳' },
-    FAILED: { label: 'Thất bại', cls: 'badge-purple', icon: '❌' },
-    REFUNDED: { label: 'Đã hoàn tiền', cls: 'badge-blue', icon: '💸' },
+    SUCCESS: { label: 'Đã thanh toán', cls: 'badge-green', icon: '' },
+    PENDING: { label: 'Chờ thanh toán', cls: 'badge-amber', icon: '' },
+    FAILED: { label: 'Thất bại', cls: 'badge-purple', icon: '' },
+    REFUNDED: { label: 'Đã hoàn tiền', cls: 'badge-blue', icon: '' },
   };
-  return map[s] || { label: s, cls: 'badge-amber', icon: '❓' };
+  return map[s] || { label: s, cls: 'badge-amber', icon: '' };
 };
 
 const PaymentsPage: React.FC = () => {
@@ -76,7 +76,7 @@ const PaymentsPage: React.FC = () => {
   const tabs: { key: FilterKey; label: string; count: number }[] = [
     { key: 'ALL', label: 'Tất cả', count: payments.length },
     { key: 'SUCCESS', label: 'Đã thanh toán', count: payments.filter((p) => p.status === 'SUCCESS').length },
-    { key: 'PENDING', label: '⏳ Chờ thanh toán', count: payments.filter((p) => p.status === 'PENDING').length },
+    { key: 'PENDING', label: 'Chờ thanh toán', count: payments.filter((p) => p.status === 'PENDING').length },
     { key: 'FAILED', label: 'Thất bại', count: payments.filter((p) => p.status === 'FAILED').length },
     { key: 'REFUNDED', label: 'Đã hoàn tiền', count: payments.filter((p) => p.status === 'REFUNDED').length },
   ];
@@ -133,7 +133,7 @@ const PaymentsPage: React.FC = () => {
               </span>
               <span className="dash-metric-trend">{stats.pendingCount} khoản chưa thanh toán</span>
             </div>
-            <div className="dash-metric-icon icon-amber">⏳</div>
+            <div className="dash-metric-icon icon-amber"></div>
           </div>
           <div className="dash-metric-card">
             <div className="dash-metric-info">
@@ -192,7 +192,7 @@ const PaymentsPage: React.FC = () => {
 
       {filtered.length === 0 ? (
         <EmptyState
-          icon="📭"
+          icon=""
           title="Không có giao dịch"
           description="Không có giao dịch nào phù hợp với bộ lọc hiện tại."
         />

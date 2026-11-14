@@ -86,7 +86,7 @@ export const SkeletonPage: React.FC<{ message?: string }> = ({ message = 'Đang 
       <SkeletonCard />
       <SkeletonCard />
     </div>
-    <p style={{ textAlign: 'center', marginTop: '2rem', opacity: 0.6 }}>⏳ {message}</p>
+    <p style={{ textAlign: 'center', marginTop: '2rem', opacity: 0.6 }}>{message}</p>
   </div>
 );
 
@@ -95,7 +95,7 @@ export const EmptyState: React.FC<{
   title: string;
   description?: string;
   action?: React.ReactNode;
-}> = ({ icon = '📭', title, description, action }) => (
+}> = ({ icon, title, description, action }) => (
   <div
     style={{
       textAlign: 'center',
@@ -104,7 +104,7 @@ export const EmptyState: React.FC<{
       borderRadius: '16px',
     }}
   >
-    <div style={{ fontSize: '3rem', marginBottom: '0.75rem' }}>{icon}</div>
+    {icon ? <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>{icon}</div> : null}
     <h2 style={{ margin: 0, marginBottom: '0.5rem', fontSize: '1.1rem', color: '#0f172a' }}>{title}</h2>
     {description && (
       <p style={{ margin: 0, opacity: 0.65, marginBottom: action ? '1.5rem' : 0 }}>{description}</p>

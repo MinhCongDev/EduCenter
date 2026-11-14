@@ -255,7 +255,7 @@ export const TeacherDashboard: React.FC = () => {
         setGradeFormStudentId((prev) => prev || loadedStudents[0]._id);
       }
     } catch (err: any) {
-      showToast('⚠️ Không thể tải dữ liệu: ' + (err?.message || 'Lỗi mạng'));
+      showToast(' Không thể tải dữ liệu: ' + (err?.message || 'Lỗi mạng'));
     } finally {
       setLoading(false);
     }
@@ -337,7 +337,7 @@ export const TeacherDashboard: React.FC = () => {
       const res = await teacherService.getAttendance({ classId: targetClassId });
       setAttendanceHistory(res.data?.records || []);
     } catch {
-      showToast('❌ Lỗi khi tải lịch sử điểm danh');
+      showToast(' Lỗi khi tải lịch sử điểm danh');
     }
   };
 
@@ -376,9 +376,9 @@ export const TeacherDashboard: React.FC = () => {
       });
 
       setSessionAlreadyRecorded(true);
-      showToast(`✅ Đã lưu điểm danh buổi học ngày ${attendanceDate} (${records.length} học viên)!`);
+      showToast(` Đã lưu điểm danh buổi học ngày ${attendanceDate} (${records.length} học viên)!`);
     } catch (err: any) {
-      showToast('❌ Lỗi khi lưu điểm danh: ' + (err?.response?.data?.message || err.message));
+      showToast(' Lỗi khi lưu điểm danh: ' + (err?.response?.data?.message || err.message));
     } finally {
       setSavingAttendance(false);
     }
@@ -619,7 +619,7 @@ export const TeacherDashboard: React.FC = () => {
           speaking: gradeFormS !== '' ? Number(gradeFormS) : null,
           rating: gradeFormRating || null,
         });
-        showToast('✅ Đã cập nhật kết quả / nhận xét thành công!');
+        showToast(' Đã cập nhật kết quả / nhận xét thành công!');
       } else {
         await teacherService.createGrade({
           studentId: gradeFormStudentId,
@@ -628,8 +628,8 @@ export const TeacherDashboard: React.FC = () => {
         });
         showToast(
           isEvalMode
-            ? '✅ Đã lưu đánh giá nhận xét học viên!'
-            : '🎉 Đã nhập điểm kiểm tra định kỳ thành công!'
+            ? 'Đã lưu đánh giá nhận xét học viên!'
+            : 'Đã nhập điểm kiểm tra định kỳ thành công!'
         );
       }
 
@@ -638,7 +638,7 @@ export const TeacherDashboard: React.FC = () => {
       const res = await teacherService.getStudentAcademicResults();
       setGrades(res.data?.grades || []);
     } catch (err: any) {
-      showToast('❌ Lỗi lưu dữ liệu: ' + (err?.response?.data?.message || err.message));
+      showToast(' Lỗi lưu dữ liệu: ' + (err?.response?.data?.message || err.message));
     } finally {
       setIsSavingGrade(false);
     }
@@ -651,7 +651,7 @@ export const TeacherDashboard: React.FC = () => {
       showToast('Đã xóa bản ghi');
       setGrades((prev) => prev.filter((g) => g._id !== gradeId));
     } catch {
-      showToast('❌ Lỗi khi xóa bản ghi');
+      showToast(' Lỗi khi xóa bản ghi');
     }
   };
 
@@ -670,13 +670,13 @@ export const TeacherDashboard: React.FC = () => {
         sessionDate: reqSessionDate || undefined,
         reason: reqReason,
       });
-      showToast('✅ Đã gửi đơn xin đổi lịch dạy tới Ban Giáo vụ!');
+      showToast(' Đã gửi đơn xin đổi lịch dạy tới Ban Giáo vụ!');
       setReqReason('');
       const res = await teacherService.getScheduleChangeRequests();
       setScheduleRequests(res.data?.requests || []);
       setRequestTab('history');
     } catch (err: any) {
-      showToast('❌ Lỗi gửi yêu cầu: ' + (err?.response?.data?.message || err.message));
+      showToast(' Lỗi gửi yêu cầu: ' + (err?.response?.data?.message || err.message));
     } finally {
       setIsSubmittingReq(false);
     }
@@ -710,7 +710,7 @@ export const TeacherDashboard: React.FC = () => {
     <div className="dash-container">
       {toastMessage && (
         <div className="dmr-toast" role="status" style={{ zIndex: 9999 }}>
-          <span>✨</span>
+          
           <span>{toastMessage}</span>
         </div>
       )}
@@ -728,7 +728,7 @@ export const TeacherDashboard: React.FC = () => {
             textAlign: 'center',
           }}
         >
-          ⏳ Đang tải dữ liệu giảng dạy từ hệ thống EduCenter...
+          Đang tải dữ liệu giảng dạy từ hệ thống EduCenter...
         </div>
       )}
 
@@ -1473,7 +1473,7 @@ export const TeacherDashboard: React.FC = () => {
                             }}
                           >
                             <div style={{ fontSize: '0.74rem', fontWeight: 800, color: '#1d4ed8' }}>
-                              ⏰ {item.startTime} - {item.endTime}
+                              {item.startTime} - {item.endTime}
                             </div>
                             <div style={{ fontSize: '0.84rem', fontWeight: 800, color: '#0f172a' }}>
                               {item.class?.classCode}
@@ -1747,7 +1747,7 @@ export const TeacherDashboard: React.FC = () => {
                     }}
                   >
                     {loadingAttendance
-                      ? '⏳ Đang tải...'
+                      ? 'Đang tải...'
                       : sessionAlreadyRecorded
                       ? '✓ Buổi này đã có dữ liệu điểm danh (có thể cập nhật)'
                       : 'Chưa điểm danh buổi này'}
@@ -2062,7 +2062,7 @@ export const TeacherDashboard: React.FC = () => {
                     >
                       <div>{cls.room}</div>
                       <div>
-                        ⏰ {cls.scheduleDays.join(' - ')} ({cls.timeSlot})
+                        {cls.scheduleDays.join(' - ')} ({cls.timeSlot})
                       </div>
                       <div>
                         Sĩ số: <strong style={{ color: '#047857' }}>{studentCount}</strong> / {cls.capacity} HV
@@ -2547,7 +2547,7 @@ export const TeacherDashboard: React.FC = () => {
             >
               <h3 style={{ margin: 0, fontSize: '1.12rem', fontWeight: 800, color: '#0f172a' }}>
                 {editingGradeId
-                  ? '✏️ Cập Nhật Kết Quả / Nhận Xét'
+                  ? 'Cập Nhật Kết Quả / Nhận Xét'
                   : gradeModalMode === 'TEST'
                   ? 'Nhập Điểm Kiểm Tra Định Kỳ'
                   : 'Đánh Giá & Nhận Xét Chung (Tháng / Khóa)'}

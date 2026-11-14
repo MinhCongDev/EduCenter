@@ -17,20 +17,20 @@ type FilterKey = 'ALL' | ChangeRequestStatus;
 
 const statusCfg = (s: ChangeRequestStatus) => {
   const map: Record<ChangeRequestStatus, { label: string; cls: string; icon: string }> = {
-    PENDING: { label: 'Đang chờ', cls: 'badge-amber', icon: '⏳' },
-    APPROVED: { label: 'Đã duyệt', cls: 'badge-green', icon: '✅' },
-    REJECTED: { label: 'Từ chối', cls: 'badge-purple', icon: '❌' },
+    PENDING: { label: 'Đang chờ', cls: 'badge-amber', icon: '' },
+    APPROVED: { label: 'Đã duyệt', cls: 'badge-green', icon: '' },
+    REJECTED: { label: 'Từ chối', cls: 'badge-purple', icon: '' },
   };
   return map[s];
 };
 
 const typeCfg = (t: RequestType) => {
   const map: Record<RequestType, { label: string; icon: string }> = {
-    CLASS_CHANGE: { label: 'Đổi lớp', icon: '🔄' },
-    SCHEDULE_CHANGE: { label: 'Đổi lịch học', icon: '🗓️' },
-    TEACHER_SCHEDULE_CHANGE: { label: 'Đổi lịch giảng viên', icon: '👨‍🏫' },
+    CLASS_CHANGE: { label: 'Đổi lớp', icon: '' },
+    SCHEDULE_CHANGE: { label: 'Đổi lịch học', icon: '' },
+    TEACHER_SCHEDULE_CHANGE: { label: 'Đổi lịch giảng viên', icon: '' },
   };
-  return map[t] || { label: t, icon: '📄' };
+  return map[t] || { label: t, icon: '' };
 };
 
 const RequestsPage: React.FC = () => {
@@ -147,9 +147,9 @@ const RequestsPage: React.FC = () => {
 
   const tabs: { key: FilterKey; label: string; count: number }[] = [
     { key: 'ALL', label: 'Tất cả', count: requests.length },
-    { key: 'PENDING', label: '⏳ Chờ duyệt', count: requests.filter((r) => r.status === 'PENDING').length },
-    { key: 'APPROVED', label: '✅ Đã duyệt', count: requests.filter((r) => r.status === 'APPROVED').length },
-    { key: 'REJECTED', label: '❌ Từ chối', count: requests.filter((r) => r.status === 'REJECTED').length },
+    { key: 'PENDING', label: 'Chờ duyệt', count: requests.filter((r) => r.status === 'PENDING').length },
+    { key: 'APPROVED', label: 'Đã duyệt', count: requests.filter((r) => r.status === 'APPROVED').length },
+    { key: 'REJECTED', label: 'Từ chối', count: requests.filter((r) => r.status === 'REJECTED').length },
   ];
 
   const showScheduleFields = form.requestType === 'SCHEDULE_CHANGE';
@@ -207,7 +207,7 @@ const RequestsPage: React.FC = () => {
               </span>
               <span className="dash-metric-trend">Đang chờ nhân viên xử lý</span>
             </div>
-            <div className="dash-metric-icon icon-amber">⏳</div>
+            <div className="dash-metric-icon icon-amber"></div>
           </div>
           <div className="dash-metric-card">
             <div className="dash-metric-info">
@@ -272,7 +272,7 @@ const RequestsPage: React.FC = () => {
                     fontSize: '0.9rem',
                   }}
                 >
-                  ⚠️ {formError}
+                  {formError}
                 </div>
               )}
               <div
@@ -374,7 +374,7 @@ const RequestsPage: React.FC = () => {
                 />
               </div>
               <div style={{ display: 'flex', gap: '0.75rem' }}>
-                <Button type="submit" variant="primary" loading={submitting} icon="📤">
+                <Button type="submit" variant="primary" loading={submitting} icon="">
                   Gửi Yêu Cầu
                 </Button>
                 <Button
@@ -395,7 +395,7 @@ const RequestsPage: React.FC = () => {
 
       {filtered.length === 0 ? (
         <EmptyState
-          icon="📭"
+          icon=""
           title="Không có yêu cầu nào"
           description={
             filter !== 'ALL'
@@ -490,7 +490,7 @@ const RequestsPage: React.FC = () => {
                         variant="secondary"
                         onClick={() => handleCancel(r._id)}
                         loading={cancellingId === r._id}
-                        icon="🗑️"
+                        icon=""
                       >
                         Hủy yêu cầu
                       </Button>

@@ -11,10 +11,10 @@ import { formatDate, isPast } from '../../utils/format';
 type FilterKey = 'ALL' | 'PENDING' | 'SUBMITTED' | 'GRADED';
 
 const statusOf = (s?: SubmissionStatus | null) => {
-  if (!s) return { label: 'Chưa nộp', cls: 'badge-amber', icon: '⏳' };
-  if (s === 'GRADED') return { label: 'Đã chấm', cls: 'badge-blue', icon: '🏆' };
-  if (s === 'LATE') return { label: 'Nộp trễ', cls: 'badge-purple', icon: '⏰' };
-  return { label: 'Đã nộp', cls: 'badge-green', icon: '✅' };
+  if (!s) return { label: 'Chưa nộp', cls: 'badge-amber', icon: '' };
+  if (s === 'GRADED') return { label: 'Đã chấm', cls: 'badge-blue', icon: '' };
+  if (s === 'LATE') return { label: 'Nộp trễ', cls: 'badge-purple', icon: '' };
+  return { label: 'Đã nộp', cls: 'badge-green', icon: '' };
 };
 
 const AssignmentsPage: React.FC = () => {
@@ -188,7 +188,7 @@ const AssignmentsPage: React.FC = () => {
               </span>
               <span className="dash-metric-trend">Cần hoàn thành sớm</span>
             </div>
-            <div className="dash-metric-icon icon-amber">⏳</div>
+            <div className="dash-metric-icon icon-amber"></div>
           </div>
           <div className="dash-metric-card">
             <div className="dash-metric-info">
@@ -198,7 +198,7 @@ const AssignmentsPage: React.FC = () => {
               </span>
               <span className="dash-metric-trend">
                 {assignments.filter((a) => a.submissionStatus === 'GRADED').length > 0
-                  ? 'Chúc mừng! 🎉'
+                  ? 'Chúc mừng!'
                   : 'Chờ giảng viên chấm'}
               </span>
             </div>
@@ -268,7 +268,7 @@ const AssignmentsPage: React.FC = () => {
 
       {filtered.length === 0 ? (
         <EmptyState
-          icon="📭"
+          icon=""
           title="Không có bài tập"
           description="Không có bài tập nào phù hợp với bộ lọc hiện tại."
         />
@@ -285,7 +285,7 @@ const AssignmentsPage: React.FC = () => {
                     {a.title}
                   </h2>
                   <span className={`badge-pill ${past ? 'badge-purple' : status.cls}`}>
-                    {past ? '⏰ Quá hạn' : status.label}
+                    {past ? 'Quá hạn' : status.label}
                   </span>
                 </div>
 
@@ -310,7 +310,7 @@ const AssignmentsPage: React.FC = () => {
                       value={
                         <span style={{ color: past ? '#ef4444' : 'inherit' }}>
                           {formatDate(a.dueDate, true)}
-                          {past && ' ⚠️'}
+                          
                         </span>
                       }
                     />
@@ -378,7 +378,7 @@ const AssignmentsPage: React.FC = () => {
       <Modal
         isOpen={!!showModal}
         onClose={closeModal}
-        icon="📤"
+        icon=""
         title="Nộp bài tập"
         size="md"
         footer={
@@ -390,7 +390,7 @@ const AssignmentsPage: React.FC = () => {
               variant="primary"
               onClick={handleSubmit}
               loading={submitting}
-              icon="📤"
+              icon=""
             >
               Xác nhận nộp
             </Button>

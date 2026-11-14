@@ -13,17 +13,17 @@ import type { Grade } from '../../types';
 
 const typeCfg = (t: string) => {
   const map: Record<string, { label: string; color: string; icon: string }> = {
-    ENTRY_TEST: { label: 'Kiểm tra đầu vào', color: '#0ea5e9', icon: '🎯' },
-    MOCK_TEST: { label: 'Mock Test', color: '#3b82f6', icon: '🎧' },
-    MID_TERM: { label: 'Giữa kỳ', color: '#ec4899', icon: '📋' },
-    FINAL_TEST: { label: 'Cuối kỳ', color: '#dc2626', icon: '🎓' },
-    MONTHLY_EVALUATION: { label: 'Nhận xét theo tháng', color: '#10b981', icon: '🗓️' },
-    COURSE_EVALUATION: { label: 'Đánh giá cuối khóa', color: '#6366f1', icon: '🏅' },
-    ASSIGNMENT: { label: 'Bài tập', color: '#06b6d4', icon: '📝' },
-    SPEAKING_ASSESSMENT: { label: 'Speaking', color: '#8b5cf6', icon: '🎙️' },
-    WRITING_ASSESSMENT: { label: 'Writing', color: '#f59e0b', icon: '✍️' },
+    ENTRY_TEST: { label: 'Kiểm tra đầu vào', color: '#0ea5e9', icon: '' },
+    MOCK_TEST: { label: 'Mock Test', color: '#3b82f6', icon: '' },
+    MID_TERM: { label: 'Giữa kỳ', color: '#ec4899', icon: '' },
+    FINAL_TEST: { label: 'Cuối kỳ', color: '#dc2626', icon: '' },
+    MONTHLY_EVALUATION: { label: 'Nhận xét theo tháng', color: '#10b981', icon: '' },
+    COURSE_EVALUATION: { label: 'Đánh giá cuối khóa', color: '#6366f1', icon: '' },
+    ASSIGNMENT: { label: 'Bài tập', color: '#06b6d4', icon: '' },
+    SPEAKING_ASSESSMENT: { label: 'Speaking', color: '#8b5cf6', icon: '' },
+    WRITING_ASSESSMENT: { label: 'Writing', color: '#f59e0b', icon: '' },
   };
-  return map[t] ?? { label: t, color: '#64748b', icon: '📊' };
+  return map[t] ?? { label: t, color: '#64748b', icon: '' };
 };
 
 const ratingCfg = (r?: string) => {
@@ -44,16 +44,16 @@ const ratingCfg = (r?: string) => {
 const milestoneTypeBadge = (type?: string) => {
   switch (type) {
     case 'LESSON_COMPLETION':
-      return { label: 'Bài học', bg: '#eff6ff', color: '#1d4ed8', icon: '📖' };
+      return { label: 'Bài học', bg: '#eff6ff', color: '#1d4ed8', icon: '' };
     case 'MOCK_TEST':
-      return { label: 'Thi thử / Khảo thí', bg: '#fef2f2', color: '#b91c1c', icon: '🏆' };
+      return { label: 'Thi thử / Khảo thí', bg: '#fef2f2', color: '#b91c1c', icon: '' };
     case 'SKILL_CHECK':
-      return { label: 'Kiểm tra kỹ năng', bg: '#fdf4ff', color: '#86198f', icon: '🎯' };
+      return { label: 'Kiểm tra kỹ năng', bg: '#fdf4ff', color: '#86198f', icon: '' };
     case 'ASSIGNMENT':
-      return { label: 'Bài tập / Writing', bg: '#f0fdf4', color: '#15803d', icon: '✍️' };
+      return { label: 'Bài tập / Writing', bg: '#f0fdf4', color: '#15803d', icon: '' };
     case 'CHECKPOINT':
     default:
-      return { label: 'Chuẩn đầu ra', bg: '#fffbeb', color: '#b45309', icon: '🎓' };
+      return { label: 'Chuẩn đầu ra', bg: '#fffbeb', color: '#b45309', icon: '' };
   }
 };
 
@@ -177,7 +177,7 @@ const ProgressPage: React.FC = () => {
       <div className="dash-banner" style={{ background: 'linear-gradient(135deg, #07403F 0%, #0d5c5a 100%)' }}>
         <div className="dash-banner-content">
           <div className="dash-banner-badge" style={{ backgroundColor: 'rgba(255,255,255,0.18)', color: '#a7f3d0' }}>
-            🎯 Kết Quả Học Tập & Điểm Số
+            Kết Quả Học Tập & Điểm Số
           </div>
           <h1>Bảng Điểm & Kết Quả Học Tập</h1>
           <p>
@@ -216,13 +216,13 @@ const ProgressPage: React.FC = () => {
           ← Dashboard
         </Link>
         <Link to="/student/classes" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
-          📚 Khóa Học Của Tôi
+          Khóa Học Của Tôi
         </Link>
         <Link to="/student/schedule" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
-          🗓️ Xem Lịch Học
+          Xem Lịch Học
         </Link>
         <Link to="/student/attendance" className="dash-quick-btn" style={{ textDecoration: 'none' }}>
-          📅 Chuyên Cần
+          Chuyên Cần
         </Link>
       </div>
 
@@ -259,7 +259,7 @@ const ProgressPage: React.FC = () => {
             transition: 'all 0.2s ease',
           }}
         >
-          <span>📊</span>
+          
           <span>Bảng Điểm & Đánh Giá Giảng Viên</span>
           <span
             style={{
@@ -295,7 +295,7 @@ const ProgressPage: React.FC = () => {
             transition: 'all 0.2s ease',
           }}
         >
-          <span>🎯</span>
+          
           <span>Kết Quả Test Đầu Vào</span>
           {placementTest ? (
             <span
@@ -345,7 +345,7 @@ const ProgressPage: React.FC = () => {
             transition: 'all 0.2s ease',
           }}
         >
-          <span>🚀</span>
+          
           <span>Tiến Độ Khóa Học & Cột Mốc</span>
           <span
             style={{
@@ -424,7 +424,7 @@ const ProgressPage: React.FC = () => {
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
               <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1e293b' }}>
-                🏫 Lọc theo lớp học:
+                Lọc theo lớp học:
               </span>
               <select
                 value={selectedClassId}
@@ -458,13 +458,13 @@ const ProgressPage: React.FC = () => {
           {/* Grade Items */}
           {grades.length === 0 ? (
             <EmptyState
-              icon="📊"
+              icon=""
               title="Chưa có dữ liệu điểm số từ giảng viên"
               description="Hiện tại chưa có bài kiểm tra nào được công bố điểm. Khi giảng viên hoàn thành chấm thi giữa kỳ, cuối kỳ hoặc Mock Test, kết quả và nhận xét chi tiết sẽ hiển thị đầy đủ tại đây."
               action={
                 <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', marginTop: '1rem' }}>
                   <Link to="/student/classes" className="dash-quick-btn primary">
-                    📚 Xem khóa học của tôi
+                    Xem khóa học của tôi
                   </Link>
                   <button
                     type="button"
@@ -472,7 +472,7 @@ const ProgressPage: React.FC = () => {
                     className="dash-quick-btn secondary"
                     style={{ cursor: 'pointer' }}
                   >
-                    🎯 Xem kết quả Test đầu vào
+                    Xem kết quả Test đầu vào
                   </button>
                 </div>
               }
@@ -503,9 +503,9 @@ const ProgressPage: React.FC = () => {
                             {grade.title}
                           </h2>
                           <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '4px', fontSize: '0.8rem', color: '#64748b' }}>
-                            <span>🏫 {cls?.name || cls?.classCode || 'Lớp học'}</span>
+                            <span>{cls?.name || cls?.classCode || 'Lớp học'}</span>
                             <span>•</span>
-                            <span>📅 Ngày kiểm tra: {formatDate(grade.testDate)}</span>
+                            <span>Ngày kiểm tra: {formatDate(grade.testDate)}</span>
                           </div>
                         </div>
                       </div>
@@ -524,7 +524,7 @@ const ProgressPage: React.FC = () => {
                               fontWeight: 700,
                             }}
                           >
-                            ★ {rating.label}
+                            {rating.label}
                           </span>
                         )}
 
@@ -565,10 +565,10 @@ const ProgressPage: React.FC = () => {
                           border: '1px solid #e2e8f0',
                         }}
                       >
-                        <SkillBand label="🎧 Listening (Nghe)" band={grade.listening} />
-                        <SkillBand label="📖 Reading (Đọc)" band={grade.reading} />
-                        <SkillBand label="✍️ Writing (Viết)" band={grade.writing} />
-                        <SkillBand label="🎙️ Speaking (Nói)" band={grade.speaking} />
+                        <SkillBand label="Listening (Nghe)" band={grade.listening} />
+                        <SkillBand label="Reading (Đọc)" band={grade.reading} />
+                        <SkillBand label="Writing (Viết)" band={grade.writing} />
+                        <SkillBand label="Speaking (Nói)" band={grade.speaking} />
                       </div>
                     </div>
 
@@ -584,7 +584,7 @@ const ProgressPage: React.FC = () => {
                     >
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontSize: '1.2rem' }}>👨‍🏫</span>
+                          
                           <span style={{ fontWeight: 700, color: '#166534', fontSize: '0.9rem' }}>
                             Giảng viên chấm bài: {teacher?.fullName || 'Giảng viên phụ trách'}
                           </span>
@@ -674,7 +674,7 @@ const ProgressPage: React.FC = () => {
                     className="dash-quick-btn primary"
                     style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                   >
-                    📝 Làm bài test mới / Thi thử
+                    Làm bài test mới / Thi thử
                   </Link>
                 </div>
 
@@ -756,14 +756,14 @@ const ProgressPage: React.FC = () => {
                   }}
                 >
                   <h3 style={{ margin: '0 0 10px 0', fontSize: '1.1rem', fontWeight: 700, color: '#1e293b' }}>
-                    💡 Đánh Giá & Nhận Xét Năng Lực Đầu Vào
+                    Đánh Giá & Nhận Xét Năng Lực Đầu Vào
                   </h3>
                   <div style={{ fontSize: '0.92rem', color: '#334155', lineHeight: 1.7 }}>
                     {placementTest.notes}
                   </div>
                   {placementTest.learningGoal && (
                     <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px dashed #cbd5e1', fontSize: '0.88rem', color: '#475569' }}>
-                      🎯 <strong>Mục tiêu học tập cá nhân:</strong> {placementTest.learningGoal}
+                      <strong>Mục tiêu học tập cá nhân:</strong> {placementTest.learningGoal}
                     </div>
                   )}
                 </div>
@@ -784,7 +784,7 @@ const ProgressPage: React.FC = () => {
                 >
                   <div>
                     <strong style={{ color: '#854d0e', fontSize: '0.95rem' }}>
-                      🌟 Lộ trình phù hợp đề xuất cho bạn:
+                      Lộ trình phù hợp đề xuất cho bạn:
                     </strong>
                     <div style={{ fontSize: '0.85rem', color: '#713f12', marginTop: '3px' }}>
                       Dựa trên kết quả test (Band {placementTest.score}), lộ trình đề xuất là khóa học chuẩn bị nền tảng hoặc nâng band phù hợp.
@@ -802,13 +802,13 @@ const ProgressPage: React.FC = () => {
             </div>
           ) : (
             <EmptyState
-              icon="🎯"
+              icon=""
               title="Bạn chưa thực hiện bài kiểm tra chẩn đoán đầu vào"
               description="Để xác định chính xác trình độ IELTS hiện tại và xây dựng lộ trình học tập tối ưu, bạn hãy làm bài kiểm tra chẩn đoán năng lực 4 kỹ năng miễn phí ngay hôm nay."
               action={
                 <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', marginTop: '1rem', flexWrap: 'wrap' }}>
                   <Link to="/placement-tests" className="dash-quick-btn primary">
-                    🎯 Làm bài test đầu vào ngay
+                    Làm bài test đầu vào ngay
                   </Link>
                   <Link to="/courses" className="dash-quick-btn secondary" style={{ textDecoration: 'none' }}>
                     Khám phá danh sách khóa học
@@ -827,13 +827,13 @@ const ProgressPage: React.FC = () => {
         <div>
           {classesProgress.length === 0 ? (
             <EmptyState
-              icon="🚀"
+              icon=""
               title="Chưa có dữ liệu tiến độ & cột mốc khóa học"
               description="Hiện tại bạn chưa có tiến độ học tập nào. Nếu bạn vừa đăng ký và thanh toán khóa học, nhân viên giáo vụ (Staff) đang xử lý xếp lớp cho bạn. Tiến độ và các cột mốc sẽ được kích hoạt ngay khi lớp học bắt đầu."
               action={
                 <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', marginTop: '1rem', flexWrap: 'wrap' }}>
                   <Link to="/student/classes" className="dash-quick-btn primary">
-                    📚 Xem khóa học của tôi
+                    Xem khóa học của tôi
                   </Link>
                   <Link to="/courses" className="dash-quick-btn secondary" style={{ textDecoration: 'none' }}>
                     Khám phá thêm khóa học
@@ -991,7 +991,7 @@ const ProgressPage: React.FC = () => {
                 >
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                      <span style={{ fontSize: '1.2rem' }}>⚡</span>
+                      
                       <strong style={{ fontSize: '0.9rem', color: '#1d4ed8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                         Cột mốc tiếp theo cần hoàn thành
                       </strong>
@@ -1056,7 +1056,7 @@ const ProgressPage: React.FC = () => {
                       fontWeight: 500,
                     }}
                   >
-                    🔄 Làm mới
+                    Làm mới
                   </button>
                 </div>
 
@@ -1181,7 +1181,7 @@ const ProgressPage: React.FC = () => {
                                     fontWeight: 600,
                                   }}
                                 >
-                                  ⏳ Đang tiến hành
+                                  Đang tiến hành
                                 </span>
                               )}
                             </div>
@@ -1222,7 +1222,7 @@ const ProgressPage: React.FC = () => {
 
                           {milestone.note && (
                             <div style={{ marginTop: '8px', fontSize: '0.82rem', color: '#047857', fontStyle: 'italic' }}>
-                              💬 Nhận xét: &ldquo;{milestone.note}&rdquo;
+                              Nhận xét: &ldquo;{milestone.note}&rdquo;
                             </div>
                           )}
                         </div>

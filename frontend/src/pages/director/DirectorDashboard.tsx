@@ -212,7 +212,7 @@ export const DirectorDashboard: React.FC = () => {
       // Also fetch announcements
       fetchAnnouncementsList();
     } catch (err: any) {
-      showToast('⚠️ Lỗi đồng bộ dữ liệu giám đốc: ' + (err?.message || 'Lỗi mạng'));
+      showToast(' Lỗi đồng bộ dữ liệu giám đốc: ' + (err?.message || 'Lỗi mạng'));
     } finally {
       setLoading(false);
     }
@@ -277,18 +277,18 @@ export const DirectorDashboard: React.FC = () => {
     try {
       if (editingAnnouncement) {
         const res = await announcementService.updateAnnouncement(editingAnnouncement._id, announcementForm);
-        showToast('🎉 Cập nhật bài thông báo thành công!');
+        showToast(' Cập nhật bài thông báo thành công!');
         setAnnouncements((prev) =>
           prev.map((a) => (a._id === editingAnnouncement._id && res.data ? res.data : a))
         );
       } else {
         await announcementService.createAnnouncement(announcementForm);
-        showToast('🎉 Đăng bài thông báo mới thành công!');
+        showToast(' Đăng bài thông báo mới thành công!');
       }
       setIsAnnouncementModalOpen(false);
       fetchAnnouncementsList();
     } catch (err: any) {
-      showToast('❌ Lỗi lưu thông báo: ' + (err?.response?.data?.message || err.message));
+      showToast(' Lỗi lưu thông báo: ' + (err?.response?.data?.message || err.message));
     } finally {
       setIsSubmittingAnnouncement(false);
     }
@@ -300,10 +300,10 @@ export const DirectorDashboard: React.FC = () => {
     }
     try {
       await announcementService.deleteAnnouncement(id);
-      showToast('🗑️ Đã xóa bài thông báo thành công!');
+      showToast(' Đã xóa bài thông báo thành công!');
       setAnnouncements((prev) => prev.filter((a) => a._id !== id));
     } catch (err: any) {
-      showToast('❌ Lỗi xóa thông báo: ' + (err?.response?.data?.message || err.message));
+      showToast(' Lỗi xóa thông báo: ' + (err?.response?.data?.message || err.message));
     }
   };
 
@@ -311,12 +311,12 @@ export const DirectorDashboard: React.FC = () => {
     try {
       const nextPin = !item.isPinned;
       await announcementService.updateAnnouncement(item._id, { isPinned: nextPin });
-      showToast(nextPin ? '📌 Đã ghim thông báo lên đầu trang!' : 'Đã bỏ ghim thông báo.');
+      showToast(nextPin ? 'Đã ghim thông báo lên đầu trang!' : 'Đã bỏ ghim thông báo.');
       setAnnouncements((prev) =>
         prev.map((a) => (a._id === item._id ? { ...a, isPinned: nextPin } : a))
       );
     } catch (err: any) {
-      showToast('❌ Lỗi cập nhật trạng thái ghim: ' + (err?.response?.data?.message || err.message));
+      showToast(' Lỗi cập nhật trạng thái ghim: ' + (err?.response?.data?.message || err.message));
     }
   };
 
@@ -330,7 +330,7 @@ export const DirectorDashboard: React.FC = () => {
     setIsSubmittingStaff(true);
     try {
       await directorService.addStaffAccount(newStaffForm);
-      showToast(`🎉 Tạo tài khoản ${newStaffForm.role === 'TEACHER' ? 'Giảng viên' : 'Giáo vụ'} thành công!`);
+      showToast(` Tạo tài khoản ${newStaffForm.role === 'TEACHER' ? 'Giảng viên' : 'Giáo vụ'} thành công!`);
       setIsAddStaffModalOpen(false);
       setNewStaffForm({
         fullName: '',
@@ -348,7 +348,7 @@ export const DirectorDashboard: React.FC = () => {
       const res = await directorService.getStaffAccounts();
       if (res?.data?.data?.accounts) setStaffAccounts(res.data.data.accounts);
     } catch (err: any) {
-      showToast('❌ Lỗi tạo tài khoản: ' + (err?.response?.data?.message || err.message));
+      showToast(' Lỗi tạo tài khoản: ' + (err?.response?.data?.message || err.message));
     } finally {
       setIsSubmittingStaff(false);
     }
@@ -364,7 +364,7 @@ export const DirectorDashboard: React.FC = () => {
         prev.map((a) => (a._id === account._id ? { ...a, status: nextStatus } : a))
       );
     } catch (err: any) {
-      showToast('❌ Không thể đổi trạng thái: ' + (err?.response?.data?.message || err.message));
+      showToast(' Không thể đổi trạng thái: ' + (err?.response?.data?.message || err.message));
     }
   };
 
@@ -377,7 +377,7 @@ export const DirectorDashboard: React.FC = () => {
         prev.map((item) => (item._id === stu._id ? { ...item, status: nextStatus } : item))
       );
     } catch (err: any) {
-      showToast('❌ Không thể đổi trạng thái: ' + (err?.response?.data?.message || err.message));
+      showToast(' Không thể đổi trạng thái: ' + (err?.response?.data?.message || err.message));
     }
   };
 
@@ -774,7 +774,7 @@ export const DirectorDashboard: React.FC = () => {
             textAlign: 'center',
           }}
         >
-          ⏳ Đang đồng bộ số liệu điều hành thời gian thực từ máy chủ EduCenter...
+          Đang đồng bộ số liệu điều hành thời gian thực từ máy chủ EduCenter...
         </div>
       )}
 
@@ -1025,7 +1025,7 @@ export const DirectorDashboard: React.FC = () => {
                       </div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontWeight: 800, color: '#f59e0b', fontSize: '0.9rem' }}>⭐ 4.95 / 5.0</div>
+                      <div style={{ fontWeight: 800, color: '#f59e0b', fontSize: '0.9rem' }}>4.95 / 5.0</div>
                       <div className="dash-subcard-meta">99% hài lòng</div>
                     </div>
                   </div>
@@ -1039,7 +1039,7 @@ export const DirectorDashboard: React.FC = () => {
                       </div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontWeight: 800, color: '#f59e0b', fontSize: '0.9rem' }}>⭐ 4.92 / 5.0</div>
+                      <div style={{ fontWeight: 800, color: '#f59e0b', fontSize: '0.9rem' }}>4.92 / 5.0</div>
                       <div className="dash-subcard-meta">98% hài lòng</div>
                     </div>
                   </div>
@@ -1797,7 +1797,7 @@ export const DirectorDashboard: React.FC = () => {
             <div className="dash-card" style={{ padding: '1.25rem' }}>
               <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>Điểm hài lòng trung bình</div>
               <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#f59e0b', marginTop: '0.2rem' }}>
-                ⭐ {teacherReports?.averageSatisfaction || 4.88} / 5.0
+                {teacherReports?.averageSatisfaction || 4.88} / 5.0
               </div>
               <div style={{ fontSize: '0.75rem', color: '#047857', marginTop: '0.25rem' }}>Đạt chuẩn kiểm định quốc tế</div>
             </div>
@@ -1823,7 +1823,7 @@ export const DirectorDashboard: React.FC = () => {
           <div className="dash-card" style={{ padding: '1rem', borderRadius: '16px', overflowX: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1rem' }}>
               <div style={{ fontWeight: 800, fontSize: '1rem', color: '#0f172a' }}>
-                ⭐ Bảng Vinh Danh &amp; Đánh Giá Giảng Viên ({filteredTeacherRankings.length})
+                Bảng Vinh Danh &amp; Đánh Giá Giảng Viên ({filteredTeacherRankings.length})
               </div>
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
                 <input
@@ -1906,10 +1906,10 @@ export const DirectorDashboard: React.FC = () => {
                           Band {t.band}
                         </span>
                       </td>
-                    <td style={{ padding: '12px 14px', fontWeight: 800, color: '#f59e0b' }}>⭐ {t.rating}</td>
+                    <td style={{ padding: '12px 14px', fontWeight: 800, color: '#f59e0b' }}>{t.rating}</td>
                     <td style={{ padding: '12px 14px', fontWeight: 600 }}>{t.classes} lớp</td>
                     <td style={{ padding: '12px 14px' }}>{t.hours} giờ</td>
-                    <td style={{ padding: '12px 14px', color: '#047857', fontWeight: 700 }}>🏆 {t.commendation}</td>
+                    <td style={{ padding: '12px 14px', color: '#047857', fontWeight: 700 }}>{t.commendation}</td>
                   </tr>
                 ))
               )}
@@ -2894,7 +2894,7 @@ export const DirectorDashboard: React.FC = () => {
                     flexShrink: 0,
                   }}
                 >
-                  ➕
+                  +
                 </div>
                 <div>
                   <h3 style={{ margin: 0, fontSize: '1.18rem', fontWeight: 800, color: '#FFFFFF', letterSpacing: '-0.01em' }}>

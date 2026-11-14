@@ -145,7 +145,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen
                 marginBottom: '1rem',
               }}
             >
-              ⚠️ {error}
+              {error}
             </div>
           )}
 
@@ -160,7 +160,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen
                 marginBottom: '1rem',
               }}
             >
-              ✅ {success}
+              {success}
             </div>
           )}
 

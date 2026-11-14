@@ -133,7 +133,7 @@ const EnrollmentDetailModal: React.FC<{
                   : '#475569',
             }}
           >
-            <strong>🎯 Đánh giá trình độ xếp lớp:</strong>
+            <strong>Đánh giá trình độ xếp lớp:</strong>
             <div style={{ marginTop: '4px', lineHeight: 1.4 }}>
               • Chuẩn đầu vào khóa học: <strong>{enrollment.course.entryLevel}</strong>
               <br />

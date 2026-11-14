@@ -148,7 +148,7 @@ const CombinedSchedulePage: React.FC = () => {
     <div className="dash-container">
       <div className="dash-banner">
         <div className="dash-banner-content">
-          <div className="dash-banner-badge">🗓️ Lịch Học</div>
+          <div className="dash-banner-badge">Lịch Học</div>
           <h1>Lịch Học Tổng Hợp</h1>
           <p>
             {items.length > 0
@@ -158,7 +158,7 @@ const CombinedSchedulePage: React.FC = () => {
         </div>
         <div className="dash-banner-right">
           <div className="dash-date-pill">
-            <div>📅 {items.length} buổi/tuần</div>
+            <div>{items.length} buổi/tuần</div>
             <div className="sub">{classCount} lớp đang học</div>
           </div>
         </div>
@@ -177,7 +177,7 @@ const CombinedSchedulePage: React.FC = () => {
         <div className="dash-card" style={{ marginBottom: '1.5rem', padding: '0.75rem 1rem' }}>
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
             <span style={{ fontWeight: 600, fontSize: '0.9rem', marginRight: '0.5rem' }}>
-              🎯 Lọc theo lớp:
+              Lọc theo lớp:
             </span>
             <button
               type="button"
@@ -204,12 +204,12 @@ const CombinedSchedulePage: React.FC = () => {
 
       {filteredItems.length === 0 ? (
         <EmptyState
-          icon="📅"
+          icon=""
           title="Chưa có lịch học"
           description="Hiện tại bạn chưa có lịch học nào. Nếu bạn vừa đăng ký khóa học mới, nhân viên giáo vụ (Staff) đang tiến hành xếp lớp học phù hợp cho bạn."
           action={
             <Link to="/student/classes" className="dash-quick-btn primary" style={{ textDecoration: 'none' }}>
-              📚 Xem khóa học của tôi
+              Xem khóa học của tôi
             </Link>
           }
         />
@@ -305,7 +305,7 @@ const CombinedSchedulePage: React.FC = () => {
           {/* Legend */}
           <div style={{ padding: '1rem', background: 'white' }}>
             <div style={{ fontWeight: 600, fontSize: '0.85rem', marginBottom: '0.5rem' }}>
-              🎨 Chú thích màu theo lớp:
+              Chú thích màu theo lớp:
             </div>
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
               {uniqueClasses.map((c, idx) => (
