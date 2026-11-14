@@ -251,7 +251,20 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
             {/* Thông tin tài khoản */}
             <div className="dashboard-user">
               <span className="dashboard-user-avatar" aria-hidden="true">
-                {user.fullName.trim().charAt(0).toUpperCase()}
+                {user.avatarUrl ? (
+                  <img
+                    src={user.avatarUrl}
+                    alt=""
+                    onError={(event) => {
+                      event.currentTarget.style.display = 'none';
+                      const fallback = event.currentTarget.nextElementSibling as HTMLElement | null;
+                      if (fallback) fallback.style.display = 'grid';
+                    }}
+                  />
+                ) : null}
+                <span style={{ display: user.avatarUrl ? 'none' : 'grid' }}>
+                  {user.fullName.trim().charAt(0).toUpperCase()}
+                </span>
               </span>
               <span className="dashboard-user-info">
                 <strong title={user.fullName}>{user.fullName}</strong>

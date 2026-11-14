@@ -166,6 +166,11 @@ export const authService = {
     return localStorage.getItem(TOKEN_KEY);
   },
 
+  /** Persist the latest user snapshot used by AuthContext on session restore. */
+  setStoredUser: (user: User): void => {
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
+  },
+
   /**
    * Get stored user from localStorage
    */

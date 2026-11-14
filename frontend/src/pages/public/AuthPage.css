@@ -175,8 +175,9 @@
   font-weight: 600;
   color: #374151;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
+  gap: 4px;
 }
 .auth-input-label .req {
   color: #e5484d;
@@ -214,6 +215,7 @@
 }
 
 .auth-forgot-link {
+  margin-left: auto;
   background: none;
   border: none;
   color: #308560;

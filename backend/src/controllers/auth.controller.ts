@@ -16,6 +16,7 @@ import {
   isValidEmail,
   isValidPassword,
 } from '../utils/validation';
+import { getPhoneValidationError } from '../utils/phone-validation';
 import {
   VERIFICATION_TOKEN_TTL_MS,
   canSendVerificationEmail,
@@ -76,6 +77,12 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         success: false,
         message: 'Địa chỉ email không đúng định dạng',
       });
+      return;
+    }
+
+    const phoneError = getPhoneValidationError(phone);
+    if (phoneError) {
+      res.status(400).json({ success: false, message: phoneError });
       return;
     }
 
@@ -674,6 +681,12 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
 
     const { fullName, phone, address, dob, avatarUrl } = req.body;
 
+    const phoneError = getPhoneValidationError(phone);
+    if (phoneError) {
+      res.status(400).json({ success: false, message: phoneError });
+      return;
+    }
+
     const user = await User.findById(req.user._id);
     if (!user) {
       res.status(404).json({
@@ -684,7 +697,7 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
     }
 
     if (fullName) user.fullName = fullName.trim();
-    if (phone !== undefined) user.phone = phone.trim();
+    if (phone !== undefined) user.phone = typeof phone === 'string' ? phone.trim() : '';
     if (address !== undefined) user.address = address.trim();
     if (dob) user.dob = new Date(dob);
     if (avatarUrl !== undefined) user.avatarUrl = avatarUrl.trim();
@@ -745,10 +758,18 @@ export const changePassword = async (req: AuthRequest, res: Response): Promise<v
       return;
     }
 
-    if (newPassword.length < 6) {
+    const isValidNewPassword =
+      newPassword.length >= 10 &&
+      newPassword.length <= 20 &&
+      /[A-Z]/.test(newPassword) &&
+      /[a-z]/.test(newPassword) &&
+      /[0-9]/.test(newPassword) &&
+      !/\\s/.test(newPassword);
+
+    if (!isValidNewPassword) {
       res.status(400).json({
         success: false,
-        message: 'Mật khẩu mới phải có tối thiểu 6 ký tự',
+        message: 'Mật khẩu mới phải có 10–20 ký tự, gồm chữ hoa, chữ thường và chữ số, không có khoảng trắng.',
       });
       return;
     }
@@ -767,6 +788,15 @@ export const changePassword = async (req: AuthRequest, res: Response): Promise<v
       res.status(400).json({
         success: false,
         message: 'Mật khẩu hiện tại không chính xác',
+      });
+      return;
+    }
+
+    const isSamePassword = await user.comparePassword(newPassword);
+    if (isSamePassword) {
+      res.status(400).json({
+        success: false,
+        message: 'Mật khẩu mới không được trùng với mật khẩu hiện tại.',
       });
       return;
     }

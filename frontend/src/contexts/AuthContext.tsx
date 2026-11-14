@@ -43,7 +43,7 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
         isLoading: false,
       };
     case 'UPDATE_USER':
-      return { ...state, user: action.payload };
+      return { ...state, user: state.user ? { ...state.user, ...action.payload } : action.payload };
     default:
       return state;
   }
@@ -150,7 +150,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const updateUser = useCallback((updatedUser: User): void => {
-    dispatch({ type: 'UPDATE_USER', payload: updatedUser });
+    // Keep the shared auth state and persisted session in sync so the sidebar
+    // immediately reflects profile/avatar changes and survives a page reload.
+    const currentUser = authService.getStoredUser();
+    const mergedUser = currentUser ? { ...currentUser, ...updatedUser } : updatedUser;
+    authService.setStoredUser(mergedUser);
+    dispatch({ type: 'UPDATE_USER', payload: mergedUser });
   }, []);
 
   const value: AuthContextValue = {

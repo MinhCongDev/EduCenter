@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { authService } from '../services/auth.service';
+import { PASSWORD_POLICY_HINT, getPasswordError } from '../utils/password';
 
 interface ChangePasswordModalProps {
   isOpen: boolean;
@@ -16,6 +17,11 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [showPasswords, setShowPasswords] = useState({
+    currentPassword: false,
+    newPassword: false,
+    confirmPassword: false,
+  });
 
   if (!isOpen) return null;
 
@@ -33,8 +39,13 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen
       return;
     }
 
-    if (formData.newPassword.length < 6) {
-      setError('Mật khẩu mới phải có tối thiểu 6 ký tự.');
+    const passwordError = getPasswordError(formData.newPassword);
+    if (passwordError) {
+      setError(passwordError);
+      return;
+    }
+    if (formData.newPassword === formData.currentPassword) {
+      setError('Mật khẩu mới không được trùng với mật khẩu hiện tại.');
       return;
     }
 
@@ -68,6 +79,19 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen
     }
   };
 
+  const renderPasswordToggle = (field: keyof typeof showPasswords) => (
+    <button
+      type="button"
+      aria-label={showPasswords[field] ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+      title={showPasswords[field] ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+      onMouseDown={(event) => event.preventDefault()}
+      onClick={() => setShowPasswords((previous) => ({ ...previous, [field]: !previous[field] }))}
+      style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', border: 0, background: 'transparent', cursor: 'pointer', padding: 6, color: '#64748b', lineHeight: 1 }}
+    >
+      {showPasswords[field] ? 'Ẩn' : 'Hiện'}
+    </button>
+  );
+
   return (
     <div
       style={{
@@ -99,7 +123,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen
       >
         <div
           style={{
-            background: 'linear-gradient(135deg, #07403F 0%, #052F2E 100%)',
+            background: 'linear-gradient(135deg, #267A50 0%, #17613D 100%)',
             color: '#FFFFFF',
             padding: '1.25rem 1.5rem',
             display: 'flex',
@@ -108,7 +132,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700 }}>
+            <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, color: '#FFFFFF', lineHeight: 1.3 }}>
               Đổi Mật Khẩu
             </h3>
           </div>
@@ -166,65 +190,80 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen
 
           <div style={{ marginBottom: '1rem' }}>
             <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: '0.35rem' }}>
-              Mật khẩu hiện tại *
+              Mật khẩu hiện tại <span style={{ color: '#ef4444' }}>*</span>
             </label>
-            <input
-              type="password"
-              name="currentPassword"
-              value={formData.currentPassword}
-              onChange={handleChange}
-              required
-              placeholder="••••••••"
-              style={{
-                width: '100%',
-                padding: '0.65rem 0.85rem',
-                borderRadius: '8px',
-                border: '1px solid #cbd5e1',
-                fontSize: '0.9rem',
-              }}
-            />
+            <div className="change-password-control" style={{ position: 'relative' }}>
+              <input
+                type={showPasswords.currentPassword ? "text" : "password"}
+                name="currentPassword"
+                value={formData.currentPassword}
+                onChange={handleChange}
+                required
+                placeholder=""
+                style={{
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  padding: '0.65rem 3.5rem 0.65rem 0.85rem',
+                  borderRadius: '8px',
+                  border: '1px solid #cbd5e1',
+                  fontSize: '0.9rem',
+                }}
+              />
+              {renderPasswordToggle('currentPassword')}
+            </div>
           </div>
 
           <div style={{ marginBottom: '1rem' }}>
             <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: '0.35rem' }}>
-              Mật khẩu mới (Tối thiểu 6 ký tự) *
+              Mật khẩu mới <span style={{ color: '#ef4444' }}>*</span>
             </label>
-            <input
-              type="password"
-              name="newPassword"
-              value={formData.newPassword}
-              onChange={handleChange}
-              required
-              placeholder="••••••••"
-              style={{
-                width: '100%',
-                padding: '0.65rem 0.85rem',
-                borderRadius: '8px',
-                border: '1px solid #cbd5e1',
-                fontSize: '0.9rem',
-              }}
-            />
+            <div className="change-password-control" style={{ position: 'relative' }}>
+              <input
+                type={showPasswords.newPassword ? "text" : "password"}
+                name="newPassword"
+                value={formData.newPassword}
+                onChange={handleChange}
+                required
+                placeholder=""
+                style={{
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  padding: '0.65rem 3.5rem 0.65rem 0.85rem',
+                  borderRadius: '8px',
+                  border: '1px solid #cbd5e1',
+                  fontSize: '0.9rem',
+                }}
+              />
+              {renderPasswordToggle('newPassword')}
+            </div>
+            {formData.newPassword.length === 0 && (
+              <p style={{ margin: '6px 0 0', color: '#64748b', fontSize: '0.75rem' }}>{PASSWORD_POLICY_HINT}</p>
+            )}
           </div>
 
           <div style={{ marginBottom: '1.5rem' }}>
             <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: '0.35rem' }}>
-              Xác nhận mật khẩu mới *
+              Xác nhận mật khẩu mới <span style={{ color: '#ef4444' }}>*</span>
             </label>
-            <input
-              type="password"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              required
-              placeholder="••••••••"
-              style={{
-                width: '100%',
-                padding: '0.65rem 0.85rem',
-                borderRadius: '8px',
-                border: '1px solid #cbd5e1',
-                fontSize: '0.9rem',
-              }}
-            />
+            <div className="change-password-control" style={{ position: 'relative' }}>
+              <input
+                type={showPasswords.confirmPassword ? "text" : "password"}
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                required
+                placeholder=""
+                style={{
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  padding: '0.65rem 3.5rem 0.65rem 0.85rem',
+                  borderRadius: '8px',
+                  border: '1px solid #cbd5e1',
+                  fontSize: '0.9rem',
+                }}
+              />
+              {formData.confirmPassword.length > 0 && renderPasswordToggle('confirmPassword')}
+            </div>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>

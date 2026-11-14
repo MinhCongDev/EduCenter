@@ -49,6 +49,8 @@ const ProfilePage: React.FC = () => {
       if (res.success && res.data) {
         const u = res.data.user;
         setStudent(res.data.student);
+        // Keep the shared user (including avatarUrl) in sync with the profile API.
+        updateUser(u);
         setForm(makeForm(u));
       } else {
         toast.error(res.message || 'Không thể tải thông tin cá nhân');
@@ -131,45 +133,6 @@ const ProfilePage: React.FC = () => {
     setIsEditing(false);
   };
 
-  const [showPwd, setShowPwd] = useState(false);
-  const [pwdForm, setPwdForm] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: '',
-  });
-  const [savingPwd, setSavingPwd] = useState(false);
-
-  const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!pwdForm.currentPassword || !pwdForm.newPassword) {
-      toast.warning('Vui lòng nhập đầy đủ mật khẩu hiện tại và mật khẩu mới.');
-      return;
-    }
-    if (pwdForm.newPassword !== pwdForm.confirmPassword) {
-      toast.error('Mật khẩu mới và xác nhận mật khẩu không khớp.');
-      return;
-    }
-    if (pwdForm.newPassword.length < 6) {
-      toast.error('Mật khẩu mới phải có tối thiểu 6 ký tự.');
-      return;
-    }
-
-    try {
-      setSavingPwd(true);
-      const res = await authService.changePassword(pwdForm);
-      if (res.success) {
-        toast.success('Đổi mật khẩu thành công.');
-        setPwdForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-        setShowPwd(false);
-      } else {
-        toast.error(res.message || 'Đổi mật khẩu thất bại.');
-      }
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Đổi mật khẩu thất bại.');
-    } finally {
-      setSavingPwd(false);
-    }
-  };
 
   if (isLoading) return <SkeletonPage message="Đang tải thông tin cá nhân..." />;
 
@@ -349,40 +312,6 @@ const ProfilePage: React.FC = () => {
         </section>
       </div>
 
-      <section className="profile-card" style={{ marginTop: 22 }}>
-        <div className="profile-card-body">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-            <div>
-              <h2 style={{ margin: 0, color: '#302a3c', fontSize: 18, fontWeight: 800 }}>🔒 Bảo mật tài khoản</h2>
-              <p style={{ margin: '5px 0 0', color: '#858190', fontSize: 13 }}>Quản lý mật khẩu đăng nhập của bạn.</p>
-            </div>
-            {!showPwd && (
-              <Button type="button" variant="secondary" onClick={() => setShowPwd(true)}>Đổi mật khẩu</Button>
-            )}
-          </div>
-
-          {showPwd && (
-            <form onSubmit={handleChangePassword} style={{ marginTop: 22, maxWidth: 560 }}>
-              <div className="profile-field">
-                <label>Mật khẩu hiện tại *</label>
-                <input type="password" value={pwdForm.currentPassword} onChange={(e) => setPwdForm((f) => ({ ...f, currentPassword: e.target.value }))} placeholder="Nhập mật khẩu hiện tại" autoComplete="current-password" required />
-              </div>
-              <div className="profile-field">
-                <label>Mật khẩu mới *</label>
-                <input type="password" value={pwdForm.newPassword} onChange={(e) => setPwdForm((f) => ({ ...f, newPassword: e.target.value }))} placeholder="Tối thiểu 6 ký tự" autoComplete="new-password" required />
-              </div>
-              <div className="profile-field">
-                <label>Xác nhận mật khẩu mới *</label>
-                <input type="password" value={pwdForm.confirmPassword} onChange={(e) => setPwdForm((f) => ({ ...f, confirmPassword: e.target.value }))} placeholder="Nhập lại mật khẩu mới" autoComplete="new-password" required />
-              </div>
-              <div className="profile-actions">
-                <Button type="button" variant="secondary" onClick={() => { setShowPwd(false); setPwdForm({ currentPassword: '', newPassword: '', confirmPassword: '' }); }} disabled={savingPwd}>Hủy</Button>
-                <Button type="submit" variant="primary" icon="🔐" loading={savingPwd}>Xác nhận đổi mật khẩu</Button>
-              </div>
-            </form>
-          )}
-        </div>
-      </section>
     </div>
   );
 };
