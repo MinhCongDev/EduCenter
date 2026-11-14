@@ -27,7 +27,6 @@ const MyClassesPage: React.FC = () => {
   const [classes, setClasses] = useState<Enrollment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [tuitionFilter, setTuitionFilter] = useState<'ALL' | TuitionStatus>('ALL');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'ENROLLED' | 'COMPLETED'>('ALL');
   const [selectedCourseDetail, setSelectedCourseDetail] = useState<Course | null>(null);
 
@@ -104,20 +103,20 @@ const MyClassesPage: React.FC = () => {
 
   if (isLoading) return <SkeletonPage message="Đang tải danh sách lớp học..." />;
 
-  const totalPaid = classes.filter((c) => c.tuitionStatus === 'PAID').length;
-  const inProgress = classes.filter((c) => (c.class as any).status === 'IN_PROGRESS').length;
+  const paidOnlyClasses = classes.filter((c) => c.tuitionStatus === 'PAID');
+  const inProgress = paidOnlyClasses.filter((c) => (c.class as any)?.status === 'IN_PROGRESS').length;
 
-  // ── M5: search & filter ──
-  const filtered = classes.filter((item) => {
-    const cls = item.class as any;
-    if (tuitionFilter !== 'ALL' && item.tuitionStatus !== tuitionFilter) return false;
+  // ── M5: search & filter (chỉ hiển thị những khóa học đã thanh toán thành công) ──
+  const filtered = paidOnlyClasses.filter((item) => {
+    const cls = (item.class as any) || {};
+    const course = cls.course || item.course || {};
     if (statusFilter !== 'ALL' && item.enrollmentStatus !== statusFilter) return false;
     if (search.trim()) {
       const q = search.trim().toLowerCase();
       const hay = [
         cls.classCode,
-        cls.course?.code,
-        cls.course?.title,
+        course.code,
+        course.title,
         cls.teacher?.fullName,
         cls.room,
         cls.scheduleDays?.join(' '),
@@ -134,48 +133,48 @@ const MyClassesPage: React.FC = () => {
     <div className="dash-container">
       <div className="dash-banner">
         <div className="dash-banner-content">
-          <div className="dash-banner-badge">📚 Lớp Học Của Tôi</div>
-          <h1>Danh Sách Lớp Học</h1>
+          <div className="dash-banner-badge">📚 Khóa Học Của Tôi</div>
+          <h1>Khóa Học Đã Đăng Ký &amp; Đã Thanh Toán</h1>
           <p>
-            {classes.length > 0
-              ? `Bạn đang theo học ${classes.length} lớp. Nhấn vào lớp để xem chi tiết.`
-              : 'Bạn chưa đăng ký lớp học nào.'}
+            {paidOnlyClasses.length > 0
+              ? `Bạn có ${paidOnlyClasses.length} khóa học đã thanh toán thành công.`
+              : 'Bạn chưa có khóa học nào đã thanh toán.'}
           </p>
         </div>
         <div className="dash-banner-right">
           <div className="dash-date-pill">
-            <div>📚 {classes.length} lớp đã đăng ký</div>
+            <div>✅ {paidOnlyClasses.length} khóa đã thanh toán</div>
             <div className="sub">Học viên: {user?.fullName}</div>
           </div>
         </div>
       </div>
 
-      {classes.length > 0 && (
+      {paidOnlyClasses.length > 0 && (
         <div className="dash-metrics-grid" style={{ marginBottom: '1.5rem' }}>
           <div className="dash-metric-card">
             <div className="dash-metric-info">
-              <span className="dash-metric-label">Tổng số lớp</span>
-              <span className="dash-metric-val">{classes.length} lớp</span>
-              <span className="dash-metric-trend up">{totalPaid} đã thanh toán</span>
+              <span className="dash-metric-label">Khóa học đã đăng ký</span>
+              <span className="dash-metric-val">{paidOnlyClasses.length} khóa</span>
+              <span className="dash-metric-trend up">✅ 100% đã thanh toán</span>
             </div>
             <div className="dash-metric-icon icon-blue">📚</div>
           </div>
           <div className="dash-metric-card">
             <div className="dash-metric-info">
-              <span className="dash-metric-label">Đã thanh toán</span>
-              <span className="dash-metric-val">{totalPaid}</span>
+              <span className="dash-metric-label">Trạng thái học phí</span>
+              <span className="dash-metric-val">Đã Hoàn Tất</span>
               <span className="dash-metric-trend up">
-                {classes.length - totalPaid} chưa thanh toán
+                {paidOnlyClasses.length} khóa học hợp lệ
               </span>
             </div>
             <div className="dash-metric-icon icon-emerald">✅</div>
           </div>
           <div className="dash-metric-card">
             <div className="dash-metric-info">
-              <span className="dash-metric-label">Đang học</span>
+              <span className="dash-metric-label">Đang học tại lớp</span>
               <span className="dash-metric-val">{inProgress}</span>
               <span className="dash-metric-trend">
-                {classes.filter((c) => (c.class as any).status === 'OPEN').length} đang mở
+                {paidOnlyClasses.filter((c) => (c.class as any)?.status === 'OPEN').length} lớp đang mở
               </span>
             </div>
             <div className="dash-metric-icon icon-purple">🎓</div>
@@ -183,14 +182,14 @@ const MyClassesPage: React.FC = () => {
         </div>
       )}
 
-      {classes.length === 0 ? (
+      {paidOnlyClasses.length === 0 ? (
         <EmptyState
           icon="📭"
-          title="Chưa có lớp học nào"
-          description="Bạn chưa đăng ký lớp học nào. Vui lòng liên hệ trung tâm để được tư vấn."
+          title="Chưa có khóa học nào đã thanh toán"
+          description="Bạn chưa có khóa học nào đã thanh toán học phí thành công. Hãy khám phá danh sách các khóa học để đăng ký ngay."
           action={
             <Link to="/courses" className="dash-quick-btn primary" style={{ textDecoration: 'none' }}>
-              📖 Xem các khóa học
+              📖 Xem các khóa học &amp; Đăng ký
             </Link>
           }
         />
@@ -204,7 +203,7 @@ const MyClassesPage: React.FC = () => {
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'minmax(220px, 2fr) 1fr 1fr auto',
+                gridTemplateColumns: 'minmax(220px, 2fr) 1fr auto',
                 gap: '0.75rem',
                 alignItems: 'center',
               }}
@@ -222,15 +221,6 @@ const MyClassesPage: React.FC = () => {
                 }}
               />
               <select
-                value={tuitionFilter}
-                onChange={(e) => setTuitionFilter(e.target.value as any)}
-                style={selectStyle}
-              >
-                <option value="ALL">💳 Tất cả học phí</option>
-                <option value="PAID">✅ Đã thanh toán</option>
-                <option value="PENDING">⏳ Chưa thanh toán</option>
-              </select>
-              <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as any)}
                 style={selectStyle}
@@ -240,8 +230,8 @@ const MyClassesPage: React.FC = () => {
                 <option value="ENROLLED">🎓 Đang học</option>
                 <option value="COMPLETED">🏆 Hoàn thành</option>
               </select>
-              <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
-                {filtered.length}/{classes.length} khóa học
+              <span style={{ color: '#047857', fontWeight: 600, fontSize: '0.85rem' }}>
+                ✅ {filtered.length}/{paidOnlyClasses.length} khóa đã thanh toán
               </span>
             </div>
           </div>

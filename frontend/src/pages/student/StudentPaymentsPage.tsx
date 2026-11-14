@@ -25,7 +25,6 @@ export const StudentPaymentsPage: React.FC = () => {
     pendingTuitionCount: 0,
     totalPendingTuitionAmount: 0,
   });
-  const [pendingTuitions, setPendingTuitions] = useState<PendingTuitionItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -215,17 +214,13 @@ export const StudentPaymentsPage: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const [paymentsRes, pendingRes] = await Promise.all([
-        paymentService.getMyPayments({
-          status: statusFilter !== 'ALL' ? statusFilter : undefined,
-          search: searchTerm.trim() || undefined,
-        }),
-        paymentService.getPendingTuition(),
-      ]);
+      const paymentsRes = await paymentService.getMyPayments({
+        status: statusFilter !== 'ALL' ? statusFilter : undefined,
+        search: searchTerm.trim() || undefined,
+      });
 
       setPayments(paymentsRes.payments);
       setSummary(paymentsRes.summary);
-      setPendingTuitions(pendingRes);
     } catch (err: any) {
       console.error('Lỗi khi tải dữ liệu thanh toán:', err);
       setError(err?.response?.data?.message || 'Không thể kết nối đến máy chủ. Vui lòng thử lại!');
@@ -627,168 +622,32 @@ export const StudentPaymentsPage: React.FC = () => {
           </div>
         </div>
       ) : (
-        /* ── Trạng thái mặc định (Reset về 0 / Trống) ── */
-        <div
-          className="dash-card"
-          style={{
-            padding: '2.5rem 1.5rem',
-            textAlign: 'center',
-            backgroundColor: '#ffffff',
-            borderRadius: '16px',
-            border: '1px dashed #cbd5e1',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
-            marginBottom: '1.5rem',
-          }}
-        >
-          <div
-            style={{
-              width: '64px',
-              height: '64px',
-              borderRadius: '50%',
-              backgroundColor: '#f1f5f9',
-              color: '#64748b',
-              fontSize: '2rem',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto 1rem',
-            }}
-          >
-            💳
-          </div>
-          <h3 style={{ margin: '0 0 0.5rem', color: '#1e293b', fontSize: '1.25rem', fontWeight: 800 }}>
-            Chưa có khoản thanh toán nào cần thực hiện
-          </h3>
-          <p style={{ margin: '0 0 0.5rem', color: '#64748b', fontSize: '0.95rem' }}>
-            Hệ thống hiện không có khoản học phí nào đang chờ thanh toán. Số tiền cần đóng: <strong style={{ color: '#0f172a' }}>0 đ</strong>.
-          </p>
-          <p style={{ margin: '0 auto 1.5rem', color: '#94a3b8', fontSize: '0.85rem', maxWidth: '580px' }}>
-            Để thanh toán học phí, vui lòng truy cập trang <strong>Danh sách khóa học</strong> và nhấn nút <strong>"Đăng kí học"</strong> tại khóa học bạn muốn tham gia.
-          </p>
+        /* ── Nút Xem Danh Sách Khóa Học & Đăng Kí Học ── */
+        <div style={{ marginBottom: '1.5rem' }}>
           <button
             type="button"
             className="dash-quick-btn primary"
             style={{
-              padding: '0.65rem 1.5rem',
-              fontSize: '0.9rem',
+              width: '100%',
+              padding: '0.85rem 1.5rem',
+              fontSize: '0.95rem',
               fontWeight: 700,
               backgroundColor: '#07403F',
               borderColor: '#07403F',
-              borderRadius: '10px',
-              display: 'inline-flex',
+              borderRadius: '12px',
+              display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem',
+              justifyContent: 'center',
+              gap: '0.6rem',
               cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(7, 64, 63, 0.2)',
+              transition: 'all 0.2s ease',
             }}
             onClick={() => navigate('/courses')}
           >
             <span>📚</span>
-            <span>Xem Danh Sách Khóa Học & Đăng Kí Học</span>
+            <span>Xem Danh Sách Khóa Học &amp; Đăng Kí Học</span>
           </button>
-        </div>
-      )}
-
-      {/* ── Danh sách lớp học đang chờ đóng học phí (nếu có trong hệ thống) ── */}
-      {!activeCoursePayment && pendingTuitions.length > 0 && (
-        <div
-          className="dash-card"
-          style={{
-            border: '1px solid #fed7aa',
-            backgroundColor: '#fffaf5',
-            marginBottom: '1.5rem',
-          }}
-        >
-          <div className="dash-card-header" style={{ borderBottomColor: '#fed7aa' }}>
-            <h3 style={{ color: '#c2410c', margin: 0, fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <span>📝</span>
-              <span>Lớp học đã ghi danh chờ hoàn thành học phí ({pendingTuitions.length})</span>
-            </h3>
-            <span className="badge-pill badge-amber" style={{ fontSize: '0.75rem' }}>
-              Chờ thanh toán
-            </span>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.75rem' }}>
-            {pendingTuitions.map((item) => (
-              <div
-                key={item._id}
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '0.85rem 1.15rem',
-                  backgroundColor: '#ffffff',
-                  borderRadius: '10px',
-                  border: '1px solid #fed7aa',
-                  flexWrap: 'wrap',
-                  gap: '0.75rem',
-                }}
-              >
-                <div>
-                  <strong style={{ color: '#1e293b', fontSize: '0.95rem' }}>{item.course?.title}</strong>
-                  <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '2px' }}>
-                    Mã khóa: <strong>{item.course?.code}</strong>
-                    {item.class && <span> • Lớp: <strong>{item.class.classCode}</strong></span>}
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#dc2626' }}>
-                      {formatCurrency(item.course?.tuitionFee)}
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    className="dash-quick-btn primary"
-                    style={{
-                      backgroundColor: '#059669',
-                      borderColor: '#059669',
-                      padding: '0.45rem 1rem',
-                      fontSize: '0.82rem',
-                      fontWeight: 700,
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                    }}
-                    onClick={() => {
-                      const studentLastName = user?.fullName ? user.fullName.trim().split(' ').pop()?.toUpperCase() : 'HV';
-                      const courseCode = item.course?.code || 'IELTS';
-                      const invoiceCode = item.class?.classCode
-                        ? `${item.class.classCode}-${item._id.slice(-4).toUpperCase()}`
-                        : `HP-${item._id.slice(-6).toUpperCase()}`;
-                      const transferContent = `HP ${studentLastName} ${courseCode}`;
-                      const tuitionFee = item.course?.tuitionFee || 0;
-
-                      setActiveCoursePayment({
-                        courseId: item.course?._id || '',
-                        courseTitle: item.course?.title || '',
-                        courseCode,
-                        tuitionFee,
-                        invoiceCode,
-                        transferContent,
-                      });
-
-                      setVietQRData({
-                        amount: tuitionFee,
-                        description: transferContent,
-                        invoiceCode,
-                        courseTitle: item.course?.title,
-                        courseId: item.course?._id,
-                        studentName: user?.fullName,
-                        classCode: item.class?.classCode,
-                        enrollmentId: item._id,
-                      });
-                      setIsVietQRModalOpen(true);
-                    }}
-                  >
-                    <span>💳</span>
-                    <span>Thanh toán ngay</span>
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
       )}
 
@@ -1878,9 +1737,15 @@ export const StudentPaymentsPage: React.FC = () => {
           handleResetPaymentState();
           fetchData();
           showToast(
-            `Thanh toán học phí ${payment?.amount ? payment.amount.toLocaleString('vi-VN') + ' đ ' : ''
+            `Thanh toán học phí ${
+              payment?.amount ? payment.amount.toLocaleString('vi-VN') + ' đ ' : ''
             }thành công! Khóa học đã xuất hiện trong 'Khóa học của tôi' (Trạng thái: Đang chờ staff xếp lớp).`
           );
+        }}
+        onPaymentExpired={() => {
+          handleResetPaymentState();
+          fetchData();
+          showToast('⚠️ Đơn đăng ký khóa học đã tự động bị hủy do quá thời gian thanh toán (10 phút).');
         }}
       />
     </div>

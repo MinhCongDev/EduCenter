@@ -12,6 +12,7 @@ import { ChangeRequest } from '../models/changeRequest.model';
 import { ClassSchedule } from '../models/classSchedule.model';
 import { Class } from '../models/class.model';
 import { Notification } from '../models/notification.model';
+import { cleanupExpiredPendingEnrollments } from './payment.controller';
 
 // =====================================================
 //  Helpers
@@ -127,9 +128,13 @@ export const getMyClasses = async (req: AuthRequest, res: Response): Promise<voi
   try {
     const user = requireUser(req);
 
+    // Tự động dọn dẹp các đăng ký quá hạn 10 phút chưa thanh toán
+    await cleanupExpiredPendingEnrollments(user._id);
+
     const enrollments = await Enrollment.find({
       student: user._id,
       status: { $ne: 'DROPPED' },
+      tuitionStatus: 'PAID',
     })
       .populate('course', 'code title description durationWeeks sessions tuitionFee level format entryLevel targetLevel learningObjectives syllabus bannerUrl')
       .populate({
@@ -449,6 +454,7 @@ export const getCombinedSchedule = async (req: AuthRequest, res: Response): Prom
     const enrollments = await Enrollment.find({
       student: user._id,
       status: { $ne: 'DROPPED' },
+      tuitionStatus: 'PAID',
     })
       .populate({
         path: 'class',
@@ -474,9 +480,24 @@ export const getCombinedSchedule = async (req: AuthRequest, res: Response): Prom
       })
       .sort({ dayOfWeek: 1, startTime: 1 });
 
+    // Loại bỏ các buổi học trùng lặp cùng lớp, cùng thứ, cùng khung giờ (cho thời khóa biểu tuần)
+    const seenSlots = new Set<string>();
+    const uniqueSchedule: any[] = [];
+    for (const s of schedule) {
+      const clsId = (s.class as any)?._id?.toString() || (s.class as any)?.toString() || '';
+      const day = (s.dayOfWeek || '').trim().toLowerCase();
+      const start = (s.startTime || '').trim();
+      const end = (s.endTime || '').trim();
+      const slotKey = `${clsId}-${day}-${start}-${end}`;
+      if (!seenSlots.has(slotKey)) {
+        seenSlots.add(slotKey);
+        uniqueSchedule.push(s);
+      }
+    }
+
     // Fallback: nếu bảng ClassSchedule chưa có dữ liệu, dựng lịch từ
     // class.scheduleDays + class.timeSlot (dữ liệu lớp học hiện có trong seed).
-    let scheduleList: any[] = schedule;
+    let scheduleList: any[] = uniqueSchedule;
     if (!scheduleList.length) {
       const timeParts = (slot?: string) => {
         const [s, e] = (slot || '').split('-').map((x) => x.trim());
@@ -541,8 +562,22 @@ export const getSchedule = async (req: AuthRequest, res: Response): Promise<void
       startTime: 1,
     });
 
+    // Loại bỏ các buổi học trùng lặp cùng thứ, cùng khung giờ (cho thời khóa biểu tuần)
+    const seenSlotsSingle = new Set<string>();
+    const uniqueScheduleSingle: any[] = [];
+    for (const s of schedule) {
+      const day = (s.dayOfWeek || '').trim().toLowerCase();
+      const start = (s.startTime || '').trim();
+      const end = (s.endTime || '').trim();
+      const slotKey = `${day}-${start}-${end}`;
+      if (!seenSlotsSingle.has(slotKey)) {
+        seenSlotsSingle.add(slotKey);
+        uniqueScheduleSingle.push(s);
+      }
+    }
+
     // Fallback khi bảng ClassSchedule chưa có dữ liệu cho lớp này
-    let scheduleList: any[] = schedule;
+    let scheduleList: any[] = uniqueScheduleSingle;
     if (!scheduleList.length && classDoc?.scheduleDays?.length) {
       const [s, e] = (classDoc.timeSlot || '').split('-').map((x) => x.trim());
       const clsPlain =
@@ -665,6 +700,7 @@ export const getTuition = async (req: AuthRequest, res: Response): Promise<void>
     const enrollments = await Enrollment.find({
       student: user._id,
       status: { $ne: 'DROPPED' },
+      tuitionStatus: 'PAID',
     })
       .populate({
         path: 'class',
