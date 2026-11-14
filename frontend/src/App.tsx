@@ -472,33 +472,36 @@ const AppRouter: React.FC = () => {
           }
         />
 
-        {/* ── Director Routes ──────────────────────── */}
+        {/* ── Director & Admin Routes ──────────────── */}
         <Route
           path="/director/dashboard"
           element={
-            <ProtectedRoute allowedRoles={['DIRECTOR']}>
+            <ProtectedRoute allowedRoles={['DIRECTOR', 'ADMIN']}>
               <DashboardLayout>
                 <DirectorDashboard />
               </DashboardLayout>
             </ProtectedRoute>
           }
         />
+        <Route path="/admin/dashboard" element={<Navigate to="/director/dashboard" replace />} />
+        <Route path="/admin" element={<Navigate to="/director/dashboard" replace />} />
         <Route
           path="/director/profile"
           element={
-            <ProtectedRoute allowedRoles={['DIRECTOR']}>
+            <ProtectedRoute allowedRoles={['DIRECTOR', 'ADMIN']}>
               <DashboardLayout>
                 <ProfilePage />
               </DashboardLayout>
             </ProtectedRoute>
           }
         />
+        <Route path="/admin/profile" element={<Navigate to="/director/profile" replace />} />
 
         {/* ── Common Profile Route for Any Role ─────── */}
         <Route
           path="/profile"
           element={
-            <ProtectedRoute allowedRoles={['STUDENT', 'TEACHER', 'TRAINING_STAFF', 'DIRECTOR']}>
+            <ProtectedRoute allowedRoles={['STUDENT', 'TEACHER', 'TRAINING_STAFF', 'DIRECTOR', 'ADMIN']}>
               <DashboardLayout>
                 <ProfilePage />
               </DashboardLayout>

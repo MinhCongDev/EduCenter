@@ -126,7 +126,7 @@ export const getPlacementTests = async (
     const filter: Record<string, unknown> = {};
 
     // Nếu người dùng không phải Staff/Director thì chỉ hiển thị bài thi PUBLISHED
-    const isStaffOrDirector = req.user?.role === 'TRAINING_STAFF' || req.user?.role === 'DIRECTOR';
+    const isStaffOrDirector = req.user?.role === 'TRAINING_STAFF' || req.user?.role === 'DIRECTOR' || req.user?.role === 'ADMIN';
     if (!isStaffOrDirector) {
       filter.status = 'PUBLISHED';
     } else if (status === 'DRAFT' || status === 'PUBLISHED') {
@@ -227,7 +227,7 @@ export const getPlacementTestById = async (
       throw createError('Không tìm thấy bài kiểm tra đầu vào', 404);
     }
 
-    const isStaffOrDirector = req.user?.role === 'TRAINING_STAFF' || req.user?.role === 'DIRECTOR';
+    const isStaffOrDirector = req.user?.role === 'TRAINING_STAFF' || req.user?.role === 'DIRECTOR' || req.user?.role === 'ADMIN';
     if (test.status !== 'PUBLISHED' && !isStaffOrDirector) {
       throw createError('Không tìm thấy bài kiểm tra đầu vào', 404);
     }

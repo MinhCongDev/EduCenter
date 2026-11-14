@@ -19,8 +19,8 @@ import {
 
 const router = Router();
 
-// Only DIRECTOR (and optionally master admin) can access director routes
-router.use(authenticate, authorize('DIRECTOR'));
+// Only DIRECTOR and ADMIN can access director routes
+router.use(authenticate, authorize('DIRECTOR', 'ADMIN'));
 
 // 1. Dashboard Overview Stats & Approvals
 router.get('/dashboard-stats', getDashboardStats);

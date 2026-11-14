@@ -248,7 +248,7 @@ export const createProposal = async (req: AuthRequest, res: Response): Promise<v
       description: description?.trim() || '',
       category: category || 'Khác',
       proposerName: proposerName || req.user?.fullName || 'Ban Quản trị',
-      proposerRole: proposerRole || (req.user?.role === 'DIRECTOR' ? 'Ban Giám Đốc' : 'Giáo vụ'),
+      proposerRole: proposerRole || (req.user?.role === 'DIRECTOR' || req.user?.role === 'ADMIN' ? 'Ban Giám Đốc' : 'Giáo vụ'),
       proposer: req.user?._id,
       status: 'PENDING',
     });

@@ -101,6 +101,7 @@ const dashboardPaths: Record<UserRole, string> = {
   TEACHER: '/teacher/dashboard',
   TRAINING_STAFF: '/staff/dashboard',
   DIRECTOR: '/director/dashboard',
+  ADMIN: '/director/dashboard',
 };
 
 const roleLabels: Record<UserRole, string> = {
@@ -108,6 +109,8 @@ const roleLabels: Record<UserRole, string> = {
   TEACHER: 'Giảng viên',
   TRAINING_STAFF: 'Phòng giáo vụ',
   DIRECTOR: 'Ban giám đốc',
+  ADMIN: 'Ban giám đốc (Admin)',
+  ADMIN: 'Admin',
 };
 
 const getMenuItems = (role: UserRole): DashboardItem[] => {
@@ -148,7 +151,7 @@ const getMenuItems = (role: UserRole): DashboardItem[] => {
     ];
   }
 
-  if (role === 'DIRECTOR') {
+  if (role === 'DIRECTOR' || role === 'ADMIN') {
     return [
       { label: 'Tổng quan', path: '/director/dashboard', icon: DIRECTOR_ICONS.overview },
       { label: 'Quản lý thông báo', path: '/director/dashboard?tab=announcements', icon: DIRECTOR_ICONS.announcements },
@@ -201,7 +204,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           <span className="dashboard-brand-name">Edu<span>Center</span></span>
         </Link>
 
-        {role !== 'DIRECTOR' && (
+        {role !== 'DIRECTOR' && role !== 'ADMIN' && (
           <div className="dashboard-nav-label">KHÔNG GIAN LÀM VIỆC</div>
         )}
         <nav className="dashboard-nav" aria-label="Điều hướng tác vụ">
@@ -269,7 +272,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                     ? '/teacher/profile'
                     : role === 'TRAINING_STAFF'
                     ? '/staff/profile'
-                    : role === 'DIRECTOR'
+                    : role === 'DIRECTOR' || role === 'ADMIN'
                     ? '/director/profile'
                     : '/student/profile'
                 }

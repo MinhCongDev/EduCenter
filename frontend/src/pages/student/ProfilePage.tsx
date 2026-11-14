@@ -196,6 +196,7 @@ export const ProfilePage: React.FC = () => {
     TEACHER: { badge: 'Giảng viên IELTS', icon: '👨‍🏫', idLabel: 'Mã giảng viên', bg: '#eff6ff', color: '#1d4ed8' },
     TRAINING_STAFF: { badge: 'Giáo vụ đào tạo', icon: '📋', idLabel: 'Mã nhân sự', bg: '#fef3c7', color: '#b45309' },
     DIRECTOR: { badge: 'Ban giám đốc', icon: '🏛️', idLabel: 'Mã quản trị', bg: '#f3e8ff', color: '#7e22ce' },
+    ADMIN: { badge: 'Ban giám đốc (Admin)', icon: '🏛️', idLabel: 'Mã quản trị', bg: '#f3e8ff', color: '#7e22ce' },
   };
 
   const currentRoleInfo = roleBadgeMap[role] || roleBadgeMap.STUDENT;
@@ -204,15 +205,15 @@ export const ProfilePage: React.FC = () => {
     role === 'STUDENT'
       ? student?.studentCode || user?.studentProfile?.studentCode || 'HV'
       : role === 'TEACHER'
-      ? user?.teacherProfile?.teacherCode || 'GV'
-      : user?.staffProfile?.staffCode || (role === 'DIRECTOR' ? 'BGD' : 'NV');
+        ? user?.teacherProfile?.teacherCode || 'GV'
+        : user?.staffProfile?.staffCode || (role === 'DIRECTOR' || role === 'ADMIN' ? 'BGD' : 'NV');
 
   const statusLabel =
     user?.status === 'ACTIVE'
       ? 'Đang hoạt động'
       : user?.status === 'INACTIVE'
-      ? 'Ngừng hoạt động'
-      : 'Đang hoạt động';
+        ? 'Ngừng hoạt động'
+        : 'Đang hoạt động';
 
   return (
     <div className="dash-container profile-page">
@@ -364,15 +365,15 @@ export const ProfilePage: React.FC = () => {
                   <h3 className="profile-section-title"><span>📋</span> Thông tin công tác</h3>
                   <div className="profile-info-row">
                     <span className="profile-info-label">Mã nhân sự</span>
-                    <span className="profile-info-value">{user?.staffProfile?.staffCode || (role === 'DIRECTOR' ? 'BGD-01' : 'NV-01')}</span>
+                    <span className="profile-info-value">{user?.staffProfile?.staffCode || (role === 'DIRECTOR' || role === 'ADMIN' ? 'BGD-01' : 'NV-01')}</span>
                   </div>
                   <div className="profile-info-row">
                     <span className="profile-info-label">Phòng ban</span>
-                    <span className="profile-info-value">{user?.staffProfile?.department || (role === 'DIRECTOR' ? 'Ban Giám Đốc' : 'Phòng Giáo vụ - Đào tạo')}</span>
+                    <span className="profile-info-value">{user?.staffProfile?.department || (role === 'DIRECTOR' || role === 'ADMIN' ? 'Ban Giám Đốc' : 'Phòng Giáo vụ - Đào tạo')}</span>
                   </div>
                   <div className="profile-info-row">
                     <span className="profile-info-label">Chức vụ</span>
-                    <span className="profile-info-value">{user?.staffProfile?.position || (role === 'DIRECTOR' ? 'Giám đốc trung tâm' : 'Chuyên viên Đào tạo')}</span>
+                    <span className="profile-info-value">{user?.staffProfile?.position || (role === 'DIRECTOR' || role === 'ADMIN' ? 'Giám đốc trung tâm' : 'Chuyên viên Đào tạo')}</span>
                   </div>
                   <div className="profile-info-row">
                     <span className="profile-info-label">Ngày gia nhập</span>
